@@ -18,7 +18,7 @@ jobs:
         cd build
         mkdir linux
         cd linux
-        cmake ../..
+        cmake -DCMAKE_INSTALL_PREFIX=dist ../..
     - name: make
       run: |
         cd build/linux
