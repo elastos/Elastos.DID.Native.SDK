@@ -83,6 +83,17 @@ static int get_did(DID *did, void *context)
     return 0;
 }
 
+static DIDDocument* merge(DIDDocument *chaincopy, DIDDocument *localcopy)
+{
+    if (!chaincopy && !localcopy)
+        return NULL;
+
+    if (!chaincopy)
+        return chaincopy;
+
+    return localcopy;
+}
+
 static void test_idchain_restore(void)
 {
     int rc;
@@ -93,7 +104,7 @@ static void test_idchain_restore(void)
     DIDs restore_dids;
 
     path = get_store_path(_path, "/idchain");
-    store = TestData_SetupStore(path);
+    store = TestData_SetupStore(false, path);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     rc = DIDStore_InitPrivateIdentity(store, storepass, TestData_LoadRestoreMnemonic(),
@@ -101,7 +112,7 @@ static void test_idchain_restore(void)
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
 
     printf("\nSynchronizing from IDChain...");
-    rc = DIDStore_Synchronize(store, storepass);
+    rc = DIDStore_Synchronize(store, storepass, merge);
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
     printf("OK!\n");
 
