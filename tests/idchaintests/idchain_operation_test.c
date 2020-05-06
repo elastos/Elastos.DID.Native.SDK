@@ -18,7 +18,7 @@
 static DIDDocument *document;
 static DIDStore *store;
 
-static void test_idchain_publishdid(void)
+static void test_idchain_publishdid_and_resolve(void)
 {
     DIDURL *signkey;
     char publickeybase58[MAX_PUBLICKEY_BASE58];
@@ -296,36 +296,6 @@ static void test_idchain_publishdid_with_credential(void)
     DIDDocument_Destroy(resolvedoc);
 }
 
-static void test_idchain_update_nonexistedid(void)
-{
-    //todo: refer to java-testUpdateNonExistedDid
-    return;
-}
-
-static void test_idchain_deactivedid_after_create(void)
-{
-    //todo: refer to java-testDeactivateSelfAfterCreate
-    return;
-}
-
-static void test_idchain_deactivedid_after_update(void)
-{
-    //todo: refer to java-testDeactivateSelfAfterUpdate
-    return;
-}
-
-static void test_idchain_deactivedid_with_authorization(void)
-{
-    //todo: refer to java-testDeactivateWithAuthorization1/
-    //testDeactivateWithAuthorization2/testDeactivateWithAuthorization3
-    return;
-}
-
-static void test_idchain_resolveall(void)
-{
-    return;
-}
-
 static int idchain_operation_test_suite_init(void)
 {
     int rc;
@@ -347,13 +317,8 @@ static int idchain_operation_test_suite_cleanup(void)
 }
 
 static CU_TestInfo cases[] = {
-    { "test_idchain_publishdid",                     test_idchain_publishdid                      },
+    { "test_idchain_publishdid_and_resolve",         test_idchain_publishdid_and_resolve          },
     { "test_idchain_publishdid_with_credential",     test_idchain_publishdid_with_credential      },
-    { "test_idchain_update_nonexistedid",            test_idchain_update_nonexistedid             },
-    { "test_idchain_deactivedid_after_create",       test_idchain_deactivedid_after_create        },
-    { "test_idchain_deactivedid_after_update",       test_idchain_deactivedid_after_update        },
-    { "test_idchain_deactivedid_with_authorization", test_idchain_deactivedid_with_authorization  },
-    { "test_idchain_resolveall",                     test_idchain_resolveall                      },
     {  NULL,                                         NULL                                         }
 };
 
