@@ -33,7 +33,6 @@ jobs:
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
           brew install autoconf
           brew install automake
-          brew install autopoint
           brew install libtool
 
           mkdir -p build/macos
