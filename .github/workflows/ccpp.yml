@@ -16,7 +16,7 @@ jobs:
         run: |
           mkdir -p build/linux
           cd build/linux
-          cmake ../..
+          cmake -DCMAKE_INSTALL_PREFIX=dist ../..
           make
           make dist
 
@@ -32,6 +32,6 @@ jobs:
         run: |
           mkdir -p build/macos
           cd build/macos
-          cmake ../..
+          cmake -DCMAKE_INSTALL_PREFIX=dist ../..
           make
           make dist
