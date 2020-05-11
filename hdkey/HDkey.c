@@ -646,3 +646,31 @@ void DerivedKey_Wipe(DerivedKey *derivedkey)
 
     memset(derivedkey, 0, sizeof(DerivedKey));
 }
+
+//-------------------------
+KeyPair *Get_KeyPair(KeyPair *keypair, uint8_t *publickey, uint8_t *privatekey)
+{
+    if (!keypair || !publickey || !privatekey)
+        return NULL;
+
+    //set curve type
+    keypair->curve = EC_CURVE_P_256;
+
+    //set d
+    memcpy(keypair->dbuf, privatekey, PRIVATEKEY_BYTES);
+    keypair->dlen = PRIVATEKEY_BYTES;
+
+    //set x,y
+    keypair->xlen = sizeof(keypair->xbuf);
+    keypair->ylen = sizeof(keypair->ybuf);
+
+    if (getPubKeyCoordinate((void*)publickey, PUBLICKEY_BYTES, keypair->xbuf, &keypair->xlen,
+            keypair->ybuf, &keypair->ylen) == -1)
+        return NULL;
+
+    keypair->d = keypair->dbuf;
+    keypair->x = keypair->xbuf;
+    keypair->y = keypair->ybuf;
+
+    return keypair;
+}
