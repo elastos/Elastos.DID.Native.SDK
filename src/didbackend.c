@@ -279,7 +279,7 @@ DIDDocument *DIDBackend_Resolve(DID *did, bool force)
     }
 
     if (ResolveResult_GetStatus(&result) == STATUS_NOT_FOUND) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "DID does not already exist in chain.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "DID not exists.");
         return NULL;
     } else if (ResolveResult_GetStatus(&result) == STATUS_DEACTIVATED) {
         DIDError_Set(DIDERR_DID_DEACTIVATED, "DID is deactivated.");
@@ -288,7 +288,7 @@ DIDDocument *DIDBackend_Resolve(DID *did, bool force)
         doc = result.txinfos.infos[0].request.doc;
         ResolveResult_Free(&result);
         if (!doc)
-            DIDError_Set(DIDERR_NOT_EXISTS, "No did in chain: %s", did->idstring);
+            DIDError_Set(DIDERR_RESOLVE_ERROR, "Malformed resolver response.");
     }
 
     return doc;
