@@ -648,29 +648,45 @@ void DerivedKey_Wipe(DerivedKey *derivedkey)
 }
 
 //-------------------------
-KeyPair *Get_KeyPair(KeyPair *keypair, uint8_t *publickey, uint8_t *privatekey)
+KeySpec *KeySpec_Create(KeySpec *keyspec, uint8_t *publickey, uint8_t *privatekey)
 {
-    if (!keypair || !publickey || !privatekey)
+    if (!keyspec)
         return NULL;
 
     //set curve type
-    keypair->curve = EC_CURVE_P_256;
+    keyspec->curve = EC_CURVE_P_256;
 
     //set d
-    memcpy(keypair->dbuf, privatekey, PRIVATEKEY_BYTES);
-    keypair->dlen = PRIVATEKEY_BYTES;
+    if (privatekey) {
+        memcpy(keyspec->dbuf, privatekey, PRIVATEKEY_BYTES);
+        keyspec->dlen = PRIVATEKEY_BYTES;
+    }
+    keyspec->d = keyspec->dbuf;
 
     //set x,y
-    keypair->xlen = sizeof(keypair->xbuf);
-    keypair->ylen = sizeof(keypair->ybuf);
+    if (publickey) {
+        keyspec->xlen = sizeof(keyspec->xbuf);
+        keyspec->ylen = sizeof(keyspec->ybuf);
 
-    if (getPubKeyCoordinate((void*)publickey, PUBLICKEY_BYTES, keypair->xbuf, &keypair->xlen,
-            keypair->ybuf, &keypair->ylen) == -1)
-        return NULL;
+        if (getPubKeyCoordinate(publickey, PUBLICKEY_BYTES, keyspec->xbuf, &keyspec->xlen,
+                keyspec->ybuf, &keyspec->ylen) == -1)
+            return NULL;
 
-    keypair->d = keypair->dbuf;
-    keypair->x = keypair->xbuf;
-    keypair->y = keypair->ybuf;
+        keyspec->x = keyspec->xbuf;
+        keyspec->y = keyspec->ybuf;
+    }
 
-    return keypair;
+    return keyspec;
+}
+
+int KeySpec_Copy(KeySpec *dist, KeySpec *src)
+{
+    if (!dist || !src)
+        return -1;
+
+    memcpy(dist, src, sizeof(KeySpec));
+    dist->d = dist->dbuf;
+    dist->x = dist->xbuf;
+    dist->y = dist->ybuf;
+    return 0;
 }

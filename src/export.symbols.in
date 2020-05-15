@@ -91,6 +91,7 @@ _DIDDocument_GetProofType
 _DIDDocument_GetProofCreater
 _DIDDocument_GetProofCreatedTime
 _DIDDocument_GetProofSignature
+_DIDDocument_GetJwtBuilder
 
 _PublicKey_GetId
 _PublicKey_GetController
@@ -200,6 +201,41 @@ _DIDError_GetCode
 _DIDError_GetMessage
 _DIDError_GetFile
 _DIDError_GetLine
+
+# JWTBuilder
+_JWTBuilder_Destroy
+_JWTBuilder_SetHeader
+_JWTBuilder_SetClaim
+_JWTBuilder_SetClaimWithJson
+_JWTBuilder_SetClaimWithIntegar
+_JWTBuilder_SetClaimWithBoolean
+_JWTBuilder_SetIssuer
+_JWTBuilder_SetSubject
+_JWTBuilder_SetAudience
+_JWTBuilder_SetExpiration
+_JWTBuilder_SetNotBefore
+_JWTBuilder_SetIssuedAt
+_JWTBuilder_SetId
+_JWTBuilder_Compact
+
+# JWTParser
+_JWTParser_Parse
+
+# JWS
+_JWS_Destroy
+_JWS_GetHeader
+_JWS_GetAlgorithm
+_JWS_GetKeyId
+_JWS_GetClaim
+_JWS_GetClaimAsInteger
+_JWS_GetClaimAsBoolean
+_JWS_GetIssuer
+_JWS_GetSubject
+_JWS_GetAudience
+_JWS_GetId
+_JWS_GetExpiration
+_JWS_GetNotBefore
+_JWS_GetIssuedAt
 
 # DummyAdapter
 @DUMMYADAPTER_CREATE@

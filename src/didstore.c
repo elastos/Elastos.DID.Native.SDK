@@ -1991,7 +1991,7 @@ DIDDocument *DIDStore_NewDIDByIndex(DIDStore *store, const char *storepass,
     return document;
 }
 
-static int load_privatekey(DIDStore *store, const char *storepass, DID *did,
+int didstore_loadprivtekey(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, uint8_t *privatekey)
 {
     const char *privatekey_str;
@@ -2036,7 +2036,7 @@ int didstore_sign(DIDStore *store, const char *storepass, DID *did,
         return -1;
     }
 
-    if (load_privatekey(store, storepass, did, key, binkey) == -1)
+    if (didstore_loadprivtekey(store, storepass, did, key, binkey) == -1)
         return -1;
 
     if (ecdsa_sign_base64(sig, binkey, digest, size) == -1) {

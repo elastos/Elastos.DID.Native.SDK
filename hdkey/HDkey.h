@@ -69,7 +69,7 @@ typedef enum
     EC_CURVE_P_256 = NID_X9_62_prime256v1
 } EC_CURVE;
 
-typedef struct KeyPair {
+typedef struct KeySpec {
     /** The elliptic curve */
     EC_CURVE curve;
     /** point to dbuf*/
@@ -90,7 +90,7 @@ typedef struct KeyPair {
     uint8_t xbuf[BUFF_BYTES];
     /** The public key's Y coordiate */
     uint8_t ybuf[BUFF_BYTES];
-} KeyPair;
+} KeySpec;
 
 const char *HDKey_GenerateMnemonic(const char *language);
 
@@ -126,8 +126,10 @@ char *DerivedKey_GetAddress(DerivedKey *derivedkey);
 
 void DerivedKey_Wipe(DerivedKey *derivedkey);
 
-//------------------------------------------------
-KeyPair *Get_KeyPair(KeyPair *keypair, uint8_t *publickey, uint8_t *privatekey);
+//- for jwt -----------------------------------------------
+KeySpec *KeySpec_Create(KeySpec *keyspec, uint8_t *publickey, uint8_t *privatekey);
+
+int KeySpec_Copy(KeySpec *dist, KeySpec *src);
 
 #ifdef __cplusplus
 }

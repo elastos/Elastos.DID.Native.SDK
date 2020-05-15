@@ -23,7 +23,7 @@ set(CONFIGURE_ARGS
     set(INSTALL_ARGS "install")
 
 ExternalProject_Add(
-    jansson
+    libjansson
 
     PREFIX ${PROJECT_DEPS_BUILD_PREFIX}
     URL "https://github.com/akheron/jansson/archive/v2.13.1.tar.gz"

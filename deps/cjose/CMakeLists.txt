@@ -4,6 +4,10 @@ include(ExternalProject)
 include(ProjectDefaults)
 include(ExternalConfigureArgs)
 
+set(CONFIGURE_ARGS_INIT
+    ${CONFIGURE_ARGS_INIT}
+    "LIBS=-lpthread")
+
 set(CONFIGURE_CMD
     aclocal &&
     autoconf &&
@@ -25,7 +29,7 @@ set(INSTALL_CMD "make")
 set(INSTALL_ARGS "install")
 
 ExternalProject_Add(
-    cjose
+    libcjose
 
     PREFIX ${PROJECT_DEPS_BUILD_PREFIX}
     URL "https://github.com/cisco/cjose/archive/0.6.1.tar.gz"

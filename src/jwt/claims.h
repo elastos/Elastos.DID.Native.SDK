@@ -20,45 +20,23 @@
  * SOFTWARE.
  */
 
-#ifndef __DIDSTORE_H__
-#define __DIDSTORE_H__
-
-#include <limits.h>
-
-#include "ela_did.h"
-#include "didbackend.h"
-#include "didmeta.h"
-#include "credmeta.h"
+#ifndef __CLAIMS_H__
+#define __CLAIMS_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define MAX_PRIVATEKEY_BASE64           80
-
-typedef struct DIDBackend    DIDBackend;
-
-struct DIDStore {
-    char root[PATH_MAX];
-    DIDBackend backend;
-};
-
-int didstore_storedidmeta(DIDStore *store, DIDMeta *meta, DID *did);
-
-int didstore_loaddidmeta(DIDStore *store, DIDMeta *meta, DID *did);
-
-int didstore_storecredmeta(DIDStore *store, CredentialMeta *meta, DIDURL *id);
-
-int didstore_loadcredmeta(DIDStore *store, CredentialMeta *meta, DIDURL *id);
-
-int didstore_sign(DIDStore *store, const char *storepass, DID *did,
-        DIDURL *key, char *sig, uint8_t *digest, size_t size);
-
-int didstore_loadprivtekey(DIDStore *store, const char *storepass, DID *did,
-        DIDURL *key, uint8_t *privatekey);
+extern const char *ISSUER;
+extern const char *SUBJECT;
+extern const char *AUDIENCE;
+extern const char *EXPIRATION;
+extern const char *NOT_BEFORE;
+extern const char *ISSUER_AT;
+extern const char *ID;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //__DIDSTORE_H__
+#endif //__CLAIMS_H__

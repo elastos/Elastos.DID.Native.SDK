@@ -27,6 +27,7 @@
 #include <assert.h>
 
 #include "ela_did.h"
+#include "ela_jwt.h"
 #include "did.h"
 #include "diddocument.h"
 #include "didstore.h"
@@ -37,6 +38,7 @@
 #include "HDkey.h"
 #include "didmeta.h"
 #include "diderror.h"
+#include "jwtbuilder.h"
 
 #define MAX_EXPIRES              5
 
@@ -2612,6 +2614,58 @@ int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
     }
 
     return 0;
+}
+
+JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document, DIDURL *keyid, const char *storepass)
+{
+    PublicKey *pk;
+    DID *did;
+    uint8_t pubkey[PUBLICKEY_BYTES];
+    uint8_t privatekey[PRIVATEKEY_BYTES];
+    const char *keybase58;
+    KeySpec _keyspec, *keyspec;
+    JWTBuilder *builder;
+
+    if (!document || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    did = DIDDocument_GetSubject(document);
+    if (!DIDMeta_AttachedStore(&did->meta)) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
+        return NULL;
+    }
+
+    // get pk
+    if (!keyid)
+        keyid = DIDDocument_GetDefaultPublicKey(document);
+
+    pk = DIDDocument_GetPublicKey(document, keyid);
+    if (!pk) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "Key no exist.");
+        return NULL;
+    }
+    base58_decode(pubkey, sizeof(pubkey), PublicKey_GetPublicKeyBase58(pk));
+
+    //get sk
+    if (!DIDStore_ContainsPrivateKey(did->meta.store, did, keyid))
+        return NULL;
+
+    if (didstore_loadprivtekey(did->meta.store, storepass, did, keyid, privatekey) == -1)
+        return NULL;
+
+    // create key spec
+    keyspec = KeySpec_Create(&_keyspec, pubkey, privatekey);
+    memset(privatekey, 0, sizeof(privatekey));
+    if (!keyspec)
+        return NULL;
+
+    builder = JWTBuilder_Create(did, keyid, keyspec);
+    if (!builder)
+        return NULL;
+
+    return builder;
 }
 
 DIDURL *PublicKey_GetId(PublicKey *publickey)

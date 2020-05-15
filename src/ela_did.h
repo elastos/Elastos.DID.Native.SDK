@@ -187,6 +187,11 @@ typedef struct DIDAdapter           DIDAdapter;
 typedef struct DIDResolver          DIDResolver;
 /**
  * \~English
+ * JWTBuilder records the content about jwt.
+ */
+typedef struct JWTBuilder           JWTBuilder;
+/**
+ * \~English
  * DID list callbacks, return alias about did.
  */
 typedef int DIDStore_DIDsCallback(DID *did, void *context);
@@ -1563,6 +1568,23 @@ DID_API const char *DIDDocument_GetProofSignature(DIDDocument *document);
 
 /**
  * \~English
+ * Get JWTBuilder from document.
+ *
+ * @param
+ *      document                 [in] A handle to DID Document.
+ *                                ps：document must attatch DIDstore.
+ * @param
+ *      keyid                    [in] The key to sign jwt.
+ * @param
+ *      storepass                [in] The password for DIDStore.
+ * @return
+ *      If no error occurs, return the handle to JWTBuilder.
+ *      Otherwise, return NULL.
+ */
+DID_API JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document, DIDURL *keyid,
+        const char *storepass);
+/**
+ * \~English
  * Get identifier of public key.
  *
  * @param
@@ -1571,6 +1593,7 @@ DID_API const char *DIDDocument_GetProofSignature(DIDDocument *document);
  *      If no error occurs, return the identifier of public key.
  *      Otherwise, return NULL.
  */
+
 DID_API DIDURL *PublicKey_GetId(PublicKey *publickey);
 
 /**

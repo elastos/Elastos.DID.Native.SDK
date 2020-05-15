@@ -20,45 +20,26 @@
  * SOFTWARE.
  */
 
-#ifndef __DIDSTORE_H__
-#define __DIDSTORE_H__
+#ifndef __JWS_H__
+#define __JWS_H__
 
-#include <limits.h>
+#include <cjose/cjose.h>
+#include <jansson.h>
 
-#include "ela_did.h"
-#include "didbackend.h"
-#include "didmeta.h"
-#include "credmeta.h"
+#include "HDkey.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define MAX_PRIVATEKEY_BASE64           80
-
-typedef struct DIDBackend    DIDBackend;
-
-struct DIDStore {
-    char root[PATH_MAX];
-    DIDBackend backend;
-};
-
-int didstore_storedidmeta(DIDStore *store, DIDMeta *meta, DID *did);
-
-int didstore_loaddidmeta(DIDStore *store, DIDMeta *meta, DID *did);
-
-int didstore_storecredmeta(DIDStore *store, CredentialMeta *meta, DIDURL *id);
-
-int didstore_loadcredmeta(DIDStore *store, CredentialMeta *meta, DIDURL *id);
-
-int didstore_sign(DIDStore *store, const char *storepass, DID *did,
-        DIDURL *key, char *sig, uint8_t *digest, size_t size);
-
-int didstore_loadprivtekey(DIDStore *store, const char *storepass, DID *did,
-        DIDURL *key, uint8_t *privatekey);
+typedef struct JWS {
+    cjose_jws_t *jws;
+    cjose_header_t *header;
+    json_t *claims;
+} JWS;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //__DIDSTORE_H__
+#endif //__JWS_H__
