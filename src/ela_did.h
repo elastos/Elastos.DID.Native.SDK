@@ -2898,6 +2898,11 @@ DID_API void DIDBackend_SetTTL(long ttl);
 #define DIDERR_UNSUPPOTED                           0x8D000016
 /**
  * \~English
+ * JWT error.
+ */
+#define DIDERR_JWT                                  0x8D000017
+/**
+ * \~English
  * Unknown error.
  */
 #define DIDERR_UNKNOWN                              0x8D0000FF

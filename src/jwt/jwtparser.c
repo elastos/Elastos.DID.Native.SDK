@@ -32,6 +32,7 @@
 #include "crypto.h"
 #include "HDkey.h"
 #include "jws.h"
+#include "diderror.h"
 
 static cjose_jwk_t *get_jwk(JWS *jws)
 {
@@ -74,12 +75,16 @@ static cjose_jwk_t *get_jwk(JWS *jws)
 
     memset(&_spec, 0, sizeof(KeySpec));
     spec = KeySpec_Create(&_spec, binkey, NULL);
-    if (!spec)
+    if (!spec) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get key spec failed.");
         goto errorExit;
+    }
 
     jwk = cjose_jwk_create_EC_spec((cjose_jwk_ec_keyspec*)spec, &err);
-    if (!jwk)
+    if (!jwk) {
+        DIDError_Set(DIDERR_JWT, "Create jwk failed.");
         goto errorExit;
+    }
 
 errorExit:
     if (issuer)
@@ -100,16 +105,21 @@ JWS *JWTParser_Parse(const char *token)
     cjose_jwk_t *jwk = NULL;
     DIDURL *signkey;
 
-    if (!token || !*token)
+    if (!token || !*token) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
+    }
 
     jws = (JWS *)calloc(1, sizeof(JWS));
-    if (!jws)
+    if (!jws) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Remalloc buffer for JWS failed.");
         return NULL;
+    }
 
     //set jws
     jws->jws = cjose_jws_import(token, strlen(token), &err);
     if (!jws->jws) {
+        DIDError_Set(DIDERR_JWT, "Import token to jws failed.");
         JWS_Destroy(jws);
         return NULL;
     }
@@ -117,6 +127,7 @@ JWS *JWTParser_Parse(const char *token)
     //get header
     jws->header = cjose_jws_get_protected(jws->jws);
     if (!jws->header) {
+        DIDError_Set(DIDERR_JWT, "Get jwt header failed.");
         JWS_Destroy(jws);
         return NULL;
     }
@@ -124,12 +135,14 @@ JWS *JWTParser_Parse(const char *token)
     //set claims(payload)
     successed = cjose_jws_get_plaintext(jws->jws, (uint8_t**)&payload, &payload_len, &err);
     if (!successed) {
+        DIDError_Set(DIDERR_JWT, "Get jwt body failed.");
         JWS_Destroy(jws);
         return NULL;
     }
 
     jws->claims = json_loadb(payload, payload_len, 0, NULL);;
     if (!jws->claims) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Load jwt body failed.");
         JWS_Destroy(jws);
         return NULL;
     }
@@ -144,6 +157,7 @@ JWS *JWTParser_Parse(const char *token)
     successed = cjose_jws_verify(jws->jws, jwk, &err);
     cjose_jwk_release(jwk);
     if (!successed) {
+        DIDError_Set(DIDERR_JWT, "Verify jws failed.");
         JWS_Destroy(jws);
         return NULL;
     }

@@ -28,6 +28,7 @@
 #include "ela_jwt.h"
 #include "jws.h"
 #include "claims.h"
+#include "diderror.h"
 
 void JWS_Destroy(JWS *jws)
 {
@@ -45,12 +46,16 @@ const char *JWS_GetHeader(JWS *jws, const char *attr)
     cjose_err err;
     const char *data;
 
-    if (!jws || !attr)
+    if (!jws || !attr) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
+    }
 
     data = cjose_header_get(jws->header, attr, &err);
-    if (!data)
+    if (!data) {
+        DIDError_Set(DIDERR_JWT, "Get header '%s' failed.", attr);
         return NULL;
+    }
 
     return strdup(data);
 }
@@ -70,37 +75,66 @@ const char *JWS_GetClaim(JWS *jws, const char *key)
     json_t *value;
     const char *data;
 
-    if (!jws || !key || !*key)
+    if (!jws || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
+    }
 
     value = json_object_get(jws->claims, key);
-    if (!value)
+    if (!value) {
+        DIDError_Set(DIDERR_JWT, "No claim: %s.", key);
         return NULL;
+    }
 
     if (json_is_string(value)) {
         data = json_string_value(value);
-        if (!data)
+        if (!data) {
+            DIDError_Set(DIDERR_JWT, "Get claim '%s' string failed.", key);
             return NULL;
+        }
 
         return strdup(data);
     }
 
-    if (json_is_object(value) || json_is_array(value))
-        return json_dumps(value, 0);
+    if (json_is_object(value)) {
+        data = json_dumps(value, 0);
+        if (!data)
+            DIDError_Set(DIDERR_JWT, "Get claim '%s' from json object failed.", key);
 
+        return data;
+    }
+
+    if (json_is_array(value)) {
+        data = json_dumps(value, 0);
+        if (!data)
+            DIDError_Set(DIDERR_JWT, "Get claim '%s' from json array failed.", key);
+
+        return data;
+    }
+
+    DIDError_Set(DIDERR_UNSUPPOTED, "Unsupported json type to generate value string.");
     return NULL;
 }
 
 long JWS_GetClaimAsInteger(JWS *jws, const char *key)
 {
     json_t *value;
+    long data;
 
-    if (!jws || !key || !*key)
+    if (!jws || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
+    }
 
     value = json_object_get(jws->claims, key);
-    if (!value || !json_is_integer(value))
+    if (!value) {
+        DIDError_Set(DIDERR_JWT, "No claim: %s.", key);
         return 0;
+    }
+    if (!json_is_integer(value)) {
+        DIDError_Set(DIDERR_JWT, "Claim '%s' is not integar.", key);
+        return 0;
+    }
 
     return json_integer_value(value);
 }
@@ -109,12 +143,20 @@ bool JWS_GetClaimAsBoolean(JWS *jws, const char *key)
 {
     json_t *value;
 
-    if (!jws || !key || !*key)
-        return 0;
+    if (!jws || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
 
     value = json_object_get(jws->claims, key);
-    if (!value || !json_is_boolean(value))
-        return 0;
+    if (!value) {
+        DIDError_Set(DIDERR_JWT, "No claim: %s.", key);
+        return false;
+    }
+    if (!json_is_boolean(value)) {
+        DIDError_Set(DIDERR_JWT, "Claim '%s' is not boolean.", key);
+        return false;
+    }
 
     return json_boolean_value(value);
 }

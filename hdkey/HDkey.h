@@ -129,7 +129,7 @@ void DerivedKey_Wipe(DerivedKey *derivedkey);
 //- for jwt -----------------------------------------------
 KeySpec *KeySpec_Create(KeySpec *keyspec, uint8_t *publickey, uint8_t *privatekey);
 
-int KeySpec_Copy(KeySpec *dist, KeySpec *src);
+KeySpec *KeySpec_Copy(KeySpec *dst, KeySpec *src);
 
 #ifdef __cplusplus
 }

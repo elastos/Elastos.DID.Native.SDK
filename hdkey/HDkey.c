@@ -650,7 +650,7 @@ void DerivedKey_Wipe(DerivedKey *derivedkey)
 //-------------------------
 KeySpec *KeySpec_Create(KeySpec *keyspec, uint8_t *publickey, uint8_t *privatekey)
 {
-    if (!keyspec)
+    if (!keyspec || (!publickey && !privatekey))
         return NULL;
 
     //set curve type
@@ -679,14 +679,14 @@ KeySpec *KeySpec_Create(KeySpec *keyspec, uint8_t *publickey, uint8_t *privateke
     return keyspec;
 }
 
-int KeySpec_Copy(KeySpec *dist, KeySpec *src)
+KeySpec *KeySpec_Copy(KeySpec *dst, KeySpec *src)
 {
-    if (!dist || !src)
-        return -1;
+    if (!dst || !src)
+        return NULL;
 
-    memcpy(dist, src, sizeof(KeySpec));
-    dist->d = dist->dbuf;
-    dist->x = dist->xbuf;
-    dist->y = dist->ybuf;
-    return 0;
+    memcpy(dst, src, sizeof(KeySpec));
+    dst->d = dst->dbuf;
+    dst->x = dst->xbuf;
+    dst->y = dst->ybuf;
+    return dst;
 }
