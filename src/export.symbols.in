@@ -120,7 +120,6 @@ _Credential_GetProperty
 _Credential_GetProofMethod
 _Credential_GetProofType
 _Credential_GetProofSignture
-_Credential_Verify
 _Credential_IsExpired
 _Credential_IsGenuine
 _Credential_IsValid
@@ -171,7 +170,6 @@ _Mnemonic_IsValid
 # Presentation
 _Presentation_Create
 _Presentation_Destroy
-_Presentation_Verify
 _Presentation_ToJson
 _Presentation_FromJson
 _Presentation_GetSigner

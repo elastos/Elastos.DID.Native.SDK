@@ -43,18 +43,18 @@ struct DIDStore {
     DIDBackend backend;
 };
 
-int didstore_storedidmeta(DIDStore *store, DIDMeta *meta, DID *did);
+int DIDStore_StoreDIDMeta(DIDStore *store, DIDMeta *meta, DID *did);
 
-int didstore_loaddidmeta(DIDStore *store, DIDMeta *meta, DID *did);
+int DIDStore_LoadDIDMeta(DIDStore *store, DIDMeta *meta, DID *did);
 
-int didstore_storecredmeta(DIDStore *store, CredentialMeta *meta, DIDURL *id);
+int DIDStore_StoreCredMeta(DIDStore *store, CredentialMeta *meta, DIDURL *id);
 
-int didstore_loadcredmeta(DIDStore *store, CredentialMeta *meta, DIDURL *id);
+int DIDStore_LoadCredMeta(DIDStore *store, CredentialMeta *meta, DIDURL *id);
 
-int didstore_sign(DIDStore *store, const char *storepass, DID *did,
+int DIDStore_Sign(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, char *sig, uint8_t *digest, size_t size);
 
-int didstore_loadprivtekey(DIDStore *store, const char *storepass, DID *did,
+int DIDStore_LoadPrivateKey(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, uint8_t *privatekey);
 
 #ifdef __cplusplus

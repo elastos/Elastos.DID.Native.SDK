@@ -173,7 +173,7 @@ static int load_didmeta(DIDStore *store, DIDMeta *meta, const char *did)
     return rc;
 }
 
-int didstore_loaddidmeta(DIDStore *store, DIDMeta *meta, DID *did)
+int DIDStore_LoadDIDMeta(DIDStore *store, DIDMeta *meta, DID *did)
 {
     bool iscontain;
 
@@ -190,7 +190,7 @@ int didstore_loaddidmeta(DIDStore *store, DIDMeta *meta, DID *did)
     return load_didmeta(store, meta, did->idstring);
 }
 
-int didstore_storedidmeta(DIDStore *store, DIDMeta *meta, DID *did)
+int DIDStore_StoreDIDMeta(DIDStore *store, DIDMeta *meta, DID *did)
 {
     bool iscontain;
 
@@ -304,7 +304,7 @@ static int load_credmeta(DIDStore *store, CredentialMeta *meta, const char *did,
     return rc;
 }
 
-int didstore_storecredmeta(DIDStore *store, CredentialMeta *meta, DIDURL *id)
+int DIDStore_StoreCredMeta(DIDStore *store, CredentialMeta *meta, DIDURL *id)
 {
     bool iscontain;
 
@@ -321,7 +321,7 @@ int didstore_storecredmeta(DIDStore *store, CredentialMeta *meta, DIDURL *id)
     return store_credmeta(store, meta, id);
 }
 
-int didstore_loadcredmeta(DIDStore *store, CredentialMeta *meta, DIDURL *id)
+int DIDStore_LoadCredMeta(DIDStore *store, CredentialMeta *meta, DIDURL *id)
 {
     bool iscontain;
 
@@ -1229,7 +1229,7 @@ Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
     if (!credential)
         return NULL;
 
-    if (didstore_loadcredmeta(store, &credential->meta, id) == -1) {
+    if (DIDStore_LoadCredMeta(store, &credential->meta, id) == -1) {
         Credential_Destroy(credential);
         return NULL;
     }
@@ -1991,7 +1991,7 @@ DIDDocument *DIDStore_NewDIDByIndex(DIDStore *store, const char *storepass,
     return document;
 }
 
-int didstore_loadprivtekey(DIDStore *store, const char *storepass, DID *did,
+int DIDStore_LoadPrivateKey(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, uint8_t *privatekey)
 {
     const char *privatekey_str;
@@ -2025,7 +2025,7 @@ int didstore_loadprivtekey(DIDStore *store, const char *storepass, DID *did,
     return 0;
 }
 
-int didstore_sign(DIDStore *store, const char *storepass, DID *did,
+int DIDStore_Sign(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, char *sig, uint8_t *digest, size_t size)
 {
     uint8_t binkey[PRIVATEKEY_BYTES];
@@ -2036,7 +2036,7 @@ int didstore_sign(DIDStore *store, const char *storepass, DID *did,
         return -1;
     }
 
-    if (didstore_loadprivtekey(store, storepass, did, key, binkey) == -1)
+    if (DIDStore_LoadPrivateKey(store, storepass, did, key, binkey) == -1)
         return -1;
 
     if (ecdsa_sign_base64(sig, binkey, digest, size) == -1) {

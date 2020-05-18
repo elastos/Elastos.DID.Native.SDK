@@ -874,7 +874,7 @@ int DIDDocument_SetAlias(DIDDocument *document, const char *alias)
     DIDMeta_Copy(&document->did.meta, &document->meta);
 
     if (DIDMeta_AttachedStore(&document->meta))
-        rc = didstore_storedidmeta(document->meta.store, &document->meta, &document->did);
+        rc = DIDStore_StoreDIDMeta(document->meta.store, &document->meta, &document->did);
 
     return rc;
 }
@@ -2558,7 +2558,7 @@ int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
     if (!keyid)
         keyid = DIDDocument_GetDefaultPublicKey(document);
 
-    return didstore_sign(document->meta.store, storepass,
+    return DIDStore_Sign(document->meta.store, storepass,
         DIDDocument_GetSubject(document), keyid, sig, digest, size);
 }
 
@@ -2652,7 +2652,7 @@ JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document, DIDURL *keyid, cons
     if (!DIDStore_ContainsPrivateKey(did->meta.store, did, keyid))
         return NULL;
 
-    if (didstore_loadprivtekey(did->meta.store, storepass, did, keyid, privatekey) == -1)
+    if (DIDStore_LoadPrivateKey(did->meta.store, storepass, did, keyid, privatekey) == -1)
         return NULL;
 
     // create key spec

@@ -1919,18 +1919,6 @@ DID_API const char *Credential_GetProofSignture(Credential *cred);
 
 /**
  * \~English
- * Verify the credential is valid or not.
- * Issuance always occurs before any other actions involving a credential.
- *
- * @param
- *      cred                     [in] The Credential handle.
- * @return
- *      0 on success, -1 if an error occurred or verify failed.
- */
-DID_API int Credential_Verify(Credential *cred);
-
-/**
- * \~English
  * Credential is expired or not.
  * Issuance always occurs before any other actions involving a credential.
  *
@@ -2575,15 +2563,6 @@ DID_API Presentation *Presentation_Create(DID *did, DIDURL *signkey, DIDStore *s
  *      pre                      [in] The handle to Presentation.
  */
 DID_API void Presentation_Destroy(Presentation *pre);
-
-/**
- * \~English
- * Verify Presentation is valid or not.
- *
- * @param
- *      pre                      [in] The handle to Presentation.
- */
-DID_API int Presentation_Verify(Presentation *pre);
 
 /**
  * \~English
