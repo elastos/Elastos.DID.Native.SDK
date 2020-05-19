@@ -648,7 +648,7 @@ void DerivedKey_Wipe(DerivedKey *derivedkey)
 }
 
 //-------------------------
-KeySpec *KeySpec_Create(KeySpec *keyspec, uint8_t *publickey, uint8_t *privatekey)
+KeySpec *KeySpec_Fill(KeySpec *keyspec, uint8_t *publickey, uint8_t *privatekey)
 {
     if (!keyspec || (!publickey && !privatekey))
         return NULL;

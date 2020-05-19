@@ -25,20 +25,59 @@
 #include <stdlib.h>
 #include <jansson.h>
 #include <cjose/cjose.h>
+#include <assert.h>
 
 #include "ela_jwt.h"
 #include "jwtbuilder.h"
+#include "crypto.h"
 #include "HDkey.h"
 #include "claims.h"
 #include "diderror.h"
+#include "didstore.h"
 
-JWTBuilder *JWTBuilder_Create(DID *issuer, DIDURL *keyid, KeySpec *keyspec)
+static int init_jwtbuilder(JWTBuilder *builder)
 {
     cjose_err err;
-    char idstring[ELA_MAX_DIDURL_LEN];
+    char idstring[ELA_MAX_DID_LEN];
 
-    if (!issuer || !keyid || !keyspec) {
+    assert(builder);
+
+    builder->header = cjose_header_new(&err);
+    if (!builder->header) {
+        DIDError_Set(DIDERR_JWT, "Create jwt header failed.");
+        return -1;
+    }
+
+    if (!cjose_header_set(builder->header, CJOSE_HDR_ALG, CJOSE_HDR_ALG_ES256, &err)) {
+        DIDError_Set(DIDERR_JWT, "Set jwt algorithm failed.");
+        return -1;
+    }
+
+    builder->claims = json_object();
+    if (!builder->claims) {
+        DIDError_Set(DIDERR_JWT, "Create claim object failed.");
+        return -1;
+    }
+
+    if (!JWTBuilder_SetIssuer(builder, DID_ToString(&builder->issuer, idstring, sizeof(idstring)))) {
+        DIDError_Set(DIDERR_JWT, "Set jwt issuer failed.");
+        return -1;
+    }
+
+    return 0;
+}
+
+JWTBuilder *JWTBuilder_Create(DID *issuer)
+{
+    cjose_err err;
+
+    if (!issuer) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    if (!DIDMeta_AttachedStore(&issuer->meta)) {
+        DIDError_Set(DIDERR_MALFORMED_DID, "Not attached with DID store.");
         return NULL;
     }
 
@@ -49,38 +88,13 @@ JWTBuilder *JWTBuilder_Create(DID *issuer, DIDURL *keyid, KeySpec *keyspec)
     }
 
     DID_Copy(&builder->issuer, issuer);
-    DIDURL_Copy(&builder->keyid, keyid);
-
-    builder->header = cjose_header_new(&err);
-    if (!builder->header) {
-        DIDError_Set(DIDERR_JWT, "Create jwt header failed.");
+    builder->doc = DIDStore_LoadDID(issuer->meta.store, issuer);
+    if (!builder->doc) {
         JWTBuilder_Destroy(builder);
         return NULL;
     }
 
-    if (!cjose_header_set(builder->header, CJOSE_HDR_ALG, CJOSE_HDR_ALG_ES256, &err)) {
-        DIDError_Set(DIDERR_JWT, "Set jwt algorithm failed.");
-        JWTBuilder_Destroy(builder);
-        return NULL;
-    }
-
-    if (!cjose_header_set(builder->header, CJOSE_HDR_KID,
-            DIDURL_ToString(keyid, idstring, sizeof(idstring), false), &err)) {
-        DIDError_Set(DIDERR_JWT, "Set jwt sign key failed.");
-        JWTBuilder_Destroy(builder);
-        return NULL;
-    }
-
-    builder->jwk = cjose_jwk_create_EC_spec((cjose_jwk_ec_keyspec*)keyspec, &err);
-    if (!builder->jwk) {
-        DIDError_Set(DIDERR_JWT, "Create jwk failed.");
-        JWTBuilder_Destroy(builder);
-        return NULL;
-    }
-
-    builder->claims = json_object();
-    if (!JWTBuilder_SetIssuer(builder, DID_ToString(issuer, idstring, sizeof(idstring)))) {
-        DIDError_Set(DIDERR_JWT, "Set jwt issuer failed.");
+    if (init_jwtbuilder(builder) == -1) {
         JWTBuilder_Destroy(builder);
         return NULL;
     }
@@ -99,6 +113,8 @@ void JWTBuilder_Destroy(JWTBuilder *builder)
         cjose_jwk_release(builder->jwk);
     if (builder->claims)
         json_decref(builder->claims);
+    if (builder->doc)
+        DIDDocument_Destroy(builder->doc);
 }
 
 bool JWTBuilder_SetHeader(JWTBuilder *builder, const char *attr, const char *value)
@@ -132,6 +148,7 @@ bool JWTBuilder_SetClaim(JWTBuilder *builder, const char *key, const char *value
 {
     json_t *value_obj;
     int rc;
+    bool succussed;
 
     if (!builder || !key || !*key || !value) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -145,10 +162,11 @@ bool JWTBuilder_SetClaim(JWTBuilder *builder, const char *key, const char *value
     }
 
     rc = json_object_set_new(builder->claims, key, value_obj);
-    if (rc == -1)
+    succussed = (rc == -1) ? false : true;
+    if (!succussed)
         DIDError_Set(DIDERR_JWT, "Set claim '%s' failed.", key);
 
-    return rc == -1 ? false : true;
+    return succussed;
 }
 
 bool JWTBuilder_SetClaimWithJson(JWTBuilder *builder, const char *key, const char *json)
@@ -261,6 +279,59 @@ bool JWTBuilder_SetId(JWTBuilder *builder, const char *jti)
     return JWTBuilder_SetClaim(builder, ID, jti);
 }
 
+int JWTBuilder_Sign(JWTBuilder *builder, DIDURL *keyid, const char *storepass)
+{
+    cjose_err err;
+    PublicKey *pk;
+    uint8_t pubkey[PUBLICKEY_BYTES];
+    uint8_t privatekey[PRIVATEKEY_BYTES];
+    char idstring[ELA_MAX_DID_LEN];
+    KeySpec _keyspec, *keyspec;
+    DID *issuer;
+
+    if (!builder || !storepass || !*storepass)
+        return -1;
+
+    issuer = &builder->issuer;
+    //get pk
+    if (!keyid)
+        keyid = DIDDocument_GetDefaultPublicKey(builder->doc);
+
+    pk = DIDDocument_GetPublicKey(builder->doc, keyid);
+    if (!pk) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "Key no exist.");
+        return -1;
+    }
+    base58_decode(pubkey, sizeof(pubkey), PublicKey_GetPublicKeyBase58(pk));
+
+    //get sk
+    if (!DIDStore_ContainsPrivateKey(issuer->meta.store, issuer, keyid))
+        return -1;
+
+    if (DIDStore_LoadPrivateKey(issuer->meta.store, storepass, issuer, keyid, privatekey) == -1)
+        return -1;
+
+    // create key spec
+    keyspec = KeySpec_Fill(&_keyspec, pubkey, privatekey);
+    memset(privatekey, 0, sizeof(privatekey));
+    if (!keyspec)
+        return -1;
+
+    builder->jwk = cjose_jwk_create_EC_spec((cjose_jwk_ec_keyspec*)keyspec, &err);
+    if (!builder->jwk) {
+        DIDError_Set(DIDERR_JWT, "Create jwk failed.");
+        return -1;
+    }
+
+    if (!cjose_header_set(builder->header, CJOSE_HDR_KID,
+            DIDURL_ToString(keyid, idstring, sizeof(idstring), false), &err)) {
+        DIDError_Set(DIDERR_JWT, "Set jwt sign key failed.");
+        return -1;
+    }
+
+    return 0;
+}
+
 const char *JWTBuilder_Compact(JWTBuilder *builder)
 {
     cjose_jws_t *jws;
@@ -285,13 +356,13 @@ const char *JWTBuilder_Compact(JWTBuilder *builder)
     }
 
     jws = cjose_jws_sign(builder->jwk, builder->header, (uint8_t*)payload, strlen(payload), &err);
-    free((char*)payload);
-    payload = NULL;
+    free((void*)payload);
     if (!jws) {
         DIDError_Set(DIDERR_JWT, "Sign jwt body failed.");
         return NULL;
     }
 
+    payload = NULL;
     exported = cjose_jws_export(jws, &payload, &err);
     if (!exported) {
         DIDError_Set(DIDERR_JWT, "Export token failed.");
@@ -303,4 +374,27 @@ const char *JWTBuilder_Compact(JWTBuilder *builder)
     cjose_jws_release(jws);
 
     return compacted_str;
+}
+
+int JWTBuilder_Reset(JWTBuilder *builder)
+{
+    if (!builder) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    if (builder->header) {
+        cjose_header_release(builder->header);
+        builder->header = NULL;
+    }
+    if (builder->jwk) {
+        cjose_jwk_release(builder->jwk);
+        builder->jwk = NULL;
+    }
+    if (builder->claims) {
+        json_decref(builder->claims);
+        builder->claims = NULL;
+    }
+
+    return init_jwtbuilder(builder);
 }

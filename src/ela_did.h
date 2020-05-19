@@ -1573,16 +1573,11 @@ DID_API const char *DIDDocument_GetProofSignature(DIDDocument *document);
  * @param
  *      document                 [in] A handle to DID Document.
  *                                ps：document must attatch DIDstore.
- * @param
- *      keyid                    [in] The key to sign jwt.
- * @param
- *      storepass                [in] The password for DIDStore.
  * @return
  *      If no error occurs, return the handle to JWTBuilder.
  *      Otherwise, return NULL.
  */
-DID_API JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document, DIDURL *keyid,
-        const char *storepass);
+DID_API JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document);
 /**
  * \~English
  * Get identifier of public key.

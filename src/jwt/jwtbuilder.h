@@ -40,10 +40,10 @@ typedef struct JWTBuilder {
     cjose_jwk_t *jwk;
     json_t *claims;
     DID issuer;
-    DIDURL keyid;
+    DIDDocument *doc;
 } JWTBuilder;
 
-JWTBuilder *JWTBuilder_Create(DID *issuer, DIDURL *keyid, KeySpec *keyspec);
+JWTBuilder *JWTBuilder_Create(DID *issuer);
 
 #ifdef __cplusplus
 }

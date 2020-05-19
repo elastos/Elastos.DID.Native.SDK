@@ -35,14 +35,12 @@ static void test_jwt(void)
     time_t iat, nbf, exp;
     const char *token, *data;
     char idstring[ELA_MAX_DIDURL_LEN];
+    int rc;
 
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
 
-    keyid = DIDURL_NewByDid(did, "key2");
-    CU_ASSERT_PTR_NOT_NULL(keyid);
-
-    builder = DIDDocument_GetJwtBuilder(doc, keyid, storepass);
+    builder = DIDDocument_GetJwtBuilder(doc);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     CU_ASSERT_TRUE(JWTBuilder_SetHeader(builder, "ctyp", "json"));
@@ -66,54 +64,63 @@ static void test_jwt(void)
     CU_ASSERT_TRUE(JWTBuilder_SetClaimWithJson(builder, "object", json));
     CU_ASSERT_TRUE(JWTBuilder_SetClaimWithBoolean(builder, "finished", false));
 
+    keyid = DIDURL_NewByDid(did, "key2");
+    CU_ASSERT_PTR_NOT_NULL(keyid);
+
+    rc = JWTBuilder_Sign(builder, keyid, storepass);
+    CU_ASSERT_NOT_EQUAL(rc, -1);
+
     token = JWTBuilder_Compact(builder);
     CU_ASSERT_PTR_NOT_NULL(token);
-    JWTBuilder_Destroy(builder);
 
     jws = JWTParser_Parse(token);
     CU_ASSERT_PTR_NOT_NULL(jws);
     free((char*)token);
 
-    data = JWS_GetHeader(jws, "ctyp");
-    CU_ASSERT_STRING_EQUAL("json", data);
-    free((char*)data);
-    data = JWS_GetHeader(jws, "library");
-    CU_ASSERT_STRING_EQUAL("Elastos DID", data);
-    free((char*)data);
-    data = JWS_GetHeader(jws, "typ");
-    CU_ASSERT_STRING_EQUAL("JWT", data);
-    free((char*)data);
-    data = JWS_GetHeader(jws, "version");
-    CU_ASSERT_STRING_EQUAL("1.0", data);
-    free((char*)data);
-    data = JWS_GetKeyId(jws);
-    CU_ASSERT_STRING_EQUAL(DIDURL_ToString(keyid, idstring, sizeof(idstring), false), data);
-    free((char*)data);
+    CU_ASSERT_STRING_EQUAL("json", JWS_GetHeader(jws, "ctyp"));
+    CU_ASSERT_STRING_EQUAL("Elastos DID", JWS_GetHeader(jws, "library"));
+    CU_ASSERT_STRING_EQUAL("JWT", JWS_GetHeader(jws, "typ"));
+    CU_ASSERT_STRING_EQUAL("1.0", JWS_GetHeader(jws, "version"));
+    CU_ASSERT_STRING_EQUAL(DIDURL_ToString(keyid, idstring, sizeof(idstring), false), JWS_GetKeyId(jws));
 
-    data = JWS_GetSubject(jws);
-    CU_ASSERT_STRING_EQUAL("JwtTest", data);
-    free((char*)data);
-    data = JWS_GetId(jws);
-    CU_ASSERT_STRING_EQUAL("0", data);
-    free((char*)data);
-    data = JWS_GetIssuer(jws);
-    CU_ASSERT_STRING_EQUAL(DID_ToString(did, idstring, sizeof(idstring)), data);
-    free((char*)data);
-    data = JWS_GetAudience(jws);
-    CU_ASSERT_STRING_EQUAL("Test cases", data);
-    free((char*)data);
-    data = JWS_GetClaim(jws, "foo");
-    CU_ASSERT_STRING_EQUAL("bar", data);
-    free((char*)data);
-    data = JWS_GetClaim(jws, "object");
+    CU_ASSERT_STRING_EQUAL("JwtTest", JWS_GetSubject(jws));
+    CU_ASSERT_STRING_EQUAL("0", JWS_GetId(jws));
+    CU_ASSERT_STRING_EQUAL(DID_ToString(did, idstring, sizeof(idstring)), JWS_GetIssuer(jws));
+    CU_ASSERT_STRING_EQUAL("Test cases", JWS_GetAudience(jws));
+    CU_ASSERT_STRING_EQUAL("bar", JWS_GetClaim(jws, "foo"));
+
+    data = JWS_GetClaimAsJson(jws, "object");
     CU_ASSERT_STRING_EQUAL(json, data);
     free((char*)data);
     CU_ASSERT_EQUAL(false, JWS_GetClaimAsBoolean(jws, "finished"));
     CU_ASSERT_EQUAL(iat, JWS_GetIssuedAt(jws));
     CU_ASSERT_EQUAL(nbf, JWS_GetNotBefore(jws));
     CU_ASSERT_EQUAL(exp, JWS_GetExpiration(jws));
+    JWS_Destroy(jws);
+
+    //reset jwt builder
+    rc = JWTBuilder_Reset(builder);
+    CU_ASSERT_NOT_EQUAL(rc, -1);
+
+    rc = JWTBuilder_Sign(builder, keyid, storepass);
+    CU_ASSERT_NOT_EQUAL(rc, -1);
+
+    token = JWTBuilder_Compact(builder);
+    CU_ASSERT_PTR_NOT_NULL(token);
+
+    jws = JWTParser_Parse(token);
+    CU_ASSERT_PTR_NOT_NULL(jws);
+    free((char*)token);
+
+    CU_ASSERT_PTR_NULL(JWS_GetHeader(jws, "ctyp"));
+    CU_ASSERT_PTR_NULL(JWS_GetHeader(jws, "library"));
+    CU_ASSERT_STRING_EQUAL(DIDURL_ToString(keyid, idstring, sizeof(idstring), false), JWS_GetKeyId(jws));
+
+    CU_ASSERT_PTR_NULL(JWS_GetSubject(jws));
+    CU_ASSERT_PTR_NULL(JWS_GetAudience(jws));
 
     DIDURL_Destroy(keyid);
+    JWTBuilder_Destroy(builder);
     JWS_Destroy(jws);
 }
 
@@ -126,11 +133,12 @@ static void test_jwt_withdefaultkey(void)
     time_t iat, nbf, exp;
     const char *token, *data;
     char idstring[ELA_MAX_DIDURL_LEN];
+    int rc;
 
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
 
-    builder = DIDDocument_GetJwtBuilder(doc, NULL, storepass);
+    builder = DIDDocument_GetJwtBuilder(doc);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     CU_ASSERT_TRUE(JWTBuilder_SetHeader(builder, "ctyp", "json"));
@@ -150,6 +158,9 @@ static void test_jwt_withdefaultkey(void)
     CU_ASSERT_TRUE(JWTBuilder_SetNotBefore(builder, nbf));
     CU_ASSERT_TRUE(JWTBuilder_SetClaim(builder, "foo", "bar"));
 
+    rc = JWTBuilder_Sign(builder, NULL, storepass);
+    CU_ASSERT_NOT_EQUAL(rc, -1);
+
     token = JWTBuilder_Compact(builder);
     CU_ASSERT_PTR_NOT_NULL(token);
     JWTBuilder_Destroy(builder);
@@ -158,40 +169,20 @@ static void test_jwt_withdefaultkey(void)
     CU_ASSERT_PTR_NOT_NULL(jws);
     free((char*)token);
 
-    data = JWS_GetHeader(jws, "ctyp");
-    CU_ASSERT_STRING_EQUAL("json", data);
-    free((char*)data);
-    data = JWS_GetHeader(jws, "library");
-    CU_ASSERT_STRING_EQUAL("Elastos DID", data);
-    free((char*)data);
-    data = JWS_GetHeader(jws, "typ");
-    CU_ASSERT_STRING_EQUAL("JWT", data);
-    free((char*)data);
-    data = JWS_GetHeader(jws, "version");
-    CU_ASSERT_STRING_EQUAL("1.0", data);
-    free((char*)data);
+    CU_ASSERT_STRING_EQUAL("json", JWS_GetHeader(jws, "ctyp"));
+    CU_ASSERT_STRING_EQUAL("Elastos DID", JWS_GetHeader(jws, "library"));
+    CU_ASSERT_STRING_EQUAL("JWT", JWS_GetHeader(jws, "typ"));
+    CU_ASSERT_STRING_EQUAL("1.0", JWS_GetHeader(jws, "version"));
 
     keyid = DIDURL_NewByDid(did, "primary");
     CU_ASSERT_PTR_NOT_NULL(keyid);
-    data = JWS_GetKeyId(jws);
-    CU_ASSERT_STRING_EQUAL(DIDURL_ToString(keyid, idstring, sizeof(idstring), false), data);
-    free((char*)data);
+    CU_ASSERT_STRING_EQUAL(DIDURL_ToString(keyid, idstring, sizeof(idstring), false), JWS_GetKeyId(jws));
 
-    data = JWS_GetSubject(jws);
-    CU_ASSERT_STRING_EQUAL("JwtTest", data);
-    free((char*)data);
-    data = JWS_GetId(jws);
-    CU_ASSERT_STRING_EQUAL("0", data);
-    free((char*)data);
-    data = JWS_GetIssuer(jws);
-    CU_ASSERT_STRING_EQUAL(DID_ToString(did, idstring, sizeof(idstring)), data);
-    free((char*)data);
-    data = JWS_GetAudience(jws);
-    CU_ASSERT_STRING_EQUAL("Test cases", data);
-    free((char*)data);
-    data = JWS_GetClaim(jws, "foo");
-    CU_ASSERT_STRING_EQUAL("bar", data);
-    free((char*)data);
+    CU_ASSERT_STRING_EQUAL("JwtTest", JWS_GetSubject(jws));
+    CU_ASSERT_STRING_EQUAL("0", JWS_GetId(jws));
+    CU_ASSERT_STRING_EQUAL(DID_ToString(did, idstring, sizeof(idstring)), JWS_GetIssuer(jws));
+    CU_ASSERT_STRING_EQUAL("Test cases", JWS_GetAudience(jws));
+    CU_ASSERT_STRING_EQUAL("bar", JWS_GetClaim(jws, "foo"));
     CU_ASSERT_EQUAL(iat, JWS_GetIssuedAt(jws));
     CU_ASSERT_EQUAL(nbf, JWS_GetNotBefore(jws));
     CU_ASSERT_EQUAL(exp, JWS_GetExpiration(jws));

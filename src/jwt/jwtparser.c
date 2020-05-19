@@ -74,7 +74,7 @@ static cjose_jwk_t *get_jwk(JWS *jws)
     base58_decode(binkey, sizeof(binkey), keybase58);
 
     memset(&_spec, 0, sizeof(KeySpec));
-    spec = KeySpec_Create(&_spec, binkey, NULL);
+    spec = KeySpec_Fill(&_spec, binkey, NULL);
     if (!spec) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Get key spec failed.");
         goto errorExit;

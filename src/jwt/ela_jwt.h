@@ -218,6 +218,21 @@ DID_API bool JWTBuilder_SetId(JWTBuilder *builder, const char *jti);
 
 /**
  * \~English
+ * Sign the jwtbuilder header and body.
+ *
+ * @param
+ *      builder             [in] The handle to JWTBuilder.
+ * @param
+ *      keyid               [in] The sign key.
+ * @param
+ *      storepass           [in] Pass word to sign.
+ * @return
+ *      If no error occurs, return 0. Otherwise, return -1.
+ */
+DID_API int JWTBuilder_Sign(JWTBuilder *builder, DIDURL *keyid, const char *storepass);
+
+/**
+ * \~English
  * Get token from compacting JWTBuilder.
  *
  * @param
@@ -226,6 +241,17 @@ DID_API bool JWTBuilder_SetId(JWTBuilder *builder, const char *jti);
  *      If no error occurs, return token string. Otherwise, return NULL.
  */
 DID_API const char *JWTBuilder_Compact(JWTBuilder *builder);
+
+/**
+ * \~English
+ * Reset header and body of JWTbuilder except 'alg', 'kid' and 'iss'.
+ *
+ * @param
+ *      builder         [in] The handle to JWTBuilder.
+ * @return
+ *      If no error occurs, return 0. Otherwise, return -1.
+ */
+DID_API int JWTBuilder_Reset(JWTBuilder *builder);
 
 /******************************************************************************
  * JWTParser.
@@ -294,9 +320,22 @@ DID_API const char *JWS_GetKeyId(JWS *jws);
  *      key             [in] The key to claim.
  * @return
  *      If no error occurs, return value string. Otherwise, return NULL.
- *      Free the return value after using it.
  */
 DID_API const char *JWS_GetClaim(JWS *jws, const char *key);
+
+/**
+ * \~English
+ * Get claim from JWS.
+ *
+ * @param
+ *      jws             [in] The handle to JWS.
+ * @param
+ *      key             [in] The key to claim.
+ * @return
+ *      If no error occurs, return value json string. Otherwise, return NULL.
+ *      Free the return value after using it.
+ */
+DID_API const char *JWS_GetClaimAsJson(JWS *jws, const char *key);
 
 /**
  * \~English

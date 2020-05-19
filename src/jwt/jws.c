@@ -57,7 +57,7 @@ const char *JWS_GetHeader(JWS *jws, const char *attr)
         return NULL;
     }
 
-    return strdup(data);
+    return data;
 }
 
 const char *JWS_GetAlgorithm(JWS *jws)
@@ -86,14 +86,34 @@ const char *JWS_GetClaim(JWS *jws, const char *key)
         return NULL;
     }
 
-    if (json_is_string(value)) {
-        data = json_string_value(value);
-        if (!data) {
-            DIDError_Set(DIDERR_JWT, "Get claim '%s' string failed.", key);
-            return NULL;
-        }
+    if (!json_is_string(value)) {
+        DIDError_Set(DIDERR_JWT, "Claim '%s' is not string.", key);
+        return NULL;
+    }
 
-        return strdup(data);
+    data = json_string_value(value);
+    if (!data) {
+        DIDError_Set(DIDERR_JWT, "Get claim '%s' string failed.", key);
+        return NULL;
+    }
+
+    return data;
+}
+
+const char *JWS_GetClaimAsJson(JWS *jws, const char *key)
+{
+    json_t *value;
+    const char *data;
+
+    if (!jws || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    value = json_object_get(jws->claims, key);
+    if (!value) {
+        DIDError_Set(DIDERR_JWT, "No claim: %s.", key);
+        return NULL;
     }
 
     if (json_is_object(value)) {
@@ -112,7 +132,7 @@ const char *JWS_GetClaim(JWS *jws, const char *key)
         return data;
     }
 
-    DIDError_Set(DIDERR_UNSUPPOTED, "Unsupported json type to generate value string.");
+    DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport this claim type.");
     return NULL;
 }
 

@@ -214,7 +214,9 @@ _JWTBuilder_SetExpiration
 _JWTBuilder_SetNotBefore
 _JWTBuilder_SetIssuedAt
 _JWTBuilder_SetId
+_JWTBuilder_Sign
 _JWTBuilder_Compact
+_JWTBuilder_Reset
 
 # JWTParser
 _JWTParser_Parse
@@ -225,6 +227,7 @@ _JWS_GetHeader
 _JWS_GetAlgorithm
 _JWS_GetKeyId
 _JWS_GetClaim
+_JWS_GetClaimAsJson
 _JWS_GetClaimAsInteger
 _JWS_GetClaimAsBoolean
 _JWS_GetIssuer
