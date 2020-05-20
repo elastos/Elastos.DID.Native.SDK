@@ -23,10 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <openssl/opensslv.h>
 #include <openssl/rand.h>
-#include <openssl/ec.h>
-#include <openssl/obj_mac.h>
 
 #include "HDkey.h"
 #include "BRBIP39Mnemonic.h"
@@ -689,4 +686,20 @@ KeySpec *KeySpec_Copy(KeySpec *dst, KeySpec *src)
     dst->x = dst->xbuf;
     dst->y = dst->ybuf;
     return dst;
+}
+
+int PEM_WritePublicKey(const uint8_t *publickey, char *buffer, size_t *size)
+{
+    if (!publickey || !buffer || !size || *size <= 0)
+        return -1;
+
+    return getKeyPem(publickey, PUBLICKEY_BYTES, NULL, 0, buffer, size);
+}
+
+int PEM_WritePrivateKey(const uint8_t *publickey, const uint8_t *privatekey, char *buffer, size_t *size)
+{
+    if (!publickey || !privatekey || !buffer || !size || *size <= 0)
+        return -1;
+
+    return getKeyPem(publickey, PUBLICKEY_BYTES, privatekey, PRIVATEKEY_BYTES, buffer, size);
 }
