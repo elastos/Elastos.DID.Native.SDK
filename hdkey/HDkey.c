@@ -688,17 +688,17 @@ KeySpec *KeySpec_Copy(KeySpec *dst, KeySpec *src)
     return dst;
 }
 
-int PEM_WritePublicKey(const uint8_t *publickey, char *buffer, size_t *size)
+ssize_t PEM_WritePublicKey(const uint8_t *publickey, char *buffer, size_t size)
 {
-    if (!publickey || !buffer || !size || *size <= 0)
+    if (!publickey)
         return -1;
 
     return getKeyPem(publickey, PUBLICKEY_BYTES, NULL, 0, buffer, size);
 }
 
-int PEM_WritePrivateKey(const uint8_t *publickey, const uint8_t *privatekey, char *buffer, size_t *size)
+ssize_t PEM_WritePrivateKey(const uint8_t *publickey, const uint8_t *privatekey, char *buffer, size_t size)
 {
-    if (!publickey || !privatekey || !buffer || !size || *size <= 0)
+    if (!publickey || !privatekey)
         return -1;
 
     return getKeyPem(publickey, PUBLICKEY_BYTES, privatekey, PRIVATEKEY_BYTES, buffer, size);

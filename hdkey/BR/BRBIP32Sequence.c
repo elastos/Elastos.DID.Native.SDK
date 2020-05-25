@@ -155,19 +155,18 @@ errorExit:
     return rc;
 }
 
-int getKeyPem(const void *pubkey, size_t pubKeyLen, const void *privKey, size_t privKeyLen,
-        char *buffer, size_t *len)
+ssize_t getKeyPem(const void *pubkey, size_t pubKeyLen, const void *privKey, size_t privKeyLen,
+        char *buffer, size_t len)
 {
     BIGNUM *_privkey = NULL, *_pubkey = NULL;
     EC_KEY *key = NULL;
     EC_POINT *ec_p = NULL;
     BIO *bio = NULL;
     BUF_MEM *bufferPtr = NULL;
-    ssize_t buf_len;
-    int rc = -1;
+    ssize_t buf_len = -1;
 
-    if (!pubkey || 33 != pubKeyLen || !buffer || !len || *len <= 0)
-        return rc;
+    if (!pubkey || 33 != pubKeyLen)
+        return -1;
 
     // new EC_KEY
     key = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
@@ -219,14 +218,16 @@ int getKeyPem(const void *pubkey, size_t pubKeyLen, const void *privKey, size_t 
     BIO_set_close(bio, BIO_NOCLOSE);
 
     buf_len = bufferPtr->length;
-    if (buf_len >= *len) {
-        *len = buf_len;
-        goto errorExit;
+    if (buffer) {
+        if (buf_len >= len) {
+            buf_len = -1;
+        } else {
+            memcpy(buffer, bufferPtr->data, buf_len);
+            buffer[buf_len] = 0;
+        }
     }
-    memcpy(buffer, bufferPtr->data, buf_len);
-    buffer[buf_len] = 0;
+
     BUF_MEM_free(bufferPtr);
-    rc = 0;
 
 errorExit:
     if (ec_p)
@@ -241,7 +242,7 @@ errorExit:
     if (_pubkey)
         BN_free(_pubkey);
 
-    return rc;
+    return buf_len;
 }
 
 ssize_t
