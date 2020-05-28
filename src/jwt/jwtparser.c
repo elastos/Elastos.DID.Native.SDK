@@ -62,16 +62,14 @@ static cjose_jwk_t *get_jwk(JWS *jws)
     if (!JWS_GetKeyId(jws)) {
         keyid = DIDDocument_GetDefaultPublicKey(doc);
         key = DIDDocument_GetPublicKey(doc, keyid);
-        if (!key)
-            goto errorExit;
     }
     else {
         keyid = DIDURL_FromString(JWS_GetKeyId(jws), issuer);
         key = DIDDocument_GetPublicKey(doc, keyid);
         DIDURL_Destroy(keyid);
-        if (!key)
-            goto errorExit;
     }
+    if (!key)
+        goto errorExit;
 
     keybase58 = PublicKey_GetPublicKeyBase58(key);
     if (!keybase58)
@@ -251,7 +249,7 @@ JWS *JWTParser_Parse(const char *token)
             dots[idx++] = i;
     }
 
-    if (0 == dots[0] || strlen(token) == dots[0] || 0 == dots[1]) {
+    if (idx != 2 || !(dots[0] > 0 && dots[1] < strlen(token))) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid jwt token! Please check it.");
         return NULL;
     }
