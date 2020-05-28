@@ -99,12 +99,12 @@ typedef enum {
     DID_FILTER_ALL = 0,
     /**
      * \~English
-     * List dids which has private key.
+     * List dids that contain private key.
      */
     DID_FILTER_HAS_PRIVATEKEY = 1,
     /**
      * \~English
-     * List dids which does not have private key.
+     * List dids without private key contained.
      */
     DID_FILTER_NO_PRIVATEKEY = 2
 } ELA_DID_FILTER;
@@ -254,7 +254,7 @@ typedef DIDDocument* DIDStore_MergeCallback(DIDDocument *chaincopy, DIDDocument 
 struct DIDAdapter {
     /**
      * \~English
-     * User need to realize 'createIdTransaction' function.
+     * User need to implement 'createIdTransaction' function.
      * An application-defined function that create id transaction to chain.
      * @param
      *      adapter              [in] A handle to DIDAdapter.
@@ -277,7 +277,7 @@ struct DIDAdapter {
 struct DIDResolver {
     /**
      * \~English
-     * User need to realize 'createIdTransaction' function.
+     * User need to implement 'createIdTransaction' function.
      * An application-defined function that resolve data from chain.
      * @param
      *      resolver             [in] A handle to DIDResolver.
@@ -1486,8 +1486,8 @@ DID_API int DIDDocument_Sign(DIDDocument *document, DIDURL *keyid, const char *s
  *      document                 [in] The handle to DID Document.
  * @param
  *      keyid                    [in] Public key to sign.
- *                                   If key = NULL, sdk will get default key from
- *                                   DID Document.
+ *                               If keyid is null, then will sign with
+ *                               the default key of this DID document.
  * @param
  *      storepass                [in] Pass word to sign.
  * @param
@@ -2057,7 +2057,7 @@ DID_API const char *Credential_GetAlias(Credential *credential);
  * @param
  *      signkey                  [in] Issuer's key to sign credential.
  * @param
- *      store                    [in] THe handle to DIDStore.
+ *      store                    [in] The handle to DIDStore.
  * @return
  *      The handle of Issuer.
  */
@@ -2075,7 +2075,6 @@ DID_API void Issuer_Destroy(Issuer *issuer);
 /**
  * \~English
  * An issuer issues a verifiable credential to a holder with subject object.
- * Issuance always occurs before any other actions involving a credential.
  *
  * @param
  *      issuer               [in] An issuer issues this credential.
@@ -2107,7 +2106,6 @@ DID_API Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *
 /**
  * \~English
  * An issuer issues a verifiable credential to a holder with subject string.
- * Issuance always occurs before any other actions involving a credential.
  *
  * @param
  *      issuer               [in] An issuer issues this credential.
@@ -2199,22 +2197,25 @@ DID_API bool DIDStore_ContainsPrivateIdentity(DIDStore *store);
  * Initial user's private identity by mnemonic.
  *
   * @param
- *      store                  [in] THe handle to DIDStore.
+ *      store             [in] THe handle to DIDStore.
  * @param
- *      storepass              [in] The password for DIDStore.
+ *      storepass         [in] The password for DIDStore.
  * @param
- *      mnemonic               [in] Mnemonic for generate key.
+ *      mnemonic          [in] Mnemonic for generate key.
  * @param
- *      passphrase             [in] The pass word to generate private identity.
+ *      passphrase        [in] The pass word to generate private identity.
  * @param
- *      language               [in] The language for DID.
- *                             support language string: "chinese_simplified",
- *                             "chinese_traditional", "czech", "english", "french",
- *                             "italian", "japanese", "korean", "spanish".
+ *      language          [in] The language for DID.
+ *                        support language string: "chinese_simplified",
+ *                        "chinese_traditional", "czech", "english", "french",
+ *                        "italian", "japanese", "korean", "spanish".
  * @param
- *      force                  [in] If private identity exist, remove or remain it.
- *                              force = true, remove the old identity and initial new identity.
- *                              force = false, remain the old identity and return -1.
+ *      force             [in] If private identity exist, remove or remain it.
+ *                        If force is true, then will choose to create a new identity
+ *                        even if the private identity already exists and
+ *                        the new private key will replace the original one in DIDStore.
+ *                        If force is false, then will choose to remain the old
+ *                        private key if the private identity exists, and return error code.
  * @return
  *      0 on success, -1 if an error occurred.
  */
@@ -2226,15 +2227,18 @@ DID_API int DIDStore_InitPrivateIdentity(DIDStore *store, const char *storepass,
  * Initial user's identity by e.
  *
   * @param
- *      store                  [in] The handle to DIDStore.
+ *      store             [in] The handle to DIDStore.
  * @param
- *      storepass              [in] The password for DIDStore.
+ *      storepass         [in] The password for DIDStore.
  * @param
- *      extendedkey            [in] Extendedkey string.
+ *      extendedkey       [in] Extendedkey string.
  * @param
- *      force                  [in] If private identity exist, remove or remain it.
- *                              force = true, remove the old identity and initial new identity.
- *                              force = false, remain the old identity and return NULL.
+ *      force             [in] If private identity exist, remove or remain it.
+ *                        If force is true, then will choose to create a new identity
+ *                        even if the private identity already exists and
+ *                        the new private key will replace the original one in DIDStore.
+ *                        If force is false, then will choose to remain the old
+ *                        private key if the private identity exists, and return error code.
  * @return
  *      0 on success, -1 if an error occurred.
  */
@@ -2276,7 +2280,7 @@ DID_API DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass,
 
 /**
  * \~English
- * Create new DID Document and store in the DID Store by index.
+ * Create new DID document and store it in the DID store with given index.
  *
  * @param
  *      store                     [in] THe handle to DIDStore.
