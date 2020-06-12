@@ -20,6 +20,7 @@ ExternalProject_Add(
         -DENABLE_MBEDTLS=OFF
         -DENABLE_WINDOWS_CRYPTO=OFF
         -DENABLE_BZIP2=OFF
+        -DENABLE_LZMA=OFF
         -DBUILD_TOOLS=OFF
         -DBUILD_EXAMPLES=OFF
         -DBUILD_DOC=OFF
