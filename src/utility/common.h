@@ -38,7 +38,7 @@ extern "C" {
 
 const char *get_time_string(char *timestring, size_t len, time_t *p_time);
 
-int parse_time(time_t *time, const char *string);
+time_t parse_time(time_t *time, const char *string);
 
 int test_path(const char *path);
 
