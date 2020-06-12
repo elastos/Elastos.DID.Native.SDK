@@ -67,7 +67,7 @@ const char *get_time_string(char *timestring, size_t len, time_t *p_time)
     return timestring;
 }
 
-time_t parse_time(time_t *time, const char *string)
+int parse_time(time_t *time, const char *string)
 {
     struct tm tm;
     char buffer[DOC_BUFFER_LEN];
@@ -92,7 +92,7 @@ time_t parse_time(time_t *time, const char *string)
         return -1;
 
     *time = timegm(&tm);
-    return *time;
+    return 0;
 }
 
 int test_path(const char *path)
