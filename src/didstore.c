@@ -1709,8 +1709,8 @@ static int store_pubidentity_from_prvidentity(DIDStore *store, HDKey *hdkey)
     assert(hdkey);
 
     //// Pre-derive publickey path: m/44'/0'/0'
-    predeviedkey = HDKey_GetDerivedKey(hdkey, &_derivedkey, 3, 44 | PATHHARD,
-            0 | PATHHARD, 0 | PATHHARD);
+    predeviedkey = HDKey_GetDerivedKey(hdkey, &_derivedkey, 3, 44 | HARDENED,
+            0 | HARDENED, 0 | HARDENED);
     if (!predeviedkey)
         return -1;
 
@@ -1839,7 +1839,7 @@ static int store_default_privatekey(DIDStore *store, const char *storepass,
 int DIDStore_Synchronize(DIDStore *store, const char *storepass, DIDStore_MergeCallback *callback)
 {
     int rc, nextindex, i = 0, blanks = 0;
-    DIDDocument *chainCopy, *localCopy, *finalCopy;
+    DIDDocument *chainCopy = NULL, *localCopy = NULL, *finalCopy;
     HDKey _identity, *privateIdentity;
     HDKey _derivedkey, *derivedkey;
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
@@ -1859,8 +1859,8 @@ int DIDStore_Synchronize(DIDStore *store, const char *storepass, DIDStore_MergeC
     }
 
     while (i < nextindex || blanks < 20) {
-        derivedkey = HDKey_GetDerivedKey(privateIdentity, &_derivedkey, 5, 44 | PATHHARD,
-               0 | PATHHARD, 0 | PATHHARD, 0, i++);
+        derivedkey = HDKey_GetDerivedKey(privateIdentity, &_derivedkey, 5, 44 | HARDENED,
+               0 | HARDENED, 0 | HARDENED, 0, i++);
         if (!derivedkey)
             continue;
 
@@ -1899,20 +1899,15 @@ int DIDStore_Synchronize(DIDStore *store, const char *storepass, DIDStore_MergeC
                     }
                 }
 
-                if (HDKey_SerializePrv(derivedkey, extendedkey, sizeof(extendedkey)) < 0) {
-                    DIDStore_DeleteDID(store, &did);
-                    return -1;
-                }
                 if (DIDStore_StoreDID(store, finalCopy, NULL) == 0) {
-                    if (store_default_privatekey(store, storepass, HDKey_GetAddress(derivedkey),
-                            extendedkey, sizeof(extendedkey)) == 0) {
-                        if (store_index(store, i) == -1)
-                            DIDStore_DeleteDID(store, &did);
-
-                    } else {
-                        DIDStore_DeleteDID(store, &did);
+                    if (HDKey_SerializePrv(derivedkey, extendedkey, sizeof(extendedkey)) > 0) {
+                        if (store_default_privatekey(store, storepass, HDKey_GetAddress(derivedkey),
+                                extendedkey, sizeof(extendedkey)) == 0) {
+                            store_index(store, i);
+                        }
                     }
                 }
+
                 if (finalCopy != chainCopy && finalCopy != localCopy)
                     DIDDocument_Destroy(finalCopy);
 
@@ -2075,8 +2070,8 @@ static HDKey *get_childkey(DIDStore *store, const char *storepass, int index,
     if (!identity)
         return NULL;
 
-    dkey = HDKey_GetDerivedKey(identity, derivedkey, 5, 44 | PATHHARD, 0 | PATHHARD,
-            0 | PATHHARD, 0, index);
+    dkey = HDKey_GetDerivedKey(identity, derivedkey, 5, 44 | HARDENED, 0 | HARDENED,
+            0 | HARDENED, 0, index);
     HDKey_Wipe(identity);
     if (!dkey)
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial derived private identity failed.");
@@ -2259,8 +2254,8 @@ int DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass, DID
             for (int i = 0; i < 100; i++) {
                 memset(&_derivedkey, 0, sizeof(HDKey));
                 memset(extendedkey, 0, size);
-                derivedkey = HDKey_GetDerivedKey(identity, &_derivedkey, 5, 44 | PATHHARD,
-                        0 | PATHHARD, 0 | PATHHARD, 0, i);
+                derivedkey = HDKey_GetDerivedKey(identity, &_derivedkey, 5, 44 | HARDENED,
+                        0 | HARDENED, 0 | HARDENED, 0, i);
                 if (!derivedkey)
                     continue;
 

@@ -50,7 +50,7 @@ extern "C" {
 #define KOREAN                         "korean"
 #define SPANISH                        "spanish"
 
-#define PATHHARD                       0x80000000
+#define HARDENED                       0x80000000
 
 typedef struct HDKey {
     uint8_t depth;

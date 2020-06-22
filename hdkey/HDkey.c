@@ -291,6 +291,7 @@ HDKey *HDKey_Deserialize(HDKey *hdkey, const uint8_t *extendedkey, size_t size)
     if (size != EXTENDEDKEY_BYTES)
         return NULL;
 
+    memset(hdkey, 0, sizeof(HDKey));
     //check extended key validate
     BRSHA256_2(md32, extendedkey, 78);
     uint32_t v = UInt32GetLE(extendedkey + 78);

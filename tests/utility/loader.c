@@ -33,7 +33,7 @@
 #include "credential.h"
 #include "credmeta.h"
 
-#define PATHHARD                       0x80000000
+#define HARDENED                       0x80000000
 
 typedef struct TestData {
     DIDStore *store;
@@ -820,8 +820,8 @@ const char *Generater_Publickey(char *publickeybase58, size_t size)
     if (!privateIdentity)
         return NULL;
 
-    derivedkey = HDKey_GetDerivedKey(privateIdentity, &_derivedkey, 5, 44 | PATHHARD,
-            0 | PATHHARD, 0 | PATHHARD, 0, 0);
+    derivedkey = HDKey_GetDerivedKey(privateIdentity, &_derivedkey, 5, 44 | HARDENED,
+            0 | HARDENED, 0 | HARDENED, 0, 0);
     if (!derivedkey)
         return NULL;
 
@@ -845,8 +845,8 @@ HDKey *Generater_KeyPair(HDKey *hdkey)
     if (!privateIdentity)
         return NULL;
 
-    return HDKey_GetDerivedKey(privateIdentity, hdkey, 5, 44 | PATHHARD,
-           0 | PATHHARD, 0 | PATHHARD, 0, 0);
+    return HDKey_GetDerivedKey(privateIdentity, hdkey, 5, 44 | HARDENED,
+           0 | HARDENED, 0 | HARDENED, 0, 0);
 }
 
 int Set_Doc_Txid(DIDDocument *doc, const char *txid)

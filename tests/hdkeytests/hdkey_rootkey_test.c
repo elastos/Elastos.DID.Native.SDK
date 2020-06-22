@@ -7,7 +7,7 @@
 #include "ela_did.h"
 
 #define MAX_PUBLICKEY_BASE58           64
-#define PATHHARD                       0x80000000
+#define HARDENED                       0x80000000
 
 static const char *mnemonic = "pact reject sick voyage foster fence warm luggage cabbage any subject carbon";
 static const char *passphrase = "helloworld";
@@ -35,8 +35,8 @@ static void test_rootkey_with_diff_method(void)
     CU_ASSERT_EQUAL(size, EXTENDEDKEY_BYTES);
     CU_ASSERT_NSTRING_EQUAL(extendedkey, _extendedkey, EXTENDEDKEY_BYTES);
 
-    prederivedkey = HDKey_GetDerivedKey(hdkey, &_prederivedkey, 3, 44 | PATHHARD,
-           0 | PATHHARD, 0 | PATHHARD);
+    prederivedkey = HDKey_GetDerivedKey(hdkey, &_prederivedkey, 3, 44 | HARDENED,
+           0 | HARDENED, 0 | HARDENED);
     CU_ASSERT_PTR_NOT_NULL(prederivedkey);
 
     size = HDKey_SerializePub(prederivedkey, _extendedkey, sizeof(_extendedkey));
@@ -62,8 +62,8 @@ static void test_derive_publiconly(void)
     root = HDKey_FromMnemonic(mnemonic, passphrase, "english", &_root);
     CU_ASSERT_PTR_NOT_NULL(root);
 
-    prederivekey = HDKey_GetDerivedKey(root, &_prederivekey, 4, 44 | PATHHARD,
-            0 | PATHHARD, 0 | PATHHARD, 0);
+    prederivekey = HDKey_GetDerivedKey(root, &_prederivekey, 4, 44 | HARDENED,
+            0 | HARDENED, 0 | HARDENED, 0);
     CU_ASSERT_PTR_NOT_NULL(prederivekey);
 
     const char *base = HDKey_SerializePrvBase58(prederivekey, extendedkeybase, sizeof(extendedkeybase));
@@ -97,8 +97,8 @@ static void test_padding_privatekey(void)
     root = HDKey_FromMnemonic(newmnemonic, "", "english", &_root);
     CU_ASSERT_PTR_NOT_NULL(root);
 
-    identity = HDKey_GetDerivedKey(root, &_identity, 5, 44 | PATHHARD,
-            0 | PATHHARD, 0 | PATHHARD, 0, 0);
+    identity = HDKey_GetDerivedKey(root, &_identity, 5, 44 | HARDENED,
+            0 | HARDENED, 0 | HARDENED, 0, 0);
     CU_ASSERT_PTR_NOT_NULL(identity);
     CU_ASSERT_STRING_EQUAL(expectedIDString, HDKey_GetAddress(identity));
 
@@ -128,8 +128,8 @@ static void test_padding_privatekey2(void)
     root = HDKey_FromMnemonic(newmnemonic, "", "english", &_root);
     CU_ASSERT_PTR_NOT_NULL(root);
 
-    identity = HDKey_GetDerivedKey(root, &_identity, 5, 44 | PATHHARD,
-            0 | PATHHARD, 0 | PATHHARD, 0, 0);
+    identity = HDKey_GetDerivedKey(root, &_identity, 5, 44 | HARDENED,
+            0 | HARDENED, 0 | HARDENED, 0, 0);
     CU_ASSERT_PTR_NOT_NULL(identity);
     CU_ASSERT_STRING_EQUAL(expectedIDString, HDKey_GetAddress(identity));
 
@@ -164,8 +164,8 @@ static void test_hdkey_sign_verify(void)
 
     for (int i = 0; i < 10; i++) {
         memset(data, i, sizeof(data));
-        derivedkey = HDKey_GetDerivedKey(privateIdentity, &_derivedkey, 5, 44 | PATHHARD,
-               0 | PATHHARD, 0 | PATHHARD, 0, i++);
+        derivedkey = HDKey_GetDerivedKey(privateIdentity, &_derivedkey, 5, 44 | HARDENED,
+               0 | HARDENED, 0 | HARDENED, 0, i++);
         CU_ASSERT_PTR_NOT_NULL(derivedkey);
 
         size = sha256_digest(digest, 1, data, sizeof(data));
