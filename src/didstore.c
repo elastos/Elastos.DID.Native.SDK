@@ -1078,7 +1078,9 @@ int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
     if (load_didmeta(store, &meta, document->did.idstring) == -1)
         return -1;
 
-    DIDMetaData_Merge(&document->metadata, &meta);
+    if (DIDMetaData_Merge(&document->metadata, &meta) < 0)
+        return -1;
+
     DIDMetaData_SetStore(&document->metadata, store);
     DIDMetaData_Free(&meta);
 
@@ -1287,7 +1289,9 @@ int DIDStore_StoreCredential(DIDStore *store, Credential *credential)
     if (load_credmeta(store, &meta, id->did.idstring, id->fragment) == -1)
         return -1;
 
-    CredentialMetaData_Merge(&credential->metadata, &meta);
+    if (CredentialMetaData_Merge(&credential->metadata, &meta) < 0)
+        return -1;
+
     CredentialMetaData_SetStore(&credential->metadata, store);
     CredentialMetaData_Free(&meta);
 

@@ -46,11 +46,11 @@ int CredentialMetaData_FromJson(CredentialMetaData *metadata, const char *data);
 
 void CredentialMetaData_Free(CredentialMetaData *metadata);
 
-void CredentialMetaData_Merge(CredentialMetaData *tometa, CredentialMetaData *frommeta);
+int CredentialMetaData_Merge(CredentialMetaData *tometa, CredentialMetaData *frommeta);
 
-int CredentialMetaData_Copy(CredentialMetaData *tometa, CredentialMetaData *frommeta);
+void CredentialMetaData_Copy(CredentialMetaData *tometa, CredentialMetaData *frommeta);
 
-int CredentialMetaData_SetStore(CredentialMetaData *metadata, DIDStore *store);
+void CredentialMetaData_SetStore(CredentialMetaData *metadata, DIDStore *store);
 
 DIDStore *CredentialMetaData_GetStore(CredentialMetaData *metadata);
 

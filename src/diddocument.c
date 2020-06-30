@@ -599,13 +599,6 @@ static int Parse_Credentials_InDoc(DIDDocument *document, cJSON *json)
     return 0;
 }
 
-DIDMetaData *DIDDocument_GetMeta(DIDDocument *document)
-{
-    assert(document);
-
-    return &document->metadata;
-}
-
 int DIDDocument_SetStore(DIDDocument *document, DIDStore *store)
 {
     assert(document);

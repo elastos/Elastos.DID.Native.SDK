@@ -72,62 +72,26 @@ void CredentialMetaData_Free(CredentialMetaData *metadata)
     MetaData_Free(&metadata->base);
 }
 
-int CredentialMetaData_SetAlias(CredentialMetaData *metadata, const char *alias)
-{
-    assert(metadata);
-
-    return MetaData_SetExtra(&metadata->base, ALIAS, alias);
-}
-
-const char *CredentialMetaData_GetAlias(CredentialMetaData *metadata)
-{
-    assert(metadata);
-
-    return MetaData_GetExtra(&metadata->base, ALIAS);
-}
-
-int CredentialMetaData_SetExtra(CredentialMetaData *metadata, const char* key, const char *value)
-{
-    assert(metadata);
-
-    return MetaData_SetExtra(&metadata->base, key, value);
-}
-
-int CredentialMetaData_SetExtraWithBoolean(CredentialMetaData *metadata, const char *key, bool value)
-{
-    assert(metadata);
-
-    return MetaData_SetExtraWithBoolean(&metadata->base, key, value);
-}
-
-int CredentialMetaData_SetExtraWithDouble(CredentialMetaData *metadata, const char *key, double value)
-{
-    assert(metadata);
-
-    return MetaData_SetExtraWithDouble(&metadata->base, key, value);
-}
-
-void CredentialMetaData_Merge(CredentialMetaData *tometa, CredentialMetaData *frommeta)
+int CredentialMetaData_Merge(CredentialMetaData *tometa, CredentialMetaData *frommeta)
 {
     assert(tometa && frommeta);
 
-    MetaData_Merge(&tometa->base, &frommeta->base);
+    return MetaData_Merge(&tometa->base, &frommeta->base);
 }
 
-int CredentialMetaData_Copy(CredentialMetaData *tometa, CredentialMetaData *frommeta)
+void CredentialMetaData_Copy(CredentialMetaData *tometa, CredentialMetaData *frommeta)
 {
     assert(tometa && frommeta);
 
     MetaData_Copy(&tometa->base, &frommeta->base);
-    return 0;
 }
 
-int CredentialMetaData_SetStore(CredentialMetaData *metadata, DIDStore *store)
+void CredentialMetaData_SetStore(CredentialMetaData *metadata, DIDStore *store)
 {
     assert(metadata);
     assert(store);
 
-    return MetaData_SetStore(&metadata->base, store);
+    MetaData_SetStore(&metadata->base, store);
 }
 
 DIDStore *CredentialMetaData_GetStore(CredentialMetaData *metadata)
@@ -144,26 +108,83 @@ bool CredentialMetaData_AttachedStore(CredentialMetaData *metadata)
     return MetaData_AttachedStore(&metadata->base);
 }
 
+//****** DID_API
+int CredentialMetaData_SetAlias(CredentialMetaData *metadata, const char *alias)
+{
+    if (!metadata) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return MetaData_SetExtra(&metadata->base, ALIAS, alias);
+}
+
+const char *CredentialMetaData_GetAlias(CredentialMetaData *metadata)
+{
+    if (!metadata) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    return MetaData_GetExtra(&metadata->base, ALIAS);
+}
+
+int CredentialMetaData_SetExtra(CredentialMetaData *metadata, const char* key, const char *value)
+{
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return MetaData_SetExtra(&metadata->base, key, value);
+}
+
+int CredentialMetaData_SetExtraWithBoolean(CredentialMetaData *metadata, const char *key, bool value)
+{
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return MetaData_SetExtraWithBoolean(&metadata->base, key, value);
+}
+
+int CredentialMetaData_SetExtraWithDouble(CredentialMetaData *metadata, const char *key, double value)
+{
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return MetaData_SetExtraWithDouble(&metadata->base, key, value);
+}
+
 const char *CredentialMetaData_GetExtra(CredentialMetaData *metadata, const char *key)
 {
-    assert(metadata);
-    assert(key);
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
 
     return MetaData_GetExtra(&metadata->base, key);
 }
 
 bool CredentialMetaData_GetExtraAsBoolean(CredentialMetaData *metadata, const char *key)
 {
-    assert(metadata);
-    assert(key);
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
 
     return MetaData_GetExtraAsBoolean(&metadata->base, key);
 }
 
 double CredentialMetaData_GetExtraAsDouble(CredentialMetaData *metadata, const char *key)
 {
-    assert(metadata);
-    assert(key);
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return 0;
+    }
 
     return MetaData_GetExtraAsDouble(&metadata->base, key);
 }

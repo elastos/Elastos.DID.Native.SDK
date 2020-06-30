@@ -81,13 +81,6 @@ void DIDMetaData_Free(DIDMetaData *metadata)
         MetaData_Free(&metadata->base);
 }
 
-int DIDMetaData_SetAlias(DIDMetaData *metadata, const char *alias)
-{
-    assert(metadata);
-
-    return MetaData_SetExtra(&metadata->base, ALIAS, alias);
-}
-
 int DIDMetaData_SetDeactivated(DIDMetaData *metadata, bool deactived)
 {
     assert(metadata);
@@ -123,34 +116,6 @@ int DIDMetaData_SetPrevSignature(DIDMetaData *metadata, const char *signature)
     return MetaData_SetExtra(&metadata->base, PREV_SIGNATURE, signature);
 }
 
-int DIDMetaData_SetExtra(DIDMetaData *metadata, const char* key, const char *value)
-{
-    assert(metadata);
-
-    return MetaData_SetExtra(&metadata->base, key, value);
-}
-
-int DIDMetaData_SetExtraWithBoolean(DIDMetaData *metadata, const char *key, bool value)
-{
-    assert(metadata);
-
-    return MetaData_SetExtraWithBoolean(&metadata->base, key, value);
-}
-
-int DIDMetaData_SetExtraWithDouble(DIDMetaData *metadata, const char *key, double value)
-{
-    assert(metadata);
-
-    return MetaData_SetExtraWithDouble(&metadata->base, key, value);
-}
-
-const char *DIDMetaData_GetAlias(DIDMetaData *metadata)
-{
-    assert(metadata);
-
-    return MetaData_GetExtra(&metadata->base, ALIAS);
-}
-
 const char *DIDMetaData_GetTxid(DIDMetaData *metadata)
 {
     assert(metadata);
@@ -172,25 +137,11 @@ const char *DIDMetaData_GetPrevSignature(DIDMetaData *metadata)
     return MetaData_GetExtra(&metadata->base, PREV_SIGNATURE);
 }
 
-bool DIDMetaData_GetDeactivated(DIDMetaData *metadata)
-{
-    assert(metadata);
-
-    return MetaData_GetExtraAsBoolean(&metadata->base, DEACTIVATED);
-}
-
-time_t DIDMetaData_GetPublished(DIDMetaData *metadata)
-{
-    assert(metadata);
-
-    return (time_t)MetaData_GetExtraAsBoolean(&metadata->base, PUBLISHED);
-}
-
-void DIDMetaData_Merge(DIDMetaData *tometa, DIDMetaData *frommeta)
+int DIDMetaData_Merge(DIDMetaData *tometa, DIDMetaData *frommeta)
 {
     assert(tometa && frommeta);
 
-    MetaData_Merge(&tometa->base, &frommeta->base);
+    return MetaData_Merge(&tometa->base, &frommeta->base);
 }
 
 void DIDMetaData_Copy(DIDMetaData *tometa, DIDMetaData *frommeta)
@@ -200,12 +151,12 @@ void DIDMetaData_Copy(DIDMetaData *tometa, DIDMetaData *frommeta)
     MetaData_Copy(&tometa->base, &frommeta->base);
 }
 
-int DIDMetaData_SetStore(DIDMetaData *metadata, DIDStore *store)
+void DIDMetaData_SetStore(DIDMetaData *metadata, DIDStore *store)
 {
     assert(metadata);
     assert(store);
 
-    return MetaData_SetStore(&metadata->base, store);
+    MetaData_SetStore(&metadata->base, store);
 }
 
 DIDStore *DIDMetaData_GetStore(DIDMetaData *metadata)
@@ -228,26 +179,103 @@ bool DIDMetaData_AttachedStore(DIDMetaData *metadata)
     return bAttached;
 }
 
+//******** DID_API
+int DIDMetaData_SetAlias(DIDMetaData *metadata, const char *alias)
+{
+    if (!metadata) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return MetaData_SetExtra(&metadata->base, ALIAS, alias);
+}
+
+int DIDMetaData_SetExtra(DIDMetaData *metadata, const char* key, const char *value)
+{
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return MetaData_SetExtra(&metadata->base, key, value);
+}
+
+int DIDMetaData_SetExtraWithBoolean(DIDMetaData *metadata, const char *key, bool value)
+{
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return MetaData_SetExtraWithBoolean(&metadata->base, key, value);
+}
+
+int DIDMetaData_SetExtraWithDouble(DIDMetaData *metadata, const char *key, double value)
+{
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return MetaData_SetExtraWithDouble(&metadata->base, key, value);
+}
+
+const char *DIDMetaData_GetAlias(DIDMetaData *metadata)
+{
+    if (!metadata) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    return MetaData_GetExtra(&metadata->base, ALIAS);
+}
+
+time_t DIDMetaData_GetPublished(DIDMetaData *metadata)
+{
+    if (!metadata) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return 0;
+    }
+
+    return (time_t)MetaData_GetExtraAsBoolean(&metadata->base, PUBLISHED);
+}
+
+bool DIDMetaData_GetDeactivated(DIDMetaData *metadata)
+{
+    if (!metadata) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    return MetaData_GetExtraAsBoolean(&metadata->base, DEACTIVATED);
+}
+
 const char *DIDMetaData_GetExtra(DIDMetaData *metadata, const char *key)
 {
-    assert(metadata);
-    assert(key);
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
 
     return MetaData_GetExtra(&metadata->base, key);
 }
 
 bool DIDMetaData_GetExtraAsBoolean(DIDMetaData *metadata, const char *key)
 {
-    assert(metadata);
-    assert(key);
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
 
     return MetaData_GetExtraAsBoolean(&metadata->base, key);
 }
 
 double DIDMetaData_GetExtraAsDouble(DIDMetaData *metadata, const char *key)
 {
-    assert(metadata);
-    assert(key);
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return 0;
+    }
 
     return MetaData_GetExtraAsDouble(&metadata->base, key);
 }

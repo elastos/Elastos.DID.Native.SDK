@@ -55,6 +55,20 @@ int DIDMetaData_SetDeactivated(DIDMetaData *metadata, bool deactived);
 
 int DIDMetaData_SetPublished(DIDMetaData *metadata, time_t time);
 
+const char *DIDMetaData_GetSignature(DIDMetaData *metadata);
+
+int DIDMetaData_Merge(DIDMetaData *metadata, DIDMetaData *frommeta);
+
+void DIDMetaData_Copy(DIDMetaData *metadata, DIDMetaData *frommeta);
+
+void DIDMetaData_SetStore(DIDMetaData *metadata, DIDStore *store);
+
+DIDStore *DIDMetaData_GetStore(DIDMetaData *metadata);
+
+bool DIDMetaData_AttachedStore(DIDMetaData *metadata);
+
+DID_API const char *DIDMetaData_GetPrevSignature(DIDMetaData *metadata);
+
 DID_API int DIDMetaData_SetTxid(DIDMetaData *metadata, const char *txid);
 
 DID_API int DIDMetaData_SetSignature(DIDMetaData *metadata, const char *signature);
@@ -62,20 +76,6 @@ DID_API int DIDMetaData_SetSignature(DIDMetaData *metadata, const char *signatur
 DID_API int DIDMetaData_SetPrevSignature(DIDMetaData *metadata, const char *signature);
 
 DID_API const char *DIDMetaData_GetTxid(DIDMetaData *metadata);
-
-const char *DIDMetaData_GetSignature(DIDMetaData *metadata);
-
-DID_API const char *DIDMetaData_GetPrevSignature(DIDMetaData *metadata);
-
-void DIDMetaData_Merge(DIDMetaData *metadata, DIDMetaData *frommeta);
-
-void DIDMetaData_Copy(DIDMetaData *metadata, DIDMetaData *frommeta);
-
-int DIDMetaData_SetStore(DIDMetaData *metadata, DIDStore *store);
-
-DIDStore *DIDMetaData_GetStore(DIDMetaData *metadata);
-
-bool DIDMetaData_AttachedStore(DIDMetaData *metadata);
 
 #ifdef __cplusplus
 }

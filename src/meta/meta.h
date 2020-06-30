@@ -51,9 +51,9 @@ const char *MetaData_ToString(MetaData *metadata);
 
 void MetaData_Free(MetaData *metadata);
 
-void MetaData_Merge(MetaData *tometa, MetaData *frommeta);
+int MetaData_Merge(MetaData *tometa, MetaData *frommeta);
 
-int MetaData_Copy(MetaData *metadata, MetaData *frommeta);
+void MetaData_Copy(MetaData *metadata, MetaData *frommeta);
 
 int MetaData_SetExtra(MetaData *metadata, const char* key, const char *value);
 
@@ -67,7 +67,7 @@ bool MetaData_GetExtraAsBoolean(MetaData *metadata, const char *key);
 
 double MetaData_GetExtraAsDouble(MetaData *metadata, const char *key);
 
-int MetaData_SetStore(MetaData *metadata, DIDStore *store);
+void MetaData_SetStore(MetaData *metadata, DIDStore *store);
 
 DIDStore *MetaData_GetStore(MetaData *metadata);
 
