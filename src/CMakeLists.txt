@@ -131,8 +131,8 @@ endif()
 
 set(LIBS
     cjson
-    curl
     ssl
+    curl
     crypto
     z
     jansson
