@@ -2444,6 +2444,9 @@ bool DIDStore_DeactivateDID(DIDStore *store, const char *storepass,
 
     successed = DIDBackend_Deactivate(&store->backend, &doc->did, signkey, storepass);
     DIDDocument_Destroy(doc);
+    if (successed)
+        ResolveCache_Invalid(did);
+
     return successed;
 }
 
