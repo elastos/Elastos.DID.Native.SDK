@@ -250,13 +250,14 @@ static void test_idchain_publishdid_without_txid(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(txid);
     strcpy(previous_txid, txid);
 
+    printf("\n   txid = %s\n-- resolve result: successfully!\n-- publish begin(update), waiting...\n", txid);
+
     rc = DIDMetaData_SetTxid(metadata, "");
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    printf("\n   txid = %s\n-- resolve result: successfully!\n-- publish begin(update), waiting...\n", txid);
     DIDDocument_Destroy(resolvedoc);
     resolvedoc = NULL;
 
@@ -319,6 +320,7 @@ static void test_idchain_publishdid_without_txid(void)
     }
     strcpy(previous_txid, txid);
 
+    printf("\n   txid = %s\n-- resolve result: successfully!\n-- publish begin(update) again, waiting...\n", txid);
     metadata = DIDDocument_GetMetaData(resolvedoc);
     rc = DIDMetaData_SetTxid(metadata, "");
     CU_ASSERT_NOT_EQUAL(rc, -1);
@@ -326,7 +328,6 @@ static void test_idchain_publishdid_without_txid(void)
     rc = DIDStore_StoreDID(store, resolvedoc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    printf("\n   txid = %s\n-- resolve result: successfully!\n-- publish begin(update) again, waiting...\n", txid);
     DIDDocument_Destroy(resolvedoc);
     resolvedoc = NULL;
 

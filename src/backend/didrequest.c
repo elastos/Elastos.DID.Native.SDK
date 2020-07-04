@@ -180,12 +180,15 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL 
 
 int DIDRequest_Verify(DIDRequest *request)
 {
-    return DIDDocument_Verify(request->doc, &request->proof.verificationMethod,
-            (char*)request->proof.signature, 4,
-            request->header.spec, strlen(request->header.spec),
-            request->header.op, strlen(request->header.op),
-            request->header.prevtxid, strlen(request->header.prevtxid),
-            request->payload, strlen(request->payload));
+    //todo: if(request->doc) is for deacativated without doc.
+    if (request->doc)
+        return DIDDocument_Verify(request->doc, &request->proof.verificationMethod,
+                (char*)request->proof.signature, 4,
+                request->header.spec, strlen(request->header.spec),
+                request->header.op, strlen(request->header.op),
+                request->header.prevtxid, strlen(request->header.prevtxid),
+                request->payload, strlen(request->payload));
+    return 0;
 }
 
 DIDDocument *DIDRequest_FromJson(DIDRequest *request, cJSON *json)
@@ -267,7 +270,12 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, cJSON *json)
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
         return NULL;
     }
-    request->payload = strdup(cJSON_GetStringValue(item));
+    char *payload = cJSON_GetStringValue(item);
+    if (!payload) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "No payload.");
+        return NULL;
+    }
+    request->payload = strdup(payload);
 
     if (strcmp(request->header.op, operation[RequestType_Deactivate])) {
         len = strlen(request->payload) + 1;
@@ -286,15 +294,16 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, cJSON *json)
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Deserialize transaction payload from json failed.");
             goto errorExit;
         }
+
+        strcpy(request->did.idstring, request->doc->did.idstring);
     } else {
         subject = DID_FromString(request->payload);
         if (!subject)
             goto errorExit;
 
-        request->doc = DID_Resolve(subject, false);
+        strcpy(request->did.idstring, subject->idstring);
+        request->doc = NULL;
         DID_Destroy(subject);
-        if (!request->doc)
-            goto errorExit;
     }
 
     item = cJSON_GetObjectItem(json, "proof");
@@ -317,9 +326,8 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, cJSON *json)
         goto errorExit;
     }
 
-    subject = DIDDocument_GetSubject(request->doc);
     if (Parse_DIDURL(&request->proof.verificationMethod,
-            cJSON_GetStringValue(field), subject) < 0) {
+            cJSON_GetStringValue(field), &request->did) < 0) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signing key.");
         goto errorExit;
     }

@@ -4001,7 +4001,15 @@ int DIDStore_ExportStore(DIDStore *store, const char *storepass,
         return -1;
 
     //create temp dir
-    sprintf(tmpdir, "%s/didexport", getenv("TMPDIR"));
+    const char *tmp = getenv("TMPDIR");
+    if (!tmp) {
+        if (access("/tmp", F_OK) == 0)
+            tmp = "/tmp";
+        else
+            return -1;
+    }
+
+    snprintf(tmpdir, sizeof(tmpdir), "%s/didexport", tmp);
     mkdirs(tmpdir, S_IRWXU);
 
     if (exportdid_to_zip(store, storepass, zip, password, tmpdir) < 0 ||
@@ -4081,24 +4089,28 @@ int DIDStore_ImportStore(DIDStore *store, const char *storepass, const char *zip
             goto errorExit;
 
         delete_file(filename);
-        if (mkstemp(filename) == -1)
+        if (check_file(filename) < 0)
             goto errorExit;
 
         code = store_file(filename, buffer);
         free(buffer);
-        if (code < 0)
+        if (code < 0) {
+            delete_file(filename);
             goto errorExit;
+        }
 
         if (!strcmp(stat.name, "privateIdentity")) {
-            if (DIDStore_ImportPrivateIdentity(store, storepass, filename, password) < 0) {
+            code = DIDStore_ImportPrivateIdentity(store, storepass, filename, password);
+            delete_file(filename);
+            if (code < 0)
                 goto errorExit;
-            }
         } else {
             DID * did = DID_New(stat.name);
             if (!did)
                 goto errorExit;
 
             code = DIDStore_ImportDID(store, storepass, filename, password);
+            delete_file(filename);
             DID_Destroy(did);
             if (code < 0)
                 goto errorExit;

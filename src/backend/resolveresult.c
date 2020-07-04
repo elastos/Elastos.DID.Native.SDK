@@ -114,11 +114,13 @@ int ResolveResult_FromJson(ResolveResult *result, cJSON *json, bool all)
             }
 
             DIDDocument *doc = txinfo->request.doc;
-            DIDMetaData_SetPublished(&doc->metadata, txinfo->timestamp);
-            DIDMetaData_SetTxid(&doc->metadata, txinfo->txid);
-            DIDMetaData_SetSignature(&doc->metadata, doc->proof.signatureValue);
-            DIDMetaData_SetDeactivated(&doc->metadata, result->status);
-            DIDMetaData_Copy(&doc->did.metadata, &doc->metadata);
+            if (doc) {
+                DIDMetaData_SetPublished(&doc->metadata, txinfo->timestamp);
+                DIDMetaData_SetTxid(&doc->metadata, txinfo->txid);
+                DIDMetaData_SetSignature(&doc->metadata, doc->proof.signatureValue);
+                DIDMetaData_SetDeactivated(&doc->metadata, result->status);
+                DIDMetaData_Copy(&doc->did.metadata, &doc->metadata);
+            }
         }
     }
 

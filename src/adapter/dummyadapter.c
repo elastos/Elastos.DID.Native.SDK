@@ -77,7 +77,7 @@ static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *p
     }
 
     DIDDocument *doc = DIDRequest_FromJson(&info->request, root);
-    if (!doc)
+    if (!doc && strcmp(info->request.header.op, "deactivate"))
         goto errorExit;
 
     if (strcmp(info->request.header.op, "deactivate")) {
@@ -85,7 +85,7 @@ static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *p
             goto errorExit;
     }
 
-    lastinfo = get_lasttransaction(DIDDocument_GetSubject(doc));
+    lastinfo = get_lasttransaction(&info->request.did);
     if (!strcmp(info->request.header.op, "create")) {
         if (lastinfo) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID already exist.");

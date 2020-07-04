@@ -73,7 +73,7 @@ int DIDTransactionInfo_FromJson(DIDTransactionInfo *txinfo, cJSON *json)
     }
 
     txinfo->request.doc = DIDRequest_FromJson(&txinfo->request, item);
-    if (!txinfo->request.doc)
+    if (!txinfo->request.doc && strcmp(txinfo->request.header.op, "deactivate"))
         return -1;
 
     return 0;

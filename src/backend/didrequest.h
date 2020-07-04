@@ -46,6 +46,7 @@ typedef struct DIDRequest {
 
     const char *payload;
     DIDDocument *doc;
+    DID did;
 
     struct {
         DIDURL verificationMethod;
