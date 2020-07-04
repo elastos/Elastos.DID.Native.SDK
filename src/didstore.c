@@ -250,7 +250,7 @@ static int store_credmeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id)
     assert(meta);
     assert(id);
 
-    if (!meta->data)
+    if (!meta->base.data)
         return 0;
 
     data = CredentialMetaData_ToJson(meta);
@@ -4080,7 +4080,7 @@ int DIDStore_ImportStore(DIDStore *store, const char *storepass, const char *zip
         if (!zip_file)
             goto errorExit;
 
-        char *buffer = (char*)malloc(sizeof(zip_int64_t) * stat.size);
+        char *buffer = (char*)malloc(stat.size + 1);
         if (!buffer) {
             zip_fclose(zip_file);
             goto errorExit;
@@ -4090,6 +4090,7 @@ int DIDStore_ImportStore(DIDStore *store, const char *storepass, const char *zip
         zip_fclose(zip_file);
         if (readed < 0)
             goto errorExit;
+        buffer[stat.size] = 0;
 
         delete_file(filename);
         if (check_file(filename) < 0)

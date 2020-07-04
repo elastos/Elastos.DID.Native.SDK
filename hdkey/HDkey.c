@@ -555,6 +555,8 @@ HDKey *HDKey_GetvDerivedKey(HDKey* hdkey, HDKey *derivedkey, int depth, va_list 
     va_copy(ap, list);
     va_copy(ar, list);
 
+    memset(derivedkey, 0, sizeof(HDKey));
+
     if (!hdkey_ispublickeyonly(hdkey)) {
         getv_fingerprint(hdkey, derivedkey, depth - 1, list);
         getv_sub_privatekey_publickey(hdkey, derivedkey, depth, ar);
