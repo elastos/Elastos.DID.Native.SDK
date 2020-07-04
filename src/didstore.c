@@ -250,6 +250,9 @@ static int store_credmeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id)
     assert(meta);
     assert(id);
 
+    if (!meta->data)
+        return 0;
+
     data = CredentialMetaData_ToJson(meta);
     if (!data)
         return -1;
