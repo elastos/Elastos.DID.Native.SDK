@@ -422,16 +422,18 @@ errorExit:
 
 void Presentation_Destroy(Presentation *pre)
 {
-    if (!pre || !pre->credentials.credentials)
+    if (!pre)
         return;
 
-    for (int i = 0; i < pre->credentials.size; i++) {
-        Credential *cred = pre->credentials.credentials[i];
-        if (cred)
-            Credential_Destroy(cred);
-    }
+    if (pre->credentials.credentials) {
+        for (int i = 0; i < pre->credentials.size; i++) {
+            Credential *cred = pre->credentials.credentials[i];
+            if (cred)
+                Credential_Destroy(cred);
+        }
 
-    free(pre->credentials.credentials);
+        free(pre->credentials.credentials);
+    }
     free(pre);
 }
 
