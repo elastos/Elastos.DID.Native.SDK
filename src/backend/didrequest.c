@@ -153,7 +153,7 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL 
         len = strlen(data);
         payload = (char*)malloc(len * 4 / 3 + 16);
         base64_url_encode((char*)payload, (const uint8_t *)data, len);
-        free((char*)data);
+        free((void*)data);
     }
 
     op = operation[type];
@@ -162,7 +162,7 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL 
             (unsigned char *)prevtxid, strlen(prevtxid),
             (unsigned char*)payload, strlen(payload));
     if (rc < 0) {
-        free((char*)payload);
+        free((void*)payload);
         return NULL;
     }
 
@@ -174,21 +174,24 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL 
     DIDURL_Copy(&req.proof.verificationMethod, signkey);
 
     requestJson = DIDRequest_ToJson(&req);
-    free((char*)payload);
+    free((void*)payload);
     return requestJson;
 }
 
 int DIDRequest_Verify(DIDRequest *request)
 {
+    assert(request);
+
+    if (!request->doc)
+        return 0;
+
     //todo: if(request->doc) is for deacativated without doc.
-    if (request->doc)
-        return DIDDocument_Verify(request->doc, &request->proof.verificationMethod,
+    return DIDDocument_Verify(request->doc, &request->proof.verificationMethod,
                 (char*)request->proof.signature, 4,
                 request->header.spec, strlen(request->header.spec),
                 request->header.op, strlen(request->header.op),
                 request->header.prevtxid, strlen(request->header.prevtxid),
                 request->payload, strlen(request->payload));
-    return 0;
 }
 
 DIDDocument *DIDRequest_FromJson(DIDRequest *request, cJSON *json)
@@ -197,6 +200,7 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, cJSON *json)
     char *op, *docJson, *previousTxid;
     DID *subject;
     size_t len;
+    char *payload;
 
     assert(request);
     assert(json);
@@ -270,12 +274,16 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, cJSON *json)
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
         return NULL;
     }
-    char *payload = cJSON_GetStringValue(item);
+    payload = cJSON_GetStringValue(item);
     if (!payload) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "No payload.");
         return NULL;
     }
     request->payload = strdup(payload);
+    if (!request->payload) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Record payload failed.");
+        return NULL;
+    }
 
     if (strcmp(request->header.op, operation[RequestType_Deactivate])) {
         len = strlen(request->payload) + 1;
@@ -352,7 +360,7 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, cJSON *json)
 
 errorExit:
     if (request->payload)
-        free((char*)request->payload);
+        free((void*)request->payload);
 
     if (request->doc)
         DIDDocument_Destroy(request->doc);
@@ -363,11 +371,16 @@ errorExit:
 void DIDRequest_Destroy(DIDRequest *request)
 {
     if (!request)
-       return;
+        return;
 
     if (request->payload)
-        free((char*)request->payload);
-
+        free((void*)request->payload);
     if (request->doc)
         DIDDocument_Destroy(request->doc);
+}
+
+void DIDRequest_Free(DIDRequest *request)
+{
+    if (request && request->payload)
+        free((void*)request->payload);
 }

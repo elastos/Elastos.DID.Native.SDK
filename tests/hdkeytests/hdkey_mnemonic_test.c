@@ -20,18 +20,18 @@ static void test_build_wordlist(void)
     for (int i = 0; i < 9; i++) {
         char wmnemonic[256];
         const char *lang = languagelists[i];
-        const char *nmnemonic = Mnemonic_Generate(lang);
-        CU_ASSERT_PTR_NOT_NULL(nmnemonic);
-        CU_ASSERT_TRUE(Mnemonic_IsValid(nmnemonic, lang));
+        const char *mnemonic = Mnemonic_Generate(lang);
+        CU_ASSERT_PTR_NOT_NULL(mnemonic);
+        CU_ASSERT_TRUE(Mnemonic_IsValid(mnemonic, lang));
 
-        rc = DIDStore_InitPrivateIdentity(store, storepass, nmnemonic, "", lang, true);
+        rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", lang, true);
         CU_ASSERT_NOT_EQUAL(rc, -1);
 
-        strcpy(wmnemonic, nmnemonic);
+        strcpy(wmnemonic, mnemonic);
         strcat(wmnemonic, "z");
         CU_ASSERT_FALSE(Mnemonic_IsValid(wmnemonic, lang));
 
-        Mnemonic_Free((void*)nmnemonic);
+        Mnemonic_Free((void*)mnemonic);
     }
 }
 

@@ -275,10 +275,21 @@ static Presentation *parse_presentation(cJSON *json)
 
 static int add_credential(Credential **creds, int index, Credential *cred)
 {
+    Credential *_cred;
+
     assert(creds);
     assert(cred);
 
-    creds[index] = cred;
+    _cred = (Credential*)calloc(1, sizeof(Credential));
+    if (!_cred)
+        return -1;
+
+    if (Credential_Copy(_cred, cred) < 0) {
+        Credential_Destroy(_cred);
+        return -1;
+    }
+
+    creds[index] = _cred;
     return 0;
 }
 
@@ -390,7 +401,7 @@ Presentation *Presentation_Create(DID *did, DIDURL *signkey, DIDStore *store,
 
     rc = DIDDocument_Sign(doc, signkey, storepass, signature, 3, (unsigned char*)data, strlen(data),
             (unsigned char*)realm, strlen(realm), (unsigned char*)nonce, strlen(nonce));
-    free((char*)data);
+    free((void*)data);
     if (rc)
         goto errorExit;
 
@@ -411,18 +422,16 @@ errorExit:
 
 void Presentation_Destroy(Presentation *pre)
 {
-    if (!pre)
+    if (!pre || !pre->credentials.credentials)
         return;
 
-    if (pre->credentials.size > 0) {
-        for (int i = 0; i < pre->credentials.size; i++) {
-            Credential *cred = pre->credentials.credentials[i];
-            if (cred)
-                Credential_Destroy(cred);
-        }
-
-        free(pre->credentials.credentials);
+    for (int i = 0; i < pre->credentials.size; i++) {
+        Credential *cred = pre->credentials.credentials[i];
+        if (cred)
+            Credential_Destroy(cred);
     }
+
+    free(pre->credentials.credentials);
     free(pre);
 }
 
@@ -489,7 +498,7 @@ int Presentation_Verify(Presentation *pre)
             pre->proof.realm, strlen(pre->proof.realm),
             pre->proof.nonce, strlen(pre->proof.nonce));
 
-    free((char*)data);
+    free((void*)data);
     DIDDocument_Destroy(doc);
     return rc;
 }

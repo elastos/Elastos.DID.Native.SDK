@@ -1538,6 +1538,7 @@ static void test_idchain_publishdid_with_credential(void)
 
     cred = DIDDocument_GetCredential(doc, credid);
     CU_ASSERT_PTR_NOT_NULL(cred);
+    DIDDocument_Destroy(doc);
 
     successed = DIDStore_PublishDID(store, storepass, &did, NULL, true);
     CU_ASSERT_TRUE_FATAL(successed);
@@ -1610,7 +1611,11 @@ static void test_idchain_deactivedid_after_create(void)
     CU_ASSERT_PTR_NOT_NULL(metadata);
     txid = DIDMetaData_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL_FATAL(txid);
-    CU_ASSERT_STRING_EQUAL(DIDDocument_ToJson(doc, true), DIDDocument_ToJson(resolvedoc, true));
+    const char *data1 = DIDDocument_ToJson(doc, true);
+    const char *data2 = DIDDocument_ToJson(resolvedoc, true);
+    CU_ASSERT_STRING_EQUAL(data1, data2);
+    free((void*)data1);
+    free((void*)data2);
     strcpy(previous_txid, txid);
 
     DIDDocument_Destroy(doc);
@@ -1638,9 +1643,11 @@ static void test_idchain_deactivedid_after_create(void)
         if (++i >= 20)
             CU_FAIL_FATAL("publish did timeout!!!!\n");
     }
-
     printf("\n-- resolve result: successfully!\n------------------------------------------------------------\n");
     CU_ASSERT_STRING_EQUAL("DID is deactivated.", DIDError_GetMessage());
+
+    if (resolvedoc)
+        DIDDocument_Destroy(resolvedoc);
     return;
 }
 
@@ -1793,6 +1800,10 @@ static void test_idchain_deactivedid_after_update(void)
 
     printf("\n-- resolve result: successfully!\n------------------------------------------------------------\n");
     CU_ASSERT_STRING_EQUAL("DID is deactivated.", DIDError_GetMessage());
+
+    if (resolvedoc)
+        DIDDocument_Destroy(resolvedoc);
+
     return;
 }
 
@@ -1920,6 +1931,8 @@ static void test_idchain_deactivedid_with_authorization1(void)
 
     printf("\n-- resolve target result: successfully!\n------------------------------------------------------------\n");
     CU_ASSERT_STRING_EQUAL("DID is deactivated.", DIDError_GetMessage());
+    if (resolvedoc)
+        DIDDocument_Destroy(resolvedoc);
     return;
 }
 
@@ -2076,6 +2089,8 @@ static void test_idchain_deactivedid_with_authorization2(void)
 
     printf("\n-- resolve result: successfully!\n------------------------------------------------------------\n");
     CU_ASSERT_STRING_EQUAL("DID is deactivated.", DIDError_GetMessage());
+    if (resolvedoc)
+        DIDDocument_Destroy(resolvedoc);
     return;
 }
 
