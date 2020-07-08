@@ -125,7 +125,9 @@ void MetaData_Free(MetaData *metadata)
     }
 }
 
-int MetaData_SetExtra(MetaData *metadata, const char* key, const char *value)
+static int _MetaData_SetExtra(MetaData *metadata, const char *key,
+                              cJSON *(add_extra_cb)(cJSON*, const char*, void*),
+                              void *value)
 {
     cJSON *json;
 
@@ -134,100 +136,98 @@ int MetaData_SetExtra(MetaData *metadata, const char* key, const char *value)
 
     if (!metadata->data)
         metadata->data = cJSON_CreateObject();
-
-    cJSON_DeleteItemFromObject(metadata->data, key);
-
-    if (!value)
-        json = cJSON_AddNullToObject(metadata->data, key);
     else
-        json = cJSON_AddStringToObject(metadata->data, key, value);
+        cJSON_DeleteItemFromObject(metadata->data, key);
 
+    if (!metadata->data) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Create json object failed");
+        return -1;
+    }
+
+    json = add_extra_cb(metadata->data, key, value);
     if (!json) {
-        DIDError_Set(DIDERR_MALFORMED_META, "Add '%s' to metadata failed.", key);
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Add '%s' to metadata failed.", key);
         return -1;
     }
 
     return 0;
+}
+
+static cJSON *add_extra_string(cJSON *data, const char *key,  void *value)
+{
+    return value ? cJSON_AddStringToObject(data, key, (const char *)value) :
+                   cJSON_AddNullToObject  (data, key);
+}
+
+static cJSON *add_extra_boolean(cJSON *data, const char *key,  void *value)
+{
+    return cJSON_AddBoolToObject(data, key, *(bool *)value);
+}
+
+static cJSON *add_extra_double(cJSON *data, const char *key,  void *value)
+{
+    return cJSON_AddNumberToObject(data, key, *(double *)value);
+}
+
+int MetaData_SetExtra(MetaData *metadata, const char *key, const char *value)
+{
+    return _MetaData_SetExtra(metadata, key, add_extra_string, (void *)value);
 }
 
 int MetaData_SetExtraWithBoolean(MetaData *metadata, const char *key, bool value)
 {
-    cJSON *json;
-
-    assert(metadata);
-    assert(key);
-
-    if (!metadata->data)
-        metadata->data = cJSON_CreateObject();
-
-    cJSON_DeleteItemFromObject(metadata->data, key);
-    json = cJSON_AddBoolToObject(metadata->data, key, value);
-    if (!json) {
-        DIDError_Set(DIDERR_MALFORMED_META, "Add '%s' to metadata failed.", key);
-        return -1;
-    }
-
-    return 0;
+    return _MetaData_SetExtra(metadata, key, add_extra_boolean, &value);
 }
 
 int MetaData_SetExtraWithDouble(MetaData *metadata, const char *key, double value)
+{
+    return _MetaData_SetExtra(metadata, key, add_extra_double, &value);
+}
+
+static cJSON *_MetaData_GetExtra(MetaData *metadata, const char *key)
 {
     cJSON *json;
 
     assert(metadata);
     assert(key);
 
-    if (!metadata->data)
-        metadata->data = cJSON_CreateObject();
-
-    cJSON_DeleteItemFromObject(metadata->data, key);
-    json = cJSON_AddNumberToObject(metadata->data, key, value);
-    if (!json) {
-        DIDError_Set(DIDERR_MALFORMED_META, "Add '%s' to metadata failed.", key);
-        return -1;
+    if (!metadata->data) {
+        DIDError_Set(DIDERR_MALFORMED_META, "No content in metadata.");
+        return NULL;
     }
 
-    return 0;
+    json = cJSON_GetObjectItem(metadata->data, key);
+    if (!json) {
+        DIDError_Set(DIDERR_MALFORMED_META, "No '%s' elem in metadata.", key);
+        return NULL;
+    }
+
+    return json;
 }
 
 const char *MetaData_GetExtra(MetaData *metadata, const char *key)
 {
     cJSON *json;
 
-    assert(metadata);
-    assert(key);
+    json = _MetaData_GetExtra(metadata, key);
+    if (!json)
+        return NULL;
 
-    if (!metadata->data) {
-        DIDError_Set(DIDERR_MALFORMED_META, "No content in metadata.");
+    if (!cJSON_IsString(json)) {
+        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not string type.", key);
         return NULL;
     }
 
-    json = cJSON_GetObjectItem(metadata->data, key);
-    if (!json) {
-        DIDError_Set(DIDERR_MALFORMED_META, "No '%s' elem in metadata.", key);
-        return NULL;
-    }
-
-    return cJSON_GetStringValue(json);
+    return json->valuestring;
 }
 
 bool MetaData_GetExtraAsBoolean(MetaData *metadata, const char *key)
 {
     cJSON *json;
 
-    assert(metadata);
-    assert(key);
-
-    if (!metadata->data) {
-        DIDError_Set(DIDERR_MALFORMED_META, "No content in metadata.");
+    json = _MetaData_GetExtra(metadata, key);
+    if (!json)
         return false;
-    }
-
-    json = cJSON_GetObjectItem(metadata->data, key);
-    if (!json) {
-        DIDError_Set(DIDERR_MALFORMED_META, "No '%s' elem in metadata.", key);
-        return false;
-    }
 
     if (!cJSON_IsBool(json)) {
         DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not boolean type.", key);
@@ -241,19 +241,9 @@ double MetaData_GetExtraAsDouble(MetaData *metadata, const char *key)
 {
     cJSON *json;
 
-    assert(metadata);
-    assert(key);
-
-    if (!metadata->data) {
-        DIDError_Set(DIDERR_MALFORMED_META, "No content in metadata.");
+    json = _MetaData_GetExtra(metadata, key);
+    if (!json)
         return 0;
-    }
-
-    json = cJSON_GetObjectItem(metadata->data, key);
-    if (!json) {
-        DIDError_Set(DIDERR_MALFORMED_META, "No '%s' elem in metadata.", key);
-        return 0;
-    }
 
     if (!cJSON_IsDouble(json)) {
         DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not double type.", key);
