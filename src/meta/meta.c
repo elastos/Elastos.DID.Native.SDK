@@ -91,16 +91,12 @@ int MetaData_FromJson_Internal(MetaData *metadata, cJSON *json)
 const char *MetaData_ToString(MetaData *metadata)
 {
     assert(metadata);
-
-    if (metadata->data)
-        return cJSON_Print(metadata->data);
-
-    return NULL;
+    return metadata->data ? cJSON_Print(metadata->data) : NULL;
 }
 
 int MetaData_FromJson(MetaData *metadata, const char *data)
 {
-    cJSON *root, *item;
+    cJSON *root;
     int rc;
 
     assert(metadata);
@@ -114,12 +110,15 @@ int MetaData_FromJson(MetaData *metadata, const char *data)
 
     rc = MetaData_FromJson_Internal(metadata, root);
     cJSON_Delete(root);
+
     return rc;
 }
 
 void MetaData_Free(MetaData *metadata)
 {
-    if (metadata && metadata->data) {
+    assert(metadata);
+
+    if (metadata->data) {
         cJSON_Delete(metadata->data);
         metadata->data = NULL;
     }
@@ -276,15 +275,17 @@ int MetaData_Merge(MetaData *tometa, MetaData *frommeta)
     return 0;
 }
 
-void MetaData_Copy(MetaData *tometa, MetaData *frommeta)
+void MetaData_Copy(MetaData *dest, MetaData *src)
 {
-    assert(tometa && frommeta);
+    assert(dest);
+    assert(src);
 
-    if (!frommeta->data)
-        tometa->data = NULL;
+    if (!src->data)
+        dest->data = NULL;
     else
-        tometa->data = cJSON_Duplicate(frommeta->data, true);
-    tometa->store = frommeta->store;
+        dest->data = cJSON_Duplicate(src->data, true);
+
+    dest->store = src->store;
 }
 
 void MetaData_SetStore(MetaData *metadata, DIDStore *store)
@@ -298,13 +299,11 @@ void MetaData_SetStore(MetaData *metadata, DIDStore *store)
 DIDStore *MetaData_GetStore(MetaData *metadata)
 {
     assert(metadata);
-
     return metadata->store;
 }
 
 bool MetaData_AttachedStore(MetaData *metadata)
 {
     assert(metadata);
-
     return metadata->store != NULL;
 }
