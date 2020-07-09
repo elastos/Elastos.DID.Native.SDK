@@ -121,8 +121,10 @@ int DIDMetaData_SetLastModified(DIDMetaData *metadata, time_t time)
 {
     assert(metadata);
 
-    if (time == 0)
+    if (time == 0) {
         cJSON_DeleteItemFromObject(metadata->base.data, LAST_MODIFIED);
+        return 0;
+    }
 
     return MetaData_SetExtraWithDouble(&metadata->base, LAST_MODIFIED, (double)time);
 }
