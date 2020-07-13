@@ -134,10 +134,10 @@ set(LIBS
     curl
     ssl
     crypto
-    z
     jansson
     cjose
-    zip)
+    zip
+    z)
 
 if(WIN32)
     set(LIBS
