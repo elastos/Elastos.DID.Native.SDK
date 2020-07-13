@@ -33,14 +33,15 @@ set(ENABLE_TESTS ${ENABLE_TESTS_DEFAULT} CACHE BOOL "Build test cases")
 set(ENABLE_APPS ${ENABLE_APPS_DEFAULT} CACHE BOOL "Build DID utils")
 set(ENABLE_DOCS FALSE CACHE BOOL "Build APIs documentation")
 
+if(ENABLE_SPVADAPTER_JNI OR ENABLE_TESTS OR ENABLE_APPS)
+    set(ENABLE_SPVADAPTER TRUE)
+    add_subdirectory(adapter)
+endif()
+
 add_subdirectory(deps)
 add_subdirectory(hdkey)
 
 if(NOT HDKEY_ONLY)
-    if(ENABLE_SPVADAPTER_JNI OR ENABLE_TESTS OR ENABLE_APPS)
-        add_subdirectory(adapter)
-    endif()
-
     add_subdirectory(src)
 
     if(ENABLE_TESTS)
