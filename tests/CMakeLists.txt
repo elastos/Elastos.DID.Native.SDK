@@ -81,16 +81,16 @@ endif()
 
 set(LIBS
     ${STATIC_LIBS}
-    eladid
+    eladid-shared
     hdkey-static
     crypto
     crystal
     spvadapter-shared)
 
 set(DEPS
-    ela-did
+    eladid-shared
     CUnit
-    hdkey
+    hdkey-static
     libcrystal
     spvadapter)
 
