@@ -147,7 +147,9 @@ endif()
 
 add_definitions(-DDID_BUILD)
 
-set(ELADID_DEPENDS libressl libcurl cJSON hdkey-static libjansson libcjose libzip)
+add_custom_target(ela-did)
+
+set(ELADID_DEPENDS libressl libcurl cJSON hdkey libjansson libcjose libzip)
 
 if(WIN32)
     set(ELADID_DEPENDS
@@ -166,6 +168,8 @@ if(ENABLE_STATIC)
     if(WIN32)
         set_target_properties(eladid-static PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
     endif()
+
+    add_dependencies(ela-did eladid-static)
 
     install(TARGETS eladid-static
         RUNTIME DESTINATION "bin"
@@ -199,6 +203,8 @@ if(ENABLE_SHARED)
             $<INSTALL_INTERFACE:include>
     )
     target_link_libraries(eladid-shared PRIVATE hdkey-static ${LIBS} ${SYSTEM_LIBS})
+
+    add_dependencies(ela-did eladid-shared)
 
     install(TARGETS eladid-shared
         EXPORT ElastosDIDConfig

@@ -37,6 +37,8 @@ link_directories(
 
 set(HDKEY_DEPENDS libressl)
 
+add_custom_target(hdkey)
+
 if(ENABLE_STATIC)
     add_library(hdkey-static STATIC ${SRC})
     add_dependencies(hdkey-static ${HDKEY_DEPENDS})
@@ -49,6 +51,8 @@ if(ENABLE_STATIC)
     if(WIN32)
         set_target_properties(hdkey-static PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
     endif()
+
+    add_dependencies(hdkey hdkey-static)
 
     install(TARGETS hdkey-static
         RUNTIME DESTINATION "bin"
@@ -73,6 +77,8 @@ if(ENABLE_SHARED)
     endif()
 
     target_link_libraries(hdkey-shared ${LIBS} ${SYSTEM_LIBS})
+
+    add_dependencies(hdkey hdkey-shared)
 
     install(TARGETS hdkey-shared
         RUNTIME DESTINATION "bin"

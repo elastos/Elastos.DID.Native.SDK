@@ -40,7 +40,7 @@ link_directories(
     ${CMAKE_CURRENT_BINARY_DIR}/../../src)
 
 set(LIBS
-    eladid-shared)
+    eladid)
 
 add_executable(agent ${SRC})
 target_link_libraries(agent ${LIBS} ${SYSTEM_LIBS})
