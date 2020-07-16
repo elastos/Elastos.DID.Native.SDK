@@ -157,10 +157,11 @@ if(WIN32)
         ${ELADID_DEPENDS})
 endif()
 
+set(CMAKE_C_STANDARD 99)
+
 if(ENABLE_STATIC)
     add_library(eladid-static STATIC ${SRC})
     add_dependencies(eladid-static ${ELADID_DEPENDS})
-    set_property(TARGET eladid-static PROPERTY C_STANDARD 99)
 
     #target_compile_definitions(eladid-static PRIVATE DID_STATIC CRYSTAL_STATIC)
     target_compile_definitions(eladid-static PRIVATE DID_STATIC)
@@ -180,7 +181,6 @@ endif()
 if(ENABLE_SHARED)
     add_library(eladid-shared SHARED ${SRC})
     add_dependencies(eladid-shared ${ELADID_DEPENDS})
-    set_property(TARGET eladid-shared PROPERTY C_STANDARD 99)
 
     #target_compile_definitions(eladid-shared PRIVATE DID_DYNAMIC CRYSTAL_DYNAMIC)
     target_compile_definitions(eladid-shared PRIVATE DID_DYNAMIC)
