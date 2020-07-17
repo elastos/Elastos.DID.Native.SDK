@@ -146,11 +146,17 @@ int main(int argc, char *argv[])
     }
 
     do {
+        if (TestData_Init(dummy) == -1) {
+            printf("If you run test cases without wallet dir, please use command option: --dummy. But there are no cases to publishing DID into real chain.\n");
+            printf("Please press any key to exit....");
+            getchar();
+            exit(-1);
+        }
+
         if (CUE_SUCCESS != CU_initialize_registry()) {
             return CU_get_error();
         }
 
-        TestData_Init();
         for (ts = suites; ts->fileName != NULL; ts++) {
             if ((stress_test > 0 || dummy) && !strcmp(ts->fileName, IDCHAIN))
                 continue;
@@ -166,10 +172,9 @@ int main(int argc, char *argv[])
 
         CU_basic_set_mode(CU_BRM_VERBOSE);
         CU_basic_run_tests();
-
-        TestData_Deinit();
         CU_cleanup_registry();
 
+        TestData_Deinit();
 
         if (memstats_file)
             system(memstats_cmd);

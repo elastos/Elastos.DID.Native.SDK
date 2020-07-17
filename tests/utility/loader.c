@@ -424,14 +424,20 @@ DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src)
 }
 
 /////////////////////////////////////
-void TestData_Init(void)
+int TestData_Init(bool dummy)
 {
     char _dir[PATH_MAX];
     char *walletDir;
 
     walletDir = get_wallet_path(_dir, walletdir);
-    adapter = TestDIDAdapter_Create(walletDir, walletId, network, getpassword);
+    if (!dummy && !dir_exist(walletDir)) {
+        printf("Wallet Dir doesn't exist: %s\n", walletDir);
+        return -1;
+    }
+
+    adapter = dummy ? NULL : TestDIDAdapter_Create(walletDir, walletId, network, getpassword);
     dummyadapter = DummyAdapter_Create();
+    return 0;
 }
 
 void TestData_Deinit(void)
