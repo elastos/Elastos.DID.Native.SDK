@@ -718,11 +718,10 @@ DIDDocument *TestData_LoadDoc(void)
     if (rc)
         return NULL;
 
-    /*doc = DID_Resolve(subject, true);
-    if (! &&
-            !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
+    doc = DID_Resolve(subject, true);
+    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
-    DIDDocument_Destroy(doc);*/
+    DIDDocument_Destroy(doc);
 
     return testdata.doc;
 }
