@@ -108,8 +108,6 @@ int main(int argc, char *argv[])
     free((void*)data);
 
 cleanup:
-    printf("Please press any key to exit resolver.\n");
-    getchar();
-    exit(-1);
+    return 0;
 }
 
