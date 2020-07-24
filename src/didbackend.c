@@ -219,7 +219,7 @@ static int resolve_from_backend(ResolveResult *result, DID *did, bool all)
     assert(did);
 
     data = resolverInstance->resolve(resolverInstance,
-            DID_ToString(did, _idstring, sizeof(_idstring)), true);
+            DID_ToString(did, _idstring, sizeof(_idstring)), all);
     if (!data) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve did %s failed.", did->idstring);
         return rc;
@@ -328,7 +328,7 @@ DIDDocument *DIDBackend_Resolve(DID *did, bool force)
     return doc;
 }
 
-DIDDocument **DIDBackend_ResolveAll(DID *did)
+DIDHistory *DIDBackend_ResolveHistory(DID *did)
 {
     DIDDocument **docs;
     ResolveResult result;
@@ -350,25 +350,13 @@ DIDDocument **DIDBackend_ResolveAll(DID *did)
         return NULL;
     }
 
-    size = ResolveResult_GetTransactionCount(&result);
-    if (size == -1) {
+    if (ResolveResult_GetStatus(&result) == STATUS_NOT_FOUND) {
         ResolveResult_Destroy(&result);
+        DIDError_Set(DIDERR_NOT_EXISTS, "DID not exists.");
         return NULL;
     }
 
-    docs = (DIDDocument**)calloc(size + 1, sizeof(DIDDocument*));
-    if (!docs) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for documents failed.");
-        ResolveResult_Destroy(&result);
-        return NULL;
-    }
-
-    for (int i = 0; i < size; i++)
-        docs[i] = result.txinfos.infos[i].request.doc;
-
-    docs[size] = NULL;
-    ResolveResult_Free(&result);
-    return docs;
+    return ResolveResult_ToDIDHistory(&result);
 }
 
 void DIDBackend_SetTTL(long _ttl)

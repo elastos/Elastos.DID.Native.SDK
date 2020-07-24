@@ -20,34 +20,38 @@
  * SOFTWARE.
  */
 
-#ifndef __DIDBACKEND_H__
-#define __DIDBACKEND_H__
+#ifndef __DIDHISTORY_H__
+#define __DIDHISTORY_H__
+
+#include <cjson/cJSON.h>
 
 #include "ela_did.h"
+#include "didtransactioninfo.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct DIDBackend {
-    DIDAdapter *adapter;
-} DIDBackend;
+typedef enum DIDStatus
+{
+    STATUS_VALID,
+    STATUS_EXPIRED,
+    STATUS_DEACTIVATED,
+    STATUS_NOT_FOUND
+} DIDStatus;
 
-bool DIDBackend_Create(DIDBackend *backend, DIDDocument *document,
-        DIDURL *signkey, const char *storepass);
+struct DIDHistory {
+    DID did;
+    DIDStatus status;
 
-bool DIDBackend_Update(DIDBackend *backend, DIDDocument *document,
-        DIDURL *signkey, const char *storepass);
-
-bool DIDBackend_Deactivate(DIDBackend *backend, DID *did,
-        DIDURL *signkey, const char *storepass);
-
-DIDDocument *DIDBackend_Resolve(DID *did, bool force);
-
-DIDHistory *DIDBackend_ResolveHistory(DID *did);
+    struct {
+        size_t size;
+        DIDTransactionInfo *infos;
+    } txinfos;
+};
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //__DIDBACKEND_H__
+#endif //__DIDHISTORY_H__

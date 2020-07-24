@@ -31,6 +31,7 @@
 #include "diddocument.h"
 #include "JsonGenerator.h"
 #include "resolveresult.h"
+#include "didhistory.h"
 
 int ResolveResult_FromJson(ResolveResult *result, cJSON *json, bool all)
 {
@@ -218,4 +219,27 @@ DIDTransactionInfo *ResolveResult_GetTransactionInfo(ResolveResult *result, int 
     assert(index >= 0);
 
     return &result->txinfos.infos[index];
+}
+
+DIDHistory *ResolveResult_ToDIDHistory(ResolveResult *result)
+{
+    DIDHistory *history;
+    size_t size;
+
+    assert(result);
+
+    size = result->txinfos.size;
+    if (size == 0) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "No transaction from resolve result.");
+        return NULL;
+    }
+
+    history = (DIDHistory*)calloc(1, sizeof(DIDHistory));
+    if (!history) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for didhistory failed.");
+        return NULL;
+    }
+
+    memcpy(history, result, sizeof(DIDHistory));
+    return history;
 }

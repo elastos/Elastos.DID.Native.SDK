@@ -1133,7 +1133,7 @@ static int services_copy(DIDDocument *doc, Service **services, size_t size)
     return 0;
 }
 
-static int document_copy(DIDDocument *destdoc, DIDDocument *srcdoc)
+int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc)
 {
     size_t size;
     int i;
@@ -1179,7 +1179,7 @@ DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document)
         return NULL;
     }
 
-    if (document && document_copy(builder->document, document) == -1) {
+    if (document && DIDDocument_Copy(builder->document, document) == -1) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Document copy failed.");
         DIDDocumentBuilder_Destroy(builder);
         return NULL;

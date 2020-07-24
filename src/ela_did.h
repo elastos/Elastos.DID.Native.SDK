@@ -194,6 +194,11 @@ typedef struct DIDDocument          DIDDocument;
 typedef struct DIDMetaData          DIDMetaData;
 /**
  * \~English
+ DIDHistroy stores all did transactions from chain.
+ */
+typedef struct DIDHistory           DIDHistory;
+/**
+ * \~English
  * A DIDDocument Builder to modify DIDDocument elems.
  */
 typedef struct DIDDocumentBuilder   DIDDocumentBuilder;
@@ -522,11 +527,11 @@ DID_API DIDDocument *DID_Resolve(DID *did, bool force);
  * @param
  *      did                      [in] The handle of DID.
  * @return
- *      If no error occurs, return the handle to DID Document buffter. Free
+ *      If no error occurs, return the handle to DIDHistory. Free
  *      Otherwise, return NULL.
- * @ User need to free the return value and destroy every DID Document.
+ * @ User need to destory didhistory.
  */
-DID_API DIDDocument **DID_ResolveAll(DID *did);
+DID_API DIDHistory *DID_ResolveHistory(DID *did);
 
 /**
  * \~English
@@ -950,6 +955,104 @@ DID_API bool CredentialMetaData_GetExtraAsBoolean(CredentialMetaData *metadata,
  */
 DID_API double CredentialMetaData_GetExtraAsDouble(CredentialMetaData *metadata,
         const char *key);
+
+/******************************************************************************
+ * DIDHistory
+ *****************************************************************************/
+
+/**
+ * \~English
+ * Get owner of DID resolved history.
+ *
+ * @param
+ *      history                       [in] The handle to DIDHistory.
+ * @return
+ *      If no error occurs, return the handle to DID. Destroy DID after finishing use.
+ *      Otherwise, return NULL.
+ */
+DID_API DID *DIDHistory_GetOwner(DIDHistory *history);
+
+/**
+ * \~English
+ * Get DID status of DID.
+ *
+ * @param
+ *      history                       [in] The handle to DIDHistory.
+ * @return
+*      If no error occurs, return DID status. Otherwise, return 'STATUS_NOT_FOUND'.
+ */
+DID_API int DIDHistory_GetStatus(DIDHistory *history);
+
+/**
+ * \~English
+ * Get DID transaction count.
+ *
+ * @param
+ *      history                       [in] The handle to DIDHistory.
+ * @return
+*      If no error occurs, return count. Otherwise, return -1.
+ */
+DID_API ssize_t DIDHistory_GetTransactionCount(DIDHistory *history);
+
+/**
+ * \~English
+ * Get DID Document from 'index' transaction.
+ *
+ * @param
+ *      history                       [in] The handle to DIDHistory.
+ * @return
+ *      If no error occurs, return the handle to DID Document. Destroy DID Document
+ *      after finishing use.
+ *      Otherwise, return NULL.
+ */
+DID_API DIDDocument *DIDHistory_GetTxDocumentByIndex(DIDHistory *history, int index);
+
+/**
+ * \~English
+ * Get transaction id from 'index' transaction.
+ *
+ * @param
+ *      history                       [in] The handle to DIDHistory.
+ * @return
+ *      If no error occurs, return transaction. Free the return value
+ *      after finishing use.
+ *      Otherwise, return NULL.
+ */
+DID_API const char *DIDHistory_GetTxIDByIndex(DIDHistory *history, int index);
+
+/**
+ * \~English
+ * Get published time from 'index' transaction.
+ *
+ * @param
+ *      history                       [in] The handle to DIDHistory.
+ * @return
+*      If no error occurs, return published time. Otherwise, return 0.
+ */
+DID_API time_t DIDHistory_GetTxPublishedByIndex(DIDHistory *history, int index);
+
+/**
+ * \~English
+ * Get operation of 'index' transaction. Operation: 'created', 'update' and 'deactivated'.
+ *
+ * @param
+ *      history                       [in] The handle to DIDHistory.
+ * @return
+ *       If no error occurs, return operation string. Free the return value after
+ *       finishing use.
+ *       Otherwise, return -1.
+ */
+DID_API const char *DIDHistory_GetTxOperationByIndex(DIDHistory *history, int index);
+
+/**
+ * \~English
+ * Destroy DIDHistory.
+ *
+ * @param
+ *      history               [in] A handle to DIDHistory.
+ */
+DID_API void DIDHistory_Destroy(DIDHistory *history);
+
 /******************************************************************************
  * DIDDocument
  *****************************************************************************/
