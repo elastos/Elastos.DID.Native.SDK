@@ -96,17 +96,17 @@ typedef enum {
      * \~English
      * List all dids.
      */
-    DID_FILTER_ALL = 0,
+    Did_Filter_All = 0,
     /**
      * \~English
      * List dids that contain private key.
      */
-    DID_FILTER_HAS_PRIVATEKEY = 1,
+    Did_Filter_Has_PrivateKey = 1,
     /**
      * \~English
      * List dids without private key contained.
      */
-    DID_FILTER_NO_PRIVATEKEY = 2
+    Did_Filter_NO_PrivateKey = 2
 } ELA_DID_FILTER;
 
 /**
@@ -984,7 +984,7 @@ DID_API DID *DIDHistory_GetOwner(DIDHistory *history);
  * @param
  *      history                       [in] The handle to DIDHistory.
  * @return
-*      If no error occurs, return DID status. Otherwise, return 'STATUS_NOT_FOUND'.
+*      If no error occurs, return DID status. Otherwise, return -1.
  */
 DID_API int DIDHistory_GetStatus(DIDHistory *history);
 
@@ -1012,7 +1012,7 @@ DID_API ssize_t DIDHistory_GetTransactionCount(DIDHistory *history);
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API DIDDocument *DIDHistory_GetTxDocumentByIndex(DIDHistory *history, int index);
+DID_API DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int index);
 
 /**
  * \~English
@@ -1026,7 +1026,7 @@ DID_API DIDDocument *DIDHistory_GetTxDocumentByIndex(DIDHistory *history, int in
  *      If no error occurs, return transaction.
  *      Otherwise, return NULL.
  */
-DID_API const char *DIDHistory_GetTxIDByIndex(DIDHistory *history, int index);
+DID_API const char *DIDHistory_GetTransactionIdByIndex(DIDHistory *history, int index);
 
 /**
  * \~English
@@ -1039,7 +1039,7 @@ DID_API const char *DIDHistory_GetTxIDByIndex(DIDHistory *history, int index);
  * @return
 *      If no error occurs, return published time. Otherwise, return 0.
  */
-DID_API time_t DIDHistory_GetTxPublishedByIndex(DIDHistory *history, int index);
+DID_API time_t DIDHistory_GetPublishedByIndex(DIDHistory *history, int index);
 
 /**
  * \~English
@@ -1053,7 +1053,7 @@ DID_API time_t DIDHistory_GetTxPublishedByIndex(DIDHistory *history, int index);
  *       If no error occurs, return operation string.
  *       Otherwise, return -1.
  */
-DID_API const char *DIDHistory_GetTxOperationByIndex(DIDHistory *history, int index);
+DID_API const char *DIDHistory_GetOperationByIndex(DIDHistory *history, int index);
 
 /**
  * \~English

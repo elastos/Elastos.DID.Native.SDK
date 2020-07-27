@@ -36,6 +36,7 @@
 #include "resolveresult.h"
 #include "resolvercache.h"
 #include "diderror.h"
+#include "didhistory.h"
 
 #define DEFAULT_TTL    (24 * 60 * 60 * 1000)
 
@@ -251,7 +252,7 @@ static int resolve_from_backend(ResolveResult *result, DID *did, bool all)
     if (ResolveResult_FromJson(result, item, all) == -1)
         goto errorExit;
 
-    if (ResolveResult_GetStatus(result) != STATUS_NOT_FOUND && !all && ResolveCache_Store(result, did) == -1)
+    if (ResolveResult_GetStatus(result) != DIDStatus_Not_Found && !all && ResolveCache_Store(result, did) == -1)
         goto errorExit;
 
     rc = 0;
@@ -308,11 +309,11 @@ DIDDocument *DIDBackend_Resolve(DID *did, bool force)
         return NULL;
     }
 
-    if (ResolveResult_GetStatus(&result) == STATUS_NOT_FOUND) {
+    if (ResolveResult_GetStatus(&result) == DIDStatus_Not_Found) {
         ResolveResult_Destroy(&result);
         DIDError_Set(DIDERR_NOT_EXISTS, "DID not exists.");
         return NULL;
-    } else if (ResolveResult_GetStatus(&result) == STATUS_DEACTIVATED) {
+    } else if (ResolveResult_GetStatus(&result) == DIDStatus_Deactivated) {
         ResolveResult_Destroy(&result);
         DIDError_Set(DIDERR_DID_DEACTIVATED, "DID is deactivated.");
         return NULL;
@@ -350,7 +351,7 @@ DIDHistory *DIDBackend_ResolveHistory(DID *did)
         return NULL;
     }
 
-    if (ResolveResult_GetStatus(&result) == STATUS_NOT_FOUND) {
+    if (ResolveResult_GetStatus(&result) == DIDStatus_Not_Found) {
         ResolveResult_Destroy(&result);
         DIDError_Set(DIDERR_NOT_EXISTS, "DID not exists.");
         return NULL;

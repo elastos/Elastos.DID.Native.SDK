@@ -61,7 +61,6 @@ static DIDTransactionInfo *get_transaction(DID *did, int index)
 
     info = infos[index];
     return DID_Equals(did, DIDTransactionInfo_GetOwner(info)) ? info : NULL;
-            return info;
 }
 
 static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *payload, const char *memo)

@@ -228,7 +228,7 @@ static void test_idchain_publishdid(void)
     CU_ASSERT_TRUE_FATAL(bEqual);
 
     for (i = 0; i < 3; i++) {
-        doc = DIDHistory_GetTxDocumentByIndex(history, i);
+        doc = DIDHistory_GetDocumentByIndex(history, i);
         CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
         CU_ASSERT_STRING_EQUAL(signs[2-i], DIDDocument_GetProofSignature(doc));
         DIDDocument_Destroy(doc);

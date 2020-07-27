@@ -58,7 +58,7 @@ int DIDHistory_GetStatus(DIDHistory *history)
 {
     if (!history) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return STATUS_NOT_FOUND;
+        return -1;
     }
 
     return history->status;
@@ -74,7 +74,7 @@ ssize_t DIDHistory_GetTransactionCount(DIDHistory *history)
     return history->txinfos.size;
 }
 
-DIDDocument *DIDHistory_GetTxDocumentByIndex(DIDHistory *history, int index)
+DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int index)
 {
     DIDDocument *doc;
 
@@ -107,7 +107,7 @@ DIDDocument *DIDHistory_GetTxDocumentByIndex(DIDHistory *history, int index)
     return doc;
 }
 
-const char *DIDHistory_GetTxIDByIndex(DIDHistory *history, int index)
+const char *DIDHistory_GetTransactionIdByIndex(DIDHistory *history, int index)
 {
     if (!history || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -122,7 +122,7 @@ const char *DIDHistory_GetTxIDByIndex(DIDHistory *history, int index)
     return history->txinfos.infos[index].txid;
 }
 
-time_t DIDHistory_GetTxPublishedByIndex(DIDHistory *history, int index)
+time_t DIDHistory_GetPublishedByIndex(DIDHistory *history, int index)
 {
     if (!history || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -137,7 +137,7 @@ time_t DIDHistory_GetTxPublishedByIndex(DIDHistory *history, int index)
     return history->txinfos.infos[index].timestamp;
 }
 
-const char *DIDHistory_GetTxOperationByIndex(DIDHistory *history, int index)
+const char *DIDHistory_GetOperationByIndex(DIDHistory *history, int index)
 {
     if (!history || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");

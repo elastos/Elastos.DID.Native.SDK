@@ -32,10 +32,10 @@ extern "C" {
 
 typedef enum DIDStatus
 {
-    STATUS_VALID = 0,
-    STATUS_EXPIRED,
-    STATUS_DEACTIVATED,
-    STATUS_NOT_FOUND
+    DIDStatus_Valid = 0,
+    DIDStatus_Expired,
+    DIDStatus_Deactivated,
+    DIDStatus_Not_Found
 } DIDStatus;
 
 struct DIDHistory {

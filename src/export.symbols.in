@@ -18,10 +18,10 @@ _DID_SaveMetaData
 _DIDHistory_GetOwner
 _DIDHistory_GetStatus
 _DIDHistory_GetTransactionCount
-_DIDHistory_GetTxDocumentByIndex
-_DIDHistory_GetTxIDByIndex
-_DIDHistory_GetTxPublishedByIndex
-_DIDHistory_GetTxOperationByIndex
+_DIDHistory_GetDocumentByIndex
+_DIDHistory_GetTransactionIdByIndex
+_DIDHistory_GetPublishedByIndex
+_DIDHistory_GetOperationByIndex
 _DIDHistory_Destroy
 
 # DIDMetaData

@@ -62,13 +62,13 @@ int ResolveResult_FromJson(ResolveResult *result, cJSON *json, bool all)
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid resolve result status.");
         return -1;
     }
-    if (item->valueint > STATUS_NOT_FOUND) {
+    if (item->valueint > DIDStatus_Not_Found) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Unknown DID status code.");
         return -1;
     }
     result->status = item->valueint;
 
-    if (result->status != STATUS_NOT_FOUND) {
+    if (result->status != DIDStatus_Not_Found) {
         item = cJSON_GetObjectItem(json, "transaction");
         if (!item) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing transaction.");
@@ -168,7 +168,7 @@ static int resolveresult_tojson_internal(JsonGenerator *gen, ResolveResult *resu
             DID_ToString(&result->did, id, sizeof(id))));
     CHECK(JsonGenerator_WriteFieldName(gen, "status"));
     CHECK(JsonGenerator_WriteNumber(gen, result->status));
-    if (result->status != STATUS_NOT_FOUND) {
+    if (result->status != DIDStatus_Not_Found) {
         CHECK(JsonGenerator_WriteFieldName(gen, "transaction"));
         CHECK(JsonGenerator_WriteStartArray(gen));
         for (i = 0; i < result->txinfos.size; i++)
