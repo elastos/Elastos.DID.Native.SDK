@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Elastos Foundation
+ * Copyright (c) 2020 Elastos Foundation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,8 +34,11 @@ void DIDHistory_Destroy(DIDHistory *history)
     if (!history)
         return;
 
-    if (history->txinfos.size > 0 && history->txinfos.infos) {
-        for (int i = 0; i < history->txinfos.size; i++)
+    if (history->txinfos.infos) {
+        int i;
+        assert(history->txinfos.size > 0);
+
+        for (i = 0; i < history->txinfos.size; i++)
             DIDTransactionInfo_Destroy(&history->txinfos.infos[i]);
     }
     free(history);
@@ -43,21 +46,12 @@ void DIDHistory_Destroy(DIDHistory *history)
 
 DID *DIDHistory_GetOwner(DIDHistory *history)
 {
-    DID *did;
-
     if (!history) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    did = (DID*)calloc(1, sizeof(DID));
-    if (!did) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for DID failed.");
-        return NULL;
-    }
-
-    strcpy(did->idstring, history->did.idstring);
-    return did;
+    return &history->did;
 }
 
 int DIDHistory_GetStatus(DIDHistory *history)
@@ -125,7 +119,7 @@ const char *DIDHistory_GetTxIDByIndex(DIDHistory *history, int index)
         return NULL;
     }
 
-    return strdup(history->txinfos.infos[index].txid);
+    return history->txinfos.infos[index].txid;
 }
 
 time_t DIDHistory_GetTxPublishedByIndex(DIDHistory *history, int index)
@@ -155,5 +149,5 @@ const char *DIDHistory_GetTxOperationByIndex(DIDHistory *history, int index)
         return NULL;
     }
 
-    return strdup(history->txinfos.infos[index].request.header.op);
+    return history->txinfos.infos[index].request.header.op;
 }

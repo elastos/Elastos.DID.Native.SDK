@@ -26,11 +26,11 @@ static int num;
 static int get_txid(char *txid)
 {
     static char *chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    int flag;
+    int flag, i;
 
     assert(txid);
 
-    for (int i = 0; i < TXID_LEN; i++)
+    for (i = 0; i < TXID_LEN; i++)
         txid[i] = chars[rand() % 62];
 
     txid[TXID_LEN] = 0;
@@ -40,10 +40,11 @@ static int get_txid(char *txid)
 static DIDTransactionInfo *get_lasttransaction(DID *did)
 {
     DIDTransactionInfo *info;
+    int i;
 
     assert(did);
 
-    for (int i = num - 1; i >= 0; i--) {
+    for (i = num - 1; i >= 0; i--) {
         info = infos[i];
         if (DID_Equals(did, DIDTransactionInfo_GetOwner(info)))
             return info;
@@ -59,10 +60,8 @@ static DIDTransactionInfo *get_transaction(DID *did, int index)
     assert(index >= 0 && index < num);
 
     info = infos[index];
-    if (DID_Equals(did, DIDTransactionInfo_GetOwner(info)))
+    return DID_Equals(did, DIDTransactionInfo_GetOwner(info)) ? info : NULL;
             return info;
-
-    return NULL;
 }
 
 static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *payload, const char *memo)
@@ -185,7 +184,8 @@ static int result_tojson(JsonGenerator *gen, DID *did, bool all)
     CHECK(JsonGenerator_WriteFieldName(gen, "transaction"));
     CHECK(JsonGenerator_WriteStartArray(gen));
     if (all) {
-        for (int i = num - 1; i >= 0; i--) {
+        int i;
+        for (i = num - 1; i >= 0; i--) {
             info = get_transaction(did, i);
             if (info)
                 CHECK(DIDTransactionInfo_ToJson_Internal(gen, info));
@@ -249,7 +249,8 @@ const char* DummyAdapter_Resolve(DIDResolver *resolver, const char *did, int all
 
 static void DummyAdapter_Reset(DummyAdapter *adapter)
 {
-    for (int i = 0; i < num; i++) {
+    int i;
+    for (i = 0; i < num; i++) {
         DIDTransactionInfo_Destroy(infos[i]);
         free(infos[i]);
     }
@@ -267,7 +268,8 @@ DummyAdapter *DummyAdapter_Create(void)
 
 void DummyAdapter_Destroy(void)
 {
-    for (int i = 0; i < num; i++) {
+    int i;
+    for (i = 0; i < num; i++) {
         DIDTransactionInfo_Destroy(infos[i]);
         free(infos[i]);
     }

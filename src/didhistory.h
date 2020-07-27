@@ -23,8 +23,6 @@
 #ifndef __DIDHISTORY_H__
 #define __DIDHISTORY_H__
 
-#include <cjson/cJSON.h>
-
 #include "ela_did.h"
 #include "didtransactioninfo.h"
 
@@ -34,7 +32,7 @@ extern "C" {
 
 typedef enum DIDStatus
 {
-    STATUS_VALID,
+    STATUS_VALID = 0,
     STATUS_EXPIRED,
     STATUS_DEACTIVATED,
     STATUS_NOT_FOUND

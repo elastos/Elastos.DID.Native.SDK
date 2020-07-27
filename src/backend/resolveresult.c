@@ -36,7 +36,7 @@
 int ResolveResult_FromJson(ResolveResult *result, cJSON *json, bool all)
 {
     cJSON *root, *item, *field;
-    int size = 0;
+    int i, size = 0;
 
     assert(result);
     assert(json);
@@ -95,7 +95,7 @@ int ResolveResult_FromJson(ResolveResult *result, cJSON *json, bool all)
             return -1;
         }
 
-        for (int i = 0; i < size; i++) {
+        for (i = 0; i < size; i++) {
             field = cJSON_GetArrayItem(item, i);
             if (!field) {
                 DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing resovled transaction.");
@@ -131,10 +131,12 @@ int ResolveResult_FromJson(ResolveResult *result, cJSON *json, bool all)
 
 void ResolveResult_Destroy(ResolveResult *result)
 {
+    int i;
+
     if (!result || !result->txinfos.infos)
         return;
 
-    for (int i = 0; i < result->txinfos.size; i++)
+    for (i = 0; i < result->txinfos.size; i++)
         DIDTransactionInfo_Destroy(&result->txinfos.infos[i]);
 
     free(result->txinfos.infos);
@@ -142,10 +144,12 @@ void ResolveResult_Destroy(ResolveResult *result)
 
 void ResolveResult_Free(ResolveResult *result)
 {
+    int i;
+
     if (!result || !result->txinfos.infos)
         return;
 
-    for (int i = 0; i < result->txinfos.size; i++)
+    for (i = 0; i < result->txinfos.size; i++)
         DIDTransactionInfo_Free(&result->txinfos.infos[i]);
 
     free(result->txinfos.infos);
@@ -154,6 +158,8 @@ void ResolveResult_Free(ResolveResult *result)
 static int resolveresult_tojson_internal(JsonGenerator *gen, ResolveResult *result)
 {
     char id[ELA_MAX_DIDURL_LEN];
+    int i;
+
     assert(gen);
     assert(result);
 
@@ -165,7 +171,7 @@ static int resolveresult_tojson_internal(JsonGenerator *gen, ResolveResult *resu
     if (result->status != STATUS_NOT_FOUND) {
         CHECK(JsonGenerator_WriteFieldName(gen, "transaction"));
         CHECK(JsonGenerator_WriteStartArray(gen));
-        for (int i = 0; i < result->txinfos.size; i++)
+        for (i = 0; i < result->txinfos.size; i++)
             //todo: check
             CHECK(DIDTransactionInfo_ToJson_Internal(gen, &result->txinfos.infos[i]));
         CHECK(JsonGenerator_WriteEndArray(gen));
