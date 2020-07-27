@@ -226,7 +226,6 @@ static void test_idchain_publishdid(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(owner);
     bool bEqual = DID_Equals(&did, owner);
     CU_ASSERT_TRUE_FATAL(bEqual);
-    DID_Destroy(owner);
 
     for (i = 0; i < 3; i++) {
         doc = DIDHistory_GetTxDocumentByIndex(history, i);
