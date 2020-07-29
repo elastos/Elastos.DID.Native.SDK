@@ -96,17 +96,17 @@ typedef enum {
      * \~English
      * List all dids.
      */
-    Did_Filter_All = 0,
+    DIDFilter_All = 0,
     /**
      * \~English
      * List dids that contain private key.
      */
-    Did_Filter_Has_PrivateKey = 1,
+    DIDFilter_HasPrivateKey = 1,
     /**
      * \~English
      * List dids without private key contained.
      */
-    Did_Filter_NO_PrivateKey = 2
+    DIDFilter_WithoutPrivateKey = 2
 } ELA_DID_FILTER;
 
 /**

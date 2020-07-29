@@ -252,7 +252,7 @@ static int resolve_from_backend(ResolveResult *result, DID *did, bool all)
     if (ResolveResult_FromJson(result, item, all) == -1)
         goto errorExit;
 
-    if (ResolveResult_GetStatus(result) != DIDStatus_Not_Found && !all && ResolveCache_Store(result, did) == -1)
+    if (ResolveResult_GetStatus(result) != DIDStatus_NotFound && !all && ResolveCache_Store(result, did) == -1)
         goto errorExit;
 
     rc = 0;
@@ -309,7 +309,7 @@ DIDDocument *DIDBackend_Resolve(DID *did, bool force)
         return NULL;
     }
 
-    if (ResolveResult_GetStatus(&result) == DIDStatus_Not_Found) {
+    if (ResolveResult_GetStatus(&result) == DIDStatus_NotFound) {
         ResolveResult_Destroy(&result);
         DIDError_Set(DIDERR_NOT_EXISTS, "DID not exists.");
         return NULL;
@@ -351,7 +351,7 @@ DIDHistory *DIDBackend_ResolveHistory(DID *did)
         return NULL;
     }
 
-    if (ResolveResult_GetStatus(&result) == DIDStatus_Not_Found) {
+    if (ResolveResult_GetStatus(&result) == DIDStatus_NotFound) {
         ResolveResult_Destroy(&result);
         DIDError_Set(DIDERR_NOT_EXISTS, "DID not exists.");
         return NULL;

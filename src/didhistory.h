@@ -35,7 +35,7 @@ typedef enum DIDStatus
     DIDStatus_Valid = 0,
     DIDStatus_Expired,
     DIDStatus_Deactivated,
-    DIDStatus_Not_Found
+    DIDStatus_NotFound
 } DIDStatus;
 
 struct DIDHistory {
