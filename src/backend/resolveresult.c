@@ -99,18 +99,15 @@ int ResolveResult_FromJson(ResolveResult *result, cJSON *json, bool all)
             field = cJSON_GetArrayItem(item, i);
             if (!field) {
                 DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing resovled transaction.");
-                ResolveResult_Destroy(result);
                 return -1;
             }
             if (!cJSON_IsObject(field)) {
                 DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid resovled transaction.");
-                ResolveResult_Destroy(result);
                 return -1;
             }
 
             DIDTransactionInfo *txinfo = &result->txinfos.infos[i];
             if (DIDTransactionInfo_FromJson(txinfo, field) == -1) {
-                ResolveResult_Destroy(result);
                 return -1;
             }
 
@@ -140,6 +137,7 @@ void ResolveResult_Destroy(ResolveResult *result)
         DIDTransactionInfo_Destroy(&result->txinfos.infos[i]);
 
     free(result->txinfos.infos);
+    memset(result, 0, sizeof(ResolveResult));
 }
 
 void ResolveResult_Free(ResolveResult *result)
