@@ -26,7 +26,7 @@ static int num;
 static int get_txid(char *txid)
 {
     static char *chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    int flag, i;
+    int i;
 
     assert(txid);
 
@@ -213,7 +213,6 @@ static int resolve_tojson(JsonGenerator *gen, DID *did, bool all)
 
 const char* DummyAdapter_Resolve(DIDResolver *resolver, const char *did, int all)
 {
-    DIDTransactionInfo *info;
     JsonGenerator g, *gen;
     DID *_did;
     int rc;

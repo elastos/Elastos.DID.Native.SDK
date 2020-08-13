@@ -24,6 +24,11 @@ if(HAVE_SYS_RESOURCE_H)
     add_definitions(-DHAVE_SYS_RESOURCE_H=1)
 endif()
 
+check_include_file(direct.h HAVE_DIRECT_H)
+if(HAVE_DIRECT_H)
+    add_definitions(-DHAVE_DIRECT_H=1)
+endif()
+
 set(SRC
     main.c)
 
@@ -41,6 +46,16 @@ link_directories(
 
 set(LIBS
     eladid)
+
+if(WIN32)
+    set(LIBS
+        ${LIBS}
+        crystal)
+else()
+    set(LIBS
+        ${LIBS}
+        libcrystal)
+endif()
 
 add_executable(agent ${SRC})
 target_link_libraries(agent ${LIBS} ${SYSTEM_LIBS})

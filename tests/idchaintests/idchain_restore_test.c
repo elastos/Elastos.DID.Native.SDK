@@ -73,9 +73,7 @@ static int get_did(DID *did, void *context)
 {
     DIDs *dids = (DIDs*)context;
 
-    char alias[ELA_MAX_ALIAS_LEN];
     DIDDocument *doc = NULL;
-    int rc;
 
     if (!did)
         return 0;
@@ -113,7 +111,7 @@ static void test_idchain_restore(void)
 {
     int rc;
     char _path[PATH_MAX], cachedir[PATH_MAX];
-    const char *path, *mnemonic;
+    const char *path;
     DIDStore *store;
     DIDs dids;
     DIDs restore_dids;
@@ -181,7 +179,7 @@ static void test_sync_with_localmodification1(void)
 {
     int rc, i;
     char _path[PATH_MAX], modified_signature[MAX_DOC_SIGN], cachedir[PATH_MAX];
-    const char *path, *mnemonic;
+    const char *path;
     DIDStore *store;
     DIDs dids;
 
@@ -277,7 +275,7 @@ static void test_sync_with_localmodification2(void)
 {
     int rc, i;
     char _path[PATH_MAX], origin_signature[MAX_DOC_SIGN], cachedir[PATH_MAX];
-    const char *path, *mnemonic;
+    const char *path;
     DIDStore *store;
     DIDs dids;
 

@@ -4,6 +4,7 @@
 #include <unistd.h>
 #endif
 #include <limits.h>
+#include <crystal.h>
 
 #include <CUnit/Basic.h>
 #include "constant.h"

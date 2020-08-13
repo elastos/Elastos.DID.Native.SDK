@@ -4,7 +4,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <crystal.h>
+//#include <crystal.h>
 #include <CUnit/Basic.h>
 #include <limits.h>
 
@@ -20,7 +20,6 @@ static int get_vc(DIDURL *id, void *context)
     int *count = (int*)context;
 
     const char *alias;
-    int rc;
     CredentialMetaData *metadata;
 
     if (!id)
@@ -160,8 +159,6 @@ static void test_didstore_list_vcs(void)
     Credential *vc;
     DID *did;
     int rc, count = 0;
-    bool isEquals;
-    DIDURL vcs[4];
 
     storePath = get_store_path(_path, "/servet");
     store = TestData_SetupStore(true, storePath);
@@ -217,8 +214,6 @@ static void test_didstore_delete_vc(void)
     DIDURL *id;
     DID *did;
     int rc, count = 0;
-    bool isEquals;
-    DIDURL vcs[4];
     bool isDeleted;
 
     storePath = get_store_path(_path, "/servet");

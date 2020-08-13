@@ -4,8 +4,9 @@
 #include <unistd.h>
 #endif
 #include <limits.h>
-
 #include <CUnit/Basic.h>
+#include <crystal.h>
+
 #include "ela_did.h"
 #include "loader.h"
 #include "constant.h"

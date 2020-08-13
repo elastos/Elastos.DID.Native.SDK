@@ -3,6 +3,7 @@
 #include <CUnit/Basic.h>
 
 #include "crypto.h"
+#include "loader.h"
 
 static char *base64output[] = {
     "AA",

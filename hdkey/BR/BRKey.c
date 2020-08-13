@@ -28,8 +28,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include <unistd.h>             // getpid()
 #include <pthread.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>  // getpid()
+#endif
+
+#include "win_helper.h"
 
 #define BITCOIN_PRIVKEY      128
 #define BITCOIN_PRIVKEY_TEST 239
@@ -42,6 +46,7 @@
 #define USE_BASIC_CONFIG       1
 #define ENABLE_MODULE_RECOVERY 1
 
+#if defined(__APPLE__)
 #pragma clang diagnostic push
 #pragma GCC diagnostic push
 #pragma clang diagnostic ignored "-Wconversion"
@@ -52,10 +57,15 @@
 #ifndef __clang__
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
+#endif
+
 #include "../secp256k1/src/basic-config.h"
 #include "../secp256k1/src/secp256k1.c"
+
+#if defined(__APPLE__)
 #pragma clang diagnostic pop
 #pragma GCC diagnostic pop
+#endif
 
 static pthread_once_t _rand_once = PTHREAD_ONCE_INIT;
 
@@ -159,7 +169,7 @@ void BRKeyECDH(const BRKey *privKey, uint8_t *out32, BRKey *pubKey)
 int BRPrivKeyIsValid(const char *privKey)
 {
     uint8_t data[34];
-    size_t dataLen, strLen;
+    size_t dataLen, strLen, scount;
     int r = 0;
 
     assert(privKey != NULL);
@@ -175,17 +185,18 @@ int BRPrivKeyIsValid(const char *privKey)
 #endif
     }
     else if ((strLen == 30 || strLen == 22) && privKey[0] == 'S') { // mini private key format
-        char s[strLen + 2];
+        scount = strLen + 2;
+        char *s = (char*)alloca(scount);
 
-        strncpy(s, privKey, sizeof(s));
-        s[sizeof(s) - 2] = '?';
-        BRSHA256(data, s, sizeof(s) - 1);
-        mem_clean(s, sizeof(s));
+        strncpy(s, privKey, scount);
+        s[scount - 2] = '?';
+        BRSHA256(data, s, scount - 1);
+        mem_clean(s, scount);
         r = (data[0] == 0);
     }
     else r = (strspn(privKey, "0123456789ABCDEFabcdef") == 64); // hex encoded key
 
-    mem_clean(data, sizeof(data));
+    mem_clean(data, scount);
     return r;
 }
 

@@ -62,7 +62,6 @@ static int proof_toJson(JsonGenerator *gen, Presentation *pre, int compact)
 static int presentation_tojson_internal(JsonGenerator *gen, Presentation *pre,
         bool compact, bool forsign)
 {
-    char id[ELA_MAX_DIDURL_LEN];
     char _timestring[DOC_BUFFER_LEN];
 
     assert(gen);
@@ -296,7 +295,6 @@ static int add_credential(Credential **creds, int index, Credential *cred)
 static const char* presentation_tojson_forsign(Presentation *pre, bool compact, bool forsign)
 {
     JsonGenerator g, *gen;
-    char id[ELA_MAX_DIDURL_LEN];
 
     if (!pre)
         return NULL;
@@ -422,7 +420,7 @@ errorExit:
 
 void Presentation_Destroy(Presentation *pre)
 {
-    int i;
+    size_t i;
 
     if (!pre)
         return;
@@ -516,7 +514,6 @@ Presentation *Presentation_FromJson(const char *json)
 {
     cJSON *root;
     Presentation *pre;
-    int i;
 
     if (!json) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -593,7 +590,7 @@ ssize_t Presentation_GetCredentials(Presentation *pre, Credential **creds, size_
 Credential *Presentation_GetCredential(Presentation *pre, DIDURL *credid)
 {
     Credential *cred;
-    int i;
+    size_t i;
 
     if (!pre || !credid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -667,7 +664,8 @@ bool Presentation_IsGenuine(Presentation *pre)
 {
     DID *signer;
     DIDDocument *doc = NULL;
-    int i, rc;
+    size_t i;
+    int rc;
 
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -735,7 +733,8 @@ bool Presentation_IsValid(Presentation *pre)
 {
     DID *signer;
     DIDDocument *doc = NULL;
-    int i, rc;
+    size_t i;
+    int rc;
 
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");

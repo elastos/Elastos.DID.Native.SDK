@@ -12,8 +12,6 @@
 #include "loader.h"
 #include "ela_did.h"
 #include "diddocument.h"
-#include "didtest_adapter.h"
-#include "didstore.h"
 
 static const char *alias = "littlefish";
 static DIDStore *store;

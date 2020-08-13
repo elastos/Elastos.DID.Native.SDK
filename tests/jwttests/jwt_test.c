@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <CUnit/Basic.h>
 #include <time.h>
+#include <crystal.h>
 
 #include "ela_did.h"
 #include "ela_jwt.h"
@@ -244,7 +245,7 @@ static void test_jws_withdefaultkey(void)
     JWTBuilder *builder;
     JWS *jws;
     time_t iat, nbf, exp;
-    const char *token, *data;
+    const char *token;
     char idstring[ELA_MAX_DIDURL_LEN];
     int rc;
 

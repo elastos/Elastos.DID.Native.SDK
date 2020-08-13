@@ -31,11 +31,15 @@
 
 #include "diderror.h"
 
+#if defined(_WIN32) || defined(_WIN64)
+#include "winhelper.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define DOC_BUFFER_LEN   512
+#define DOC_BUFFER_LEN         512
 #define CHECK(func)                    do { if (func < 0) return -1; } while(0)
 #define CHECK_TO_ERROREXIT(func)       do { if (func < 0) goto errorExit;} while(0)
 #define CHECK_TO_MSG(func, code, msg)              do {   \

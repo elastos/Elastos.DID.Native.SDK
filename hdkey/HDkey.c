@@ -355,7 +355,7 @@ const char *HDKey_SerializePrvBase58(HDKey *hdkey, char *extendedkeyBase58, size
         return NULL;
 
     base_len = BRBase58Encode(NULL, 0, extendedkey, len);
-    if (base_len > size)
+    if ((size_t)base_len > size)
         return NULL;
     BRBase58Encode(extendedkeyBase58, base_len, extendedkey, len);
 
@@ -377,7 +377,7 @@ const char *HDKey_SerializePubBase58(HDKey *hdkey, char *extendedkeyBase58, size
         return NULL;
 
     base_len = BRBase58Encode(NULL, 0, extendedkey, len);
-    if (base_len > size)
+    if ((size_t)base_len > size)
         return NULL;
 
     BRBase58Encode(extendedkeyBase58, base_len, extendedkey, len);
@@ -389,7 +389,7 @@ static int getv_sub_publickeyonly(HDKey *hdkey, HDKey *derivedkey, int depth, va
 {
     unsigned char md20[20];
     BRMasterPubKey brPublicKey;
-    uint8_t publicKey[PUBLICKEY_BYTES], parentPubKey[PUBLICKEY_BYTES];
+    uint8_t parentPubKey[PUBLICKEY_BYTES];
 
     assert(hdkey);
     assert(derivedkey);
@@ -454,7 +454,6 @@ static int getv_sub_privatekey_publickey(HDKey *hdkey, HDKey *derivedkey, int de
 {
     BRKey key;
     UInt256 chaincode, secret;
-    uint8_t publickey[PUBLICKEY_BYTES];
 
     assert(hdkey);
     assert(derivedkey);
@@ -546,7 +545,6 @@ char *HDKey_PublicKey2Address(uint8_t *publickey, char *address, size_t len)
 
 HDKey *HDKey_GetvDerivedKey(HDKey* hdkey, HDKey *derivedkey, int depth, va_list list)
 {
-    char address[ADDRESS_LEN];
     va_list ap, ar;
 
     if (!hdkey || !derivedkey)

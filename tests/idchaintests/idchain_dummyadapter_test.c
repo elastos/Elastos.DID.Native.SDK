@@ -6,13 +6,14 @@
 #endif
 #include <CUnit/Basic.h>
 #include <limits.h>
+#include <crystal.h>
 
 #include "ela_did.h"
 #include "constant.h"
 #include "loader.h"
 #include "did.h"
 #include "didmeta.h"
-#include "didstore.h"
+//#include "didstore.h"
 #include "diddocument.h"
 
 #define MAX_PUBLICKEY_BASE58      64
@@ -803,11 +804,10 @@ static void test_idchain_publishdid_without_prevsignature(void)
 static void test_idchain_publishdid_without_prevsignature_and_signature(void)
 {
     char publickeybase58[MAX_PUBLICKEY_BASE58];
-    char previous_txid[ELA_MAX_TXID_LEN], _path[PATH_MAX];
+    char previous_txid[ELA_MAX_TXID_LEN];
     DIDDocument *resolvedoc = NULL, *doc;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
-    char *path;
     DID did;
     int i = 0, rc;
 
@@ -889,7 +889,6 @@ static void test_idchain_publishdid_without_prevsignature_and_signature(void)
 
 static void test_force_updatedid_without_prevsignature_and_signature(void)
 {
-    DIDURL *signkey;
     char publickeybase58[MAX_PUBLICKEY_BASE58];
     char previous_txid[ELA_MAX_TXID_LEN];
     DIDDocument *resolvedoc = NULL, *doc;
@@ -1008,11 +1007,10 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
 static void test_updatedid_with_diffprevsignature_only(void)
 {
     char publickeybase58[MAX_PUBLICKEY_BASE58];
-    char previous_txid[ELA_MAX_TXID_LEN], _path[PATH_MAX];
+    char previous_txid[ELA_MAX_TXID_LEN];
     DIDDocument *resolvedoc = NULL, *doc;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
-    char *path;
     DID did;
     int i = 0, rc;
 
@@ -1117,11 +1115,10 @@ static void test_updatedid_with_diffprevsignature_only(void)
 static void test_updatedid_with_diffsignature_only(void)
 {
     char publickeybase58[MAX_PUBLICKEY_BASE58];
-    char previous_txid[ELA_MAX_TXID_LEN], _path[PATH_MAX];
+    char previous_txid[ELA_MAX_TXID_LEN];
     DIDDocument *resolvedoc = NULL, *doc;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
-    char *path;
     DID did;
     int i = 0, rc;
 
@@ -1293,11 +1290,10 @@ static void test_updatedid_with_diffsignature_only(void)
 static void test_updatedid_with_diff_prevsignature_and_signature(void)
 {
     char publickeybase58[MAX_PUBLICKEY_BASE58];
-    char previous_txid[ELA_MAX_TXID_LEN], _path[PATH_MAX];
+    char previous_txid[ELA_MAX_TXID_LEN];
     DIDDocument *resolvedoc = NULL, *doc;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
-    char *path;
     DID did;
     int i = 0, rc;
 
@@ -1610,7 +1606,6 @@ static void test_idchain_deactivedid_after_create(void)
     DIDDocument *resolvedoc = NULL, *doc;
     char previous_txid[ELA_MAX_TXID_LEN];
     const char *mnemonic, *txid;
-    Credential *cred;
     bool successed;
     DID did;
     int i = 0, rc;
@@ -2128,7 +2123,6 @@ static void test_idchain_deactivedid_with_authorization2(void)
 
 static int idchain_dummyadapter_test_suite_init(void)
 {
-    int rc;
     char _path[PATH_MAX];
     const char *storePath;
 

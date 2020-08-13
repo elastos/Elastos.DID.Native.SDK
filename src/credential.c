@@ -231,8 +231,6 @@ void Credential_Destroy(Credential *cred)
 
 bool Credential_IsSelfProclaimed(Credential *cred)
 {
-    DIDURL *id;
-
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
@@ -271,7 +269,7 @@ ssize_t Credential_GetTypeCount(Credential *cred)
     return cred->type.size;
 }
 
-ssize_t Credential_GetTypes(Credential *cred, const char **types, size_t size)
+ssize_t Credential_GetTypes(Credential *cred, char **types, size_t size)
 {
     size_t actual_size;
 
@@ -469,7 +467,6 @@ const char *Credential_GetProofSignture(Credential *cred)
 
 Credential *Parse_Credential(cJSON *json, DID *did)
 {
-    size_t i, size;
     Credential *credential;
     cJSON *item, *field;
 
@@ -915,7 +912,7 @@ CredentialMetaData *Credential_GetMetaData(Credential *cred)
 
 int Credential_Copy(Credential *dest, Credential *src)
 {
-    int i;
+    size_t i;
 
     assert(dest);
     assert(src);

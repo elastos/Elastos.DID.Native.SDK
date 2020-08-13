@@ -430,14 +430,14 @@ char *DIDURL_ToString(DIDURL *id, char *idstring, size_t len, bool compact)
 
     if (compact) {
         size = snprintf(idstring, len, "#%s", id->fragment);
-        if (size < 0 || size > len) {
+        if (size < 0 || size > (int)len) {
             DIDError_Set(DIDERR_OUT_OF_MEMORY, "Buffer gived is too small.");
             return NULL;
         }
     } else {
         size = snprintf(idstring, len, "%s%s#%s", elastos_did_prefix,
             id->did.idstring, id->fragment);
-        if (size < 0 || size > len) {
+        if (size < 0 || size > (int)len) {
             DIDError_Set(DIDERR_OUT_OF_MEMORY, "Buffer gived is too small.");
             return NULL;
         }

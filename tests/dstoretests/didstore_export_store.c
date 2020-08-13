@@ -5,14 +5,14 @@
 #include <unistd.h>
 #endif
 #include <CUnit/Basic.h>
-#include <crystal.h>
+//#include <crystal.h>
 #include <limits.h>
+#include <assert.h>
 
 #include "constant.h"
 #include "loader.h"
 #include "ela_did.h"
 #include "diddocument.h"
-#include "didtest_adapter.h"
 #include "didstore.h"
 
 static const char *alias = "littlefish";
@@ -94,7 +94,6 @@ static void test_didstore_export_import_did(void)
 
 static void test_didstore_export_import_privateidentity(void)
 {
-    DID did;
     char *file;
     char _path[PATH_MAX], _path2[PATH_MAX], command[512];
     const char *path, *path2;
@@ -141,7 +140,6 @@ static void test_didstore_export_import_privateidentity(void)
 
 static void test_didstore_export_import_store(void)
 {
-    DID did;
     char *file;
     char _path[PATH_MAX], _path2[PATH_MAX], command[512];
     const char *path, *path2;

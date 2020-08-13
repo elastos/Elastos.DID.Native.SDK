@@ -31,14 +31,16 @@
 // ecies-aes128-sha256 as specified in SEC 1, 5.1: http://www.secg.org/SEC1-Ver-1.0.pdf
 // NOTE: these are not implemented using constant time algorithms
 
-size_t BRKeyECIESAES128SHA256Encrypt(BRKey *pubKey, void *out, size_t outLen, BRKey *ephemKey,
-                                     const void *data, size_t dataLen)
+size_t BRKeyECIESAES128SHA256Encrypt(BRKey *pubKey, void *_out, size_t outLen,
+        BRKey *ephemKey, const void *data, size_t dataLen)
 {
     uint8_t *encKey, macKey[32], shared[32], iv[16], K[32], V[32], buf[36] = { 0, 0, 0, 1 };
     size_t pkLen = ephemKey ? BRKeyPubKey(ephemKey, NULL, 0) : 0;
-    
+
+    unsigned char *out = (unsigned char*)_out;
+
     assert(pkLen > 0);
-    if (! out) return pkLen + sizeof(iv) + dataLen + 32;
+    if (!out) return pkLen + sizeof(iv) + dataLen + 32;
     if (outLen < pkLen + sizeof(iv) + dataLen + 32) return 0;
 
     assert(pubKey != NULL);
@@ -53,7 +55,7 @@ size_t BRKeyECIESAES128SHA256Encrypt(BRKey *pubKey, void *out, size_t outLen, BR
     mem_clean(buf, sizeof(buf));
     encKey = shared;
     BRSHA256(macKey, &shared[16], 16);
-    
+
     // R = rG
     BRKeyPubKey(ephemKey, out, pkLen);
 
@@ -63,24 +65,28 @@ size_t BRKeyECIESAES128SHA256Encrypt(BRKey *pubKey, void *out, size_t outLen, BR
     memcpy(&out[pkLen], iv, sizeof(iv));
     BRAESCTR(&out[pkLen + sizeof(iv)], encKey, 16, iv, data, dataLen);
     mem_clean(shared, sizeof(shared));
-    
+
     // tag with mac
     BRHMAC(&out[pkLen + sizeof(iv) + dataLen], BRSHA256, 32, macKey, 32, &out[pkLen], sizeof(iv) + dataLen);
     mem_clean(macKey, sizeof(macKey));
-    return pkLen + sizeof(iv) + dataLen + 32;
+    return (pkLen + sizeof(iv) + dataLen + 32);
 }
 
-size_t BRKeyECIESAES128SHA256Decrypt(BRKey *privKey, void *out, size_t outLen, const void *data, size_t dataLen)
+size_t BRKeyECIESAES128SHA256Decrypt(BRKey *privKey, void *_out, size_t outLen,
+        const void *_data, size_t dataLen)
 {
     uint8_t *encKey, macKey[32], shared[32], mac[32], iv[16], buf[36] = { 0, 0, 0, 1 }, r = 0;
     size_t i, pkLen;
     BRKey pubKey;
 
+    unsigned char *out = (unsigned char*)_out;
+    unsigned char *data = (unsigned char *)_data;
+
     assert(data != NULL || dataLen == 0);
     pkLen = (dataLen > 0 && (((uint8_t *)data)[0] == 0x02 || ((uint8_t *)data)[0] == 0x03)) ? 33 : 65;
     if (dataLen < pkLen + sizeof(iv) + 32) return 0;
     if (BRKeySetPubKey(&pubKey, data, pkLen) == 0) return 0;
-    if (! out) return dataLen - (pkLen + sizeof(iv) + 32);
+    if (!out) return dataLen - (pkLen + sizeof(iv) + 32);
     if (pkLen + sizeof(iv) + outLen + 32 < dataLen) return 0;
 
     assert(privKey != NULL);
@@ -93,14 +99,14 @@ size_t BRKeyECIESAES128SHA256Decrypt(BRKey *privKey, void *out, size_t outLen, c
     mem_clean(buf, sizeof(buf));
     encKey = shared;
     BRSHA256(macKey, &shared[16], 16);
-    
+
     // verify mac tag
     BRHMAC(mac, BRSHA256, 32, macKey, 32, &data[pkLen], dataLen - (pkLen + 32));
     mem_clean(macKey, sizeof(macKey));
     for (i = 0; i < 32; i++) r |= mac[i] ^ ((uint8_t *)data)[dataLen + i - 32]; // constant time compare
     mem_clean(mac, sizeof(mac));
     if (r != 0) return 0;
-    
+
     // decrypt
     memcpy(iv, &data[pkLen], sizeof(iv));
     BRAESCTR(out, encKey, 16, iv, &data[pkLen + sizeof(iv)], dataLen - (pkLen + sizeof(iv) + 32));
@@ -118,11 +124,12 @@ static void BRKeyPigeonSharedKey(BRKey *privKey, uint8_t *out32, BRKey *pubKey)
     mem_clean(x, sizeof(x));
 }
 
-void BRKeyPigeonPairingKey(BRKey *privKey, BRKey *pairingKey, const void *identifier, size_t identifierSize)
+void BRKeyPigeonPairingKey(BRKey *privKey, BRKey *pairingKey, const void *identifier,
+        size_t identifierSize)
 {
     uint8_t nonce[32], K[32], V[32];
     UInt256 secret;
-    
+
     BRSHA256(nonce, identifier, identifierSize);
     BRHMACDRBG(&secret, sizeof(secret), K, V, BRSHA256, 32, privKey->secret.u8, 32, nonce, sizeof(nonce), NULL, 0);
     mem_clean(nonce, sizeof(nonce));
@@ -131,10 +138,11 @@ void BRKeyPigeonPairingKey(BRKey *privKey, BRKey *pairingKey, const void *identi
     BRKeySetSecret(pairingKey, &secret, 1);
 }
 
-size_t BRKeyPigeonEncrypt(BRKey *privKey, void *out, size_t outLen, BRKey *pubKey, const void *nonce12, const void *data, size_t dataLen)
+size_t BRKeyPigeonEncrypt(BRKey *privKey, void *out, size_t outLen, BRKey *pubKey,
+        const void *nonce12, const void *data, size_t dataLen)
 {
     if (! out) return dataLen + 16;
-    
+
     uint8_t sharedKey[32];
     BRKeyPigeonSharedKey(privKey, sharedKey, pubKey);
     size_t outSize = BRChacha20Poly1305AEADEncrypt(out, outLen, sharedKey, nonce12, data, dataLen, NULL, 0);
@@ -142,10 +150,11 @@ size_t BRKeyPigeonEncrypt(BRKey *privKey, void *out, size_t outLen, BRKey *pubKe
     return outSize;
 }
 
-size_t BRKeyPigeonDecrypt(BRKey *privKey, void *out, size_t outLen, BRKey *pubKey, const void *nonce12, const void *data, size_t dataLen)
+size_t BRKeyPigeonDecrypt(BRKey *privKey, void *out, size_t outLen, BRKey *pubKey,
+        const void *nonce12, const void *data, size_t dataLen)
 {
     if (! out) return (dataLen < 16) ? 0 : dataLen - 16;
-    
+
     uint8_t sharedKey[32];
     BRKeyPigeonSharedKey(privKey, sharedKey, pubKey);
     size_t outSize = BRChacha20Poly1305AEADDecrypt(out, outLen, sharedKey, nonce12, data, dataLen, NULL, 0);

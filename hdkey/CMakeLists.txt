@@ -1,5 +1,20 @@
 include(ProjectDefaults)
-#include(CheckIncludeFile)
+include(CheckIncludeFile)
+
+check_include_file(alloca.h HAVE_ALLOCA_H)
+if(HAVE_ALLOCA_H)
+    add_definitions(-DHAVE_ALLOCA_H=1)
+endif()
+
+check_include_file(unistd.h HAVE_UNISTD_H)
+if(HAVE_UNISTD_H)
+    add_definitions(-DHAVE_UNISTD_H=1)
+endif()
+
+check_include_file(malloc.h HAVE_MALLOC_H)
+if(HAVE_MALLOC_H)
+    add_definitions(-DHAVE_MALLOC_H=1)
+endif()
 
 file( GLOB BR-SOURCES "BR/*.c" )
 
@@ -10,10 +25,18 @@ set(SRC
 
 set(HEADERS
     crypto.h
-    HDkey.h)
+    HDkey.h
+    win_helper.h)
 
 set(LIBS
     crypto)
+
+if(WIN32)
+    set(LIBS
+        ${LIBS}
+        pthread
+        Ws2_32)
+endif()
 
 include_directories(
     BEFORE
@@ -30,6 +53,11 @@ if(WIN32)
 
     # Force source code encoding to utf-8
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
+
+    set(ENABLE_STATIC TRUE)
+    set(STATIC_OUTPUT "hdkey_s")
+else()
+    set(STATIC_OUTPUT "hdkey")
 endif()
 
 if(MSVC)
@@ -57,7 +85,7 @@ if(ENABLE_STATIC)
         target_compile_definitions(hdkey-static PRIVATE static_assert=_Static_assert)
     endif()
 
-    set_target_properties(hdkey-static PROPERTIES OUTPUT_NAME hdkey)
+    set_target_properties(hdkey-static PROPERTIES OUTPUT_NAME ${STATIC_OUTPUT})
     if(WIN32)
         set_target_properties(hdkey-static PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
     endif()

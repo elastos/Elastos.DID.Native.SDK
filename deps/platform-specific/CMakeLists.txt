@@ -52,7 +52,7 @@ elseif(WIN32)
     endif()
 
     if(${CYGWIN_ARCH} STREQUAL "x86_64")
-        set(CYGWIN_RUNTIME_HASH "fcf7e857880d975ed5abb519d79f2654")
+        set(CYGWIN_RUNTIME_HASH "a1c9b3761e3e9c8e863de0415ed71722")
         set(CYGWIN_LIBATTR_HASH "7423e99e8de393819ba982239061e7a2")
         set(CYGWIN_LIBICONV_HASH "9fd5294883bacfadb3d50a28abc2ccfd")
         set(CYGWIN_LIBINTL8_HASH "c3453c7896bce5419afefacae6ed5ec9")
@@ -71,9 +71,9 @@ elseif(WIN32)
         cygwin-runtime
 
         PREFIX ${PROJECT_DEPS_BUILD_PREFIX}
-        URL "${URL_PREFIX}/cygwin/cygwin-3.0.6-1.tar.xz"
+        URL "${URL_PREFIX}/cygwin/cygwin-3.1.6-1.tar.xz"
         URL_HASH MD5=${CYGWIN_RUNTIME_HASH}
-        DOWNLOAD_NAME "cygwin-3.0.6-1_${CYGWIN_ARCH}.tar.xz"
+        DOWNLOAD_NAME "cygwin-3.1.6-1_${CYGWIN_ARCH}.tar.xz"
         DOWNLOAD_DIR ${PROJECT_DEPS_TARBALL_DIR}
         DOWNLOAD_NO_PROGRESS 1
 

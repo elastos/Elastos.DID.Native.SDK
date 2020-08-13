@@ -5,14 +5,12 @@
 #include <unistd.h>
 #endif
 #include <CUnit/Basic.h>
-#include <crystal.h>
 #include <limits.h>
 
 #include "constant.h"
 #include "loader.h"
 #include "ela_did.h"
 #include "diddocument.h"
-#include "didtest_adapter.h"
 #include "didstore.h"
 
 static const char *alias = "littlefish";

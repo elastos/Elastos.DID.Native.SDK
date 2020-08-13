@@ -30,6 +30,14 @@
 extern "C" {
 #endif
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <malloc.h>
+typedef ptrdiff_t             ssize_t;
+
+//#define PATH_MAX              256
+#define alloca                _alloca
+#endif
+
 const char *get_store_path(char* path, const char *dir);
 
 char *get_path(char *path, const char *file);

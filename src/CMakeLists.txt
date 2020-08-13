@@ -36,6 +36,21 @@ if(HAVE_SYS_TIME_H)
     add_definitions(-DHAVE_SYS_TIME_H=1)
 endif()
 
+check_include_file(utime.h HAVE_UTIME_H)
+if(HAVE_UTIME_H)
+    add_definitions(-DHAVE_UTIME_H=1)
+endif()
+
+check_include_file(time.h HAVE_TIME_H)
+if(HAVE_TIME_H)
+    add_definitions(-DHAVE_TIME_H=1)
+endif()
+
+check_include_file(direct.h HAVE_DIRECT_H)
+if(HAVE_DIRECT_H)
+    add_definitions(-DHAVE_DIRECT_H=1)
+endif()
+
 file(GLOB utility-SOURCES "utility/*.c")
 file(GLOB backend-SOURCES "backend/*.c")
 file(GLOB jwt-SOURCES "jwt/*.c")
@@ -57,6 +72,13 @@ set(SRC
     ${jwt-SOURCES}
     ${meta-SOURCES})
 
+if(WIN32)
+    file(GLOB win-SOURCES "win/*.c")
+    set(SRC
+        ${SRC}
+        ${win-SOURCES})
+endif()
+
 set(HEADERS
     ela_did.h
     jwt/ela_jwt.h)
@@ -77,21 +99,23 @@ else()
         "ela_*.h")
 endif()
 
-set(SYMBOL_FORMAT
-    "{printf \"_%s\\n\",$1}")
+if(DARWIN OR IOS)
+    set(SYMBOL_FORMAT
+        "{printf \"_%s\\n\",$1}")
 
-add_custom_command(
-    COMMAND grep -r --include=${HEADER_FILTER} "^DID_API" ${CMAKE_CURRENT_SOURCE_DIR} | grep -o "[A-Za-z0-9_]*(" | awk -F "(" ${SYMBOL_FORMAT} > ${CMAKE_CURRENT_BINARY_DIR}/export.symbols
-    DEPENDS ela_did.h jwt/ela_jwt.h
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/export.symbols
-    VERBATIM
-)
+    add_custom_command(
+        COMMAND grep -r --include=${HEADER_FILTER} "^DID_API" ${CMAKE_CURRENT_SOURCE_DIR} | grep -o "[A-Za-z0-9_]*(" | awk -F "(" ${SYMBOL_FORMAT} > ${CMAKE_CURRENT_BINARY_DIR}/export.symbols
+        DEPENDS ela_did.h jwt/ela_jwt.h
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/export.symbols
+        VERBATIM
+    )
 
-add_custom_target(exportSymbols
-    ALL
-    COMMAND echo Generate export symbols...
-    DEPENDS export.symbols
-)
+    add_custom_target(exportSymbols
+        ALL
+        COMMAND echo Generate export symbols...
+        DEPENDS export.symbols
+    )
+endif()
 
 if(WIN32)
     set(SYSTEM_LIBS Ws2_32 Iphlpapi)
@@ -99,7 +123,7 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(SYSTEM_LIBS pthread m)
 endif()
 
-include_directories(
+set(INCLUDE
     BEFORE
     utility
     backend
@@ -109,6 +133,14 @@ include_directories(
     .
     ../hdkey
     ${PROJECT_INT_DIST_DIR}/include)
+
+if(WIN32)
+    set(INCLUDE
+        win
+        ${INCLUDE})
+endif()
+
+include_directories(${INCLUDE})
 
 link_directories(
     ../hdkey
@@ -134,7 +166,7 @@ endif()
 
 set(LIBS
     cjson
-    curl
+    libcurl
     ssl
     crypto
     jansson
@@ -145,18 +177,23 @@ set(LIBS
 if(WIN32)
     set(LIBS
         ${LIBS}
-        pthread)
+        pthread
+        Ws2_32)
 endif()
 
 add_definitions(-DDID_BUILD)
 
 add_custom_target(ela-did)
 
-set(ELADID_DEPENDS libressl libcurl cJSON hdkey libjansson libcjose libzip exportSymbols)
+set(ELADID_DEPENDS libressl libcurl cJSON hdkey libjansson libcjose libzip)
+
+if(DARWIN OR IOS)
+    set(ELADID_DEPENDS ${ELADID_DEPENDS} exportSymbols)
+endif()
 
 if(WIN32)
     set(ELADID_DEPENDS
-        #libcrystal
+        libcrystal
         ${ELADID_DEPENDS})
 endif()
 

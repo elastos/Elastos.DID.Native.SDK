@@ -33,6 +33,7 @@
 #include "HDkey.h"
 #include "jws.h"
 #include "diderror.h"
+#include "common.h"
 
 static cjose_jwk_t *get_jwk(JWS *jws)
 {
@@ -106,7 +107,7 @@ static JWS *parse_jwt(const char *token, int dot)
     size_t len;
 
     assert(token && *token);
-    assert(dot > 0 && dot < strlen(token));
+    assert(dot > 0 && dot < (int)strlen(token));
 
     jws = (JWS *)calloc(1, sizeof(JWS));
     if (!jws) {
@@ -170,7 +171,6 @@ static JWS *parse_jws(const char *token)
     char *payload = NULL;
     size_t payload_len = 0;
     bool successed;
-    DIDURL *signkey;
 
     assert(token && *token);
 
@@ -242,7 +242,7 @@ errorExit:
 
 JWS *JWTParser_Parse(const char *token)
 {
-    int i, idx = 0;
+    size_t i, idx = 0;
     int dots[2] = {0, 0};
 
     if (!token || !*token) {
@@ -256,7 +256,7 @@ JWS *JWTParser_Parse(const char *token)
             dots[idx++] = i;
     }
 
-    if (idx != 2 || !(dots[0] > 0 && dots[1] < strlen(token))) {
+    if (idx != 2 || !(dots[0] > 0 && dots[1] < (int)strlen(token))) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid jwt token! Please check it.");
         return NULL;
     }

@@ -1,0 +1,91 @@
+diff -ruN cjose/CMakeLists.txt cjose-mod/CMakeLists.txt
+--- cjose/CMakeLists.txt	1970-01-01 08:00:00.000000000 +0800
++++ cjose-mod/CMakeLists.txt	2020-08-11 14:50:44.000000000 +0800
+@@ -0,0 +1,40 @@
++cmake_minimum_required (VERSION 3.1)
++project(cjose C)
++
++set(CJOSE_VERSION "0.6.1")
++
++configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/cjose/version.h.in
++    ${CMAKE_CURRENT_SOURCE_DIR}/include/cjose/version.h)
++
++include_directories(include
++    src/include
++    ${CMAKE_CURRENT_BINARY_DIR}/include
++    ${CMAKE_INSTALL_PREFIX}/include)
++
++set(SRC
++    src/version.c
++    src/util.c
++    src/concatkdf.c
++    src/jwk.c
++    src/jwe.c
++    src/jws.c
++    src/header.c
++    src/error.c
++    src/base64.c)
++
++set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4267")
++add_definitions(-D_CRT_SECURE_NO_WARNINGS)
++
++add_library(cjose STATIC ${SRC})
++
++#target_compile_definitions(eladid-static PRIVATE DID_STATIC CRYSTAL_STATIC)
++set_target_properties(cjose PROPERTIES OUTPUT_NAME cjose)
++set_target_properties(cjose PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
++
++install(TARGETS cjose
++    RUNTIME DESTINATION "bin"
++    ARCHIVE DESTINATION "lib"
++    LIBRARY DESTINATION "lib")
++
++install(DIRECTORY include/cjose
++    DESTINATION include)
+diff -ruN cjose/src/concatkdf.c cjose-mod/src/concatkdf.c
+--- cjose/src/concatkdf.c	2018-04-12 06:39:58.000000000 +0800
++++ cjose-mod/src/concatkdf.c	2020-08-11 14:50:03.000000000 +0800
+@@ -7,7 +7,8 @@
+ 
+ #include "include/concatkdf_int.h"
+ 
+-#include <arpa/inet.h>
++//#include <arpa/inet.h>
++#include <winsock2.h>
+ #include <openssl/evp.h>
+ #include <string.h>
+ #include <cjose/base64.h>
+@@ -139,7 +140,7 @@
+         uint8_t counter[4];
+         _apply_uint32(idx, counter);
+ 
+-        uint8_t hash[hashlen];
++        uint8_t *hash = (uint8_t *)_alloca(hashlen);
+         if (1 != EVP_DigestInit_ex(ctx, dgst, NULL) ||
+             1 != EVP_DigestUpdate(ctx, counter, sizeof(counter)) ||
+             1 != EVP_DigestUpdate(ctx, ikm, ikmLen) ||
+diff -ruN cjose/src/include/concatkdf_int.h cjose-mod/src/include/concatkdf_int.h
+--- cjose/src/include/concatkdf_int.h	2018-04-12 06:39:58.000000000 +0800
++++ cjose-mod/src/include/concatkdf_int.h	2020-08-11 14:50:03.000000000 +0800
+@@ -14,7 +14,7 @@
+ #include <cjose/header.h>
+ 
+ bool cjose_concatkdf_create_otherinfo(const char *alg,
+-                                      size_t keylen,
++                                      const size_t keylen,
+                                       cjose_header_t *hdr,
+                                       uint8_t **otherinfo, size_t *otherinfoLen,
+                                       cjose_err *err);
+diff -ruN cjose/src/include/util_int.h cjose-mod/src/include/util_int.h
+--- cjose/src/include/util_int.h	2018-04-12 06:39:58.000000000 +0800
++++ cjose-mod/src/include/util_int.h	2020-08-11 14:50:03.000000000 +0800
+@@ -12,6 +12,9 @@
+ 
+ #include <jansson.h>
+ #include <string.h>
++#include <stddef.h>
++
++typedef ptrdiff_t   ssize_t;
+ 
+ char *_cjose_strndup(const char *str, ssize_t len, cjose_err *err);
+ json_t *_cjose_json_stringn(const char *value, size_t len, cjose_err *err);

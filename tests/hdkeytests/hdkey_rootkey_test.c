@@ -5,6 +5,7 @@
 #include "HDkey.h"
 #include "crypto.h"
 #include "ela_did.h"
+#include "loader.h"
 
 #define MAX_PUBLICKEY_BASE58           64
 #define HARDENED                       0x80000000
@@ -14,8 +15,7 @@ static const char *passphrase = "helloworld";
 
 static void test_rootkey_with_diff_method(void)
 {
-    uint8_t _seed[SEED_BYTES], extendedkey[EXTENDEDKEY_BYTES], _extendedkey[EXTENDEDKEY_BYTES];
-    uint8_t *seed;
+    uint8_t extendedkey[EXTENDEDKEY_BYTES], _extendedkey[EXTENDEDKEY_BYTES];
     ssize_t size;
     HDKey _hdkey, *hdkey;
     HDKey _prederivedkey, *prederivedkey;
@@ -49,8 +49,6 @@ static void test_rootkey_with_diff_method(void)
 
 static void test_derive_publiconly(void)
 {
-    uint8_t extendedkey[EXTENDEDKEY_BYTES], _extendedkey[EXTENDEDKEY_BYTES];
-    ssize_t size;
     HDKey _root, *root;
     HDKey _prederivekey, *prederivekey;
     HDKey _pubhdkey, *pubhdkey;
@@ -148,13 +146,12 @@ static void test_padding_privatekey2(void)
 
 static void test_hdkey_sign_verify(void)
 {
-    const char *mnemonic;
     char sig[512];
-    uint8_t extendedkey[EXTENDEDKEY_BYTES], data[124], digest[32];
+    uint8_t data[124], digest[32];
     HDKey hk, *privateIdentity;
     HDKey _derivedkey, *derivedkey;
     ssize_t size;
-    int rc, i;
+    int i;
 
     const char *newmnemonic = Mnemonic_Generate("english");
     CU_ASSERT_PTR_NOT_NULL(newmnemonic);

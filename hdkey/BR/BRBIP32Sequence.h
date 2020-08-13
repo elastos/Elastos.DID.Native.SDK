@@ -36,6 +36,10 @@
 extern "C" {
 #endif
 
+#if defined(_WIN32) || defined(_WIN64)
+typedef ptrdiff_t       ssize_t;
+#endif
+
 // BIP32 is a scheme for deriving chains of addresses from a seed value
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
 

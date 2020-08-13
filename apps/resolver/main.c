@@ -2,9 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#ifdef HAVE_GETOPT_H
 #include <getopt.h>
+#endif
 #include <signal.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#include <crystal.h>
 
 #include "ela_did.h"
 
@@ -60,11 +65,11 @@ int main(int argc, char *argv[])
     while ((opt = getopt_long(argc, argv, "n:d:h?", options, &idx)) != -1) {
         switch (opt) {
         case 'n':
-            nettype = optarg;
+            nettype = opt;
             break;
 
         case 'd':
-            idstring = optarg;
+            idstring = opt;
             break;
 
         case 'h':

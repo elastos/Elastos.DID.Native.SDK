@@ -35,7 +35,7 @@
 
 int ResolveResult_FromJson(ResolveResult *result, cJSON *json, bool all)
 {
-    cJSON *root, *item, *field;
+    cJSON *item, *field;
     int i, size = 0;
 
     assert(result);
@@ -128,7 +128,7 @@ int ResolveResult_FromJson(ResolveResult *result, cJSON *json, bool all)
 
 void ResolveResult_Destroy(ResolveResult *result)
 {
-    int i;
+    size_t i;
 
     if (!result || !result->txinfos.infos)
         return;
@@ -142,7 +142,7 @@ void ResolveResult_Destroy(ResolveResult *result)
 
 void ResolveResult_Free(ResolveResult *result)
 {
-    int i;
+    size_t i;
 
     if (!result || !result->txinfos.infos)
         return;
@@ -156,7 +156,7 @@ void ResolveResult_Free(ResolveResult *result)
 static int resolveresult_tojson_internal(JsonGenerator *gen, ResolveResult *result)
 {
     char id[ELA_MAX_DIDURL_LEN];
-    int i;
+    size_t i;
 
     assert(gen);
     assert(result);

@@ -70,7 +70,7 @@ size_t BRVarIntSize(uint64_t i);
 
 // parses script and writes an array of pointers to the script elements (opcodes and data pushes) to elems
 // returns the number of elements written, or elemsCount needed if elems is NULL
-size_t BRScriptElements(const uint8_t *elems[], size_t elemsCount, const uint8_t *script, size_t scriptLen);
+size_t BRScriptElements(const uint8_t **elems, size_t elemsCount, const uint8_t *script, size_t scriptLen);
 
 // given a data push script element, returns a pointer to the start of the data and writes its length to dataLen
 const uint8_t *BRScriptData(const uint8_t *elem, size_t *dataLen);
@@ -81,7 +81,7 @@ size_t BRScriptPushData(uint8_t *script, size_t scriptLen, const uint8_t *data, 
 
 // returns a pointer to the 20byte pubkey hash, or NULL if none
 const uint8_t *BRScriptPKH(const uint8_t *script, size_t scriptLen);
-    
+
 typedef struct {
     char s[75];
 } BRAddress;

@@ -11,7 +11,7 @@
 #include <crystal.h>
 #include <sys/stat.h>
 #include <stdarg.h>
-#include <fnmatch.h>
+//#include <fnmatch.h>
 
 #include "constant.h"
 

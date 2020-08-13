@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <CUnit/Basic.h>
 #include <limits.h>
+#include <crystal.h>
 
 #include "ela_did.h"
 #include "HDkey.h"
@@ -15,7 +16,7 @@ static const char *languagelists[] = {"chinese_simplified", "chinese_traditional
 
 static void test_build_wordlist(void)
 {
-    int rc, i, size;
+    int rc, i;
 
     for (i = 0; i < 9; i++) {
         char wmnemonic[256];

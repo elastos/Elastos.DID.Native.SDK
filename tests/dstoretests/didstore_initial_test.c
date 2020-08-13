@@ -5,14 +5,13 @@
 #include <unistd.h>
 #endif
 #include <CUnit/Basic.h>
-#include <crystal.h>
+//#include <crystal.h>
 #include <limits.h>
 
 #include "constant.h"
 #include "loader.h"
 #include "ela_did.h"
 #include "diddocument.h"
-#include "didtest_adapter.h"
 #include "didstore.h"
 
 static const char *alias = "littlefish";
@@ -101,12 +100,12 @@ static void test_didstore_newdid(void)
 
 static void test_didstore_newdid_byindex(void)
 {
-    char _path[PATH_MAX], newalias[ELA_MAX_ALIAS_LEN];
+    char _path[PATH_MAX];
     const char *storePath;
     char *path;
-    DIDDocument *doc, *loaddoc;
+    DIDDocument *doc;
     DIDStore *store;
-    bool hasidentity, isEquals;
+    bool isEquals;
     DID did, *ndid;
     int rc;
 
@@ -160,7 +159,7 @@ static void test_didstore_newdid_withouAlias(void)
     char *path;
     DIDDocument *doc, *loaddoc;
     DIDStore *store;
-    bool hasidentity, isEquals;
+    bool hasidentity;
     int rc;
 
     storePath = get_store_path(_storepath, "/servet");
@@ -293,7 +292,6 @@ static void test_didstore_newdid_emptystore(void)
     DIDStore *store;
     DIDDocument *doc;
     bool hasidentity;
-    int rc;
 
     storePath = get_store_path(_path, "/servet");
     store = TestData_SetupStore(true, storePath);
@@ -312,9 +310,7 @@ static void test_didstore_newdid_emptystore(void)
 static void test_didstore_privateidentity_compatibility(void)
 {
     char _path[PATH_MAX];
-    char _temp[PATH_MAX];
     const char *storePath;
-    char *path;
     DIDStore *store;
     bool isEquals;
     DIDDocument *doc;

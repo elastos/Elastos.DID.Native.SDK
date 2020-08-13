@@ -4,6 +4,7 @@
 #include <unistd.h>
 #endif
 #include <limits.h>
+#include <crystal.h>
 
 #include <CUnit/Basic.h>
 #include "ela_did.h"
@@ -23,7 +24,7 @@ static void test_diddoc_get_publickey(void)
     PublicKey *pk;
     DIDURL *id, *defaultkey, *primaryid;
     ssize_t size;
-    int rc, i;
+    int i;
     bool isEquals;
 
     CU_ASSERT_EQUAL(DIDDocument_GetPublicKeyCount(doc), 4);
@@ -859,7 +860,6 @@ static void test_diddoc_add_selfclaimed_credential(void)
     DIDDocument *sealeddoc;
     DIDDocumentBuilder *builder;
     Credential *vc;
-    bool isEquals;
     int rc, i;
     const char *provalue;
 
@@ -896,7 +896,7 @@ static void test_diddoc_add_selfclaimed_credential(void)
     CU_ASSERT_STRING_EQUAL(provalue, "S653258Z07");
     free((void*)provalue);
 
-    const char *types1[2];
+    char *types1[2];
     rc = Credential_GetTypes(vc, types1, sizeof(types1));
     CU_ASSERT_NOT_EQUAL(rc, -1);
 

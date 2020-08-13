@@ -2,18 +2,35 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdint.h>
 #include <limits.h>
 #include <ctype.h>
-#include <getopt.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#ifdef HAVE_GETOPT_H
+#include <getopt.h>
+#endif
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#endif
 #include <signal.h>
+#include <crystal.h>
 
 #include "ela_did.h"
 
 #define METHOD "did:elastos:"
 #define METHODLEN strlen(METHOD)
+
+#if defined(_WIN32) || defined(_WIN64)
+#include <process.h>
+typedef uint32_t              mode_t;
+#define getpid                _getpid
+#define mkdir(dir, mode)      _mkdir(dir)
+#endif
 
 struct AgentCtx {
     DIDStore *store;
@@ -227,7 +244,7 @@ static void verify(int argc, char *argv[])
     }
 
     if (strlen(argv[2]) >= sizeof(sign)) {
-        printf("Error: signature too long (<%lu)\n", sizeof(sign));
+        printf("Error: signature too long (<%zu)\n", sizeof(sign));
         return;
     }
 
@@ -509,7 +526,7 @@ int main(int argc, char *argv[])
     while ((opt = getopt_long(argc, argv, "d:h?", options, &idx)) != -1) {
         switch (opt) {
         case 'd':
-            datadir = optarg;
+            datadir = opt;
             break;
 
         case 1:
@@ -536,8 +553,14 @@ int main(int argc, char *argv[])
 
     signal(SIGINT,  signal_handler);
     signal(SIGTERM, signal_handler);
+#ifdef HAVE_SIGKILL
     signal(SIGKILL, signal_handler);
-    signal(SIGHUP,  signal_handler);
+#endif
+#ifdef HAVE_SIGHUP
+    signal(SIGHUP, signal_handler);
+#endif
+    //signal(SIGKILL, signal_handler);
+    //signal(SIGHUP,  signal_handler);
 
     datadir = get_datadir(datadir);
 

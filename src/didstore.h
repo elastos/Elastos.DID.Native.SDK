@@ -23,12 +23,16 @@
 #ifndef __DIDSTORE_H__
 #define __DIDSTORE_H__
 
-#include <limits.h>
-
 #include "ela_did.h"
 #include "didbackend.h"
 #include "didmeta.h"
 #include "credmeta.h"
+
+#if defined(_WIN32) || defined(_WIN64)
+    #define PATH_MAX           256
+#else
+    #include <limits.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {

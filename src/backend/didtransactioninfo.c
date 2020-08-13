@@ -32,7 +32,7 @@
 
 int DIDTransactionInfo_FromJson(DIDTransactionInfo *txinfo, cJSON *json)
 {
-    cJSON *item, *field;
+    cJSON *item;
 
     assert(txinfo);
     assert(json);

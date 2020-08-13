@@ -32,6 +32,10 @@
 extern "C" {
 #endif
 
+#if defined(_WIN32) || defined(_WIN64)
+typedef ptrdiff_t       ssize_t;
+#endif
+
 #define SIGNATURE_BYTES         64
 #define SHA256_BYTES            32
 

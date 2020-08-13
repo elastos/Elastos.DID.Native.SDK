@@ -119,8 +119,9 @@ static Credential *issuer_generate_credential(Issuer *issuer, DID *owner,
     Credential *cred = NULL;
     const char *data;
     char signature[SIGNATURE_BYTES * 2];
-    int i, rc;
     DIDDocument *doc = NULL;
+    size_t i;
+    int rc;
 
     assert(issuer && owner && credid);
     assert(types && typesize > 0);

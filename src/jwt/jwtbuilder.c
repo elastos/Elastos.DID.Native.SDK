@@ -70,8 +70,6 @@ static int init_jwtbuilder(JWTBuilder *builder)
 
 JWTBuilder *JWTBuilder_Create(DID *issuer)
 {
-    cjose_err err;
-
     if (!issuer) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;

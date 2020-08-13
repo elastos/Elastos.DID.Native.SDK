@@ -18,20 +18,23 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <assert.h>
-#include <pwd.h>
 
 #include "ela_did.h"
 #include "dummyadapter.h"
 #include "constant.h"
 #include "loader.h"
-#include "didtest_adapter.h"
 #include "crypto.h"
 #include "HDkey.h"
 #include "did.h"
 #include "diddocument.h"
-#include "didstore.h"
 #include "credential.h"
 #include "credmeta.h"
+
+#if defined(_WIN32) || defined(_WIN64)
+    #include "winhelper.h"
+#else
+    #include "testadapter/didtest_adapter.h"
+#endif
 
 #define HARDENED                       0x80000000
 
@@ -196,7 +199,6 @@ static int list_dir(const char *path, const char *pattern,
 {
     char full_pattern[PATH_MAX];
     size_t len;
-    int i;
 
     assert(path);
     assert(pattern);
@@ -226,7 +228,7 @@ static int list_dir(const char *path, const char *pattern,
 
     glob(full_pattern, GLOB_DOOFFS, NULL, &gl);
 
-    for (i = 0; i < gl.gl_pathc; i++) {
+    for (int i = 0; i < gl.gl_pathc; i++) {
         char *fn = gl.gl_pathv[i] + pos;
         if(callback(fn, context) < 0)
             break;
@@ -299,7 +301,6 @@ static Credential *store_credential(const char *file, const char *alias)
 {
     Credential *cred;
     const char *data;
-    DIDStore *store;
 
     data = load_testdata_file(file);
     if (!data)
@@ -333,7 +334,6 @@ static DIDDocument *store_document(const char *file, const char *alias)
 {
     DIDDocument *doc;
     const char *string;
-    DIDStore *store;
     DID did;
     int rc;
 
@@ -379,7 +379,6 @@ bool dir_exist(const char* path)
 static int import_privatekey(DIDURL *id, const char *storepass, const char *file)
 {
     char *skbase;
-    DIDStore *store;
     uint8_t privatekey[PRIVATEKEY_BYTES];
 
     if (!id || !file || !*file)
@@ -436,14 +435,21 @@ int TestData_Init(bool dummy)
         return -1;
     }
 
+#if defined(_WIN32) || defined(_WIN64)
+    adapter = NULL;
+#else
     adapter = dummy ? NULL : TestDIDAdapter_Create(walletDir, walletId, network, getpassword);
+#endif
+
     dummyadapter = DummyAdapter_Create();
     return 0;
 }
 
 void TestData_Deinit(void)
 {
+#if !defined(_WIN32) && !defined(_WIN64)
     TestDIDAdapter_Destroy(adapter);
+#endif
     DummyAdapter_Destroy();
 }
 
@@ -838,11 +844,8 @@ void TestData_Free(void)
 const char *Generater_Publickey(char *publickeybase58, size_t size)
 {
     const char *mnemonic;
-    uint8_t extendedkey[EXTENDEDKEY_BYTES];
-    uint8_t publickey[PUBLICKEY_BYTES];
     HDKey hk, *privateIdentity;
     HDKey _derivedkey, *derivedkey;
-    ssize_t len;
 
     if (size < MAX_PUBLICKEY_BASE58)
         return NULL;
@@ -867,10 +870,7 @@ const char *Generater_Publickey(char *publickeybase58, size_t size)
 HDKey *Generater_KeyPair(HDKey *hdkey)
 {
     const char *mnemonic;
-    uint8_t extendedkey[EXTENDEDKEY_BYTES];
     HDKey hk, *privateIdentity;
-    HDKey _derivedkey, *derivedkey;
-    ssize_t size;
 
     mnemonic = Mnemonic_Generate(language);
     if (!mnemonic || !*mnemonic)

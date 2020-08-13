@@ -141,7 +141,6 @@ const char *JWS_GetClaimAsJson(JWS *jws, const char *key)
 long JWS_GetClaimAsInteger(JWS *jws, const char *key)
 {
     json_t *value;
-    long data;
 
     if (!jws || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
