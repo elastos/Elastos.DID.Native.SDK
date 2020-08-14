@@ -39,7 +39,7 @@
 #include "BRBIP32Sequence.h"
 #include "HDkey.h"
 #include "crypto.h"
-#include "win_helper.h"
+#include "winhelper.h"
 
 typedef struct Sha256_Digest_i {
     EVP_MD_CTX ctx;

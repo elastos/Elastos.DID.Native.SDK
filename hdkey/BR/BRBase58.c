@@ -30,7 +30,7 @@
 
 #include "BRBase58.h"
 #include "BRCrypto.h"
-#include "win_helper.h"
+#include "winhelper.h"
 
 // base58 and base58check encoding: https://en.bitcoin.it/wiki/Base58Check_encoding
 

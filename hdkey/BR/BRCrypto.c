@@ -27,7 +27,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "win_helper.h"
+#include "winhelper.h"
 
 // endian swapping
 #if __BIG_ENDIAN__ || (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
@@ -1129,20 +1129,21 @@ void BRPBKDF2(void *dk, size_t dkLen, void (*hash)(void *, const void *, size_t)
     assert(rounds > 0);
 
     scount = saltLen + sizeof(uint32_t);
+    ucount = tcount = hashLen;
     s = (uint8_t*)alloca(scount);
-    U = (uint32_t*)alloca(hashLen);
-    T = (uint32_t*)alloca(hashLen);
+    U = (uint32_t*)alloca(ucount);
+    T = (uint32_t*)alloca(tcount);
 
     memcpy(s, salt, saltLen);
 
     for (i = 0; i < (dkLen + hashLen - 1)/hashLen; i++) {
         j = be32(i + 1);
         memcpy(s + saltLen, &j, sizeof(j));
-        BRHMAC(U, hash, hashLen, pw, pwLen, s, sizeof(s)); // U1 = hmac_hash(pw, salt || be32(i))
+        BRHMAC(U, hash, hashLen, pw, pwLen, s, scount); // U1 = hmac_hash(pw, salt || be32(i))
         memcpy(T, U, hashLen);
 
         for (unsigned r = 1; r < rounds; r++) {
-            BRHMAC(U, hash, hashLen, pw, pwLen, U, sizeof(U)); // Urounds = hmac_hash(pw, Urounds-1)
+            BRHMAC(U, hash, hashLen, pw, pwLen, U, ucount); // Urounds = hmac_hash(pw, Urounds-1)
             for (j = 0; j < hashLen/sizeof(uint32_t); j++) T[j] ^= U[j]; // Ti = U1 ^ U2 ^ ... ^ Urounds
         }
 
@@ -1151,8 +1152,8 @@ void BRPBKDF2(void *dk, size_t dkLen, void (*hash)(void *, const void *, size_t)
     }
 
     mem_clean(s, scount);
-    mem_clean(U, hashLen);
-    mem_clean(T, hashLen);
+    mem_clean(U, ucount);
+    mem_clean(T, tcount);
 }
 
 // salsa20/8 stream cipher: http://cr.yp.to/snuffle.html
@@ -1209,13 +1210,13 @@ void BRScrypt(void *dk, size_t dkLen, const void *pw, size_t pwLen, const void *
     assert(r > 0);
     assert(p > 0);
 
-    xcount = ycount = 16*r;
-    x = (uint64_t*)alloca(xcount * sizeof(uint64_t));
-    y = (uint64_t*)alloca(ycount * sizeof(uint64_t));
-    bcount = 32*r*p;
-    b = (uint32_t*)alloca(bcount * sizeof(uint32_t));
+    xcount = ycount = 16 * r * sizeof(uint64_t);
+    x = (uint64_t*)alloca(xcount);
+    y = (uint64_t*)alloca(ycount);
+    bcount = 32 * r * p * sizeof(uint32_t);
+    b = (uint32_t*)alloca(bcount);
 
-    BRPBKDF2(b, bcount * sizeof(uint32_t), BRSHA256, 256/8, pw, pwLen, salt, saltLen, 1);
+    BRPBKDF2(b, bcount, BRSHA256, 256/8, pw, pwLen, salt, saltLen, 1);
 
     for (int i = 0; i < p; i++) {
         for (unsigned j = 0; j < 32*r; j++) ((uint32_t *)x)[j] = le32(b[i*32*r + j]);
@@ -1239,10 +1240,10 @@ void BRScrypt(void *dk, size_t dkLen, const void *pw, size_t pwLen, const void *
         for (unsigned j = 0; j < 32*r; j++) b[i*32*r + j] = le32(((uint32_t *)x)[j]);
     }
 
-    BRPBKDF2(dk, dkLen, BRSHA256, 256/8, pw, pwLen, b, sizeof(b), 1);
-    mem_clean(b, bcount * sizeof(uint32_t));
-    mem_clean(x, xcount * sizeof(uint64_t));
-    mem_clean(y, ycount * sizeof(uint64_t));
+    BRPBKDF2(dk, dkLen, BRSHA256, 256/8, pw, pwLen, b, bcount, 1);
+    mem_clean(b, bcount);
+    mem_clean(x, xcount);
+    mem_clean(y, ycount);
     mem_clean(z, sizeof(z));
     mem_clean(v, 128*r*n);
     free(v);

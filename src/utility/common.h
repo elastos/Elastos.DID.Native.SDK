@@ -59,6 +59,13 @@ extern "C" {
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
+#if defined(_WIN32) || defined(_WIN64)
+    static const char *PATH_SEP = "\\";
+#else
+    static const char *PATH_SEP = "/";
+#endif
+
+
 const char *get_time_string(char *timestring, size_t len, time_t *p_time);
 
 int parse_time(time_t *time, const char *string);

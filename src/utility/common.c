@@ -55,8 +55,6 @@
 
 #define DID_MAX_LEN      512
 
-static const char *PATH_SEP = "/";
-
 const char *get_time_string(char *timestring, size_t len, time_t *p_time)
 {
     time_t t;
@@ -133,11 +131,11 @@ int list_dir(const char *path, const char *pattern,
     if (!path || !*path || !pattern || !callback)
         return -1;
 
-    len = snprintf(full_pattern, sizeof(full_pattern), "%s/{.*,%s}", path, pattern);
+#if defined(_WIN32) || defined(_WIN64)
+    len = snprintf(full_pattern, sizeof(full_pattern), "%s\\%s", path, pattern);
     if (len == sizeof(full_pattern))
         full_pattern[len-1] = 0;
 
-#if defined(_WIN32) || defined(_WIN64)
     struct _finddata_t c_file;
     intptr_t hFile;
 
@@ -153,6 +151,10 @@ int list_dir(const char *path, const char *pattern,
 
     _findclose(hFile);
 #else
+    len = snprintf(full_pattern, sizeof(full_pattern), "%s/{.*,%s}", path, pattern);
+    if (len == sizeof(full_pattern))
+        full_pattern[len-1] = 0;
+
     glob_t gl;
     size_t pos = strlen(path) + 1;
 
@@ -186,7 +188,7 @@ static int delete_file_helper(const char *path, void *context)
         return 0;
 
     if (strcmp(path, ".") != 0 && strcmp(path, "..") != 0) {
-        len = snprintf(fullpath, sizeof(fullpath), "%s/%s", (char *)context, path);
+        len = snprintf(fullpath, sizeof(fullpath), "%s%s%s", (char *)context, PATH_SEP, path);
         if (len < 0 || len > PATH_MAX)
             return -1;
 
@@ -410,14 +412,14 @@ int mkdirs(const char *path, mode_t mode)
     copypath[sizeof(copypath) - 1] = 0;
 
     pp = copypath;
-    while (rc == 0 && (sp = strchr(pp, '/')) != 0) {
+    while(rc == 0 && (sp = strstr(pp, PATH_SEP)) != 0) {
         if (sp != pp) {
             /* Neither root nor double slash in path */
             *sp = '\0';
             rc = mkdir_internal(copypath, mode);
-            *sp = '/';
+            strncpy(sp, PATH_SEP, strlen(PATH_SEP));
         }
-        pp = sp + 1;
+        pp = sp + strlen(PATH_SEP);
     }
 
     if (rc == 0)

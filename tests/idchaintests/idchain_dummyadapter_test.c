@@ -13,7 +13,6 @@
 #include "loader.h"
 #include "did.h"
 #include "didmeta.h"
-//#include "didstore.h"
 #include "diddocument.h"
 
 #define MAX_PUBLICKEY_BASE58      64
@@ -2123,11 +2122,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
 
 static int idchain_dummyadapter_test_suite_init(void)
 {
-    char _path[PATH_MAX];
-    const char *storePath;
-
-    storePath = get_store_path(_path, "/idchain");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     if (!store)
         return -1;
 

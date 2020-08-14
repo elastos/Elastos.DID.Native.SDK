@@ -26,7 +26,7 @@ set(SRC
 set(HEADERS
     crypto.h
     HDkey.h
-    win_helper.h)
+    winhelper.h)
 
 set(LIBS
     crypto)

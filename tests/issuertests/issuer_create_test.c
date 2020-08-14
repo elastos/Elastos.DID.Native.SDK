@@ -103,12 +103,9 @@ static void test_issuer_create_with_invalidkey2(void)
 
 static int issuer_create_test_suite_init(void)
 {
-    char _path[PATH_MAX];
-    const char *storePath;
     int rc;
 
-    storePath = get_store_path(_path, "/idchain");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     if (!store)
         return -1;
 

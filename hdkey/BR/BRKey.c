@@ -33,7 +33,7 @@
 #include <unistd.h>  // getpid()
 #endif
 
-#include "win_helper.h"
+#include "winhelper.h"
 
 #define BITCOIN_PRIVKEY      128
 #define BITCOIN_PRIVKEY_TEST 239

@@ -65,11 +65,11 @@ int main(int argc, char *argv[])
     while ((opt = getopt_long(argc, argv, "n:d:h?", options, &idx)) != -1) {
         switch (opt) {
         case 'n':
-            nettype = opt;
+            nettype = optarg;
             break;
 
         case 'd':
-            idstring = opt;
+            idstring = optarg;
             break;
 
         case 'h':

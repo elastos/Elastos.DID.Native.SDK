@@ -112,10 +112,10 @@ int main(int argc, char *argv[])
     while ((opt = getopt_long(argc, argv, "s:m:h?", options, &idx)) != -1) {
         switch (opt) {
         case 's':
-            stress_test = atoi(opt);
+            stress_test = atoi(optarg);
             break;
         case 'm':
-            memstats_file = opt;
+            memstats_file = optarg;
             break;
 
         case 1:
@@ -151,8 +151,6 @@ int main(int argc, char *argv[])
 #ifdef HAVE_SIGHUP
     signal(SIGHUP, signal_handler);
 #endif
-    //signal(SIGKILL, signal_handler);
-    //signal(SIGHUP,  signal_handler);
 
     if (memstats_file) {
         pid_t pid = getpid();

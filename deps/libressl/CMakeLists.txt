@@ -1,6 +1,8 @@
 project(libressl)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4464 /wd4820")
+if(WIN32)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4464 /wd4820")
+endif()
 
 include(ProjectDefaults)
 include(ExternalProject)

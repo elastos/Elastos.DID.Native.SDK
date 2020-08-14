@@ -29,9 +29,7 @@
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
-#ifdef HAVE_DIRECT_H
 #include <direct.h>
-#endif
 #include <sys/utime.h>
 
 #ifdef __cplusplus
@@ -53,8 +51,9 @@ typedef uint32_t              mode_t;
 #define utime                 _utime
 #define timegm                _mkgmtime
 #define rmdir                 _rmdir
-#define mkdir(dir, mode)      _mkdir(dir)
+#define getcwd                _getcwd
 #define strptime              _strptime
+#define mkdir(dir, mode)      _mkdir(dir)
 #define gmtime_r(a, b)        gmtime_s(b, a)
 
 char *_strptime(const char *buf, const char *fmt, struct tm *tm);

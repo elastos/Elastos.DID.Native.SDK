@@ -306,11 +306,7 @@ static void test_idchain_publishdid_with_credential(void)
 
 static int idchain_operation_test_suite_init(void)
 {
-    char _path[PATH_MAX];
-    const char *storePath;
-
-    storePath = get_store_path(_path, "/idchain");
-    store = TestData_SetupStore(false, storePath);
+    store = TestData_SetupStore(false);
     if (!store)
         return -1;
 

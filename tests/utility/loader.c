@@ -87,7 +87,7 @@ char *get_wallet_path(char* path, const char* dir)
     if (!path || !dir)
         return NULL;
 
-    sprintf(path, "%s/%s", getenv("HOME"), dir);
+    sprintf(path, "%s%s%s", getenv("HOME"), PATH_STEP, dir);
     return path;
 }
 
@@ -101,6 +101,7 @@ const char *get_store_path(char* path, const char *dir)
         return NULL;
     }
 
+    strcat(path, PATH_STEP);
     strcat(path, dir);
     return path;
 }
@@ -112,7 +113,8 @@ char *get_path(char *path, const char *file)
     assert(file);
     assert(*file);
 
-    len = snprintf(path, PATH_MAX, "../etc/did/resources/testdata/%s", file);
+    len = snprintf(path, PATH_MAX, "..%setc%sdid%sresources%stestdata%s%s",
+        PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, file);
         if (len < 0 || len > PATH_MAX)
             return NULL;
 
@@ -203,7 +205,7 @@ static int list_dir(const char *path, const char *pattern,
     assert(path);
     assert(pattern);
 
-    len = snprintf(full_pattern, sizeof(full_pattern), "%s/%s", path, pattern);
+    len = snprintf(full_pattern, sizeof(full_pattern), "%s%s%s", path, PATH_STEP, pattern);
     if (len == sizeof(full_pattern))
         full_pattern[len-1] = 0;
 
@@ -268,7 +270,7 @@ static int delete_file_helper(const char *path, void *context)
         return 0;
 
     if (strcmp(path, ".") != 0 && strcmp(path, "..") != 0) {
-        len = snprintf(fullpath, sizeof(fullpath), "%s/%s", (char *)context, path);
+        len = snprintf(fullpath, sizeof(fullpath), "%s%s%s", (char *)context, PATH_STEP, path);
         if (len < 0 || len > PATH_MAX)
             return -1;
 
@@ -467,7 +469,7 @@ static DIDStore *setup_store(bool dummybackend, const char *root)
 
     assert(root);
 
-    sprintf(cachedir, "%s%s", getenv("HOME"), "/.cache.did.elastos");
+    sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
     if (dummybackend) {
         dummyadapter->reset(dummyadapter);
         testdata.store = DIDStore_Open(root, &dummyadapter->adapter);
@@ -479,11 +481,12 @@ static DIDStore *setup_store(bool dummybackend, const char *root)
     return testdata.store;
 }
 
-DIDStore *TestData_SetupStore(bool dummybackend, const char *root)
+DIDStore *TestData_SetupStore(bool dummybackend)
 {
-    if (!root || !*root)
-        return NULL;
+    char _path[PATH_MAX];
+    const char*root;
 
+    root = get_store_path(_path, "DIDStore");
     delete_file(root);
     return setup_store(dummybackend, root);
 }

@@ -34,13 +34,12 @@ static int get_did(DID *did, void *context)
 static void test_didstore_change_password(void)
 {
     char alias[ELA_MAX_ALIAS_LEN], _path[PATH_MAX];
-    const char *gAlias, *storePath;
+    const char *gAlias;
     DIDStore *store;
     int rc, i, count = 0;
     DIDDocument *newdoc;
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     rc = TestData_InitIdentity(store);
@@ -130,12 +129,11 @@ static void test_didstore_change_password(void)
 static void test_didstore_change_with_wrongpassword(void)
 {
     char alias[ELA_MAX_ALIAS_LEN], _path[PATH_MAX];
-    const char *gAlias, *storePath;
+    const char *gAlias;
     DIDStore *store;
     int rc, i, count = 0;
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     rc = TestData_InitIdentity(store);

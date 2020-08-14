@@ -33,8 +33,6 @@ extern "C" {
 #if defined(_WIN32) || defined(_WIN64)
 #include <malloc.h>
 typedef ptrdiff_t             ssize_t;
-
-//#define PATH_MAX              256
 #define alloca                _alloca
 #endif
 
@@ -69,7 +67,7 @@ void TestData_Deinit(void);
 
 DIDAdapter *TestData_GetAdapter(bool dummybackend);
 
-DIDStore *TestData_SetupStore(bool dummybackend, const char *root);
+DIDStore *TestData_SetupStore(bool dummybackend);
 
 DIDStore *TestData_SetupTestStore(bool dummybackend);
 

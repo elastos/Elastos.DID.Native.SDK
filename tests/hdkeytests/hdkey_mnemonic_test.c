@@ -38,11 +38,7 @@ static void test_build_wordlist(void)
 
 static int hdkey_mnemonic_test_suite_init(void)
 {
-    char _path[PATH_MAX];
-    const char *storePath;
-
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     if (!store)
         return -1;
 

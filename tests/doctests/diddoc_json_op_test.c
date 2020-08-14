@@ -69,12 +69,9 @@ static void test_diddoc_json_operateion(void)
 
 static int diddoc_json_op_test_suite_init(void)
 {
-    char _path[PATH_MAX];
-    const char *storePath;
     int rc;
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     if (!store)
         return -1;
 

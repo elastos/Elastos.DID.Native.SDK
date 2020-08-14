@@ -265,13 +265,10 @@ static void test_issuer_issuerbystring(void)
 
 static int issuer_issuevc_test_suite_init(void)
 {
-    char _path[PATH_MAX];
-    const char *storePath;
     DIDURL *signkey;
     int rc;
 
-    storePath = get_store_path(_path, "/idchain");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     if (!store)
         return -1;
 

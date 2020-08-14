@@ -30,7 +30,7 @@
 #include "BRBase58.h"
 #include "BRBech32.h"
 #include "BRInt.h"
-#include "win_helper.h"
+#include "winhelper.h"
 
 #define VAR_INT16_HEADER  0xfd
 #define VAR_INT32_HEADER  0xfe
@@ -245,7 +245,7 @@ const uint8_t *BRScriptPKH(const uint8_t *script, size_t scriptLen)
     elemscount = BRScriptElements(NULL, 0, script, scriptLen);
     elems = (const uint8_t**)alloca(elemscount * sizeof(uint8_t*));
 
-    size_t l, count = BRScriptElements(elems, /*sizeof(elems)/sizeof(*elems)*/elemscount, script, scriptLen);
+    size_t l, count = BRScriptElements(elems, elemscount, script, scriptLen);
 
     if (count == 5 && *elems[0] == OP_DUP && *elems[1] == OP_HASH160 && *elems[2] == 20 &&
         *elems[3] == OP_EQUALVERIFY && *elems[4] == OP_CHECKSIG) {
@@ -281,7 +281,7 @@ size_t BRAddressFromScriptPubKey(char *addr, size_t addrLen, const uint8_t *scri
 
     elemscount = BRScriptElements(NULL, 0, script, scriptLen);
     elems = (const uint8_t**)alloca(elemscount * sizeof(uint8_t*));
-    size_t r = 0, l = 0, count = BRScriptElements(elems, /*sizeof(elems)/sizeof(*elems)*/elemscount, script, scriptLen);
+    size_t r = 0, l = 0, count = BRScriptElements(elems, elemscount, script, scriptLen);
 
     if (count == 5 && *elems[0] == OP_DUP && *elems[1] == OP_HASH160 && *elems[2] == 20 &&
         *elems[3] == OP_EQUALVERIFY && *elems[4] == OP_CHECKSIG) {
@@ -340,7 +340,7 @@ size_t BRAddressFromScriptSig(char *addr, size_t addrLen, const uint8_t *script,
 
     elemscount = BRScriptElements(NULL, 0, script, scriptLen);
     elems = (const uint8_t**)alloca(elemscount * sizeof(uint8_t*));
-    size_t l = 0, count = BRScriptElements(elems, elemscount/*sizeof(elems)/sizeof(*elems)*/, script, scriptLen);
+    size_t l = 0, count = BRScriptElements(elems, elemscount, script, scriptLen);
 
     data[0] = BITCOIN_PUBKEY_ADDRESS;
 #if BITCOIN_TESTNET

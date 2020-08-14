@@ -246,11 +246,7 @@ static void test_vc_parse_jsonvc(void)
 
 static int vc_test_suite_init(void)
 {
-    char _path[PATH_MAX];
-    const char *storePath;
-
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     if (!store)
         return -1;
 

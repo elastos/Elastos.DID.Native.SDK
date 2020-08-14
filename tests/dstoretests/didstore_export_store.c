@@ -5,7 +5,6 @@
 #include <unistd.h>
 #endif
 #include <CUnit/Basic.h>
-//#include <crystal.h>
 #include <limits.h>
 #include <assert.h>
 
@@ -64,7 +63,7 @@ static void test_didstore_export_import_did(void)
     DIDAdapter *adapter = TestData_GetAdapter(true);
     CU_ASSERT_PTR_NOT_NULL(adapter);
 
-    path = get_store_path(_path2, "/restore");
+    path = get_store_path(_path2, "restore");
     CU_ASSERT_PTR_NOT_NULL(path);
     delete_file(path);
 
@@ -112,7 +111,7 @@ static void test_didstore_export_import_privateidentity(void)
     DIDAdapter *adapter = TestData_GetAdapter(true);
     CU_ASSERT_PTR_NOT_NULL(adapter);
 
-    path = get_store_path(_path2, "/restore");
+    path = get_store_path(_path2, "restore");
     CU_ASSERT_PTR_NOT_NULL(path);
 
     delete_file(path);
@@ -158,7 +157,7 @@ static void test_didstore_export_import_store(void)
     DIDAdapter *adapter = TestData_GetAdapter(true);
     CU_ASSERT_PTR_NOT_NULL(adapter);
 
-    path = get_store_path(_path2, "/restore");
+    path = get_store_path(_path2, "restore");
     CU_ASSERT_PTR_NOT_NULL(path);
 
     delete_file(path);
