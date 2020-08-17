@@ -166,11 +166,11 @@ endif()
 
 set(LIBS
     cjson
-    libcurl
+    curl
     ssl
     crypto
-    jansson
     cjose
+    jansson
     zip
     z)
 
@@ -178,7 +178,8 @@ if(WIN32)
     set(LIBS
         ${LIBS}
         pthread
-        Ws2_32)
+        Ws2_32
+        Crypt32)
 endif()
 
 add_definitions(-DDID_BUILD)
@@ -204,7 +205,7 @@ if(ENABLE_STATIC)
     add_dependencies(eladid-static ${ELADID_DEPENDS})
 
     #target_compile_definitions(eladid-static PRIVATE DID_STATIC CRYSTAL_STATIC)
-    target_compile_definitions(eladid-static PRIVATE DID_STATIC)
+    target_compile_definitions(eladid-static PRIVATE DID_STATIC CURL_STATICLIB)
     set_target_properties(eladid-static PROPERTIES OUTPUT_NAME eladid)
     if(WIN32)
         set_target_properties(eladid-static PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
@@ -223,7 +224,7 @@ if(ENABLE_SHARED)
     add_dependencies(eladid-shared ${ELADID_DEPENDS})
 
     #target_compile_definitions(eladid-shared PRIVATE DID_DYNAMIC CRYSTAL_DYNAMIC)
-    target_compile_definitions(eladid-shared PRIVATE DID_DYNAMIC)
+    target_compile_definitions(eladid-shared PRIVATE DID_DYNAMIC CURL_STATICLIB)
     set_target_properties(eladid-shared PROPERTIES
         OUTPUT_NAME eladid
         VERSION ${PROJECT_VERSION}

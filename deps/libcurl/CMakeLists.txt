@@ -1,4 +1,4 @@
-project(curl)
+project(libcurl)
 
 include(ProjectDefaults)
 include(ExternalProject)
@@ -101,8 +101,7 @@ else()
 endif()
 
 ExternalProject_Add(
-    #libcurl
-    curl
+    libcurl
 
     PREFIX ${PROJECT_DEPS_BUILD_PREFIX}
     URL "https://github.com/curl/curl/releases/download/curl-7_71_1/curl-7.71.1.tar.bz2"
@@ -119,27 +118,3 @@ ExternalProject_Add(
     BUILD_COMMAND ${BUILD_CMD} ${BUILD_ARGS}
     INSTALL_COMMAND ${INSTALL_CMD}
 )
-
-set(CURL_DEPS
-    curl
-    ssl
-    crypto
-    z)
-
-if(WIN32)
-    set(CURL_DEPS ${CURL_DEPS} Ws2_32 Iphlpapi Crypt32)
-endif()
-
-if(NOT ANDROID)
-    set(CURL_DEPS ${CURL_DEPS} pthread)
-endif()
-
-add_library(libcurl INTERFACE)
-target_link_libraries(libcurl INTERFACE ${CURL_DEPS})
-if(WIN32)
-    target_compile_definitions(libcurl INTERFACE CURL_STATICLIB)
-endif()
-
-#if(ENABLE_STATIC)
-    #export_static_library(curl)
-#endif()

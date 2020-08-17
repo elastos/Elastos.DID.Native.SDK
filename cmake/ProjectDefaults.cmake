@@ -103,7 +103,7 @@ function(export_static_library MODULE_NAME)
     set(_INSTALL_DESTINATION lib)
 
     string(CONCAT STATIC_LIBRARY_NAME
-        "${CARRIER_INT_DIST_DIR}/${_INSTALL_DESTINATION}/"
+        "${PROJECT_INT_DIST_DIR}/${_INSTALL_DESTINATION}/"
         "${CMAKE_STATIC_LIBRARY_PREFIX}"
         "${MODULE_NAME}"
         "${CMAKE_STATIC_LIBRARY_SUFFIX}")
@@ -123,7 +123,7 @@ function(export_shared_library MODULE_NAME)
     endif()
 
     string(CONCAT SHARED_LIBRARY_NAME
-        "${CARRIER_INT_DIST_DIR}/${_INSTALL_DESTINATION}/"
+        "${PROJECT_INT_DIST_DIR}/${_INSTALL_DESTINATION}/"
         "${CMAKE_SHARED_LIBRARY_PREFIX}"
         "${MODULE_NAME}"
         "${CMAKE_SHARED_LIBRARY_SUFFIX}")
