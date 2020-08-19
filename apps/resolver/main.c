@@ -80,31 +80,31 @@ int main(int argc, char *argv[])
 
     sprintf(cachedir, "%s%s", getenv("HOME"), "/.cache.did.elastos");
     if (DIDBackend_InitializeDefault(url, cachedir) < 0) {
-        printf("Initial resolver failed. Error: %s\n", DIDError_GetMessage());
+        fprintf(stderr, "Initial resolver failed. Error: %s\n", DIDError_GetMessage());
         goto cleanup;
     }
 
     did = DID_New(idstring);
     if (!did) {
-        printf("Create DID failed. Error: %s\n", DIDError_GetMessage());
+        fprintf(stderr, "Create DID failed. Error: %s\n", DIDError_GetMessage());
         goto cleanup;
     }
 
     doc = DID_Resolve(did, true);
     DID_Destroy(did);
     if (!doc) {
-        printf("Resolve [%s] failed. Error: %s\n", idstring, DIDError_GetMessage());
+        fprintf(stderr, "Resolve [%s] failed. Error: %s\n", idstring, DIDError_GetMessage());
         goto cleanup;
     }
 
     data = DIDDocument_ToString(doc, true);
     DIDDocument_Destroy(doc);
     if (!data) {
-        printf("Invalid document.\n");
+        fprintf(stderr, "Invalid document.\n");
         goto cleanup;
     }
 
-    printf("Document resolved:\n%s\n\n", data);
+    printf("%s\n", data);
     free((void*)data);
 
 cleanup:
