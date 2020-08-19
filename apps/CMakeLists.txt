@@ -6,3 +6,6 @@ add_submodule(agent
 add_submodule(resolver
     DIRECTORY resolver
     DEPENDS ela-did)
+add_submodule(validater
+    DIRECTORY validater
+    DEPENDS ela-did)
