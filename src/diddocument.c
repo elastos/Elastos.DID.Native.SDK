@@ -345,7 +345,7 @@ static int Parse_PublicKeys(DIDDocument *document, DID *did, cJSON *json)
 static
 int Parse_Auth_PublicKeys(DIDDocument *document, cJSON *json, KeyType type)
 {
-    int pk_size, i, j, code, size = 0, total_size = 0;
+    int pk_size, i, size = 0, total_size = 0;
     PublicKey *pk;
 
     assert(document);
@@ -543,8 +543,7 @@ static int remove_publickey(DIDDocument *document, DIDURL *keyid)
 {
     PublicKey **pks;
     PublicKey *pk;
-    size_t size;
-    int i;
+    size_t size, i;
 
     assert(document);
     assert(keyid);
@@ -749,9 +748,7 @@ DIDDocument *DIDDocument_FromJson(const char *json)
 int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
         bool compact, bool forsign)
 {
-    char id[ELA_MAX_DIDURL_LEN];
-    char _timestring[DOC_BUFFER_LEN];
-    size_t i;
+    char id[ELA_MAX_DIDURL_LEN], _timestring[DOC_BUFFER_LEN];
 
     assert(gen);
     assert(gen->buffer);
@@ -997,7 +994,6 @@ bool DIDDocument_IsGenuine(DIDDocument *document)
 bool DIDDocument_IsExpires(DIDDocument *document)
 {
     time_t curtime;
-    bool isExpires;
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1037,8 +1033,7 @@ bool DIDDocument_IsValid(DIDDocument *document)
 static int publickeys_copy(DIDDocument *doc, PublicKey **pks, size_t size)
 {
     PublicKey **pk_array = NULL;
-    size_t *psize;
-    int i, j;
+    size_t i, j;
 
     assert(doc);
     assert(pks);
@@ -1077,8 +1072,7 @@ errorExit:
 
 static int credentials_copy(DIDDocument *doc, Credential **creds, size_t size)
 {
-    Credential **cred_array;
-    int i, j;
+    size_t i;
 
     assert(doc);
     assert(creds);
@@ -1110,7 +1104,7 @@ static int credentials_copy(DIDDocument *doc, Credential **creds, size_t size)
 
 static int services_copy(DIDDocument *doc, Service **services, size_t size)
 {
-    int i;
+    size_t i;
 
     assert(doc);
     assert(services);
@@ -1136,9 +1130,6 @@ static int services_copy(DIDDocument *doc, Service **services, size_t size)
 
 int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc)
 {
-    size_t size;
-    int i;
-
     assert(destdoc);
     assert(srcdoc);
 
@@ -1276,8 +1267,7 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
     DIDDocument *document;
     PublicKey *pk;
     uint8_t binkey[PUBLICKEY_BYTES];
-    size_t size;
-    int i;
+    size_t size, i;
 
     if (!builder || !builder->document || !keyid || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1325,9 +1315,6 @@ int DIDDocumentBuilder_RemovePublicKey(DIDDocumentBuilder *builder, DIDURL *keyi
 {
     DIDDocument* document;
     DIDURL *key;
-    size_t size;
-    size_t i;
-    int rc;
 
     if (!builder || !builder->document || !keyid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1355,7 +1342,6 @@ int DIDDocumentBuilder_AddAuthenticationKey(DIDDocumentBuilder *builder,
         DIDURL *keyid, const char *key)
 {
     DIDDocument *document;
-    PublicKey **pks;
     PublicKey *pk;
     uint8_t binkey[PUBLICKEY_BYTES];
     DID *controller;
@@ -1477,7 +1463,6 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
         DID *controller, const char *key)
 {
     DIDDocument *document;
-    PublicKey **pks;
     PublicKey *pk = NULL;
     uint8_t binkey[PUBLICKEY_BYTES];
 
@@ -1624,7 +1609,7 @@ int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder, Credential *cr
     Credential *temp_cred;
     Credential *cred;
     DIDURL *credid;
-    ssize_t i;
+    size_t i;
 
     if (!builder || !builder->document || !credential) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2032,8 +2017,7 @@ DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
 ///////////////////////Authentications/////////////////////////////
 ssize_t DIDDocument_GetAuthenticationCount(DIDDocument *document)
 {
-    size_t size = 0;
-    int i;
+    size_t size = 0, i;
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2051,8 +2035,7 @@ ssize_t DIDDocument_GetAuthenticationCount(DIDDocument *document)
 ssize_t DIDDocument_GetAuthenticationKeys(DIDDocument *document, PublicKey **pks,
         size_t size)
 {
-    size_t actual_size = 0;
-    int i;
+    size_t actual_size = 0, i;
 
     if (!document || !pks || size <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2101,7 +2084,7 @@ PublicKey *DIDDocument_GetAuthenticationKey(DIDDocument *document, DIDURL *keyid
 ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
         const char *type, DIDURL *keyid, PublicKey **pks, size_t size)
 {
-    size_t actual_size = 0;
+    size_t actual_size = 0, i;
     PublicKey *pk;
 
     if (!document || !pks || size <= 0) {
@@ -2118,7 +2101,7 @@ ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
         return -1;
     }
 
-    for (int i = 0; i < document->publickeys.size; i++) {
+    for (i = 0; i < document->publickeys.size; i++) {
         pk = document->publickeys.pks[i];
         if (!pk->authenticationKey)
             continue;
@@ -2141,8 +2124,7 @@ ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
 ////////////////////////////Authorization//////////////////////////
 ssize_t DIDDocument_GetAuthorizationCount(DIDDocument *document)
 {
-    ssize_t size = 0;
-    int i;
+    size_t size = 0, i;
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2154,14 +2136,13 @@ ssize_t DIDDocument_GetAuthorizationCount(DIDDocument *document)
             size++;
     }
 
-    return size;
+    return (ssize_t)size;
 }
 
 ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
         size_t size)
 {
-    size_t actual_size = 0;
-    int i;
+    size_t actual_size = 0, i;
 
     if (!document || !pks || size <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2206,9 +2187,8 @@ PublicKey *DIDDocument_GetAuthorizationKey(DIDDocument *document, DIDURL *keyid)
 ssize_t DIDDocument_SelectAuthorizationKeys(DIDDocument *document,
         const char *type, DIDURL *keyid, PublicKey **pks, size_t size)
 {
-    size_t actual_size = 0;
+    size_t actual_size = 0, i;
     PublicKey *pk;
-    int i;
 
     if (!document || !pks || size <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2278,8 +2258,7 @@ ssize_t DIDDocument_GetCredentials(DIDDocument *document, Credential **creds,
 Credential *DIDDocument_GetCredential(DIDDocument *document, DIDURL *credid)
 {
     Credential *credential = NULL;
-    size_t size;
-    size_t i;
+    size_t size, i;
 
     if (!document || !credid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2310,9 +2289,7 @@ Credential *DIDDocument_GetCredential(DIDDocument *document, DIDURL *credid)
 ssize_t DIDDocument_SelectCredentials(DIDDocument *document, const char *type,
         DIDURL *credid, Credential **creds, size_t size)
 {
-    size_t actual_size = 0;
-    size_t total_size;
-    size_t i, j;
+    size_t actual_size = 0, total_size, i, j;
     bool flag;
 
     if (!document || !creds || size <= 0) {
@@ -2403,8 +2380,7 @@ ssize_t DIDDocument_GetServices(DIDDocument *document, Service **services,
 Service *DIDDocument_GetService(DIDDocument *document, DIDURL *serviceid)
 {
     Service *service = NULL;
-    size_t size;
-    size_t i;
+    size_t size, i;
 
     if (!document || !serviceid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2435,9 +2411,7 @@ Service *DIDDocument_GetService(DIDDocument *document, DIDURL *serviceid)
 ssize_t DIDDocument_SelectServices(DIDDocument *document,
         const char *type, DIDURL *serviceid, Service **services, size_t size)
 {
-    size_t actual_size = 0;
-    size_t total_size;
-    size_t i;
+    size_t actual_size = 0, total_size, i;
 
     if (!document || !services || size <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2537,7 +2511,7 @@ int DIDDocument_Verify(DIDDocument *document, DIDURL *keyid, char *sig,
         int count, ...)
 {
     va_list inputs;
-    uint8_t binkey[PUBLICKEY_BYTES], digest[SHA256_BYTES];
+    uint8_t digest[SHA256_BYTES];
     ssize_t size;
 
     if (!document || !sig || count <= 0) {
@@ -2559,7 +2533,6 @@ int DIDDocument_Verify(DIDDocument *document, DIDURL *keyid, char *sig,
 int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
         char *sig, uint8_t *digest, size_t size)
 {
-    int rc;
     PublicKey *publickey;
     uint8_t binkey[PUBLICKEY_BYTES];
 

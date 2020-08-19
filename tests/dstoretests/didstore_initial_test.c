@@ -5,14 +5,12 @@
 #include <unistd.h>
 #endif
 #include <CUnit/Basic.h>
-#include <crystal.h>
 #include <limits.h>
 
 #include "constant.h"
 #include "loader.h"
 #include "ela_did.h"
 #include "diddocument.h"
-#include "didtest_adapter.h"
 #include "didstore.h"
 
 static const char *alias = "littlefish";
@@ -25,15 +23,14 @@ static const char *getpassword(const char *walletDir, const char *walletId)
 static void test_didstore_newdid(void)
 {
     char _path[PATH_MAX];
-    const char *storePath, *newalias;
+    const char *newalias;
     char *path;
     DIDDocument *doc, *loaddoc;
     DIDStore *store;
     bool hasidentity, isEquals;
     int rc;
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     path = get_file_path(_path, PATH_MAX, 3, store->root, PATH_STEP, META_FILE);
@@ -101,17 +98,14 @@ static void test_didstore_newdid(void)
 
 static void test_didstore_newdid_byindex(void)
 {
-    char _path[PATH_MAX], newalias[ELA_MAX_ALIAS_LEN];
-    const char *storePath;
-    char *path;
-    DIDDocument *doc, *loaddoc;
+    char *path, _path[PATH_MAX];
+    DIDDocument *doc;
     DIDStore *store;
-    bool hasidentity, isEquals;
+    bool isEquals;
     DID did, *ndid;
     int rc;
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     path = get_file_path(_path, PATH_MAX, 3, store->root, PATH_STEP, META_FILE);
@@ -155,19 +149,18 @@ static void test_didstore_newdid_byindex(void)
 
 static void test_didstore_newdid_withouAlias(void)
 {
-    char _storepath[PATH_MAX], _path[PATH_MAX];
-    const char *storePath, *newalias;
+    char _path[PATH_MAX];
+    const char *newalias;
     char *path;
     DIDDocument *doc, *loaddoc;
     DIDStore *store;
-    bool hasidentity, isEquals;
+    bool hasidentity;
     int rc;
 
-    storePath = get_store_path(_storepath, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    path = get_file_path(_path, PATH_MAX, 3, storePath, PATH_STEP, META_FILE);
+    path = get_file_path(_path, PATH_MAX, 3, store->root, PATH_STEP, META_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
     hasidentity = DIDStore_ContainsPrivateIdentity(store);
@@ -181,11 +174,11 @@ static void test_didstore_newdid_withouAlias(void)
     hasidentity = DIDStore_ContainsPrivateIdentity(store);
     CU_ASSERT_TRUE_FATAL(hasidentity);
 
-    path = get_file_path(_path, PATH_MAX, 5, storePath, PATH_STEP, PRIVATE_DIR,
+    path = get_file_path(_path, PATH_MAX, 5, store->root, PATH_STEP, PRIVATE_DIR,
             PATH_STEP, INDEX_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
-    path = get_file_path(_path, PATH_MAX, 5, storePath, PATH_STEP, PRIVATE_DIR,
+    path = get_file_path(_path, PATH_MAX, 5, store->root, PATH_STEP, PRIVATE_DIR,
             PATH_STEP, HDKEY_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
@@ -196,7 +189,7 @@ static void test_didstore_newdid_withouAlias(void)
     DID *did = DIDDocument_GetSubject(doc);
     const char *idstring = DID_GetMethodSpecificId(did);
 
-    path = get_file_path(_path, PATH_MAX, 7, storePath, PATH_STEP, DID_DIR,
+    path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP, DID_DIR,
             PATH_STEP, (char*)idstring, PATH_STEP, DOCUMENT_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
@@ -235,7 +228,7 @@ static void test_didstore_initial_error(void)
     DIDStore *store;
     DIDAdapter *adapter;
 
-    storePath = get_store_path(_path, "/servet");
+    storePath = get_store_path(_path, "DIDStore");
     store = DIDStore_Open(storePath, NULL);
     CU_ASSERT_PTR_NOT_NULL(store);
     DIDStore_Close(store);
@@ -251,16 +244,13 @@ static void test_didstore_initial_error(void)
 
 static void test_didstore_privateIdentity_error(void)
 {
-    char _path[PATH_MAX];
     char _temp[PATH_MAX];
-    const char *storePath;
     char *path;
     DIDStore *store;
     bool hasidentity;
     int rc;
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     hasidentity = DIDStore_ContainsPrivateIdentity(store);
@@ -275,11 +265,11 @@ static void test_didstore_privateIdentity_error(void)
     hasidentity = DIDStore_ContainsPrivateIdentity(store);
     CU_ASSERT_FALSE(hasidentity);
 
-    path = get_file_path(_temp, PATH_MAX, 5, storePath, PATH_STEP, PRIVATE_DIR,
+    path = get_file_path(_temp, PATH_MAX, 5, store->root, PATH_STEP, PRIVATE_DIR,
             PATH_STEP, INDEX_FILE);
     CU_ASSERT_FALSE(file_exist(path));
 
-    path = get_file_path(_temp, PATH_MAX, 5, storePath, PATH_STEP, PRIVATE_DIR,
+    path = get_file_path(_temp, PATH_MAX, 5, store->root, PATH_STEP, PRIVATE_DIR,
             PATH_STEP, HDKEY_FILE);
     CU_ASSERT_FALSE(file_exist(path));
 
@@ -288,15 +278,11 @@ static void test_didstore_privateIdentity_error(void)
 
 static void test_didstore_newdid_emptystore(void)
 {
-    char _path[PATH_MAX];
-    const char *storePath;
     DIDStore *store;
     DIDDocument *doc;
     bool hasidentity;
-    int rc;
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     hasidentity = DIDStore_ContainsPrivateIdentity(store);
@@ -311,10 +297,6 @@ static void test_didstore_newdid_emptystore(void)
 
 static void test_didstore_privateidentity_compatibility(void)
 {
-    char _path[PATH_MAX];
-    char _temp[PATH_MAX];
-    const char *storePath;
-    char *path;
     DIDStore *store;
     bool isEquals;
     DIDDocument *doc;
@@ -325,8 +307,7 @@ static void test_didstore_privateidentity_compatibility(void)
     const char *ExtendedkeyBase = "xprv9s21ZrQH143K4biiQbUq8369meTb1R8KnstYFAKtfwk3vF8uvFd1EC2s49bMQsbdbmdJxUWRkuC48CXPutFfynYFVGnoeq8LJZhfd9QjvUt";
     const char *passphrase = "helloworld";
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, passphrase,

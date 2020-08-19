@@ -12,8 +12,7 @@
 #include "constant.h"
 #include "ela_did.h"
 #include "did.h"
-#include "didstore.h"
-#include "didtest_adapter.h"
+//#include "didstore.h"
 
 static const char *password = "passwd";
 
@@ -26,7 +25,6 @@ static int get_issuer_cred(DIDURL *id, void *context)
     const char *alias;
     DID *creddid;
     CredentialMetaData *metadata;
-    int rc;
 
     if (!id) {
         return 0;
@@ -59,7 +57,6 @@ static int get_test_cred(DIDURL *id, void *context)
     const char *alias;
     DID *creddid;
     CredentialMetaData *metadata;
-    int rc;
 
     if (!id)
         return 0;
@@ -159,7 +156,6 @@ static void test_openstore_newdid(void)
     DIDDocument *doc;
     DID *did;
     bool isDeleted;
-    int rc;
 
     doc = DIDStore_NewDID(store, password, "");
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);

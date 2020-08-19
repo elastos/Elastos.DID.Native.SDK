@@ -197,7 +197,7 @@ int DIDRequest_Verify(DIDRequest *request)
 DIDDocument *DIDRequest_FromJson(DIDRequest *request, cJSON *json)
 {
     cJSON *item, *field = NULL;
-    char *op, *docJson, *previousTxid;
+    char *op, *docJson;
     DID *subject;
     size_t len;
     char *payload;

@@ -76,7 +76,6 @@ const char *MetaData_ToJson(MetaData *metadata)
 
 int MetaData_FromJson_Internal(MetaData *metadata, cJSON *json)
 {
-    cJSON *root;
     cJSON *copy;
 
     assert(metadata);
@@ -102,7 +101,7 @@ const char *MetaData_ToString(MetaData *metadata)
 
 int MetaData_FromJson(MetaData *metadata, const char *data)
 {
-    cJSON *root, *item;
+    cJSON *root;
     int rc;
 
     assert(metadata);
@@ -251,11 +250,11 @@ bool MetaData_GetExtraAsBoolean(MetaData *metadata, const char *key)
 
     json = MetaData_Get(metadata, key);
     if (!json)
-        return NULL;
+        return false;
 
     if (!cJSON_IsBool(json)) {
         DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not boolean type.", key);
-        return NULL;
+        return false;
     }
 
     return cJSON_IsTrue(json);

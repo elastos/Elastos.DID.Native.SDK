@@ -34,6 +34,8 @@
 #include <openssl/bio.h>
 #include <openssl/pem.h>
 
+#include "winhelper.h"
+
 #define BIP32_SEED_KEY "Bitcoin seed"
 #define BIP32_XPRV     "\x04\x88\xAD\xE4"
 #define BIP32_XPUB     "\x04\x88\xB2\x1E"
@@ -124,7 +126,7 @@ int getPubKeyCoordinate(const void *pubKey, size_t pubKeyLen, uint8_t *xbuf, siz
         goto errorExit;
 
     len = BN_bn2bin(x, arrBN);
-    if (len > *xlen)
+    if (len > (int)*xlen)
         goto errorExit;
 
     memcpy(xbuf, arrBN, len);
@@ -132,7 +134,7 @@ int getPubKeyCoordinate(const void *pubKey, size_t pubKeyLen, uint8_t *xbuf, siz
 
     memset(arrBN, 0, sizeof(arrBN));
     len = BN_bn2bin(y, arrBN);
-    if (len > *ylen)
+    if (len > (int)*ylen)
         goto errorExit;
 
     memcpy(ybuf, arrBN, len);
@@ -219,7 +221,7 @@ ssize_t getKeyPem(const void *pubkey, size_t pubKeyLen, const void *privKey, siz
 
     buf_len = bufferPtr->length;
     if (buffer) {
-        if (buf_len >= len) {
+        if (buf_len >= (ssize_t)len) {
             buf_len = -1;
         } else {
             memcpy(buffer, bufferPtr->data, buf_len);
@@ -752,11 +754,12 @@ void BRBIP32BitIDKey(BRKey *key, const void *seed, size_t seedLen, uint32_t inde
     if (key && (seed || seedLen == 0) && uri) {
         UInt256 hash;
         size_t uriLen = strlen(uri);
-        uint8_t data[sizeof(index) + uriLen];
+        size_t datacount = sizeof(index) + uriLen;
+        uint8_t *data = (uint8_t *)alloca(datacount);
 
         UInt32SetLE(data, index);
         memcpy(&data[sizeof(index)], uri, uriLen);
-        BRSHA256(&hash, data, sizeof(data));
+        BRSHA256(&hash, data, datacount);
         UInt256 chainCode;
         BRBIP32PrivKeyPath(key, &chainCode, seed, seedLen, 5, 13 | BIP32_HARD, UInt32GetLE(&hash.u32[0]) | BIP32_HARD,
                            UInt32GetLE(&hash.u32[1]) | BIP32_HARD, UInt32GetLE(&hash.u32[2]) | BIP32_HARD,

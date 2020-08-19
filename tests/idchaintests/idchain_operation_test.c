@@ -6,6 +6,7 @@
 #endif
 #include <CUnit/Basic.h>
 #include <limits.h>
+#include <crystal.h>
 
 #include "constant.h"
 #include "loader.h"
@@ -193,7 +194,6 @@ static void test_idchain_publishdid_and_resolve(void)
 
 static void test_idchain_publishdid_with_credential(void)
 {
-    DIDURL *signkey;
     DIDDocument *resolvedoc = NULL, *doc;
     char previous_txid[ELA_MAX_TXID_LEN];
     const char *mnemonic, *txid;
@@ -306,12 +306,7 @@ static void test_idchain_publishdid_with_credential(void)
 
 static int idchain_operation_test_suite_init(void)
 {
-    int rc;
-    char _path[PATH_MAX];
-    const char *storePath;
-
-    storePath = get_store_path(_path, "/idchain");
-    store = TestData_SetupStore(false, storePath);
+    store = TestData_SetupStore(false);
     if (!store)
         return -1;
 

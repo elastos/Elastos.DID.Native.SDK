@@ -5,14 +5,13 @@
 #include <unistd.h>
 #endif
 #include <CUnit/Basic.h>
-#include <crystal.h>
 #include <limits.h>
+#include <assert.h>
 
 #include "constant.h"
 #include "loader.h"
 #include "ela_did.h"
 #include "diddocument.h"
-#include "didtest_adapter.h"
 #include "didstore.h"
 
 static const char *alias = "littlefish";
@@ -64,7 +63,7 @@ static void test_didstore_export_import_did(void)
     DIDAdapter *adapter = TestData_GetAdapter(true);
     CU_ASSERT_PTR_NOT_NULL(adapter);
 
-    path = get_store_path(_path2, "/restore");
+    path = get_store_path(_path2, "restore");
     CU_ASSERT_PTR_NOT_NULL(path);
     delete_file(path);
 
@@ -94,7 +93,6 @@ static void test_didstore_export_import_did(void)
 
 static void test_didstore_export_import_privateidentity(void)
 {
-    DID did;
     char *file;
     char _path[PATH_MAX], _path2[PATH_MAX], command[512];
     const char *path, *path2;
@@ -113,7 +111,7 @@ static void test_didstore_export_import_privateidentity(void)
     DIDAdapter *adapter = TestData_GetAdapter(true);
     CU_ASSERT_PTR_NOT_NULL(adapter);
 
-    path = get_store_path(_path2, "/restore");
+    path = get_store_path(_path2, "restore");
     CU_ASSERT_PTR_NOT_NULL(path);
 
     delete_file(path);
@@ -141,7 +139,6 @@ static void test_didstore_export_import_privateidentity(void)
 
 static void test_didstore_export_import_store(void)
 {
-    DID did;
     char *file;
     char _path[PATH_MAX], _path2[PATH_MAX], command[512];
     const char *path, *path2;
@@ -160,7 +157,7 @@ static void test_didstore_export_import_store(void)
     DIDAdapter *adapter = TestData_GetAdapter(true);
     CU_ASSERT_PTR_NOT_NULL(adapter);
 
-    path = get_store_path(_path2, "/restore");
+    path = get_store_path(_path2, "restore");
     CU_ASSERT_PTR_NOT_NULL(path);
 
     delete_file(path);

@@ -35,7 +35,7 @@ void DIDHistory_Destroy(DIDHistory *history)
         return;
 
     if (history->txinfos.infos) {
-        int i;
+        size_t i;
         assert(history->txinfos.size > 0);
 
         for (i = 0; i < history->txinfos.size; i++)
@@ -78,7 +78,7 @@ DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int index)
 {
     DIDDocument *doc;
 
-    if (!history || index < 0) {
+    if (!history) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
@@ -88,7 +88,7 @@ DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int index)
         return NULL;
     }
 
-    if (index >= history->txinfos.size) {
+    if ((size_t)index >= history->txinfos.size) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in history.");
         return NULL;
     }
@@ -109,12 +109,12 @@ DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int index)
 
 const char *DIDHistory_GetTransactionIdByIndex(DIDHistory *history, int index)
 {
-    if (!history || index < 0) {
+    if (!history) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    if (!history->txinfos.infos || index >= history->txinfos.size) {
+    if (!history->txinfos.infos || (size_t)index >= history->txinfos.size) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in history.");
         return NULL;
     }
@@ -124,12 +124,12 @@ const char *DIDHistory_GetTransactionIdByIndex(DIDHistory *history, int index)
 
 time_t DIDHistory_GetPublishedByIndex(DIDHistory *history, int index)
 {
-    if (!history || index < 0) {
+    if (!history) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
-    if (!history->txinfos.infos || index >= history->txinfos.size) {
+    if (!history->txinfos.infos || (size_t)index >= history->txinfos.size) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in history.");
         return 0;
     }
@@ -139,12 +139,12 @@ time_t DIDHistory_GetPublishedByIndex(DIDHistory *history, int index)
 
 const char *DIDHistory_GetOperationByIndex(DIDHistory *history, int index)
 {
-    if (!history || index < 0) {
+    if (!history) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    if (!history->txinfos.infos || index >= history->txinfos.size) {
+    if (!history->txinfos.infos || (size_t)index >= history->txinfos.size) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in history.");
         return NULL;
     }

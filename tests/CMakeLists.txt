@@ -64,6 +64,13 @@ set(SRC
     ${JWT-TESTS}
     )
 
+if(NOT WIN32)
+    file(GLOB TEST-ADAPTER "testadapter/*.c")
+    set(SRC
+        ${SRC}
+        ${TEST-ADAPTER})
+endif()
+
 add_definitions(-DLIBCONFIG_STATIC)
 
 if(ENABLE_SHARED)
@@ -83,16 +90,12 @@ set(LIBS
     ${STATIC_LIBS}
     eladid
     hdkey-static
-    crypto
-    crystal
-    spvadapter-shared)
+    crypto)
 
 set(DEPS
     ela-did
     CUnit
-    hdkey
-    libcrystal
-    spvadapter)
+    hdkey)
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN
@@ -103,18 +106,26 @@ if(WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
     set(LIBS
         ${LIBS}
-        libcunit
+        cunit
         pthread
         Ws2_32
-        Shlwapi)
+        Shlwapi
+        crystal)
+    set(DEPS
+        ${DEPS}
+        libcrystal)
 else()
     set(LIBS
         ${LIBS}
         cunit
-        pthread)
+        pthread
+        spvadapter-shared)
+    set(DEPS
+        ${DEPS}
+        spvadapter)
 endif()
 
-include_directories(
+set(INCLUDE
     utility
     .
     ../src
@@ -123,14 +134,29 @@ include_directories(
     ../src/jwt
     ../src/meta
     ../hdkey
-    ../adapter/spvadapter
     ${PROJECT_INT_DIST_DIR}/include)
 
-link_directories(
+set(LINK
     ${CMAKE_CURRENT_BINARY_DIR}/../src
     ${CMAKE_CURRENT_BINARY_DIR}/../hdkey
-    ${CMAKE_CURRENT_BINARY_DIR}/../adapter/spvadapter
     ${PROJECT_INT_DIST_DIR}/lib)
+
+if(WIN32)
+    set(INCLUDE
+        ../src/win
+        ${INCLUDE})
+else()
+    set(INCLUDE
+        ../adapter/spvadapter
+        ${INCLUDE})
+
+    set(LINK
+        ${CMAKE_CURRENT_BINARY_DIR}/../adapter/spvadapter
+        ${LINK})
+endif()
+
+include_directories(${INCLUDE})
+link_directories(${LINK})
 
 add_executable(didtest
     ${SRC})

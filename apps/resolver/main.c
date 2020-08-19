@@ -2,9 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#ifdef HAVE_GETOPT_H
 #include <getopt.h>
+#endif
 #include <signal.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#include <crystal.h>
 
 #include "ela_did.h"
 

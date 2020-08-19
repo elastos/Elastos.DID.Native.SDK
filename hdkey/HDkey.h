@@ -33,6 +33,10 @@
 extern "C" {
 #endif
 
+#if defined(_WIN32) || defined(_WIN64)
+typedef ptrdiff_t       ssize_t;
+#endif
+
 #define PUBLICKEY_BYTES                 33
 #define PRIVATEKEY_BYTES                32
 #define ADDRESS_LEN                     48
@@ -122,8 +126,6 @@ HDKey *HDKey_DeserializeBase58(HDKey *hdkey, const char *extendedkeyBase58, size
 const char *HDKey_SerializePrvBase58(HDKey *hdkey, char *extendedkeyBase58, size_t size);
 
 const char *HDKey_SerializePubBase58(HDKey *hdkey, char *extendedkeyBase58, size_t size);
-
-void HDKey_Wipe(HDKey *hdkey);
 
 char *HDKey_PublicKey2Address(uint8_t *publickey, char *address, size_t len);
 

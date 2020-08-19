@@ -39,6 +39,7 @@
 #include "BRBIP32Sequence.h"
 #include "HDkey.h"
 #include "crypto.h"
+#include "winhelper.h"
 
 typedef struct Sha256_Digest_i {
     EVP_MD_CTX ctx;
@@ -284,7 +285,6 @@ ssize_t base64_url_decode(uint8_t *buffer, const char *base64)
 
     return len; //success
 }
-
 ssize_t base58_encode(char *base58, size_t base58_len, uint8_t *input, size_t len)
 {
     if (!base58 || base58_len <= 0 || !input || !len)
@@ -388,9 +388,6 @@ void sha256_digest_cleanup(Sha256_Digest *sha256_digest)
 
 ssize_t sha256v_digest(uint8_t *digest, int count, va_list inputs)
 {
-    EVP_MD_CTX ctx;
-    unsigned int digest_size;
-    int i, rc;
     Sha256_Digest sha256_digest;
 
     assert(count > 0);

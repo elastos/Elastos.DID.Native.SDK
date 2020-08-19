@@ -12,8 +12,6 @@
 #include "loader.h"
 #include "ela_did.h"
 #include "diddocument.h"
-#include "didtest_adapter.h"
-#include "didstore.h"
 
 static const char *alias = "littlefish";
 static DIDStore *store;
@@ -25,15 +23,12 @@ static DIDDocument *local_doc(DID *did)
 
 static void test_vc_local_verify(void)
 {
-    char _path[PATH_MAX];
-    const char *storePath;
     DIDDocument *doc;
     DID owner, kyc;
     time_t expires;
     int rc;
 
-    storePath = get_store_path(_path, "/localverify");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     const char *newmnemonic = Mnemonic_Generate(language);

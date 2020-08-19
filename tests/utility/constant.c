@@ -11,16 +11,13 @@
 #include <crystal.h>
 #include <sys/stat.h>
 #include <stdarg.h>
-#include <fnmatch.h>
 
 #include "constant.h"
 
 const char *walletdir = ".elawallet";
 //const char *walletdir = "Projects/did/Elastos.DID.Native.cy/.elawallet";
 const char *walletId = "cywallet";
-//const char *network = "../../../../adapter/wallet/privnet.json";
 const char *network = "TestNet";
-//const char *resolver = "https://coreservices-didsidechain-privnet.elastos.org";
 const char *resolver = "http://api.elastos.io:21606";
 const char *walletpass = "12345678";
 
@@ -38,7 +35,12 @@ const char *method_specific_string = "iWFAUYhTa35c1fPe3iCJvihZHx6quumnym";
 const char *fragment = "default";
 const char *compact_idstring = "#default";
 
-const char *PATH_STEP = "/";
+#if defined(_WIN32) || defined(_WIN64)
+    const char *PATH_STEP = "\\";
+#else
+    const char *PATH_STEP = "/";
+#endif
+
 const char *PRIVATE_DIR = "private";
 const char *HDKEY_FILE = "key";
 const char *HDPUBKEY_FILE = "key.pub";

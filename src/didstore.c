@@ -54,7 +54,6 @@
 #include "credential.h"
 #include "didmeta.h"
 #include "credmeta.h"
-#include "HDkey.h"
 #include "resolvercache.h"
 
 #define MAX_PUBKEY_BASE58            128
@@ -63,7 +62,14 @@ static const char *META_FILE = ".meta";
 static char MAGIC[] = { 0x00, 0x0D, 0x01, 0x0D };
 static char VERSION[] = { 0x00, 0x00, 0x00, 0x02 };
 
-static const char *PATH_SEP = "/";
+#if defined(_WIN32) || defined(_WIN64)
+    static const char *KEY_PATH = "\\private\\key";
+    static const char *MNEMONIC_PATH = "\\private\\mnemonic";
+#else
+    static const char *KEY_PATH = "/private/key";
+    static const char *MNEMONIC_PATH = "/private/mnemonic";
+#endif
+
 static const char *PRIVATE_DIR = "private";
 static const char *HDKEY_FILE = "key";
 static const char *HDPUBKEY_FILE = "key.pub";
@@ -79,10 +85,7 @@ static const char *PRIVATEKEYS_DIR = "privatekeys";
 static const char *PRIVATE_JOURNAL = "private.journal";
 static const char *DID_JOURNAL = "ids.journal";
 
-static const char *KEY_PATH = "/private/key";
-static const char *MNEMONIC_PATH = "/private/mnemonic";
 static const char *POST_PASSWORD = "postChangePassword";
-
 static const char *DID_EXPORT = "did.elastos.export/1.0";
 
 extern const char *ProofType;
@@ -448,11 +451,11 @@ static int postchange_password(DIDStore *store)
 
     assert(store);
 
-    sprintf(post_file, "%s/%s", store->root, POST_PASSWORD);
+    sprintf(post_file, "%s%s%s", store->root, PATH_SEP, POST_PASSWORD);
     if(test_path(post_file) == S_IFREG) {
         if (get_dir(private_journal, 0, 2, store->root, PRIVATE_JOURNAL) == 0) {
             if (get_dir(private_dir, 0, 2, store->root, PRIVATE_DIR) == 0) {
-                sprintf(private_deprecated, "%s/%s", store->root, "private.deprecated");
+                sprintf(private_deprecated, "%s%s%s", store->root, PATH_SEP, "private.deprecated");
                 delete_file(private_deprecated);
                 rename(private_dir, private_deprecated);
             }
@@ -462,7 +465,7 @@ static int postchange_password(DIDStore *store)
 
         if (get_dir(did_journal, 0, 2, store->root, DID_JOURNAL) == 0) {
             if (get_dir(did_dir, 0, 2, store->root, DID_DIR) == 0) {
-                sprintf(did_deprecated, "%s/%s", store->root, "ids.deprecated");
+                sprintf(did_deprecated, "%s%s%s", store->root, PATH_SEP, "ids.deprecated");
                 delete_file(did_deprecated);
                 rename(did_dir, did_deprecated);
             }
@@ -491,7 +494,6 @@ static int check_store(DIDStore *store)
     int fd;
     char symbol[1];
     int i, flag = 0;
-    size_t size;
     char path[PATH_MAX];
 
     assert(store);
@@ -802,7 +804,7 @@ static int list_did_helper(const char *path, void *context)
     if (strcmp(path, ".") == 0 || strcmp(path, "..") == 0)
         return 0;
 
-    len = snprintf(didpath, sizeof(didpath), "%s/%s/%s", dh->store->root, DID_DIR, path);
+    len = snprintf(didpath, sizeof(didpath), "%s%s%s%s%s", dh->store->root, PATH_SEP, DID_DIR, PATH_SEP, path);
     if (len < 0 || len > sizeof(didpath))
         return -1;
 
@@ -826,7 +828,7 @@ static bool has_type(DID *did, const char *path, const char *type)
 {
     const char *data;
     Credential *credential;
-    int i;
+    size_t i;
 
     assert(did);
     assert(path);
@@ -882,7 +884,7 @@ static int select_credential_helper(const char *path, void *context)
     if (!credential)
         return -1;
 
-    for (int j = 0; j < credential->type.size; j++) {
+    for (size_t j = 0; j < credential->type.size; j++) {
         const char *new_type = credential->type.types[j];
         if (!new_type)
             continue;
@@ -959,8 +961,6 @@ static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
 {
     DIDDocument *document;
     DIDURL id;
-    DID controller;
-    int rc;
     DIDDocumentBuilder *builder;
 
     assert(did);
@@ -1113,8 +1113,7 @@ int DIDStore_ExportMnemonic(DIDStore *store, const char *storepass,
 int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
 {
     char path[PATH_MAX];
-    const char *data, *root;
-    char txid[ELA_MAX_TXID_LEN];
+    const char *data;
     DIDMetaData meta;
     time_t lastmodified;
     ssize_t count;
@@ -1267,7 +1266,6 @@ bool DIDStore_ContainsDID(DIDStore *store, DID *did)
 bool DIDStore_DeleteDID(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];
-    int rc;
 
     if (!store || !did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1332,7 +1330,6 @@ int DIDStore_ListDIDs(DIDStore *store, ELA_DID_FILTER filter,
 int DIDStore_StoreCredential(DIDStore *store, Credential *credential)
 {
     CredentialMetaData meta;
-    char _alias[ELA_MAX_ALIAS_LEN];
     DIDURL *id;
 
     if (!store || !credential) {
@@ -1767,7 +1764,6 @@ static int store_pubidentity_from_prvidentity(DIDStore *store, HDKey *hdkey)
 
 static bool DIDStore_ContainsPublicIdentity(DIDStore *store)
 {
-    const char *seed;
     char path[PATH_MAX];
     struct stat st;
 
@@ -1858,7 +1854,6 @@ static int store_default_privatekey(DIDStore *store, const char *storepass,
 {
     DID did;
     DIDURL id;
-    int rc;
 
     assert(store);
     assert(storepass && *storepass);
@@ -1888,7 +1883,7 @@ static DIDDocument* default_didstore_merge(DIDDocument *chaincopy, DIDDocument *
 
 int DIDStore_Synchronize(DIDStore *store, const char *storepass, DIDStore_MergeCallback *callback)
 {
-    int rc, nextindex, i = 0, blanks = 0;
+    int nextindex, i = 0, blanks = 0;
     DIDDocument *chainCopy = NULL, *localCopy = NULL, *finalCopy;
     HDKey _identity, *privateIdentity;
     HDKey _derivedkey, *derivedkey;
@@ -1981,7 +1976,6 @@ int DIDStore_Synchronize(DIDStore *store, const char *storepass, DIDStore_MergeC
 
 bool DIDStore_ContainsPrivateIdentity(DIDStore *store)
 {
-    const char *seed;
     char path[PATH_MAX];
     struct stat st;
 
@@ -2034,7 +2028,6 @@ int DIDStore_InitPrivateIdentity(DIDStore *store, const char *storepass,
         const char *mnemonic, const char *passphrase, const char *language, bool force)
 {
     char path[PATH_MAX];
-    ssize_t size;
     HDKey _privateIdentity, *privateIdentity;
 
     if (!store || !storepass || !*storepass|| !mnemonic || !*mnemonic) {
@@ -2074,7 +2067,6 @@ int DIDStore_InitPrivateIdentity(DIDStore *store, const char *storepass,
 int DIDStore_InitPrivateIdentityFromRootKey(DIDStore *store, const char *storepass,
         const char *extendedprvkey, bool force)
 {
-    uint8_t extendedkey[EXTENDEDKEY_BYTES];
     char path[PATH_MAX];
     HDKey _privateIdentity, *privateIdentity;
 
@@ -2164,7 +2156,6 @@ DID *DIDStore_GetDIDByIndex(DIDStore *store, int index)
 {
     HDKey _derivedkey, *derivedkey;
     DID *did;
-    int rc;
 
     if (!store || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2474,7 +2465,6 @@ errorExit:
 bool DIDStore_DeactivateDID(DIDStore *store, const char *storepass,
         DID *did, DIDURL *signkey)
 {
-    const char *txid;
     DIDDocument *doc;
     bool localcopy = false;
     int rc = 0;
@@ -2558,7 +2548,6 @@ static int dir_copy_helper(const char *path, void *context)
 {
     char srcpath[PATH_MAX];
     char dstpath[PATH_MAX];
-    int rc;
 
     Dir_Copy_Helper *dh = (Dir_Copy_Helper*)context;
 
@@ -2568,8 +2557,8 @@ static int dir_copy_helper(const char *path, void *context)
     if (strcmp(path, ".") == 0 || strcmp(path, "..") == 0)
         return 0;
 
-    sprintf(srcpath, "%s/%s", dh->srcpath, path);
-    sprintf(dstpath, "%s/%s", dh->dstpath, path);
+    sprintf(srcpath, "%s%s%s", dh->srcpath, PATH_SEP, path);
+    sprintf(dstpath, "%s%s%s", dh->dstpath, PATH_SEP, path);
 
     return dir_copy(dstpath, srcpath, dh->newpassword, dh->oldpassword);
 }
@@ -3045,6 +3034,25 @@ errorExit:
     return rc;
 }
 
+static char *last_strstr(const char *haystack, const char *needle)
+{
+    assert(haystack && needle);
+
+    if (*needle == '\0')
+        return (char *)haystack;
+
+    char *result = NULL;
+    for (;;) {
+        char *p = strstr(haystack, needle);
+        if (p == NULL)
+            break;
+        result = p;
+        haystack = p + strlen(needle);
+    }
+
+    return result;
+}
+
 static int check_file(const char *file)
 {
     char *path;
@@ -3057,7 +3065,7 @@ static int check_file(const char *file)
     path = alloca(strlen(file) + 1);
     strcpy(path, file);
 
-    char *pos = strrchr(path, '/');
+    char *pos = last_strstr(path, PATH_SEP);
     if (!pos) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid file path.");
         return -1;
@@ -3068,7 +3076,7 @@ static int check_file(const char *file)
         DIDError_Set(DIDERR_IO_ERROR, "Create the directory of file failed.");
         return -1;
     }
-    *path = '/';
+    strncpy(path, PATH_SEP, strlen(PATH_SEP));
     return 0;
 }
 
@@ -3297,7 +3305,7 @@ static ssize_t import_creds(cJSON *json, DID *did, Credential **creds, size_t si
         Sha256_Digest *digest)
 {
     cJSON *item, *field, *child_field;
-    ssize_t count;
+    int count;
     int i, rc;
 
     assert(json);
@@ -3314,7 +3322,7 @@ static ssize_t import_creds(cJSON *json, DID *did, Credential **creds, size_t si
     }
 
     count = cJSON_GetArraySize(item);
-    if (count == 0 || count > size) {
+    if (count == 0 || count > (int)size) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'credential'.");
         return -1;
     }
@@ -3400,11 +3408,9 @@ static ssize_t import_privatekey(cJSON *json, const char *storepass, const char 
        DID *did, Prvkey_Export *prvs, size_t size, Sha256_Digest *digest)
 {
     cJSON *item, *field, *id_field, *key_field;
-    ssize_t count;
+    size_t count, keysize, i;
     uint8_t binkey[EXTENDEDKEY_BYTES];
     char privatekey[512];
-    size_t keysize;
-    int i = 0;
 
     assert(json);
     assert(storepass && *storepass);
@@ -3491,7 +3497,7 @@ static ssize_t import_privatekey(cJSON *json, const char *storepass, const char 
             return -1;
         }
     }
-    return i;
+    return (ssize_t)i;
 }
 
 static int import_fingerprint(cJSON *json, Sha256_Digest *digest)
@@ -3551,7 +3557,8 @@ int DIDStore_ImportDID(DIDStore *store, const char *storepass,
     DIDDocument *doc = NULL;
     Credential **creds = NULL;
     Prvkey_Export *prvs;
-    int rc = -1, i;
+    int rc = -1;
+    size_t i;
 
     if (!store || !storepass || !*storepass || !file || !*file ||
             !password || !*password) {
@@ -3649,7 +3656,7 @@ errorExit:
     if (doc)
         DIDDocument_Destroy(doc);
     if (creds) {
-        for (int i = 0; i < cred_size; i++)
+        for (i = 0; i < cred_size; i++)
             Credential_Destroy(creds[i]);
     }
 
@@ -3730,9 +3737,9 @@ static int export_pubkey(JsonGenerator *gen, DIDStore *store, Sha256_Digest *dig
     if (!pubKey)
         return 0;
 
-    CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "key.pub", pubKey),
+    CHECK_TO_MSG_ERROREXIT(JsonGenerator_WriteStringField(gen, "key.pub", pubKey),
             DIDERR_OUT_OF_MEMORY, "Write 'key.pub' failed.");
-    CHECK_TO_MSG(sha256_digest_update(digest, 1, pubKey, strlen(pubKey)),
+    CHECK_TO_MSG_ERROREXIT(sha256_digest_update(digest, 1, pubKey, strlen(pubKey)),
             DIDERR_CRYPTO_ERROR, "Sha256 'key.pub' failed.");
 
     rc = 0;
@@ -3772,8 +3779,7 @@ int DIDStore_ExportPrivateIdentity(DIDStore *store, const char *storepass,
     Sha256_Digest digest;
 
     const char *pubKey = NULL, *data;
-    ssize_t size;
-    int index, len, rc = -1;
+    int rc = -1;
     JsonGenerator g, *gen;
 
     if (!store || !storepass || !*storepass || !file || !*file ||
@@ -3981,7 +3987,7 @@ static int did_to_zip(DID *did, void *context)
     if (!did)
         return 0;
 
-    sprintf(tmpfile, "%s/%s.json", export->tmpdir, did->idstring);
+    sprintf(tmpfile, "%s%s%s.json", export->tmpdir, PATH_SEP, did->idstring);
     delete_file(tmpfile);
     if (DIDStore_ExportDID(export->store, export->storepass, did, tmpfile, export->password) < 0)
        return -1;
@@ -4032,7 +4038,7 @@ static int exportprv_to_zip(DIDStore *store, const char *storepass, zip_t *zip,
     assert(zip);
     assert(password && *password);
 
-    sprintf(tmpfile, "%s/prvexport.json", tmpdir);
+    sprintf(tmpfile, "%s%sprvexport.json", tmpdir, PATH_SEP);
     delete_file(tmpfile);
     if (DIDStore_ExportPrivateIdentity(store, storepass, tmpfile, password) < 0)
         goto errorExit;
@@ -4074,15 +4080,21 @@ int DIDStore_ExportStore(DIDStore *store, const char *storepass,
         return -1;
 
     //create temp dir
+#if defined(_WIN32) || defined(_WIN64)
+    const char *tmp = getenv("TEMP");
+    if (!tmp)
+        return -1;
+#else
     const char *tmp = getenv("TMPDIR");
     if (!tmp) {
-        if (access("/tmp", F_OK) == 0)
+        if (access("/tmp", 0) == 0)
             tmp = "/tmp";
         else
             return -1;
     }
+#endif
 
-    snprintf(tmpdir, sizeof(tmpdir), "%s/didexport", tmp);
+    snprintf(tmpdir, sizeof(tmpdir), "%s%sdidexport", tmp, PATH_SEP);
     mkdirs(tmpdir, S_IRWXU);
 
     if (exportdid_to_zip(store, storepass, zip, password, tmpdir) < 0 ||
@@ -4120,10 +4132,15 @@ int DIDStore_ImportStore(DIDStore *store, const char *storepass, const char *zip
         const char *password)
 {
     zip_t *zip = NULL;
-    zip_int64_t count;
+    zip_int64_t count, i;
     zip_stat_t stat;
-    int i, rc = -1;
+    int rc = -1;
+
+#if defined(_WIN32) || defined(_WIN64)
+    char filename[] = "\\tmp\\storeexport.json";
+#else
     char filename[] = "/tmp/storeexport.json";
+#endif
 
     if (!store || !storepass || !*storepass || !zipfile || !*zipfile ||
             !password || !*password) {
@@ -4143,10 +4160,10 @@ int DIDStore_ImportStore(DIDStore *store, const char *storepass, const char *zip
         zip_int64_t readed;
         int code;
         zip_stat_init(&stat);
-        if (zip_stat_index(zip, (zip_uint64_t)i, ZIP_FL_UNCHANGED, &stat) < 0)
+        if (zip_stat_index(zip, i, ZIP_FL_UNCHANGED, &stat) < 0)
             goto errorExit;
 
-        zip_file_t *zip_file = zip_fopen_index(zip, (zip_uint64_t)i, ZIP_FL_UNCHANGED);
+        zip_file_t *zip_file = zip_fopen_index(zip, i, ZIP_FL_UNCHANGED);
         if (!zip_file)
             goto errorExit;
 

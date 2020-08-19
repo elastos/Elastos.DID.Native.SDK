@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <CUnit/Basic.h>
 #include <limits.h>
+#include <crystal.h>
 
 #include "ela_did.h"
 #include "HDkey.h"
@@ -15,7 +16,7 @@ static const char *languagelists[] = {"chinese_simplified", "chinese_traditional
 
 static void test_build_wordlist(void)
 {
-    int rc, i, size;
+    int rc, i;
 
     for (i = 0; i < 9; i++) {
         char wmnemonic[256];
@@ -37,11 +38,7 @@ static void test_build_wordlist(void)
 
 static int hdkey_mnemonic_test_suite_init(void)
 {
-    char _path[PATH_MAX];
-    const char *storePath;
-
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     if (!store)
         return -1;
 

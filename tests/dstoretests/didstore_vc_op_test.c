@@ -4,7 +4,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <crystal.h>
 #include <CUnit/Basic.h>
 #include <limits.h>
 
@@ -20,7 +19,6 @@ static int get_vc(DIDURL *id, void *context)
     int *count = (int*)context;
 
     const char *alias;
-    int rc;
     CredentialMetaData *metadata;
 
     if (!id)
@@ -56,9 +54,8 @@ static int get_vc(DIDURL *id, void *context)
 
 static void test_didstore_load_vcs(void)
 {
-    char _path[PATH_MAX];
     CredentialMetaData *metadata;
-    const char *storePath, *alias;
+    const char *alias;
     DIDDocument *issuerdoc, *doc;
     DIDStore *store;
     Credential *vc;
@@ -67,8 +64,7 @@ static void test_didstore_load_vcs(void)
     int rc;
     bool isEquals;
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     rc = TestData_InitIdentity(store);
@@ -152,19 +148,14 @@ static void test_didstore_load_vcs(void)
 
 static void test_didstore_list_vcs(void)
 {
-    char _path[PATH_MAX];
     CredentialMetaData *metadata;
-    const char *storePath;
     DIDDocument *issuerdoc, *doc;
     DIDStore *store;
     Credential *vc;
     DID *did;
     int rc, count = 0;
-    bool isEquals;
-    DIDURL vcs[4];
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     rc = TestData_InitIdentity(store);
@@ -210,19 +201,16 @@ static void test_didstore_delete_vc(void)
 {
     char _path[PATH_MAX];
     CredentialMetaData *metadata;
-    const char *storePath, *path;
+    const char *path;
     DIDDocument *issuerdoc, *doc;
     DIDStore *store;
     Credential *vc;
     DIDURL *id;
     DID *did;
     int rc, count = 0;
-    bool isEquals;
-    DIDURL vcs[4];
     bool isDeleted;
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     rc = TestData_InitIdentity(store);

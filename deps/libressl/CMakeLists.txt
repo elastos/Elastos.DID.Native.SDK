@@ -1,5 +1,9 @@
 project(libressl)
 
+if(WIN32)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4464 /wd4820")
+endif()
+
 include(ProjectDefaults)
 include(ExternalProject)
 include(ExternalCMakeArgs)
@@ -24,3 +28,13 @@ ExternalProject_Add(
         -DENABLE_NC=OFF
         ${CMAKE_ARGS_INIT}
 )
+
+if(WIN32)
+    ExternalProject_Add_Step(
+        libressl post-install
+        DEPENDEES install
+        WORKING_DIRECTORY "${PROJECT_INT_DIST_DIR}/lib"
+        COMMAND copy crypto.lib libeay32.lib /y
+        COMMAND copy ssl.lib ssleay32.lib /y
+    )
+endif()

@@ -28,6 +28,11 @@
 #include "ela_did.h"
 #include "diderror.h"
 
+#if defined(_WIN32) || defined(_WIN64)
+#include "winhelper.h"
+#define __thread        __declspec(thread)
+#endif
+
 struct DIDError {
     int code;
     char file[PATH_MAX];
@@ -40,7 +45,7 @@ static __thread struct DIDError de;
 void DIDError_SetEx(const char *file, int line, int code, const char *msg, ...)
 {
     de.code = code;
-    
+
     if (msg && *msg) {
         va_list args;
         va_start(args, msg);
@@ -49,14 +54,14 @@ void DIDError_SetEx(const char *file, int line, int code, const char *msg, ...)
     } else {
         *de.message = 0;
     }
-    
+
     if (file && *file) {
         strncpy(de.file, file, sizeof(de.file));
         de.file[sizeof(de.file) - 1] = 0;
     } else {
         *de.file = 0;
     }
-    
+
     de.line = line;
 }
 

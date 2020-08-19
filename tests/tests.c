@@ -35,12 +35,18 @@
 #endif
 #include <crystal.h>
 #include <limits.h>
-#include <signal.h>
 #include <CUnit/Basic.h>
+#include <sys/types.h>
+#include <signal.h>
 
 #include "ela_did.h"
 #include "loader.h"
 #include "suites.h"
+
+#if defined(_WIN32) || defined(_WIN64)
+#include <process.h>
+#define getpid                _getpid
+#endif
 
 static const char *IDCHAIN = "idchain_operation_test.c";
 int stress_test = 0;
@@ -99,6 +105,9 @@ int main(int argc, char *argv[])
     sys_coredump_set(true);
 #endif
 
+    getchar();
+    getchar();
+
     //for stress test
     while ((opt = getopt_long(argc, argv, "s:m:h?", options, &idx)) != -1) {
         switch (opt) {
@@ -136,14 +145,25 @@ int main(int argc, char *argv[])
 
     signal(SIGINT,  signal_handler);
     signal(SIGTERM, signal_handler);
+#ifdef HAVE_SIGKILL
     signal(SIGKILL, signal_handler);
-    signal(SIGHUP,  signal_handler);
+#endif
+#ifdef HAVE_SIGHUP
+    signal(SIGHUP, signal_handler);
+#endif
 
     if (memstats_file) {
         pid_t pid = getpid();
         delete_file(memstats_file);
         snprintf(memstats_cmd, sizeof(memstats_cmd), "ps -o vsz,rss -p %d >> %s", pid, memstats_file);
     }
+
+#if defined(_WIN32) || defined(_WIN64)
+    if (!dummy) {
+        dummy = true;
+        printf("Windows only support dummy adapter to run test cases.\n");
+    }
+#endif
 
     do {
         if (TestData_Init(dummy) == -1) {

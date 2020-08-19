@@ -33,6 +33,16 @@ link_directories(
 set(LIBS
     eladid)
 
+if(WIN32)
+    set(LIBS
+        ${LIBS}
+        crystal)
+else()
+    set(LIBS
+        ${LIBS}
+        libcrystal)
+endif()
+
 add_executable(resolver ${SRC})
 target_link_libraries(resolver ${LIBS})
 

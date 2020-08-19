@@ -4,8 +4,9 @@
 #include <unistd.h>
 #endif
 #include <limits.h>
-
 #include <CUnit/Basic.h>
+#include <crystal.h>
+
 #include "ela_did.h"
 #include "loader.h"
 #include "constant.h"
@@ -87,7 +88,6 @@ static void test_vp_getelem(void)
 static void test_vp_parse(void)
 {
     Presentation *vp, *normvp;
-    bool isEqual;
     const char *data;
 
     vp = TestData_LoadVp();
@@ -189,7 +189,7 @@ static void test_vp_create_without_creds(void)
 {
     Presentation *vp;
     DID *did;
-    Credential *creds[4], **cred;
+    Credential *creds[4];
     bool isEqual;
     ssize_t size;
     DID *signer;
@@ -222,12 +222,7 @@ static void test_vp_create_without_creds(void)
 
 static int vp_test_suite_init(void)
 {
-    char _path[PATH_MAX];
-    const char *storePath;
-    int rc;
-
-    storePath = get_store_path(_path, "/idchain");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     if (!store)
         return -1;
 

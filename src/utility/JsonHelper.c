@@ -42,7 +42,7 @@ static int item_compr(const void *a, const void *b)
 //free the return value
 static cJSON **item_sort(cJSON *json, size_t size)
 {
-    int i;
+    size_t i;
 
     assert(json);
     assert(size == cJSON_GetArraySize(json));
@@ -60,8 +60,8 @@ static cJSON **item_sort(cJSON *json, size_t size)
 
 int JsonHelper_ToJson(JsonGenerator *generator, cJSON *object, bool objectcontext)
 {
-    int i, rc;
-    size_t size;
+    int rc;
+    size_t size, i;
     cJSON *item;
 
     assert(generator);

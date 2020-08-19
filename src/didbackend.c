@@ -284,7 +284,7 @@ DIDDocument *DIDBackend_Resolve(DID *did, bool force)
 {
     DIDDocument *doc = NULL;
     ResolveResult result;
-    DIDStatus status;
+    size_t i;
 
     if (!did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -319,7 +319,7 @@ DIDDocument *DIDBackend_Resolve(DID *did, bool force)
         return NULL;
     } else {
         doc = result.txinfos.infos[0].request.doc;
-        for (int i = 1; i < result.txinfos.size; i++)
+        for (i = 1; i < result.txinfos.size; i++)
             DIDDocument_Destroy(result.txinfos.infos[i].request.doc);
         ResolveResult_Free(&result);
         if (!doc)
@@ -331,9 +331,7 @@ DIDDocument *DIDBackend_Resolve(DID *did, bool force)
 
 DIDHistory *DIDBackend_ResolveHistory(DID *did)
 {
-    DIDDocument **docs;
     ResolveResult result;
-    ssize_t size;
 
     if (!did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");

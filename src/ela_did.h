@@ -2192,7 +2192,7 @@ DID_API ssize_t Credential_GetTypeCount(Credential *cred);
  * @return
  *      size of Credential types on success, -1 if an error occurred.
  */
-DID_API ssize_t Credential_GetTypes(Credential *cred, const char **types, size_t size);
+DID_API ssize_t Credential_GetTypes(Credential *cred, char **types, size_t size);
 
 /**
  * \~English

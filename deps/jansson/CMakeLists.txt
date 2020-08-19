@@ -1,26 +1,8 @@
 project(jansson)
 
-include(ExternalProject)
 include(ProjectDefaults)
-include(ExternalConfigureArgs)
-
-set(CONFIGURE_CMD
-    aclocal &&
-    autoconf &&
-    autoreconf -if &&
-    ./configure)
-
-set(CONFIGURE_ARGS
-    "--prefix=${PROJECT_INT_DIST_DIR}"
-        "--enable-shared=no"
-        "--disable-shared"
-        "--enable-static=yes"
-    ${CONFIGURE_ARGS_INIT})
-
-    set(BUILD_CMD "make")
-
-    set(INSTALL_CMD "make")
-    set(INSTALL_ARGS "install")
+include(ExternalProject)
+include(ExternalCMakeArgs)
 
 ExternalProject_Add(
     libjansson
@@ -32,9 +14,15 @@ ExternalProject_Add(
     DOWNLOAD_DIR ${PROJECT_DEPS_TARBALL_DIR}
     DOWNLOAD_NO_PROGRESS 1
 
-    BUILD_IN_SOURCE 1
-
-    CONFIGURE_COMMAND ${CONFIGURE_CMD} ${CONFIGURE_ARGS}
-    BUILD_COMMAND ${BUILD_CMD} ${BUILD_ARGS}
-    INSTALL_COMMAND ${INSTALL_CMD} ${INSTALL_ARGS}
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${PROJECT_INT_DIST_DIR}
+        ${CMAKE_ARGS_INIT}
 )
+
+if(WIN32)
+    ExternalProject_Add_Step(
+        libjansson post-install
+        DEPENDEES install
+        WORKING_DIRECTORY "${PROJECT_INT_DIST_DIR}/lib"
+        COMMAND copy jansson_d.lib jansson.lib /y
+    )
+endif()

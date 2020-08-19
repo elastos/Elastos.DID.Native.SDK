@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <CUnit/Basic.h>
 #include <time.h>
+#include <crystal.h>
 
 #include "ela_did.h"
 #include "ela_jwt.h"
@@ -244,7 +245,7 @@ static void test_jws_withdefaultkey(void)
     JWTBuilder *builder;
     JWS *jws;
     time_t iat, nbf, exp;
-    const char *token, *data;
+    const char *token;
     char idstring[ELA_MAX_DIDURL_LEN];
     int rc;
 
@@ -342,12 +343,7 @@ static void test_jws_compatible(void)
 
 static int jwt_test_suite_init(void)
 {
-    char _path[PATH_MAX];
-    const char *storePath;
-    int rc;
-
-    storePath = get_store_path(_path, "/idchain");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     if (!store)
         return -1;
 

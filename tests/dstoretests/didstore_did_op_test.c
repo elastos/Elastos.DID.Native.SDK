@@ -4,7 +4,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <crystal.h>
 #include <CUnit/Basic.h>
 #include <limits.h>
 
@@ -29,12 +28,11 @@ static int get_did(DID *did, void *context)
 static void test_didstore_bulk_newdid(void)
 {
     char alias[ELA_MAX_ALIAS_LEN], _path[PATH_MAX];
-    const char *gAlias, *storePath;
+    const char *gAlias;
     DIDStore *store;
     int rc, i, count = 0;
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     rc = TestData_InitIdentity(store);
@@ -101,12 +99,10 @@ static void test_didstore_op_deletedid(void)
 {
     DID dids[100];
     char alias[ELA_MAX_ALIAS_LEN], _path[PATH_MAX];
-    const char *storePath;
     DIDStore *store;
     int rc, i, count = 0;
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     rc = TestData_InitIdentity(store);
@@ -160,14 +156,11 @@ static void test_didstore_op_deletedid(void)
 static void test_didstore_op_store_load_did(void)
 {
     DIDDocument *issuerdoc, *doc, *loaddoc;
-    char _path[PATH_MAX];
-    const char *storePath;
     DIDStore *store;
     bool isEquals;
     int rc, count = 0;
 
-    storePath = get_store_path(_path, "/servet");
-    store = TestData_SetupStore(true, storePath);
+    store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     rc = TestData_InitIdentity(store);

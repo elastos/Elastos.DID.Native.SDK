@@ -26,6 +26,7 @@ if(WIN32)
         zlib post-install
         DEPENDEES install
         WORKING_DIRECTORY "${PROJECT_INT_DIST_DIR}/lib"
-        COMMAND ${CMAKE_COMMAND} -E rename zlib1.lib z.lib
+        COMMAND copy zlib1.lib z.lib /y
+        COMMAND copy zlib1.lib zlib_a.lib /y
     )
 endif()

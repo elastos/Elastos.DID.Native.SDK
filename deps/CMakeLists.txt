@@ -19,7 +19,7 @@ if(NOT HDKEY_ONLY)
     add_submodule(libzip
         DEPENDS zlib platform-specific)
     add_submodule(libcurl
-        DEPENDS libressl platform-specific)
+        DEPENDS libressl zlib platform-specific)
     add_submodule(libjansson
         DIRECTORY jansson
         DEPENDS platform-specific)
