@@ -55,3 +55,12 @@ jobs:
           make dist
           cd dist/bin
           ./didtest --dummy
+
+      - name: build ios tool
+        run: |
+          mkdir -p build/ios
+          cd build/ios
+          cmake -DIOS_PLATFORM=iphonesimulator -DCMAKE_TOOLCHAIN_FILE=../../cmake/iOSToolchain.cmake -DHDKEY_ONLY=true -DCMAKE_INSTALL_PREFIX=dist ../..
+          make
+          make install
+          make dist
