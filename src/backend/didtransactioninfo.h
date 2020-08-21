@@ -23,7 +23,7 @@
 #ifndef __DIDTRANSACTIONINFO_H__
 #define __DIDTRANSACTIONINFO_H__
 
-#include <cjson/cJSON.h>
+#include <jansson.h>
 
 #include "ela_did.h"
 #include "didrequest.h"
@@ -39,7 +39,7 @@ typedef struct DIDTransactionInfo {
     DIDRequest request;
 } DIDTransactionInfo;
 
-int DIDTransactionInfo_FromJson(DIDTransactionInfo *txinfo, cJSON *json);
+int DIDTransactionInfo_FromJson(DIDTransactionInfo *txinfo, json_t *json);
 
 void DIDTransactionInfo_Destroy(DIDTransactionInfo *txinfo);
 

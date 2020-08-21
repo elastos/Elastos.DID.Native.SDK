@@ -50,7 +50,7 @@ const char *CredentialMetaData_ToJson(CredentialMetaData *metadata)
     return MetaData_ToJson(&metadata->base);
 }
 
-int CredentialMetaData_FromJson_Internal(CredentialMetaData *metadata, cJSON *json)
+int CredentialMetaData_FromJson_Internal(CredentialMetaData *metadata, json_t *json)
 {
     assert(metadata);
     assert(json);
@@ -114,18 +114,18 @@ int CredentialMetaData_SetLastModified(CredentialMetaData *metadata, time_t time
     assert(metadata);
 
     if (time == 0) {
-        cJSON_DeleteItemFromObject(metadata->base.data, LAST_MODIFIED);
+        json_object_del(metadata->base.data, LAST_MODIFIED);
         return 0;
     }
 
-    return MetaData_SetExtraWithDouble(&metadata->base, LAST_MODIFIED, (double)time);
+    return MetaData_SetExtraWithInteger(&metadata->base, LAST_MODIFIED, (int)time);
 }
 
 time_t CredentialMetaData_GetLastModified(CredentialMetaData *metadata)
 {
     assert(metadata);
 
-    return (time_t)MetaData_GetExtraAsDouble(&metadata->base, LAST_MODIFIED);
+    return (time_t)MetaData_GetExtraAsInteger(&metadata->base, LAST_MODIFIED);
 }
 
 //****** DID_API

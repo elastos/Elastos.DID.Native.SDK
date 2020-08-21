@@ -23,7 +23,7 @@
 #ifndef __CREDENTIAL_H__
 #define __CREDENTIAL_H__
 
-#include <cjson/cJSON.h>
+#include <jansson.h>
 
 #include "ela_did.h"
 #include "did.h"
@@ -39,7 +39,7 @@ extern "C" {
 
 typedef struct CredentialSubject {
     DID id;
-    cJSON *properties;
+    json_t *properties;
 } CredentialSubject;
 
 typedef struct CredentialProof {
@@ -67,9 +67,9 @@ struct Credential {
 int CredentialArray_ToJson(JsonGenerator *gen, Credential **creds, size_t size,
         DID *did, bool compact);
 
-Credential *Parse_Credential(cJSON *json, DID *did);
+Credential *Parse_Credential(json_t *json, DID *did);
 
-ssize_t Parse_Credentials(DID *did, Credential **creds, size_t size, cJSON *json);
+ssize_t Parse_Credentials(DID *did, Credential **creds, size_t size, json_t *json);
 
 const char* Credential_ToJson_ForSign(Credential *cred, bool compact, bool forsign);
 

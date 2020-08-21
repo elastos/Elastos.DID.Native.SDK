@@ -23,7 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <cjson/cJSON.h>
+#include <jansson.h>
 
 #include "ela_did.h"
 #include "common.h"
@@ -212,7 +212,8 @@ bool DIDBackend_Deactivate(DIDBackend *backend, DID *did, DIDURL *signkey,
 static int resolve_from_backend(ResolveResult *result, DID *did, bool all)
 {
     const char *data = NULL;
-    cJSON *root = NULL, *item, *field;
+    json_t *root = NULL, *item, *field;
+    json_error_t error;
     char _idstring[ELA_MAX_DID_LEN];
     int code = -1, rc = -1;
 
@@ -226,24 +227,24 @@ static int resolve_from_backend(ResolveResult *result, DID *did, bool all)
         return rc;
     }
 
-    root = cJSON_Parse(data);
+    root = json_loads(data, JSON_COMPACT, &error);
     if (!root) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Deserialize resolved data from json failed.");
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Deserialize resolved data failed, error: %s.", error.text);
         goto errorExit;
     }
 
-    item = cJSON_GetObjectItem(root, "result");
-    if (!item || !cJSON_IsObject(item)) {
-        item = cJSON_GetObjectItem(root, "error");
-        if (!item || !cJSON_IsNull(item)) {
+    item = json_object_get(root, "result");
+    if (!item || !json_is_object(item)) {
+        item = json_object_get(root, "error");
+        if (!item || !json_is_null(item)) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing or invalid error field.");
         } else {
-            field = cJSON_GetObjectItem(item, "code");
-            if (field && cJSON_IsNumber(field)) {
-                code = field->valueint;
-                field = cJSON_GetObjectItem(item, "message");
-                if (field && cJSON_IsString(field))
-                    DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve did error(%d): %s", code, field->valuestring);
+            field = json_object_get(item, "code");
+            if (field && json_is_integer(field)) {
+                code = json_integer_value(field);
+                field = json_object_get(item, "message");
+                if (field && json_is_string(field))
+                    DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve did error(%d): %s", code, json_string_value(field));
             }
         }
         goto errorExit;
@@ -259,7 +260,7 @@ static int resolve_from_backend(ResolveResult *result, DID *did, bool all)
 
 errorExit:
     if (root)
-        cJSON_Delete(root);
+        json_decref(root);
     if (data)
         free((void*)data);
     return rc;

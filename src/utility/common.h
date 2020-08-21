@@ -27,7 +27,6 @@
 #include <time.h>
 #include <stdbool.h>
 #include <sys/stat.h>
-#include <cjson/cJSON.h>
 
 #include "diderror.h"
 
@@ -92,11 +91,6 @@ int mkdirs(const char *path, mode_t mode);
 time_t get_file_lastmodified(const char *path);
 
 int set_file_lastmodified(const char *path, time_t lastmodified);
-
-//for json
-bool cJSON_IsDouble(cJSON *item);
-
-bool cJSON_IsInt(cJSON *item);
 
 #ifdef __cplusplus
 }

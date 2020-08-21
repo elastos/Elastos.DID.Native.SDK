@@ -53,7 +53,7 @@ static void test_jwt(void)
     get_time(&nbf, -1);
     get_time(&exp, 2);
 
-    const char *json = "{\"hello\": \"world\", \"test\": \"true\"}";
+    const char *json = "{\"hello\":\"world\",\"test\":\"true\"}";
 
     CU_ASSERT_TRUE(JWTBuilder_SetSubject(builder, "JwtTest"));
     CU_ASSERT_TRUE(JWTBuilder_SetId(builder, "0"));
@@ -166,7 +166,7 @@ static void test_jws(void)
     get_time(&nbf, -1);
     get_time(&exp, 2);
 
-    const char *json = "{\"hello\": \"world\", \"test\": \"true\"}";
+    const char *json = "{\"hello\":\"world\",\"test\":\"true\"}";
 
     CU_ASSERT_TRUE(JWTBuilder_SetSubject(builder, "JwtTest"));
     CU_ASSERT_TRUE(JWTBuilder_SetId(builder, "0"));

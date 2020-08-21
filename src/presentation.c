@@ -24,7 +24,7 @@
 #include <string.h>
 #include <time.h>
 #include <assert.h>
-#include <cjson/cJSON.h>
+#include <jansson.h>
 
 #include "ela_did.h"
 #include "diderror.h"
@@ -85,7 +85,7 @@ static int presentation_tojson_internal(JsonGenerator *gen, Presentation *pre,
     return 0;
 }
 
-static int parse_credentials_inpre(DID *signer, Presentation *pre, cJSON *json)
+static int parse_credentials_inpre(DID *signer, Presentation *pre, json_t *json)
 {
     size_t size = 0;
     Credential **credentials = NULL;
@@ -93,7 +93,7 @@ static int parse_credentials_inpre(DID *signer, Presentation *pre, cJSON *json)
     assert(pre);
     assert(json);
 
-    size = cJSON_GetArraySize(json);
+    size = json_array_size(json);
     if (size < 0)
         return -1;
 
@@ -114,9 +114,9 @@ static int parse_credentials_inpre(DID *signer, Presentation *pre, cJSON *json)
     return 0;
 }
 
-static int parse_proof(DID *signer, Presentation *pre, cJSON *json)
+static int parse_proof(DID *signer, Presentation *pre, json_t *json)
 {
-    cJSON *item;
+    json_t *item;
     DIDURL *keyid;
 
     assert(signer);
@@ -125,17 +125,17 @@ static int parse_proof(DID *signer, Presentation *pre, cJSON *json)
 
     strcpy(pre->proof.type, ProofType);
 
-    item = cJSON_GetObjectItem(json, "verificationMethod");
+    item = json_object_get(json, "verificationMethod");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing sign key for presentation.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid sign key for presentation.");
         return -1;
     }
 
-    keyid = DIDURL_FromString(cJSON_GetStringValue(item), signer);
+    keyid = DIDURL_FromString(json_string_value(item), signer);
     if (!keyid) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid sign key for presentation.");
         return -1;
@@ -149,45 +149,45 @@ static int parse_proof(DID *signer, Presentation *pre, cJSON *json)
     }
 
     DIDURL_Destroy(keyid);
-    item = cJSON_GetObjectItem(json, "nonce");
+    item = json_object_get(json, "nonce");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing nonce.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid nonce.");
         return -1;
     }
-    strcpy(pre->proof.nonce, cJSON_GetStringValue(item));
+    strcpy(pre->proof.nonce, json_string_value(item));
 
-    item = cJSON_GetObjectItem(json, "realm");
+    item = json_object_get(json, "realm");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing realm.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid realm.");
         return -1;
     }
-    strcpy(pre->proof.realm, cJSON_GetStringValue(item));
+    strcpy(pre->proof.realm, json_string_value(item));
 
-    item = cJSON_GetObjectItem(json, "signature");
+    item = json_object_get(json, "signature");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing signature.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid signature.");
         return -1;
     }
-    strcpy(pre->proof.signatureValue, cJSON_GetStringValue(item));
+    strcpy(pre->proof.signatureValue, json_string_value(item));
 
     return 0;
 }
 
-static Presentation *parse_presentation(cJSON *json)
+static Presentation *parse_presentation(json_t *json)
 {
-    cJSON *item;
+    json_t *item;
     DID subject;
 
     assert(json);
@@ -198,51 +198,51 @@ static Presentation *parse_presentation(cJSON *json)
         return NULL;
     }
 
-    item = cJSON_GetObjectItem(json, "type");
+    item = json_object_get(json, "type");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing type.");
         Presentation_Destroy(pre);
         return NULL;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid type.");
         Presentation_Destroy(pre);
         return NULL;
     }
 
-    if (strcmp(cJSON_GetStringValue(item), PresentationType)) {
+    if (strcmp(json_string_value(item), PresentationType)) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Unknow presentation type.");
         Presentation_Destroy(pre);
         return NULL;
     }
 
-    if (strlen(item->valuestring) + 1 > sizeof(pre->type)) {
+    if (strlen(json_string_value(item)) + 1 > sizeof(pre->type)) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Presentation type is too long.");
         Presentation_Destroy(pre);
         return NULL;
     }
 
-    strcpy(pre->type, item->valuestring);
+    strcpy(pre->type, json_string_value(item));
 
-    item = cJSON_GetObjectItem(json, "created");
+    item = json_object_get(json, "created");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing time created presentation.");
         Presentation_Destroy(pre);
         return NULL;
     }
-    if (!cJSON_IsString(item) || parse_time(&pre->created, cJSON_GetStringValue(item)) == -1) {
+    if (!json_is_string(item) || parse_time(&pre->created, json_string_value(item)) == -1) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid time created presentation.");
         Presentation_Destroy(pre);
         return NULL;
     }
 
-    item = cJSON_GetObjectItem(json, "proof");
+    item = json_object_get(json, "proof");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing presentation proof.");
         Presentation_Destroy(pre);
         return NULL;
     }
-    if (!cJSON_IsObject(item)) {
+    if (!json_is_object(item)) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid presentation proof.");
         Presentation_Destroy(pre);
         return NULL;
@@ -252,13 +252,13 @@ static Presentation *parse_presentation(cJSON *json)
         return NULL;
     }
 
-    item = cJSON_GetObjectItem(json, "verifiableCredential");
+    item = json_object_get(json, "verifiableCredential");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing Credentials.");
         Presentation_Destroy(pre);
         return NULL;
     }
-    if (!cJSON_IsArray(item)) {
+    if (!json_is_array(item)) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid Credentials.");
         Presentation_Destroy(pre);
         return NULL;
@@ -512,7 +512,8 @@ const char* Presentation_ToJson(Presentation *pre, bool normalized)
 
 Presentation *Presentation_FromJson(const char *json)
 {
-    cJSON *root;
+    json_t *root;
+    json_error_t error;
     Presentation *pre;
 
     if (!json) {
@@ -520,19 +521,19 @@ Presentation *Presentation_FromJson(const char *json)
         return NULL;
     }
 
-    root = cJSON_Parse(json);
+    root = json_loads(json, JSON_COMPACT, &error);
     if (!root) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Deserialize presentation from json failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Deserialize presentation failed, error: %s.", error.text);
         return NULL;
     }
 
     pre = parse_presentation(root);
     if (!pre) {
-        cJSON_Delete(root);
+        json_decref(root);
         return NULL;
     }
 
-    cJSON_Delete(root);
+    json_decref(root);
     return pre;
 }
 

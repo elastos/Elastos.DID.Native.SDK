@@ -55,7 +55,7 @@ const char *DIDMetaData_ToJson(DIDMetaData *metadata)
     return MetaData_ToJson(&metadata->base);
 }
 
-int DIDMetaData_FromJson_Internal(DIDMetaData *metadata, cJSON *json)
+int DIDMetaData_FromJson_Internal(DIDMetaData *metadata, json_t *json)
 {
     assert(metadata);
 
@@ -122,18 +122,21 @@ int DIDMetaData_SetLastModified(DIDMetaData *metadata, time_t time)
     assert(metadata);
 
     if (time == 0) {
-        cJSON_DeleteItemFromObject(metadata->base.data, LAST_MODIFIED);
+        json_object_del(metadata->base.data, LAST_MODIFIED);
         return 0;
     }
 
-    return MetaData_SetExtraWithDouble(&metadata->base, LAST_MODIFIED, (double)time);
+    //return MetaData_SetExtraWithDouble(&metadata->base, LAST_MODIFIED, (double)time);
+    return MetaData_SetExtraWithInteger(&metadata->base, LAST_MODIFIED, (int)time);
 }
 
 time_t DIDMetaData_GetLastModified(DIDMetaData *metadata)
 {
     assert(metadata);
 
-    return (time_t)MetaData_GetExtraAsDouble(&metadata->base, LAST_MODIFIED);
+    //return (time_t)MetaData_GetExtraAsDouble(&metadata->base, LAST_MODIFIED);
+    return (time_t)MetaData_GetExtraAsInteger(&metadata->base, LAST_MODIFIED);
+
 }
 
 const char *DIDMetaData_GetTxid(DIDMetaData *metadata)

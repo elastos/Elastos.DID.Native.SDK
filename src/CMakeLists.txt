@@ -165,7 +165,6 @@ if(WIN32)
 endif()
 
 set(LIBS
-    cjson
     curl
     ssl
     crypto
@@ -186,7 +185,7 @@ add_definitions(-DDID_BUILD)
 
 add_custom_target(ela-did)
 
-set(ELADID_DEPENDS libressl libcurl cJSON hdkey libjansson libcjose libzip)
+set(ELADID_DEPENDS libressl libcurl hdkey libjansson libcjose libzip)
 
 if(DARWIN OR IOS)
     set(ELADID_DEPENDS ${ELADID_DEPENDS} exportSymbols)

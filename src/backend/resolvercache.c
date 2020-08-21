@@ -80,7 +80,8 @@ int ResolverCache_Load(ResolveResult *result, DID *did, long ttl)
     const char *data;
     struct stat s;
     time_t curtime;
-    cJSON *root;
+    json_t *root;
+    json_error_t error;
     int rc;
 
     assert(result);
@@ -102,13 +103,13 @@ int ResolverCache_Load(ResolveResult *result, DID *did, long ttl)
     if (!data)
         return -1;
 
-    root = cJSON_Parse(data);
+    root = json_loads(data, JSON_COMPACT, &error);
     free((void*)data);
     if (!root)
         return -1;
 
     rc = ResolveResult_FromJson(result, root, false);
-    cJSON_Delete(root);
+    json_decref(root);
     return rc;
 }
 

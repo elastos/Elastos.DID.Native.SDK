@@ -119,7 +119,7 @@ const char *JWS_GetClaimAsJson(JWS *jws, const char *key)
     }
 
     if (json_is_object(value)) {
-        data = json_dumps(value, 0);
+        data = json_dumps(value, JSON_COMPACT);
         if (!data)
             DIDError_Set(DIDERR_JWT, "Get claim '%s' from json object failed.", key);
 
@@ -127,7 +127,7 @@ const char *JWS_GetClaimAsJson(JWS *jws, const char *key)
     }
 
     if (json_is_array(value)) {
-        data = json_dumps(value, 0);
+        data = json_dumps(value, JSON_COMPACT);
         if (!data)
             DIDError_Set(DIDERR_JWT, "Get claim '%s' from json array failed.", key);
 

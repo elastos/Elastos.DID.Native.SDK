@@ -23,7 +23,7 @@
 #ifndef __META_H__
 #define __META_H__
 
-#include <cjson/cJSON.h>
+#include <jansson.h>
 
 #include "ela_did.h"
 #include "JsonGenerator.h"
@@ -35,7 +35,7 @@ extern "C" {
 #define MAX_DOC_SIGN                    128
 
 typedef struct MetaData {
-    cJSON *data;
+    json_t *data;
     DIDStore *store;
 } MetaData;
 
@@ -44,7 +44,7 @@ const char *MetaData_ToJson(MetaData *metadata);
 int MetaData_ToJson_Internal(MetaData *metadata, JsonGenerator *gen);
 
 int MetaData_FromJson(MetaData *metadata, const char *data);
-int MetaData_FromJson_Internal(MetaData *metadata, cJSON *json);
+int MetaData_FromJson_Internal(MetaData *metadata, json_t *json);
 
 const char *MetaData_ToString(MetaData *metadata);
 
@@ -55,10 +55,12 @@ int MetaData_Copy(MetaData *metadata, MetaData *frommeta);
 int MetaData_SetExtra(MetaData *metadata, const char* key, const char *value);
 int MetaData_SetExtraWithBoolean(MetaData *metadata, const char *key, bool value);
 int MetaData_SetExtraWithDouble(MetaData *metadata, const char *key, double value);
+int MetaData_SetExtraWithInteger(MetaData *metadata, const char *key, int value);
 
 const char *MetaData_GetExtra(MetaData *metadata, const char *key);
 bool MetaData_GetExtraAsBoolean(MetaData *metadata, const char *key);
 double MetaData_GetExtraAsDouble(MetaData *metadata, const char *key);
+int MetaData_GetExtraAsInteger(MetaData *metadata, const char *key);
 
 void MetaData_SetStore(MetaData *metadata, DIDStore *store);
 DIDStore *MetaData_GetStore(MetaData *metadata);

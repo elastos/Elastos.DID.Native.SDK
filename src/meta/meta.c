@@ -74,20 +74,20 @@ const char *MetaData_ToJson(MetaData *metadata)
     return NULL;
 }
 
-int MetaData_FromJson_Internal(MetaData *metadata, cJSON *json)
+int MetaData_FromJson_Internal(MetaData *metadata, json_t *json)
 {
-    cJSON *copy;
+    json_t *copy;
 
     assert(metadata);
     assert(json);
 
-    copy = cJSON_Duplicate(json, true);
+    copy = json_deep_copy(json);
     if (!copy) {
        DIDError_Set(DIDERR_MALFORMED_META, "Duplicate metadata content failed.");
         return -1;
     }
 
-    cJSON_Delete(metadata->data);
+    json_decref(metadata->data);
     metadata->data = copy;
 
     return 0;
@@ -96,25 +96,26 @@ int MetaData_FromJson_Internal(MetaData *metadata, cJSON *json)
 const char *MetaData_ToString(MetaData *metadata)
 {
     assert(metadata);
-    return metadata->data ? cJSON_Print(metadata->data) : NULL;
+    return metadata->data ? json_dumps(metadata->data, JSON_COMPACT) : NULL;
 }
 
 int MetaData_FromJson(MetaData *metadata, const char *data)
 {
-    cJSON *root;
+    json_t *root;
+    json_error_t error;
     int rc;
 
     assert(metadata);
     assert(data && *data);
 
-    root = cJSON_Parse(data);
+    root = json_loads(data, JSON_COMPACT, &error);
     if (!root) {
-        DIDError_Set(DIDERR_MALFORMED_META, "Deserialize did metadata from json failed.");
+        DIDError_Set(DIDERR_MALFORMED_META, "Deserialize did metadata failed, error: %s.", error.text);
         return -1;
     }
 
     rc = MetaData_FromJson_Internal(metadata, root);
-    cJSON_Delete(root);
+    json_decref(root);
     return rc;
 }
 
@@ -123,87 +124,106 @@ void MetaData_Free(MetaData *metadata)
     assert(metadata);
 
     if (metadata->data) {
-        cJSON_Delete(metadata->data);
+        json_decref(metadata->data);
         metadata->data = NULL;
     }
 }
 
-static int MetaData_Set(MetaData *metadata, const char* key, cJSON *value)
+static int MetaData_Set(MetaData *metadata, const char* key, json_t *value)
 {
     assert(metadata);
     assert(key);
 
     if (!metadata->data) {
-        metadata->data = cJSON_CreateObject();
+        metadata->data = json_object();
         if (!metadata->data)
             return -1;
     }
 
-    cJSON_DeleteItemFromObject(metadata->data, key);
-    cJSON_AddItemToObject(metadata->data, key, value);
+    json_object_del(metadata->data, key);
+    json_object_set(metadata->data, key, value);
     return 0;
 }
 
 int MetaData_SetExtra(MetaData *metadata, const char* key, const char *value)
 {
-    cJSON *json;
+    json_t *json;
     int rc;
 
     assert(metadata);
     assert(key);
 
-    json = value ? cJSON_CreateString(value) : cJSON_CreateNull();
+    json = value ? json_string(value) : json_null();
     if (!json)
         return -1;
 
     rc = MetaData_Set(metadata, key, json);
     if (rc < 0)
-        cJSON_Delete(json);
+        json_decref(json);
 
     return rc;
 }
 
 int MetaData_SetExtraWithBoolean(MetaData *metadata, const char *key, bool value)
 {
-    cJSON *json;
+    json_t *json;
     int rc;
 
     assert(metadata);
     assert(key);
 
-    json = cJSON_CreateBool(value);
+    json = json_boolean(value);
     if (!json)
         return -1;
 
     rc = MetaData_Set(metadata, key, json);
     if (rc < 0)
-        cJSON_Delete(json);
+        json_decref(json);
 
     return rc;
 }
 
 int MetaData_SetExtraWithDouble(MetaData *metadata, const char *key, double value)
 {
-    cJSON *json;
+    json_t *json;
     int rc;
 
     assert(metadata);
     assert(key);
 
-    json = cJSON_CreateNumber(value);
+    json = json_real(value);
     if (!json)
         return -1;
 
     rc = MetaData_Set(metadata, key, json);
     if (rc < 0)
-        cJSON_Delete(json);
+        json_decref(json);
 
     return rc;
 }
 
-static cJSON *MetaData_Get(MetaData *metadata, const char *key)
+int MetaData_SetExtraWithInteger(MetaData *metadata, const char *key, int value)
 {
-    cJSON *json;
+    json_t *json;
+    int rc;
+
+    assert(metadata);
+    assert(key);
+
+    json = json_integer(value);
+    if (!json)
+        return -1;
+
+    rc = MetaData_Set(metadata, key, json);
+    if (rc < 0)
+        json_decref(json);
+
+    return rc;
+}
+
+static json_t *MetaData_Get(MetaData *metadata, const char *key)
+{
+    json_t *json;
 
     assert(metadata);
     assert(key);
@@ -213,7 +233,7 @@ static cJSON *MetaData_Get(MetaData *metadata, const char *key)
         return NULL;
     }
 
-    json = cJSON_GetObjectItem(metadata->data, key);
+    json = json_object_get(metadata->data, key);
     if (!json) {
         DIDError_Set(DIDERR_MALFORMED_META, "No '%s' elem in metadata.", key);
         return NULL;
@@ -224,7 +244,7 @@ static cJSON *MetaData_Get(MetaData *metadata, const char *key)
 
 const char *MetaData_GetExtra(MetaData *metadata, const char *key)
 {
-    cJSON *json;
+    json_t *json;
 
     assert(metadata);
     assert(key);
@@ -233,17 +253,17 @@ const char *MetaData_GetExtra(MetaData *metadata, const char *key)
     if (!json)
         return NULL;
 
-    if (!cJSON_IsString(json)) {
+    if (!json_is_string(json)) {
         DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not string type.", key);
         return NULL;
     }
 
-    return json->valuestring;
+    return json_string_value(json);
 }
 
 bool MetaData_GetExtraAsBoolean(MetaData *metadata, const char *key)
 {
-    cJSON *json;
+    json_t *json;
 
     assert(metadata);
     assert(key);
@@ -252,17 +272,17 @@ bool MetaData_GetExtraAsBoolean(MetaData *metadata, const char *key)
     if (!json)
         return false;
 
-    if (!cJSON_IsBool(json)) {
+    if (!json_is_boolean(json)) {
         DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not boolean type.", key);
         return false;
     }
 
-    return cJSON_IsTrue(json);
+    return json_is_true(json);
 }
 
 double MetaData_GetExtraAsDouble(MetaData *metadata, const char *key)
 {
-    cJSON *json;
+    json_t *json;
 
     assert(metadata);
     assert(key);
@@ -271,32 +291,53 @@ double MetaData_GetExtraAsDouble(MetaData *metadata, const char *key)
     if (!json)
         return 0;
 
-    if (!cJSON_IsDouble(json)) {
+    if (!json_is_real(json)) {
         DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not double type.", key);
         return 0;
     }
 
-    return json->valuedouble;
+    return json_real_value(json);
+}
+
+int MetaData_GetExtraAsInteger(MetaData *metadata, const char *key)
+{
+    json_t *json;
+
+    assert(metadata);
+    assert(key);
+
+    json = MetaData_Get(metadata, key);
+    if (!json)
+        return 0;
+
+    if (!json_is_integer(json)) {
+        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not double type.", key);
+        return 0;
+    }
+
+    return json_integer_value(json);
 }
 
 int MetaData_Merge(MetaData *tometa, MetaData *frommeta)
 {
-    cJSON *json, *item;
+    json_t *value, *item, *json;
+    const char *key;
 
     assert(tometa && frommeta);
 
-    cJSON_ArrayForEach(json, frommeta->data) {
-        item = cJSON_GetObjectItem(tometa->data, json->string);
+    json_object_foreach(frommeta->data, key, value) {
+        json = json_object_get(frommeta->data, key);
+        item = json_object_get(tometa->data, key);
         if (item) {
-            if (cJSON_IsNull(item) || cJSON_IsNull(json))
-                cJSON_DeleteItemFromObject(tometa->data, json->string);
+            if (json_is_null(item) || json_is_null(json))
+                json_object_del(tometa->data, key);
         } else {
-            item = cJSON_Duplicate(json, true);
+            item = json_deep_copy(json);
             if (!item) {
-                DIDError_Set(DIDERR_MALFORMED_META, "Add '%s' to metadata failed.", json->string);
+                DIDError_Set(DIDERR_MALFORMED_META, "Add '%s' to metadata failed.", key);
                 return -1;
             }
-            cJSON_AddItemToObject(tometa->data, json->string, item);
+            json_object_set_new(tometa->data, key, item);
         }
     }
 
@@ -305,20 +346,20 @@ int MetaData_Merge(MetaData *tometa, MetaData *frommeta)
 
 int MetaData_Copy(MetaData *dest, MetaData *src)
 {
-    cJSON *data = NULL;
+    json_t *data = NULL;
 
     assert(dest);
     assert(src);
 
     if (src->data) {
-        data = cJSON_Duplicate(src->data, true);
+        data = json_deep_copy(src->data);
         if (!data) {
             DIDError_Set(DIDERR_MALFORMED_META, "MetaData duplication failed.");
             return -1;
         }
     }
 
-    cJSON_Delete(dest->data);
+    json_decref(dest->data);
 
     dest->store = src->store;
     dest->data  = data;

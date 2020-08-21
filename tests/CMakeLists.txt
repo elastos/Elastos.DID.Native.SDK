@@ -81,7 +81,6 @@ endif()
 
 if (NOT ENABLE_SHARED)
     set(STATIC_LIBS
-        cjson
         curl
         ssl)
 endif()

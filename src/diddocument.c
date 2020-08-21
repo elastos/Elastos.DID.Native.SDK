@@ -221,10 +221,10 @@ static int add_to_publickeys(DIDDocument *document, PublicKey *pk)
     return 0;
 }
 
-static int Parse_PublicKey(DID *did, cJSON *json, PublicKey **publickey)
+static int Parse_PublicKey(DID *did, json_t *json, PublicKey **publickey)
 {
     PublicKey *pk;
-    cJSON *field;
+    json_t *field;
 
     assert(did);
     assert(json);
@@ -236,14 +236,14 @@ static int Parse_PublicKey(DID *did, cJSON *json, PublicKey **publickey)
         return -1;
     }
 
-    field = cJSON_GetObjectItem(json, "id");
+    field = json_object_get(json, "id");
     if (!field) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing public key id.");
         PublicKey_Destroy(pk);
         return -1;
     }
 
-    if (!cJSON_IsString(field) || Parse_DIDURL(&pk->id, field->valuestring, did) < 0) {
+    if (!json_is_string(field) || Parse_DIDURL(&pk->id, json_string_value(field), did) < 0) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid public key id.");
         PublicKey_Destroy(pk);
         return -1;
@@ -254,25 +254,25 @@ static int Parse_PublicKey(DID *did, cJSON *json, PublicKey **publickey)
     // set default value for 'type'
     strcpy(pk->type, ProofType);
 
-    field = cJSON_GetObjectItem(json, "publicKeybase58");
+    field = json_object_get(json, "publicKeyBase58");
     if (!field) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing publicKey base58.");
         PublicKey_Destroy(pk);
         return -1;
     }
-    if (!cJSON_IsString(field)) {
+    if (!json_is_string(field)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid publicKey base58.");
         PublicKey_Destroy(pk);
         return -1;
     }
 
-    //public key must be have 'publicKeybase58'
-    strcpy(pk->publicKeyBase58, field->valuestring);
+    //public key must be have 'publicKeyBase58'
+    strcpy(pk->publicKeyBase58, json_string_value(field));
 
     //'controller' may be default
-    field = cJSON_GetObjectItem(json, "controller");
+    field = json_object_get(json, "controller");
     if (field) {
-        if (!cJSON_IsString(field) || Parse_DID(&pk->controller, field->valuestring) < 0) {
+        if (!json_is_string(field) || Parse_DID(&pk->controller, json_string_value(field)) < 0) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid publicKey controller.");
             PublicKey_Destroy(pk);
             return -1;
@@ -289,7 +289,7 @@ static int Parse_PublicKey(DID *did, cJSON *json, PublicKey **publickey)
     return 0;
 }
 
-static int Parse_PublicKeys(DIDDocument *document, DID *did, cJSON *json)
+static int Parse_PublicKeys(DIDDocument *document, DID *did, json_t *json)
 {
     int pk_size, i, size = 0;
 
@@ -297,7 +297,7 @@ static int Parse_PublicKeys(DIDDocument *document, DID *did, cJSON *json)
     assert(did);
     assert(json);
 
-    pk_size = cJSON_GetArraySize(json);
+    pk_size = json_array_size(json);
     if (!pk_size) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Public key array is empty.");
         return -1;
@@ -311,16 +311,16 @@ static int Parse_PublicKeys(DIDDocument *document, DID *did, cJSON *json)
     }
 
     for (i = 0; i < pk_size; i++) {
-        cJSON *pk_item, *id_field, *base_field;
+        json_t *pk_item, *id_field, *base_field;
         PublicKey *pk;
 
-        pk_item = cJSON_GetArrayItem(json, i);
+        pk_item = json_array_get(json, i);
         if (!pk_item)
             continue;
 
         //check public key's format
-        id_field = cJSON_GetObjectItem(pk_item, "id");
-        base_field = cJSON_GetObjectItem(pk_item, "publicKeybase58");
+        id_field = json_object_get(pk_item, "id");
+        base_field = json_object_get(pk_item, "publicKeyBase58");
         if (!id_field || !base_field)              //(required and can't default)
             continue;
 
@@ -343,7 +343,7 @@ static int Parse_PublicKeys(DIDDocument *document, DID *did, cJSON *json)
 }
 
 static
-int Parse_Auth_PublicKeys(DIDDocument *document, cJSON *json, KeyType type)
+int Parse_Auth_PublicKeys(DIDDocument *document, json_t *json, KeyType type)
 {
     int pk_size, i, size = 0, total_size = 0;
     PublicKey *pk;
@@ -351,7 +351,7 @@ int Parse_Auth_PublicKeys(DIDDocument *document, cJSON *json, KeyType type)
     assert(document);
     assert(json);
 
-    pk_size = cJSON_GetArraySize(json);
+    pk_size = json_array_size(json);
     if (!pk_size) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Auth key array is empty.");
         return -1;
@@ -359,15 +359,15 @@ int Parse_Auth_PublicKeys(DIDDocument *document, cJSON *json, KeyType type)
 
     for (i = 0; i < pk_size; i++) {
         DIDURL id;
-        cJSON *pk_item, *id_field;
+        json_t *pk_item, *id_field;
 
-        pk_item = cJSON_GetArrayItem(json, i);
+        pk_item = json_array_get(json, i);
         if (!pk_item)
             continue;
 
-        id_field = cJSON_GetObjectItem(pk_item, "id");
+        id_field = json_object_get(pk_item, "id");
         if (!id_field) {
-            if (Parse_DIDURL(&id, pk_item->valuestring, &document->did) < 0)
+            if (Parse_DIDURL(&id, json_string_value(pk_item), &document->did) < 0)
                 continue;
 
             pk = DIDDocument_GetPublicKey(document, &id);
@@ -399,7 +399,7 @@ int Parse_Auth_PublicKeys(DIDDocument *document, cJSON *json, KeyType type)
     return 0;
 }
 
-static int Parse_Services(DIDDocument *document, cJSON *json)
+static int Parse_Services(DIDDocument *document, json_t *json)
 {
     size_t service_size;
     size_t autal_size = 0;
@@ -408,7 +408,7 @@ static int Parse_Services(DIDDocument *document, cJSON *json)
     assert(document);
     assert(json);
 
-    service_size = cJSON_GetArraySize(json);
+    service_size = json_array_size(json);
     if (!service_size) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Service array is empty.");
         return -1;
@@ -422,10 +422,9 @@ static int Parse_Services(DIDDocument *document, cJSON *json)
 
     for (i = 0; i < service_size; i++) {
         Service *service;
-        cJSON *item;
-        cJSON *field;
+        json_t *item, *field;
 
-        item = cJSON_GetArrayItem(json, i);
+        item = json_array_get(json, i);
         if (!item)
             continue;
 
@@ -433,13 +432,13 @@ static int Parse_Services(DIDDocument *document, cJSON *json)
         if (!service)
             continue;
 
-        field = cJSON_GetObjectItem(item, "id");
-        if (!field || !cJSON_IsString(field)) {
+        field = json_object_get(item, "id");
+        if (!field || !json_is_string(field)) {
             Service_Destroy(service);
             continue;
         }
 
-        if (Parse_DIDURL(&service->id, field->valuestring, &document->did) < 0) {
+        if (Parse_DIDURL(&service->id, json_string_value(field), &document->did) < 0) {
             Service_Destroy(service);
             continue;
         }
@@ -447,19 +446,19 @@ static int Parse_Services(DIDDocument *document, cJSON *json)
         if (!*service->id.did.idstring)
             strcpy(service->id.did.idstring, document->did.idstring);
 
-        field = cJSON_GetObjectItem(item, "type");
-        if (!field || !cJSON_IsString(field)) {
+        field = json_object_get(item, "type");
+        if (!field || !json_is_string(field)) {
             Service_Destroy(service);
             continue;
         }
-        strcpy(service->type, field->valuestring);
+        strcpy(service->type, json_string_value(field));
 
-        field = cJSON_GetObjectItem(item, "serviceEndPoint");
-        if (!field || !cJSON_IsString(field)) {
+        field = json_object_get(item, "serviceEndpoint");
+        if (!field || !json_is_string(field)) {
             Service_Destroy(service);
             continue;
         }
-        strcpy(service->endpoint, field->valuestring);
+        strcpy(service->endpoint, json_string_value(field));
 
         services[autal_size++] = service;
     }
@@ -476,40 +475,40 @@ static int Parse_Services(DIDDocument *document, cJSON *json)
     return 0;
 }
 
-static int Parse_Proof(DIDDocument *document, cJSON *json)
+static int Parse_Proof(DIDDocument *document, json_t *json)
 {
-    cJSON *item;
+    json_t *item;
 
     assert(document);
     assert(json);
 
-    item = cJSON_GetObjectItem(json, "type");
+    item = json_object_get(json, "type");
     if (item) {
-        if ((cJSON_IsString(item) && strlen(item->valuestring) + 1 > MAX_DOC_TYPE) ||
-                !cJSON_IsString(item)) {
+        if ((json_is_string(item) && strlen(json_string_value(item)) + 1 > MAX_DOC_TYPE) ||
+                !json_is_string(item)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid proof type.");
             return -1;
         }
-        strcpy(document->proof.type, item->valuestring);
+        strcpy(document->proof.type, json_string_value(item));
     }
     else
         strcpy(document->proof.type, ProofType);
 
-    item = cJSON_GetObjectItem(json, "created");
+    item = json_object_get(json, "created");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing create document time.");
         return -1;
     }
-    if (!cJSON_IsString(item) ||
-            parse_time(&document->proof.created, item->valuestring) < 0) {
+    if (!json_is_string(item) ||
+            parse_time(&document->proof.created, json_string_value(item)) < 0) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid create document time.");
         return -1;
     }
 
-    item = cJSON_GetObjectItem(json, "creator");
+    item = json_object_get(json, "creator");
     if (item) {
-        if (!cJSON_IsString(item) ||
-                Parse_DIDURL(&document->proof.creater, item->valuestring, &document->did) == -1) {
+        if (!json_is_string(item) ||
+                Parse_DIDURL(&document->proof.creater, json_string_value(item), &document->did) == -1) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid document creater.");
             return -1;
         }
@@ -521,21 +520,21 @@ static int Parse_Proof(DIDDocument *document, cJSON *json)
         return -1;
     }
 
-    item = cJSON_GetObjectItem(json, "signatureValue");
+    item = json_object_get(json, "signatureValue");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing signature.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid signature.");
         return -1;
     }
-    if (strlen(item->valuestring) + 1 > MAX_DOC_SIGN) {
+    if (strlen(json_string_value(item)) + 1 > MAX_DOC_SIGN) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Document signature is too long.");
         return -1;
     }
 
-    strcpy(document->proof.signatureValue, item->valuestring);
+    strcpy(document->proof.signatureValue, json_string_value(item));
     return 0;
 }
 
@@ -568,14 +567,14 @@ static int remove_publickey(DIDDocument *document, DIDURL *keyid)
     return -1;
 }
 
-static int Parse_Credentials_InDoc(DIDDocument *document, cJSON *json)
+static int Parse_Credentials_InDoc(DIDDocument *document, json_t *json)
 {
     size_t size = 0;
 
     assert(document);
     assert(json);
 
-    size = cJSON_GetArraySize(json);
+    size = json_array_size(json);
     if (size <= 0) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Credential array is empty.");
         return -1;
@@ -610,10 +609,10 @@ int DIDDocument_SetStore(DIDDocument *document, DIDStore *store)
 }
 
 ////////////////////////////////Document/////////////////////////////////////
-DIDDocument *DIDDocument_FromJson_Internal(cJSON *root)
+DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
 {
     DIDDocument *doc;
-    cJSON *item;
+    json_t *item;
 
     assert(root);
 
@@ -623,24 +622,24 @@ DIDDocument *DIDDocument_FromJson_Internal(cJSON *root)
         return NULL;
     }
 
-    item = cJSON_GetObjectItem(root, "id");
+    item = json_object_get(root, "id");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing document subject.");
         goto errorExit;
     }
-    if (!cJSON_IsString(item) ||
-            Parse_DID(&doc->did, item->valuestring) == -1) {
+    if (!json_is_string(item) ||
+            Parse_DID(&doc->did, json_string_value(item)) == -1) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid document subject.");
         goto errorExit;
     }
 
     //parse publickey
-    item = cJSON_GetObjectItem(root, "publicKey");
+    item = json_object_get(root, "publicKey");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing document id.");
         goto errorExit;
     }
-    if (!cJSON_IsArray(item)) {
+    if (!json_is_array(item)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid document id.");
         goto errorExit;
     }
@@ -648,12 +647,12 @@ DIDDocument *DIDDocument_FromJson_Internal(cJSON *root)
         goto errorExit;
 
     //parse authentication
-    item = cJSON_GetObjectItem(root, "authentication");
+    item = json_object_get(root, "authentication");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing authentication key.");
         goto errorExit;
     }
-    if (!cJSON_IsArray(item)) {
+    if (!json_is_array(item)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid authentication key.");
         goto errorExit;
     }
@@ -661,9 +660,9 @@ DIDDocument *DIDDocument_FromJson_Internal(cJSON *root)
         goto errorExit;
 
     //parse authorization
-    item = cJSON_GetObjectItem(root, "authorization");
+    item = json_object_get(root, "authorization");
     if (item) {
-        if (!cJSON_IsArray(item)) {
+        if (!json_is_array(item)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid authorization key.");
             goto errorExit;
         }
@@ -672,21 +671,21 @@ DIDDocument *DIDDocument_FromJson_Internal(cJSON *root)
     }
 
     //parse expires
-    item = cJSON_GetObjectItem(root, "expires");
+    item = json_object_get(root, "expires");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing expires time.");
         goto errorExit;
     }
-    if (!cJSON_IsString(item) ||
-           parse_time(&doc->expires, item->valuestring) == -1) {
+    if (!json_is_string(item) ||
+           parse_time(&doc->expires, json_string_value(item)) == -1) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid expires time.");
         goto errorExit;
     }
 
     //parse credential
-    item = cJSON_GetObjectItem(root, "verifiableCredential");
+    item = json_object_get(root, "verifiableCredential");
     if (item) {
-        if (!cJSON_IsArray(item)) {
+        if (!json_is_array(item)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid credentials.");
             goto errorExit;
         }
@@ -695,9 +694,9 @@ DIDDocument *DIDDocument_FromJson_Internal(cJSON *root)
     }
 
     //parse services
-    item = cJSON_GetObjectItem(root, "service");
+    item = json_object_get(root, "service");
     if (item) {
-        if (!cJSON_IsArray(item)) {
+        if (!json_is_array(item)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid services.");
             goto errorExit;
         }
@@ -705,12 +704,12 @@ DIDDocument *DIDDocument_FromJson_Internal(cJSON *root)
             goto errorExit;
     }
 
-    item = cJSON_GetObjectItem(root, "proof");
+    item = json_object_get(root, "proof");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing document proof.");
         goto errorExit;
     }
-    if (!cJSON_IsObject(item)) {
+    if (!json_is_object(item)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid document proof.");
         goto errorExit;
     }
@@ -727,21 +726,22 @@ errorExit:
 DIDDocument *DIDDocument_FromJson(const char *json)
 {
     DIDDocument *doc;
-    cJSON *root;
+    json_t *root;
+    json_error_t error;
 
     if (!json) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    root = cJSON_Parse(json);
+    root = json_loads(json, JSON_COMPACT, &error);
     if (!root) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Deserialize document from json failed.");
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Deserialize document failed, error: %s.", error.text);
         return NULL;
     }
 
     doc = DIDDocument_FromJson_Internal(root);
-    cJSON_Delete(root);
+    json_decref(root);
     return doc;
 }
 
@@ -826,7 +826,8 @@ const char *DIDDocument_ToJson(DIDDocument *document, bool normalized)
 const char *DIDDocument_ToString(DIDDocument *document, bool normalized)
 {
     const char *data;
-    cJSON *json;
+    json_t *json;
+    json_error_t error;
 
     if (!document){
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -837,14 +838,14 @@ const char *DIDDocument_ToString(DIDDocument *document, bool normalized)
     if (!data)
         return NULL;
 
-    json = cJSON_Parse(data);
+    json = json_loads(data, JSON_COMPACT, &error);
     free((void*)data);
     if (!json) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Deserialize document from json failed.");
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Deserialize document failed, error: %s.", error.text);
         return NULL;
     }
 
-    return cJSON_Print(json);
+    return json_dumps(json, JSON_COMPACT);
 }
 
 void DIDDocument_Destroy(DIDDocument *document)

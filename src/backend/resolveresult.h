@@ -23,6 +23,8 @@
 #ifndef __RESOLVERRESULT_H__
 #define __RESOLVERRESULT_H__
 
+#include <jansson.h>
+
 #include "ela_did.h"
 #include "didhistory.h"
 #include "didtransactioninfo.h"
@@ -33,7 +35,7 @@ extern "C" {
 
 typedef struct DIDHistory   ResolveResult;
 
-int ResolveResult_FromJson(ResolveResult *result, cJSON *json, bool all);
+int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all);
 
 void ResolveResult_Destroy(ResolveResult *result);
 
