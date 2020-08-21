@@ -2379,6 +2379,11 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
     if (!doc)
         return false;
 
+    if (!DIDDocument_IsGenuine(doc)) {
+        DIDError_Set(DIDERR_NOT_GENUINE, "Did document is not genuine.");
+        goto errorExit;
+    }
+
     if (DIDDocument_IsDeactivated(doc)) {
         DIDError_Set(DIDERR_DID_DEACTIVATED, "Did is already deactivated.");
         goto errorExit;
