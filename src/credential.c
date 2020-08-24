@@ -745,7 +745,7 @@ const char *Credential_ToString(Credential *cred, bool normalized)
     json = json_loads(data, JSON_COMPACT, &error);
     free((void*)data);
     if (!json){
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, error.text);
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Get credential json failed: %s", error.text);
         return NULL;
     }
 

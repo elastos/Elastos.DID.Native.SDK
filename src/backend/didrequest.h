@@ -23,7 +23,6 @@
 #ifndef __DIDREQUEST_H__
 #define __DIDREQUEST_H__
 
-//#include <jansson.h>
 #include <jansson.h>
 
 #include "ela_did.h"

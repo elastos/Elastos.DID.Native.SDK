@@ -126,7 +126,6 @@ int DIDMetaData_SetLastModified(DIDMetaData *metadata, time_t time)
         return 0;
     }
 
-    //return MetaData_SetExtraWithDouble(&metadata->base, LAST_MODIFIED, (double)time);
     return MetaData_SetExtraWithInteger(&metadata->base, LAST_MODIFIED, (int)time);
 }
 
@@ -134,7 +133,6 @@ time_t DIDMetaData_GetLastModified(DIDMetaData *metadata)
 {
     assert(metadata);
 
-    //return (time_t)MetaData_GetExtraAsDouble(&metadata->base, LAST_MODIFIED);
     return (time_t)MetaData_GetExtraAsInteger(&metadata->base, LAST_MODIFIED);
 
 }
