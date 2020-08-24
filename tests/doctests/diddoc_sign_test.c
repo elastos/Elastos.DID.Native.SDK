@@ -7,6 +7,7 @@
 #include <crystal.h>
 #include <CUnit/Basic.h>
 #include <limits.h>
+#include <crystal.h>
 
 #include "constant.h"
 #include "loader.h"
@@ -61,6 +62,62 @@ static void test_diddoc_digest_sign_verify(void)
     }
 }
 
+static void test_diddoc_derive_fromidentifier(void)
+{
+    HDKey *hdkey, _hdkey;
+    uint8_t binkey[EXTENDEDKEY_BYTES], sk[PRIVATEKEY_BYTES];
+
+    const char *identifier = "org.elastos.did.test";
+
+    for (int i = -100; i < 100; i++) {
+        const char *strkey = DIDDocument_Derive(document, identifier, i, storepass);
+        CU_ASSERT_PTR_NOT_NULL_FATAL(strkey);
+
+        hdkey = HDKey_DeserializeBase58(&_hdkey, strkey, strlen(strkey) + 1);
+        size_t size = base58_decode((const char*)binkey, sizeof(binkey), (void*)strkey, strlen(strkey) + 1);
+        free((void*)strkey);
+        CU_ASSERT_PTR_NOT_NULL_FATAL(hdkey);
+        CU_ASSERT_EQUAL(size, EXTENDEDKEY_BYTES);
+
+        memcpy(sk, binkey + 46, PRIVATEKEY_BYTES);
+        memset(binkey, 0, sizeof(binkey));
+
+        uint8_t *key = HDKey_GetPrivateKey(hdkey);
+        for (int j = 0; j < PRIVATEKEY_BYTES; j++)
+            CU_ASSERT_EQUAL(sk[j], key[j]);
+
+        memset(sk, 0, sizeof(sk));
+    }
+}
+
+static void test_diddoc_derive_compatible_withjava(void)
+{
+    const char *key;
+    uint8_t binkey[EXTENDEDKEY_BYTES];
+
+    const char *identifier = "org.elastos.did.test";
+    const char *keybase1 = "xprvABa5HYokqCjsR5Pk9dvYLxHkYbFQtJ2rPKPjeousKdcsh87vTSFmj8KrrnQfocDYWbgXeT9c5wnBb281JxWv8X4Xm3vh5eCcRpjCuhYnY3V";   //security code: 10
+    const char *keybase2 = "xprvABa5HYokqCjtBrHFbHrLFuTNowffc6YoRN6aUQdMqA5AnrrFiDF4uoxC9qH1b5a1H3WbDUWnT58tcR47TTR8V77L2vjEJTVpfwA8dVKTk3V";   //security code: 28
+    const char *keybase3 = "xprvABa5HYp3WXoo6LXePBD5PxFskrNGyPhmyrxgqZzTK3Su3H2cQxNuo3sdVhB7WpJvjiEgWV9ypCcujKMSbkyrPkT54vErRAZ8XAua6124pjc";   //security code: -5
+    const char *keybase4 = "xprvABa5HYp3WXomZhF8qXBSvTWooy926aiEhNZH9AEufPwAP6XT97t59P5CvyJviE9ENpGh5jF84WLhp3DHV57ZUYzucWfkHkLwrGx3izaqzEu";   //security code: -40
+
+    key = DIDDocument_Derive(document, identifier, 10, storepass);
+    CU_ASSERT_STRING_EQUAL(key, keybase1);
+    free((void*)key);
+
+    key = DIDDocument_Derive(document, identifier, 28, storepass);
+    CU_ASSERT_STRING_EQUAL(key, keybase2);
+    free((void*)key);
+
+    key = DIDDocument_Derive(document, identifier, -5, storepass);
+    CU_ASSERT_STRING_EQUAL(key, keybase3);
+    free((void*)key);
+
+    key = DIDDocument_Derive(document, identifier, -40, storepass);
+    CU_ASSERT_STRING_EQUAL(key, keybase4);
+    free((void*)key);
+}
+
 static int diddoc_sign_test_suite_init(void)
 {
     store = TestData_SetupStore(true);
@@ -89,9 +146,11 @@ static int diddoc_sign_test_suite_cleanup(void)
 }
 
 static CU_TestInfo cases[] = {
-    {   "test_diddoc_sign_verify",           test_diddoc_sign_verify           },
-    {   "test_diddoc_digest_sign_verify",    test_diddoc_digest_sign_verify    },
-    {   NULL,                                NULL                              }
+    {   "test_diddoc_sign_verify",                test_diddoc_sign_verify                },
+    {   "test_diddoc_digest_sign_verify",         test_diddoc_digest_sign_verify         },
+    {   "test_diddoc_derive_fromidentifier",      test_diddoc_derive_fromidentifier      },
+    {   "test_diddoc_derive_compatible_withjava", test_diddoc_derive_compatible_withjava },
+    {   NULL,                                     NULL                                   }
 };
 
 static CU_SuiteInfo suite[] = {

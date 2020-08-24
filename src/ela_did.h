@@ -1966,6 +1966,27 @@ DID_API const char *DIDDocument_GetProofSignature(DIDDocument *document);
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
 DID_API JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document);
+
+/**
+ * \~English
+ * Derive the default key of document by identifier and securityCode.
+ *
+ * @param
+ *      document                 [in] A handle to DID Document.
+ *                                ps：document must attatch DIDstore.
+ * @param
+ *      identifier                [in] Application secified identifier.
+ * @param
+ *      securityCode              [in] User specified security code.
+ * @param
+ *      storepass                 [in] The password for DIDStore.
+ * @return
+ *      If no error occurs, return serialize HDKey string. Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API const char *DIDDocument_Derive(DIDDocument *document, const char *identifier,
+        int securityCode, const char *storepass);
+
 /**
  * \~English
  * Get identifier of public key.

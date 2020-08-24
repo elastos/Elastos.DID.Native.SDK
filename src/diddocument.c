@@ -2582,6 +2582,81 @@ JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document)
     return builder;
 }
 
+inline static uint32_t UInt32GetBE(const void *b4)
+{
+    return (((uint32_t)((const uint8_t *)b4)[0] << 24) | ((uint32_t)((const uint8_t *)b4)[1] << 16) |
+            ((uint32_t)((const uint8_t *)b4)[2] << 8)  | ((uint32_t)((const uint8_t *)b4)[3]));
+}
+
+static int map_to_derivepath(int *paths, size_t size, const char *identifier)
+{
+    uint8_t digest[SHA256_BYTES];
+    int rc;
+
+    assert(paths);
+    assert(size == 8);
+    assert(identifier);
+
+    if (sha256_digest(digest, 1, identifier, strlen(identifier)) < 0)
+        return -1;
+
+    for (int i = 0; i < size; i++)
+        paths[i] = UInt32GetBE(digest + i*4);
+
+    return 0;
+}
+
+const char *DIDDocument_Derive(DIDDocument *document, const char *identifier,
+        int securityCode, const char *storepass)
+{
+    uint8_t extendedkey[EXTENDEDKEY_BYTES];
+    int paths[8];
+    HDKey *hdkey, *derivedkey, _hdkey, _dkey;
+    char extendedkeyBase58[512];
+
+    if (!document || !identifier || !*identifier || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
+        return NULL;
+    }
+
+    if (DIDStore_LoadPrivateKey_Internal(document->metadata.base.store, storepass,
+            &document->did, DIDDocument_GetDefaultPublicKey(document),
+            extendedkey, sizeof(extendedkey)) < 0)
+        return NULL;
+
+    hdkey = HDKey_Deserialize(&_hdkey, extendedkey, sizeof(extendedkey));
+    memset(extendedkey, 0, sizeof(extendedkey));
+    if (!hdkey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Deserialize extended key failed.");
+        return NULL;
+    }
+
+    if (map_to_derivepath(paths, 8, identifier) < 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get derived path failed.");
+        return NULL;
+    }
+
+    derivedkey = HDKey_GetDerivedKey(hdkey, &_dkey, 9, paths[0], paths[1], paths[2], paths[3],
+           paths[4], paths[5], paths[6], paths[7], securityCode);
+    if (!derivedkey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get derived key failed.");
+        return NULL;
+    }
+
+    if (!HDKey_SerializePrvBase58(derivedkey, extendedkeyBase58, sizeof(extendedkeyBase58))) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Serialize derived key failed.");
+        return NULL;
+    }
+
+   return strdup(extendedkeyBase58);
+}
+
+
 DIDURL *PublicKey_GetId(PublicKey *publickey)
 {
     if (!publickey) {

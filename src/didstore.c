@@ -1746,8 +1746,10 @@ static int store_pubidentity_from_prvidentity(DIDStore *store, HDKey *hdkey)
     //// Pre-derive publickey path: m/44'/0'/0'
     predeviedkey = HDKey_GetDerivedKey(hdkey, &_derivedkey, 3, 44 | HARDENED,
             0 | HARDENED, 0 | HARDENED);
-    if (!predeviedkey)
+    if (!predeviedkey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get derived key failed.");
         return -1;
+    }
 
     size = HDKey_SerializePub(predeviedkey, extendedkey, sizeof(extendedkey));
     if (size == -1) {
