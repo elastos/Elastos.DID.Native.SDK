@@ -798,6 +798,12 @@ DIDDocument_GetJwtBuilder
 .. doxygenfunction:: DIDDocument_GetJwtBuilder
    :project: DIDAPI
 
+DIDDocument_Derive
+~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocument_Derive
+   :project: DIDAPI
+
 PublicKey_GetId
 ~~~~~~~~~~~~~~~
 
