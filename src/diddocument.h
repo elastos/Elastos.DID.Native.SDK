@@ -93,7 +93,7 @@ int DIDDocument_SetStore(DIDDocument *document, DIDStore *store);
 int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
         bool compact, bool forsign);
 
-DIDDocument *DIDDocument_FromJson_Internal(cJSON *root);
+DIDDocument *DIDDocument_FromJson_Internal(json_t *root);
 
 int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc);
 

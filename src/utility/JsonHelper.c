@@ -24,7 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <cjson/cJSON.h>
+#include <jansson.h>
 
 #include "ela_did.h"
 #include "diderror.h"
@@ -33,64 +33,67 @@
 
 static int item_compr(const void *a, const void *b)
 {
-    cJSON **propa = (cJSON **)a;
-    cJSON **propb = (cJSON **)b;
+    const char **propa = (const char**)a;
+    const char **propb = (const char**)b;
 
-    return strcmp((*propa)->string, (*propb)->string);
+    return strcmp(*propa, *propb);
 }
 
 //free the return value
-static cJSON **item_sort(cJSON *json, size_t size)
+static const char **item_sort(json_t *json, size_t size)
 {
-    size_t i;
+    size_t i = 0;
+    json_t *value;
+    const char *key;
 
     assert(json);
-    assert(size == cJSON_GetArraySize(json));
+    assert(size == json_object_size(json));
 
-    cJSON **jsonlist = (cJSON **)calloc(size, sizeof(cJSON*));
-    if (!jsonlist)
+    const char **keylist = (const char**)calloc(size, sizeof(char*));
+    if (!keylist)
         return NULL;
 
-    for (i = 0; i < size; i++)
-        jsonlist[i] = cJSON_GetArrayItem(json, i);
+    json_object_foreach(json, key, value) {
+        keylist[i++] = key;
+    }
 
-    qsort(jsonlist, size, sizeof(cJSON *), item_compr);
-    return jsonlist;
+    qsort(keylist, size, sizeof(char*), item_compr);
+    return keylist;
 }
 
-int JsonHelper_ToJson(JsonGenerator *generator, cJSON *object, bool objectcontext)
+int JsonHelper_ToJson(JsonGenerator *generator, json_t *object, bool objectcontext)
 {
     int rc;
     size_t size, i;
-    cJSON *item;
+    json_t *item;
 
     assert(generator);
     assert(object);
 
-    if (cJSON_IsArray(object)) {
+    if (json_is_array(object)) {
         CHECK(JsonGenerator_WriteStartArray(generator));
-        size = cJSON_GetArraySize(object);
+        size = json_array_size(object);
         for (i = 0; i < size; i++) {
-            item  = cJSON_GetArrayItem(object, i);
+            item  = json_array_get(object, i);
             CHECK(JsonHelper_ToJson(generator, item, false));
         }
         CHECK(JsonGenerator_WriteEndArray(generator));
         return 0;
     }
 
-    if (cJSON_IsObject(object)) {
+    if (json_is_object(object)) {
         if (!objectcontext)
             CHECK(JsonGenerator_WriteStartObject(generator));
 
-        size = cJSON_GetArraySize(object);
-        cJSON **items = item_sort(object, size);
+        size = json_object_size(object);
+        const char **items = item_sort(object, size);
         if (!items)
             return -1;
 
         for (i = 0; i < size; i++) {
-            item = items[i];
-            CHECK(JsonGenerator_WriteFieldName(generator, item->string));
-            rc = JsonHelper_ToJson(generator, cJSON_GetObjectItem(object, item->string), false);
+            const char *key = items[i];
+            CHECK(JsonGenerator_WriteFieldName(generator, key));
+            rc = JsonHelper_ToJson(generator, json_object_get(object, key), false);
             if (rc < 0) {
                 free(items);
                 return -1;
@@ -104,40 +107,40 @@ int JsonHelper_ToJson(JsonGenerator *generator, cJSON *object, bool objectcontex
         return 0;
     }
 
-    if (cJSON_IsFalse(object)) {
+    if (json_is_false(object)) {
         CHECK(JsonGenerator_WriteBoolean(generator, false));
         return 0;
     }
 
-    if (cJSON_IsTrue(object)) {
+    if (json_is_true(object)) {
         CHECK(JsonGenerator_WriteBoolean(generator, true));
         return 0;
     }
 
-    if (cJSON_IsNull(object)) {
+    if (json_is_null(object)) {
         CHECK(JsonGenerator_WriteString(generator, NULL));
         return 0;
     }
 
-    if (cJSON_IsInt(object)) {
-        CHECK(JsonGenerator_WriteNumber(generator, object->valueint));
+    if (json_is_integer(object)) {
+        CHECK(JsonGenerator_WriteNumber(generator, json_integer_value(object)));
         return 0;
     }
 
-    if (cJSON_IsDouble(object)) {
-        CHECK(JsonGenerator_WriteDouble(generator, object->valuedouble));
+    if (json_is_real(object)) {
+        CHECK(JsonGenerator_WriteDouble(generator, json_real_value(object)));
         return 0;
     }
 
-    if (cJSON_IsString(object) || cJSON_IsRaw(object)) {
-        CHECK(JsonGenerator_WriteString(generator, object->valuestring));
+    if (json_is_string(object)) {
+        CHECK(JsonGenerator_WriteString(generator, json_string_value(object)));
         return 0;
     }
 
     return -1;
 }
 
-const char *JsonHelper_ToString(cJSON *object)
+const char *JsonHelper_ToString(json_t *object)
 {
     JsonGenerator g, *gen;
 

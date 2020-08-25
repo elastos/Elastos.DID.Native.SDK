@@ -30,44 +30,44 @@
 #include "diddocument.h"
 #include "didtransactioninfo.h"
 
-int DIDTransactionInfo_FromJson(DIDTransactionInfo *txinfo, cJSON *json)
+int DIDTransactionInfo_FromJson(DIDTransactionInfo *txinfo, json_t *json)
 {
-    cJSON *item;
+    json_t *item;
 
     assert(txinfo);
     assert(json);
 
-    item = cJSON_GetObjectItem(json, "txid");
+    item = json_object_get(json, "txid");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing transaction id.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid transaction id.");
         return -1;
     }
-    if (strlen(item->valuestring) >= ELA_MAX_TXID_LEN) {
+    if (strlen(json_string_value(item)) >= ELA_MAX_TXID_LEN) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Transaction id is too long.");
         return -1;
     }
-    strcpy(txinfo->txid, item->valuestring);
+    strcpy(txinfo->txid, json_string_value(item));
 
-    item = cJSON_GetObjectItem(json, "timestamp");
+    item = json_object_get(json, "timestamp");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing time stamp.");
         return -1;
     }
-    if (!cJSON_IsString(item) || parse_time(&txinfo->timestamp, item->valuestring) == -1) {
+    if (!json_is_string(item) || parse_time(&txinfo->timestamp, json_string_value(item)) == -1) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid time stamp.");
         return -1;
     }
 
-    item = cJSON_GetObjectItem(json, "operation");
+    item = json_object_get(json, "operation");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing ID operation.");
         return -1;
     }
-    if (!cJSON_IsObject(item)) {
+    if (!json_is_object(item)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid ID operation.");
         return -1;
     }

@@ -6,6 +6,7 @@
 #endif
 #include <assert.h>
 #include <time.h>
+#include <jansson.h>
 
 #include "ela_did.h"
 #include "dummyadapter.h"
@@ -66,7 +67,8 @@ static DIDTransactionInfo *get_transaction(DID *did, int index)
 static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *payload, const char *memo)
 {
     DIDTransactionInfo *info = NULL, *lastinfo;
-    cJSON *root = NULL;
+    json_t *root;
+    json_error_t error;
     DIDDocument *doc;
 
     assert(_adapter);
@@ -77,9 +79,9 @@ static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *p
         return false;
     }
 
-    root = cJSON_Parse(payload);
+    root = json_loads(payload, JSON_COMPACT, &error);
     if (!root) {
-        DIDError_Set(DIDERR_TRANSACTION_ERROR, "Get payload json failed.");
+        DIDError_Set(DIDERR_TRANSACTION_ERROR, "Get payload json failed, error: %s.", error.text);
         return false;
     }
 
@@ -135,14 +137,14 @@ static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *p
 
     info->timestamp = time(NULL);
     infos[num++] = info;
-    cJSON_Delete(root);
+    json_decref(root);
     return true;
 
 errorExit:
     if (info)
         DIDTransactionInfo_Destroy(info);
     if (root)
-        cJSON_Delete(root);
+        json_decref(root);
 
     return false;
 }

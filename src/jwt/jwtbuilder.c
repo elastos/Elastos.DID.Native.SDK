@@ -181,7 +181,7 @@ bool JWTBuilder_SetClaimWithJson(JWTBuilder *builder, const char *key, const cha
         return false;
     }
 
-    json_obj = json_loads(json, 0, NULL);
+    json_obj = json_loads(json, JSON_COMPACT, NULL);
     if (!json_obj) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Load json object failed.");
         return false;
@@ -334,7 +334,7 @@ int JWTBuilder_Sign(JWTBuilder *builder, DIDURL *keyid, const char *storepass)
         return -1;
     }
 
-    payload = json_dumps(builder->claims, 0);
+    payload = json_dumps(builder->claims, JSON_COMPACT);
     if (!payload) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Get jwt body string failed.");
         cjose_jwk_release(jwk);
@@ -382,13 +382,13 @@ static const char *jwt_export(JWTBuilder *builder)
     assert(builder->claims);
 
     //get header part in jwt
-    header = json_dumps(builder->header, 0);
+    header = json_dumps(builder->header, JSON_COMPACT);
     if (!header) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Get jwt header string failed.");
         goto errorExit;
     }
 
-    claims = json_dumps(builder->claims, 0);
+    claims = json_dumps(builder->claims, JSON_COMPACT);
     if (!claims) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Get jwt body string failed.");
         goto errorExit;

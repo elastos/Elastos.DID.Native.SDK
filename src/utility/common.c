@@ -309,7 +309,7 @@ int store_file(const char *path, const char *string)
     if (!path || !*path || !string)
         return -1;
 
-    fd = open(path, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd == -1)
         return -1;
 
@@ -458,14 +458,4 @@ int set_file_lastmodified(const char *path, time_t lastmodified)
     new_times.actime = st.st_atime;
     new_times.modtime = lastmodified;    /* set mtime to current time */
     return utime(path, &new_times);
-}
-
-bool cJSON_IsDouble(cJSON *item)
-{
-    return (item && cJSON_IsNumber(item) && (double)item->valueint != item->valuedouble);
-}
-
-bool cJSON_IsInt(cJSON *item)
-{
-    return (item && cJSON_IsNumber(item) && (double)item->valueint == item->valuedouble);
 }

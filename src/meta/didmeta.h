@@ -23,7 +23,7 @@
 #ifndef __DIDMETA_H__
 #define __DIDMETA_H__
 
-#include <cjson/cJSON.h>
+#include <jansson.h>
 
 #include "ela_did.h"
 #include "JsonGenerator.h"
@@ -45,7 +45,7 @@ int DIDMetaData_ToJson_Internal(DIDMetaData *metadata, JsonGenerator *gen);
 
 int DIDMetaData_FromJson(DIDMetaData *metadata, const char *data);
 
-int DIDMetaData_FromJson_Internal(DIDMetaData *metadata, cJSON *json);
+int DIDMetaData_FromJson_Internal(DIDMetaData *metadata, json_t *json);
 
 const char *DIDMetaData_ToString(DIDMetaData *metadata);
 

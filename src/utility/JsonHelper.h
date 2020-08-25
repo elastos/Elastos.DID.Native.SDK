@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <cjson/cJSON.h>
+#include <jansson.h>
 
 #include "JsonGenerator.h"
 
@@ -34,9 +34,9 @@
 extern "C" {
 #endif
 
-int JsonHelper_ToJson(JsonGenerator *generator, cJSON *object, bool objectcontext);
+int JsonHelper_ToJson(JsonGenerator *generator, json_t *object, bool objectcontext);
 
-const char *JsonHelper_ToString(cJSON *object);
+const char *JsonHelper_ToString(json_t *object);
 
 #ifdef __cplusplus
 }

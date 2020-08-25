@@ -39,7 +39,7 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <openssl/opensslv.h>
-#include <cjson/cJSON.h>
+#include <jansson.h>
 #include <zip.h>
 
 #include "ela_did.h"
@@ -1151,9 +1151,6 @@ int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
         goto errorExit;
     }
 
-    if (store_didmeta(store, &document->metadata, &document->did) == -1)
-        goto errorExit;
-
     //set document last modified
     lastmodified = DIDMetaData_GetLastModified(&document->metadata);
     if (lastmodified > 0) {
@@ -1161,6 +1158,9 @@ int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
     } else {
         DIDMetaData_SetLastModified(&document->metadata, get_file_lastmodified(path));
     }
+
+    if (store_didmeta(store, &document->metadata, &document->did) == -1)
+        goto errorExit;
 
     count = DIDDocument_GetCredentialCount(document);
     for (int i = 0; i < count; i++) {
@@ -3126,77 +3126,77 @@ int DIDStore_ExportDID(DIDStore *store, const char *storepass, DID *did,
     return 0;
 }
 
-static int import_type(cJSON *json, Sha256_Digest *digest)
+static int import_type(json_t *json, Sha256_Digest *digest)
 {
-    cJSON *item;
+    json_t *item;
 
     assert(json);
     assert(digest);
 
-    item = cJSON_GetObjectItem(json, "type");
+    item = json_object_get(json, "type");
     if (!item) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing export did type.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid export did type.");
         return -1;
     }
 
-    if (strcmp(item->valuestring, DID_EXPORT)) {
+    if (strcmp(json_string_value(item), DID_EXPORT)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid export data, unknown type.");
         return -1;
     }
 
-    CHECK_TO_MSG(sha256_digest_update(digest, 1, item->valuestring, strlen(item->valuestring)),
+    CHECK_TO_MSG(sha256_digest_update(digest, 1, json_string_value(item), strlen(json_string_value(item))),
             DIDERR_CRYPTO_ERROR, "Sha256 'type' failed.");
 
     return 0;
 }
 
-static DID *import_id(cJSON *json, Sha256_Digest *digest)
+static DID *import_id(json_t *json, Sha256_Digest *digest)
 {
-    cJSON *item;
+    json_t *item;
 
     assert(json);
     assert(digest);
 
-    item = cJSON_GetObjectItem(json, "id");
+    item = json_object_get(json, "id");
     if (!item) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing export did.");
         return NULL;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid export did.");
         return NULL;
     }
 
-    if (sha256_digest_update(digest, 1, item->valuestring, strlen(item->valuestring)) < 0) {
+    if (sha256_digest_update(digest, 1, json_string_value(item), strlen(json_string_value(item))) < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Sha256 'id' failed.");
         return NULL;
     }
 
-    return DID_FromString(item->valuestring);
+    return DID_FromString(json_string_value(item));
 }
 
-static int import_created(cJSON *json, Sha256_Digest *digest)
+static int import_created(json_t *json, Sha256_Digest *digest)
 {
-    cJSON *item;
+    json_t *item;
 
     assert(json);
     assert(digest);
 
-    item = cJSON_GetObjectItem(json, "created");
+    item = json_object_get(json, "created");
     if (!item) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing created time.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid created time.");
         return -1;
     }
 
-    if (sha256_digest_update(digest, 1, item->valuestring, strlen(item->valuestring)) < 0) {
+    if (sha256_digest_update(digest, 1, json_string_value(item), strlen(json_string_value(item))) < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Sha256 'created' failed.");
         return -1;
     }
@@ -3204,9 +3204,9 @@ static int import_created(cJSON *json, Sha256_Digest *digest)
     return 0;
 }
 
-static DIDDocument *import_document(cJSON *json, DID *did, Sha256_Digest *digest)
+static DIDDocument *import_document(json_t *json, DID *did, Sha256_Digest *digest)
 {
-    cJSON *item, *field;
+    json_t *item, *field;
     DIDDocument *doc = NULL;
     const char *docstring = NULL, *metastring = NULL;
     int rc;
@@ -3215,22 +3215,22 @@ static DIDDocument *import_document(cJSON *json, DID *did, Sha256_Digest *digest
     assert(did);
     assert(digest);
 
-    item = cJSON_GetObjectItem(json, "document");
+    item = json_object_get(json, "document");
     if (!item) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing created time.");
         return NULL;
     }
-    if (!cJSON_IsObject(item)) {
+    if (!json_is_object(item)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'document'.");
         return NULL;
     }
 
-    field = cJSON_GetObjectItem(item, "content");
+    field = json_object_get(item, "content");
     if (!field) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing document 'content'.");
         return NULL;
     }
-    if (!cJSON_IsObject(field)) {
+    if (!json_is_object(field)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid document 'content'.");
         return NULL;
     }
@@ -3248,12 +3248,12 @@ static DIDDocument *import_document(cJSON *json, DID *did, Sha256_Digest *digest
     if (!docstring)
         goto errorExit;
 
-    field = cJSON_GetObjectItem(item, "meta");
+    field = json_object_get(item, "meta");
     if (!field) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'meta'.");
         goto errorExit;
     }
-    if (!cJSON_IsObject(field)) {
+    if (!json_is_object(field)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'meta'.");
         goto errorExit;
     }
@@ -3288,28 +3288,28 @@ errorExit:
     return NULL;
 }
 
-static int import_creds_count(cJSON *json)
+static int import_creds_count(json_t *json)
 {
-    cJSON *item;
+    json_t *item;
 
     assert(json);
 
-    item = cJSON_GetObjectItem(json, "credential");
+    item = json_object_get(json, "credential");
     if (!item)
         return 0;
 
-    if (!cJSON_IsArray(item)) {
+    if (!json_is_array(item)) {
         DIDError_Set(DIDERR_UNKNOWN, "Unknown credential.");
         return -1;
     }
 
-    return cJSON_GetArraySize(item);
+    return json_array_size(item);
 }
 
-static ssize_t import_creds(cJSON *json, DID *did, Credential **creds, size_t size,
+static ssize_t import_creds(json_t *json, DID *did, Credential **creds, size_t size,
         Sha256_Digest *digest)
 {
-    cJSON *item, *field, *child_field;
+    json_t *item, *field, *child_field;
     int count;
     int i, rc;
 
@@ -3317,29 +3317,29 @@ static ssize_t import_creds(cJSON *json, DID *did, Credential **creds, size_t si
     assert(creds);
     assert(size > 0);
 
-    item = cJSON_GetObjectItem(json, "credential");
+    item = json_object_get(json, "credential");
     if (!item)
         return 0;
 
-    if (!cJSON_IsArray(item)) {
+    if (!json_is_array(item)) {
         DIDError_Set(DIDERR_UNKNOWN, "Unknown 'credential'.");
         return -1;
     }
 
-    count = cJSON_GetArraySize(item);
+    count = json_array_size(item);
     if (count == 0 || count > (int)size) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'credential'.");
         return -1;
     }
 
     for (i = 0; i < count; i++) {
-        field = cJSON_GetArrayItem(item, i);
-        child_field = cJSON_GetObjectItem(field, "content");
+        field = json_array_get(item, i);
+        child_field = json_object_get(field, "content");
         if (!child_field) {
             DIDError_Set(DIDERR_NOT_EXISTS, "Missing credential 'content'.");
             goto errorExit;
         }
-        if (!cJSON_IsObject(child_field)) {
+        if (!json_is_object(child_field)) {
             DIDError_Set(DIDERR_UNSUPPOTED, "Invalid credential 'content'.");
             goto errorExit;
         }
@@ -3348,12 +3348,12 @@ static ssize_t import_creds(cJSON *json, DID *did, Credential **creds, size_t si
         if (!cred)
             goto errorExit;
 
-        child_field = cJSON_GetObjectItem(field, "meta");
+        child_field = json_object_get(field, "meta");
         if (!child_field) {
             DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'meta'.");
             goto errorExit;
         }
-        if (!cJSON_IsObject(child_field)) {
+        if (!json_is_object(child_field)) {
             DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'meta'.");
             goto errorExit;
         }
@@ -3390,29 +3390,29 @@ errorExit:
     return -1;
 }
 
-static ssize_t import_privatekey_count(cJSON *json)
+static ssize_t import_privatekey_count(json_t *json)
 {
-    cJSON *item;
+    json_t *item;
 
     assert(json);
 
-    item = cJSON_GetObjectItem(json, "privatekey");
+    item = json_object_get(json, "privatekey");
     if (!item) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'privatekey'.");
         return -1;
     }
-    if (!cJSON_IsArray(item)) {
+    if (!json_is_array(item)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'privatekey'.");
         return -1;
     }
 
-    return cJSON_GetArraySize(item);
+    return json_array_size(item);
 }
 
-static ssize_t import_privatekey(cJSON *json, const char *storepass, const char *password,
+static ssize_t import_privatekey(json_t *json, const char *storepass, const char *password,
        DID *did, Prvkey_Export *prvs, size_t size, Sha256_Digest *digest)
 {
-    cJSON *item, *field, *id_field, *key_field;
+    json_t *item, *field, *id_field, *key_field;
     size_t count, keysize, i;
     uint8_t binkey[EXTENDEDKEY_BYTES];
     char privatekey[512];
@@ -3425,17 +3425,17 @@ static ssize_t import_privatekey(cJSON *json, const char *storepass, const char 
     assert(size > 0);
     assert(digest);
 
-    item = cJSON_GetObjectItem(json, "privatekey");
+    item = json_object_get(json, "privatekey");
     if (!item) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'privatekey'.");
         return -1;
     }
-    if (!cJSON_IsArray(item)) {
+    if (!json_is_array(item)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'privatekey' array.");
         return -1;
     }
 
-    count = cJSON_GetArraySize(item);
+    count = json_array_size(item);
     if (count == 0) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'privatekey' array.");
         return -1;
@@ -3446,43 +3446,43 @@ static ssize_t import_privatekey(cJSON *json, const char *storepass, const char 
     }
 
     for (i = 0; i < count; i++) {
-        field = cJSON_GetArrayItem(item, i);
+        field = json_array_get(item, i);
         if (!field) {
             DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'privatekey' item.");
             return -1;
         }
-        if (!cJSON_IsObject(field)) {
+        if (!json_is_object(field)) {
             DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'privatekey'.");
             return -1;
         }
-        id_field = cJSON_GetObjectItem(field, "id");
+        id_field = json_object_get(field, "id");
         if (!id_field) {
             DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'id' in 'privatekey' failed.");
             return -1;
         }
-        if (!cJSON_IsString(id_field)) {
+        if (!json_is_string(id_field)) {
             DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'id' in 'privatekey' failed.");
             return -1;
         }
 
-        DIDURL *id = DIDURL_FromString(id_field->valuestring, did);
+        DIDURL *id = DIDURL_FromString(json_string_value(id_field), did);
         if (!id)
             return -1;
 
         DIDURL_Copy(&prvs[i].keyid, id);
         DIDURL_Destroy(id);
 
-        key_field = cJSON_GetObjectItem(field, "key");
+        key_field = json_object_get(field, "key");
         if (!key_field) {
             DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'key' in 'privatekey'.");
             return -1;
         }
-        if (!cJSON_IsString(key_field)) {
+        if (!json_is_string(key_field)) {
             DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'key' in 'privatekey'.");
             return -1;
         }
 
-        keysize = decrypt_from_base64(binkey, password, key_field->valuestring);
+        keysize = decrypt_from_base64(binkey, password, json_string_value(key_field));
         if (keysize < 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt private key failed.");
             return -1;
@@ -3496,8 +3496,8 @@ static ssize_t import_privatekey(cJSON *json, const char *storepass, const char 
         }
         memcpy(prvs[i].key, privatekey, keysize);
 
-        if (sha256_digest_update(digest, 2, id_field->valuestring, strlen(id_field->valuestring),
-                    key_field->valuestring, strlen(key_field->valuestring)) < 0) {
+        if (sha256_digest_update(digest, 2, json_string_value(id_field), strlen(json_string_value(id_field)),
+                    json_string_value(key_field), strlen(json_string_value(key_field))) < 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Sha256 'key' in 'privatekey' failed.");
             return -1;
         }
@@ -3505,9 +3505,9 @@ static ssize_t import_privatekey(cJSON *json, const char *storepass, const char 
     return (ssize_t)i;
 }
 
-static int import_fingerprint(cJSON *json, Sha256_Digest *digest)
+static int import_fingerprint(json_t *json, Sha256_Digest *digest)
 {
-    cJSON *item;
+    json_t *item;
     uint8_t final_digest[SHA256_BYTES];
     char base64[512];
     ssize_t size;
@@ -3515,12 +3515,12 @@ static int import_fingerprint(cJSON *json, Sha256_Digest *digest)
     assert(json);
     assert(digest);
 
-    item = cJSON_GetObjectItem(json, "fingerprint");
+    item = json_object_get(json, "fingerprint");
     if (!item) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'fingerprint'.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'fingerprint'.");
         return -1;
     }
@@ -3535,7 +3535,7 @@ static int import_fingerprint(cJSON *json, Sha256_Digest *digest)
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt digest failed.");
         return -1;
     }
-    if (strcmp(base64, item->valuestring)) {
+    if (strcmp(base64, json_string_value(item))) {
         DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid export data, the fingerprint mismatch.");
         return -1;
     }
@@ -3556,7 +3556,8 @@ int DIDStore_ImportDID(DIDStore *store, const char *storepass,
         const char *file, const char *password)
 {
     const char *string = NULL;
-    cJSON *root = NULL;
+    json_t *root = NULL;
+    json_error_t error;
     Sha256_Digest digest;
     DID *did = NULL;
     DIDDocument *doc = NULL;
@@ -3580,10 +3581,10 @@ int DIDStore_ImportDID(DIDStore *store, const char *storepass,
         return -1;
     }
 
-    root = cJSON_Parse(string);
+    root = json_loads(string, JSON_COMPACT, &error);
     free((void*)string);
     if (!root) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Deserialize export file from json failed.");
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Deserialize export file failed, error: %s.", error.text);
         return -1;
     }
 
@@ -3655,7 +3656,7 @@ errorExit:
     if (rc == -1)
         sha256_digest_cleanup(&digest);
     if (root)
-        cJSON_Delete(root);
+        json_decref(root);
     if (did)
         DID_Destroy(did);
     if (doc)
@@ -3835,7 +3836,8 @@ errorExit:
 int DIDStore_ImportPrivateIdentity(DIDStore *store, const char *storepass,
         const char *file, const char *password)
 {
-    cJSON *root = NULL, *item;
+    json_t *root = NULL, *item;
+    json_error_t error;
     const char *string = NULL;
     uint8_t mnemonic[ELA_MAX_MNEMONIC_LEN], extendedkey[EXTENDEDKEY_BYTES];
     uint8_t final_digest[SHA256_BYTES];
@@ -3859,10 +3861,10 @@ int DIDStore_ImportPrivateIdentity(DIDStore *store, const char *storepass,
         return -1;
     }
 
-    root = cJSON_Parse(string);
+    root = json_loads(string, JSON_COMPACT, &error);
     free((void*)string);
     if (!root) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Deserialize export file from json failed.");
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Deserialize export file failed, error: %s.", error.text);
         return -1;
     }
 
@@ -3870,38 +3872,38 @@ int DIDStore_ImportPrivateIdentity(DIDStore *store, const char *storepass,
         return -1;
 
     //mnemonic
-    item = cJSON_GetObjectItem(root, "mnemonic");
+    item = json_object_get(root, "mnemonic");
     if (!item) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'mnemonic'.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_UNKNOWN, "Invalid 'mnemonic'.");
         return -1;
     }
 
-    size = decrypt_from_base64(mnemonic, password, item->valuestring);
+    size = decrypt_from_base64(mnemonic, password, json_string_value(item));
     if (size < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt mnemonic failed.");
         return -1;
     }
 
     CHECK_TO_ERROREXIT(store_mnemonic(store, storepass, mnemonic, size));
-    CHECK_TO_MSG_ERROREXIT(sha256_digest_update(&digest, 1, item->valuestring, strlen(item->valuestring)),
+    CHECK_TO_MSG_ERROREXIT(sha256_digest_update(&digest, 1, json_string_value(item), strlen(json_string_value(item))),
             DIDERR_CRYPTO_ERROR, "Sha256 'mnemonic' failed.");
 
     //prvkey
-    item = cJSON_GetObjectItem(root, "key");
+    item = json_object_get(root, "key");
     if (!item) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'key'.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'key'.");
         return -1;
     }
     memset(extendedkey, 0, sizeof(extendedkey));
-    size = decrypt_from_base64(extendedkey, password, item->valuestring);
+    size = decrypt_from_base64(extendedkey, password, json_string_value(item));
     if (size < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt 'key' failed.");
         return -1;
@@ -3909,43 +3911,43 @@ int DIDStore_ImportPrivateIdentity(DIDStore *store, const char *storepass,
 
     CHECK_TO_ERROREXIT(store_extendedprvkey(store, extendedkey, size, storepass));
     memset(extendedkey, 0, sizeof(extendedkey));
-    CHECK_TO_MSG_ERROREXIT(sha256_digest_update(&digest, 1, item->valuestring, strlen(item->valuestring)),
+    CHECK_TO_MSG_ERROREXIT(sha256_digest_update(&digest, 1, json_string_value(item), strlen(json_string_value(item))),
             DIDERR_CRYPTO_ERROR, "Sha256 'key' failed.");
 
     //pubkey
-    item = cJSON_GetObjectItem(root, "key.pub");
+    item = json_object_get(root, "key.pub");
     if (item) {
-        if (!cJSON_IsString(item)) {
+        if (!json_is_string(item)) {
             DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'key.pub'.");
             return -1;
         }
 
-        CHECK_TO_ERROREXIT(store_pubkey(store, item->valuestring));
-        CHECK_TO_MSG_ERROREXIT(sha256_digest_update(&digest, 1, item->valuestring, strlen(item->valuestring)),
+        CHECK_TO_ERROREXIT(store_pubkey(store, json_string_value(item)));
+        CHECK_TO_MSG_ERROREXIT(sha256_digest_update(&digest, 1, json_string_value(item), strlen(json_string_value(item))),
                 DIDERR_CRYPTO_ERROR, "Sha256 'key.pub' failed.");
     }
 
     //index
-    item = cJSON_GetObjectItem(root, "index");
+    item = json_object_get(root, "index");
     if (!item) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'index'.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'index'.");
         return -1;
     }
-    CHECK_TO_ERROREXIT(store_index_string(store, item->valuestring));
-    CHECK_TO_MSG_ERROREXIT(sha256_digest_update(&digest, 1, item->valuestring, strlen(item->valuestring)),
+    CHECK_TO_ERROREXIT(store_index_string(store, json_string_value(item)));
+    CHECK_TO_MSG_ERROREXIT(sha256_digest_update(&digest, 1, json_string_value(item), strlen(json_string_value(item))),
             DIDERR_CRYPTO_ERROR, "Sha256 'index' failed.");
 
     //fingerprint
-    item = cJSON_GetObjectItem(root, "fingerprint");
+    item = json_object_get(root, "fingerprint");
     if (!item) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'fingerprint'.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'fingerprint'.");
         return -1;
     }
@@ -3954,7 +3956,7 @@ int DIDStore_ImportPrivateIdentity(DIDStore *store, const char *storepass,
             DIDERR_CRYPTO_ERROR, "Sha256 final failed.");
     CHECK_TO_MSG(base64_url_encode(base64, final_digest, sizeof(final_digest)),
             DIDERR_CRYPTO_ERROR, "Final sha256 digest failed.");
-    if (strcmp(base64, item->valuestring)) {
+    if (strcmp(base64, json_string_value(item))) {
         DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid export data, the fingerprint mismatch.");
         goto errorExit;
     }
@@ -3962,7 +3964,7 @@ int DIDStore_ImportPrivateIdentity(DIDStore *store, const char *storepass,
     rc = 0;
 errorExit:
     if (root)
-       cJSON_Delete(root);
+       json_decref(root);
 
    return rc;
 }

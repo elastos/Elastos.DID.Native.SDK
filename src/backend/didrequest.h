@@ -23,7 +23,7 @@
 #ifndef __DIDREQUEST_H__
 #define __DIDREQUEST_H__
 
-#include <cjson/cJSON.h>
+#include <jansson.h>
 
 #include "ela_did.h"
 #include "JsonGenerator.h"
@@ -61,7 +61,7 @@ typedef enum DIDRequest_Type
    RequestType_Deactivate
 } DIDRequest_Type;
 
-DIDDocument *DIDRequest_FromJson(DIDRequest *request, cJSON *json);
+DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json);
 
 void DIDRequest_Destroy(DIDRequest *request);
 

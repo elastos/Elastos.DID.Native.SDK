@@ -23,7 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <cjson/cJSON.h>
+#include <jansson.h>
 
 #include "ela_did.h"
 #include "diderror.h"
@@ -33,48 +33,48 @@
 #include "resolveresult.h"
 #include "didhistory.h"
 
-int ResolveResult_FromJson(ResolveResult *result, cJSON *json, bool all)
+int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
 {
-    cJSON *item, *field;
+    json_t *item, *field;
     int i, size = 0;
 
     assert(result);
     assert(json);
 
-    item = cJSON_GetObjectItem(json, "did");
+    item = json_object_get(json, "did");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Missing resolved DID.");
         return -1;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid resolved DID.");
         return -1;
     }
-    if (Parse_DID(&result->did, item->valuestring) == -1)
+    if (Parse_DID(&result->did, json_string_value(item)) == -1)
         return -1;
 
-    item = cJSON_GetObjectItem(json, "status");
+    item = json_object_get(json, "status");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing resolve result status.");
         return -1;
     }
-    if (!cJSON_IsNumber(item)) {
+    if (!json_is_integer(item)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid resolve result status.");
         return -1;
     }
-    if (item->valueint > DIDStatus_NotFound) {
+    if (json_integer_value(item) > DIDStatus_NotFound) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Unknown DID status code.");
         return -1;
     }
-    result->status = item->valueint;
+    result->status = json_integer_value(item);
 
     if (result->status != DIDStatus_NotFound) {
-        item = cJSON_GetObjectItem(json, "transaction");
+        item = json_object_get(json, "transaction");
         if (!item) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing transaction.");
             return -1;
         }
-        if (!cJSON_IsArray(item)) {
+        if (!json_is_array(item)) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid transaction.");
             return -1;
         }
@@ -82,7 +82,7 @@ int ResolveResult_FromJson(ResolveResult *result, cJSON *json, bool all)
         if (!all) {
             size = 1;
         } else {
-            size = cJSON_GetArraySize(item);
+            size = json_array_size(item);
             if (size <= 0) {
                 DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing transaction.");
                 return -1;
@@ -96,12 +96,12 @@ int ResolveResult_FromJson(ResolveResult *result, cJSON *json, bool all)
         }
 
         for (i = 0; i < size; i++) {
-            field = cJSON_GetArrayItem(item, i);
+            field = json_array_get(item, i);
             if (!field) {
                 DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing resovled transaction.");
                 return -1;
             }
-            if (!cJSON_IsObject(field)) {
+            if (!json_is_object(field)) {
                 DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid resovled transaction.");
                 return -1;
             }

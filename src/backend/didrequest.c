@@ -24,7 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <openssl/opensslv.h>
-#include <cjson/cJSON.h>
+#include <jansson.h>
 #include <time.h>
 #include <assert.h>
 
@@ -194,54 +194,54 @@ int DIDRequest_Verify(DIDRequest *request)
                 request->payload, strlen(request->payload));
 }
 
-DIDDocument *DIDRequest_FromJson(DIDRequest *request, cJSON *json)
+DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json)
 {
-    cJSON *item, *field = NULL;
-    char *op, *docJson;
+    json_t *item, *field = NULL;
+    char *docJson;
+    const char *op, *payload;
     DID *subject;
     size_t len;
-    char *payload;
 
     assert(request);
     assert(json);
 
     memset(request, 0, sizeof(DIDRequest));
-    item = cJSON_GetObjectItem(json, "header");
+    item = json_object_get(json, "header");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing header.");
         return NULL;
     }
-    if (!cJSON_IsObject(item)) {
+    if (!json_is_object(item)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid header.");
         return NULL;
     }
 
-    field = cJSON_GetObjectItem(item, "specification");
+    field = json_object_get(item, "specification");
     if (!field) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing specification.");
         return NULL;
     }
-    if (!cJSON_IsString(field)) {
+    if (!json_is_string(field)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid specification.");
         return NULL;
     }
-    if (strcmp(cJSON_GetStringValue(field), spec)) {
+    if (strcmp(json_string_value(field), spec)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Unknown DID specification. \
-                excepted: %s, actual: %s", spec, field->valuestring);
+                excepted: %s, actual: %s", spec, json_string_value(field));
         return NULL;
     }
     strcpy(request->header.spec, (char *)spec);
 
-    field = cJSON_GetObjectItem(item, "operation");
+    field = json_object_get(item, "operation");
     if (!field) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing operation.");
         return NULL;
     }
-    if (!cJSON_IsString(field)) {
+    if (!json_is_string(field)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid operation.");
         return NULL;
     }
-    op = cJSON_GetStringValue(field);
+    op = json_string_value(field);
     if (!strcmp(op, operation[RequestType_Create]) || !strcmp(op, operation[RequestType_Update]) ||
             !strcmp(op, operation[RequestType_Deactivate])) {
         strcpy(request->header.op, op);
@@ -251,30 +251,30 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, cJSON *json)
     }
 
     if (!strcmp(op, operation[RequestType_Update])) {
-        field = cJSON_GetObjectItem(item, "previousTxid");
+        field = json_object_get(item, "previousTxid");
         if (!field) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing payload.");
             return NULL;
         }
-        if (!cJSON_IsString(field)) {
+        if (!json_is_string(field)) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
             return NULL;
         }
-        strcpy(request->header.prevtxid, cJSON_GetStringValue(field));
+        strcpy(request->header.prevtxid, json_string_value(field));
     } else {
         *request->header.prevtxid = 0;
     }
 
-    item = cJSON_GetObjectItem(json, "payload");
+    item = json_object_get(json, "payload");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing payload.");
         return NULL;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
         return NULL;
     }
-    payload = cJSON_GetStringValue(item);
+    payload = json_string_value(item);
     if (!payload) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "No payload.");
         return NULL;
@@ -314,42 +314,42 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, cJSON *json)
         DID_Destroy(subject);
     }
 
-    item = cJSON_GetObjectItem(json, "proof");
+    item = json_object_get(json, "proof");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing proof.");
         goto errorExit;
     }
-    if (!cJSON_IsObject(item)) {
+    if (!json_is_object(item)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid proof.");
         goto errorExit;
     }
 
-    field = cJSON_GetObjectItem(item, "verificationMethod");
+    field = json_object_get(item, "verificationMethod");
     if (!field) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing signing key.");
         goto errorExit;
     }
-    if (!cJSON_IsString(field)) {
+    if (!json_is_string(field)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signing key.");
         goto errorExit;
     }
 
     if (Parse_DIDURL(&request->proof.verificationMethod,
-            cJSON_GetStringValue(field), &request->did) < 0) {
+            json_string_value(field), &request->did) < 0) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signing key.");
         goto errorExit;
     }
 
-    field = cJSON_GetObjectItem(item, "signature");
+    field = json_object_get(item, "signature");
     if (!field) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing signature.");
         goto errorExit;
     }
-    if (!cJSON_IsString(field) || strlen(cJSON_GetStringValue(field)) >= MAX_REQ_SIG_LEN) {
+    if (!json_is_string(field) || strlen(json_string_value(field)) >= MAX_REQ_SIG_LEN) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signature.");
         goto errorExit;
     }
-    strcpy(request->proof.signature, cJSON_GetStringValue(field));
+    strcpy(request->proof.signature, json_string_value(field));
 
     if (DIDRequest_Verify(request) < 0) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Verify payload failed.");

@@ -23,7 +23,7 @@
 #ifndef __CREDMETA_H__
 #define __CREDMETA_H__
 
-#include <cjson/cJSON.h>
+#include <jansson.h>
 
 #include "JsonGenerator.h"
 #include "meta.h"
@@ -40,7 +40,7 @@ int CredentialMetaData_ToJson_Internal(CredentialMetaData *metadata, JsonGenerat
 
 const char *CredentialMetaData_ToJson(CredentialMetaData *metadata);
 
-int CredentialMetaData_FromJson_Internal(CredentialMetaData *metadata, cJSON *json);
+int CredentialMetaData_FromJson_Internal(CredentialMetaData *metadata, json_t *json);
 
 int CredentialMetaData_FromJson(CredentialMetaData *metadata, const char *data);
 

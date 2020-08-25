@@ -113,7 +113,7 @@ DIDURL *Issuer_GetSignKey(Issuer *issuer)
 }
 
 static Credential *issuer_generate_credential(Issuer *issuer, DID *owner,
-        DIDURL *credid, const char **types, size_t typesize, cJSON *json,
+        DIDURL *credid, const char **types, size_t typesize, json_t *json,
         time_t expires, const char *storepass)
 {
     Credential *cred = NULL;
@@ -184,7 +184,7 @@ errorExit:
     if (cred)
         Credential_Destroy(cred);
     else
-        cJSON_Delete(json);
+        json_decref(json);
 
     if (doc)
         DIDDocument_Destroy(doc);
@@ -196,7 +196,7 @@ Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *credid,
         const char **types, size_t typesize, Property *subject, int size,
         time_t expires, const char *storepass)
 {
-    cJSON *root, *item;
+    json_t *root, *item;
     int i;
 
     if (!issuer ||!owner || !credid || !types || typesize <= 0||
@@ -206,17 +206,17 @@ Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *credid,
         return NULL;
     }
 
-    root = cJSON_CreateObject();
+    root = json_object();
     if (!root) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Create property json failed.");
         return NULL;
     }
 
     for (i = 0; i < size; i++) {
-        item = cJSON_AddStringToObject(root, subject[i].key, subject[i].value);
-        if (!item) {
+        int rc = json_object_set_new(root, subject[i].key, json_string(subject[i].value));
+        if (rc < 0) {
            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Add property failed.");
-           cJSON_Delete(root);
+           json_decref(root);
            return NULL;
         }
     }
@@ -229,7 +229,8 @@ Credential *Issuer_CreateCredentialByString(Issuer *issuer, DID *owner,
         DIDURL *credid, const char **types, size_t typesize, const char *subject,
         time_t expires, const char *storepass)
 {
-    cJSON *root;
+    json_t *root;
+    json_error_t error;
 
     if (!issuer ||!owner || !credid || !types || typesize <= 0||
             !subject || !*subject || expires <= 0 || !storepass || !*storepass) {
@@ -237,9 +238,9 @@ Credential *Issuer_CreateCredentialByString(Issuer *issuer, DID *owner,
         return NULL;
     }
 
-    root = cJSON_Parse(subject);
+    root = json_loads(subject, JSON_COMPACT, &error);
     if (!root) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Deserialize property from json failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Deserialize property failed, error: %s.", error.text);
         return NULL;
     }
 

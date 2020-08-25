@@ -24,7 +24,7 @@
 #include <string.h>
 #include <time.h>
 #include <assert.h>
-#include <cjson/cJSON.h>
+#include <jansson.h>
 
 #include "ela_did.h"
 #include "diderror.h"
@@ -45,7 +45,7 @@ static void free_subject(Credential *cred)
     assert(cred);
 
     if (cred->subject.properties)
-        cJSON_Delete(cred->subject.properties);
+        json_decref(cred->subject.properties);
 }
 
 static void free_types(Credential *credential)
@@ -65,7 +65,7 @@ static void free_types(Credential *credential)
     free(credential->type.types);
 }
 
-static int parse_types(cJSON *json, Credential *credential)
+static int parse_types(json_t *json, Credential *credential)
 {
     size_t i, size, index = 0;
     char **types;
@@ -73,7 +73,7 @@ static int parse_types(cJSON *json, Credential *credential)
     assert(json);
     assert(credential);
 
-    size = cJSON_GetArraySize(json);
+    size = json_array_size(json);
     if (!size) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "No credential type.");
         return -1;
@@ -86,18 +86,18 @@ static int parse_types(cJSON *json, Credential *credential)
     }
 
     for (i = 0; i < size; i++) {
-        cJSON *item;
+        json_t *item;
         char *typestr;
 
-        item = cJSON_GetArrayItem(json, i);
+        item = json_array_get(json, i);
         if (!item)
             continue;
 
-        typestr = (char*)calloc(1, strlen(item->valuestring) + 1);
+        typestr = (char*)calloc(1, strlen(json_string_value(item)) + 1);
         if (!typestr)
             continue;
 
-        strcpy(typestr, item->valuestring);
+        strcpy(typestr, json_string_value(item));
         types[index++] = typestr;
     }
 
@@ -223,7 +223,7 @@ void Credential_Destroy(Credential *cred)
 
     free_types(cred);
     if (cred->subject.properties)
-        cJSON_Delete(cred->subject.properties);
+        json_decref(cred->subject.properties);
 
     CredentialMetaData_Free(&cred->metadata);
     free(cred);
@@ -353,7 +353,7 @@ ssize_t Credential_GetPropertyCount(Credential *cred)
         return -1;
     }
 
-    return cJSON_GetArraySize(cred->subject.properties);
+    return json_object_size(cred->subject.properties);
 }
 
 const char *Credential_GetProperties(Credential *cred)
@@ -376,14 +376,14 @@ const char *Credential_GetProperties(Credential *cred)
     return data;
 }
 
-static const char *item_astext(cJSON *item)
+static const char *item_astext(json_t *item)
 {
-    char *value;
+    const char *value;
     char buffer[64];
 
     assert(item);
 
-    if (cJSON_IsObject(item) || cJSON_IsRaw(item) || cJSON_IsArray(item)) {
+    if (json_is_object(item) || json_is_array(item)) {
         value = (char*)JsonHelper_ToString(item);
         if (!value)
             DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Serialize credential subject to json failed.");
@@ -391,19 +391,19 @@ static const char *item_astext(cJSON *item)
         return value;
     }
 
-    if (cJSON_IsString(item)) {
-        value = item->valuestring;
-    } else if (cJSON_IsFalse(item)) {
+    if (json_is_string(item)) {
+        value = json_string_value(item);
+    } else if (json_is_false(item)) {
         value = "false";
-    } else if (cJSON_IsTrue(item)) {
+    } else if (json_is_true(item)) {
         value = "true";
-    } else if (cJSON_IsNull(item)) {
+    } else if (json_is_null(item)) {
         value = "null";
-    } else if (cJSON_IsInt(item)) {
-        snprintf(buffer, sizeof(buffer), "%d", item->valueint);
+    } else if (json_is_integer(item)) {
+        snprintf(buffer, sizeof(buffer), "%" JSON_INTEGER_FORMAT, json_integer_value(item));
         value = buffer;
-    } else if (cJSON_IsDouble(item)) {
-        snprintf(buffer, sizeof(buffer), "%g", item->valuedouble);
+    } else if (json_is_real(item)) {
+        snprintf(buffer, sizeof(buffer), "%g", json_real_value(item));
         value = buffer;
     } else {
         value = "";
@@ -414,7 +414,7 @@ static const char *item_astext(cJSON *item)
 
 const char *Credential_GetProperty(Credential *cred, const char *name)
 {
-    cJSON *item;
+    json_t *item;
 
     if (!cred || !name || !*name) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -426,7 +426,7 @@ const char *Credential_GetProperty(Credential *cred, const char *name)
         return NULL;
     }
 
-    item = cJSON_GetObjectItem(cred->subject.properties, name);
+    item = json_object_get(cred->subject.properties, name);
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "No this property in subject.");
         return NULL;
@@ -465,10 +465,10 @@ const char *Credential_GetProofSignture(Credential *cred)
     return cred->proof.signatureValue;
 }
 
-Credential *Parse_Credential(cJSON *json, DID *did)
+Credential *Parse_Credential(json_t *json, DID *did)
 {
     Credential *credential;
-    cJSON *item, *field;
+    json_t *item, *field;
 
     assert(json);
 
@@ -479,16 +479,16 @@ Credential *Parse_Credential(cJSON *json, DID *did)
     }
 
     //id
-    item = cJSON_GetObjectItem(json, "id");
+    item = json_object_get(json, "id");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Missing id.");
         goto errorExit;
     }
-    if (!cJSON_IsString(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid id.");
         goto errorExit;
     }
-    if (Parse_DIDURL(&credential->id, item->valuestring, did) < 0) {
+    if (Parse_DIDURL(&credential->id, json_string_value(item), did) < 0) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid credential id.");
         goto errorExit;
     }
@@ -499,7 +499,7 @@ Credential *Parse_Credential(cJSON *json, DID *did)
     }
 
     //issuer
-    item = cJSON_GetObjectItem(json, "issuer");
+    item = json_object_get(json, "issuer");
     if (!item) {
         if (!did) {
             DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "No issuer.");
@@ -508,27 +508,27 @@ Credential *Parse_Credential(cJSON *json, DID *did)
             DID_Copy(&credential->issuer, did);
         }
     } else {
-        if (!cJSON_IsString(item) || Parse_DID(&credential->issuer, item->valuestring) < 0) {
+        if (!json_is_string(item) || Parse_DID(&credential->issuer, json_string_value(item)) < 0) {
             DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid issuer.");
             goto errorExit;
         }
     }
 
     //issuanceDate
-    item = cJSON_GetObjectItem(json, "issuanceDate");
+    item = json_object_get(json, "issuanceDate");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Missing issuance data.");
         goto errorExit;
     }
-    if (!cJSON_IsString(item) ||
-            parse_time(&credential->issuanceDate, item->valuestring) == -1) {
+    if (!json_is_string(item) ||
+            parse_time(&credential->issuanceDate, json_string_value(item)) == -1) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid issuance data.");
         goto errorExit;
     }
 
     //expirationdate
-    item = cJSON_GetObjectItem(json, "expirationDate");
-    if (item && parse_time(&credential->expirationDate, item->valuestring) == -1) {
+    item = json_object_get(json, "expirationDate");
+    if (item && parse_time(&credential->expirationDate, json_string_value(item)) == -1) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid expiration date.");
         goto errorExit;
     }
@@ -537,74 +537,74 @@ Credential *Parse_Credential(cJSON *json, DID *did)
         credential->expirationDate = 0;
 
     //proof
-    item = cJSON_GetObjectItem(json, "proof");
+    item = json_object_get(json, "proof");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Missing proof.");
         goto errorExit;
     }
-    if (!cJSON_IsObject(item)) {
+    if (!json_is_object(item)) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid proof.");
         goto errorExit;
     }
 
-    field = cJSON_GetObjectItem(item, "type");
+    field = json_object_get(item, "type");
     if (!field)
         strcpy(credential->proof.type, ProofType);
     else {
-        if (strlen(field->valuestring) + 1 > sizeof(credential->proof.type)) {
+        if (strlen(json_string_value(field)) + 1 > sizeof(credential->proof.type)) {
             DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Unknow proof type.");
             goto errorExit;
         }
         else
-            strcpy((char*)credential->proof.type, field->valuestring);
+            strcpy((char*)credential->proof.type, json_string_value(field));
     }
 
-    field = cJSON_GetObjectItem(item, "verificationMethod");
+    field = json_object_get(item, "verificationMethod");
     if (!field) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Missing verification method.");
         goto errorExit;
     }
-    if (!cJSON_IsString(field) ||
+    if (!json_is_string(field) ||
             Parse_DIDURL(&credential->proof.verificationMethod,
-            field->valuestring, &credential->issuer) < 0) {
+            json_string_value(field), &credential->issuer) < 0) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid verification method.");
         goto errorExit;
     }
 
-    field = cJSON_GetObjectItem(item, "signature");
+    field = json_object_get(item, "signature");
     if (!field) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Missing signature.");
         goto errorExit;
     }
-    if (!cJSON_IsString(field)) {
+    if (!json_is_string(field)) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid signature.");
         goto errorExit;
     }
-    if (strlen(field->valuestring) + 1 > sizeof(credential->proof.signatureValue)) {
+    if (strlen(json_string_value(field)) + 1 > sizeof(credential->proof.signatureValue)) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Signature is too long.");
         goto errorExit;
     }
-    strcpy((char*)credential->proof.signatureValue, field->valuestring);
+    strcpy((char*)credential->proof.signatureValue, json_string_value(field));
 
     //subject
-    item = cJSON_GetObjectItem(json, "credentialSubject");
+    item = json_object_get(json, "credentialSubject");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Missing credential subject.");
         goto errorExit;
     }
-    if (!cJSON_IsObject(item)) {
+    if (!json_is_object(item)) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid credential subject.");
         goto errorExit;
     }
 
-    field = cJSON_GetObjectItem(item, "id");
+    field = json_object_get(item, "id");
     if (!field) {
         if (!did || !DID_Copy(&credential->subject.id, did)) {
             DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "No credential subject did.");
             goto errorExit;
         }
     } else {
-        if (Parse_DID(&credential->subject.id, field->valuestring) == -1) {
+        if (Parse_DID(&credential->subject.id, json_string_value(field)) == -1) {
             DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid subject id.");
             goto errorExit;
         }
@@ -616,16 +616,16 @@ Credential *Parse_Credential(cJSON *json, DID *did)
     }
 
     // properties exclude "id".
-    cJSON_DeleteItemFromObject(item, "id");
-    credential->subject.properties = cJSON_Duplicate(item, 1);
+    json_object_del(item, "id");
+    credential->subject.properties = json_deep_copy(item);
 
     //type
-    item = cJSON_GetObjectItem(json, "type");
+    item = json_object_get(json, "type");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Missing types.");
         goto errorExit;
     }
-    if (!cJSON_IsArray(item)) {
+    if (!json_is_array(item)) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid types.");
         goto errorExit;
     }
@@ -639,22 +639,22 @@ errorExit:
     return NULL;
 }
 
-ssize_t Parse_Credentials(DID *did, Credential **creds, size_t size, cJSON *json)
+ssize_t Parse_Credentials(DID *did, Credential **creds, size_t size, json_t *json)
 {
     size_t i, index = 0;
-    cJSON *item;
+    json_t *item;
 
     assert(creds);
     assert(size > 0);
     assert(json);
 
-    if (!cJSON_IsArray(json)) {
+    if (!json_is_array(json)) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid credential array.");
         return -1;
     }
 
     for (i = 0; i < size; i++) {
-        item = cJSON_GetArrayItem(json, i);
+        item = json_array_get(json, i);
         if(!item)
             continue;
 
@@ -730,7 +730,8 @@ const char* Credential_ToJson(Credential *cred, bool normalized)
 const char *Credential_ToString(Credential *cred, bool normalized)
 {
     const char *data;
-    cJSON *json;
+    json_t *json;
+    json_error_t error;
 
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -741,19 +742,20 @@ const char *Credential_ToString(Credential *cred, bool normalized)
     if (!data)
         return NULL;
 
-    json = cJSON_Parse(data);
+    json = json_loads(data, JSON_COMPACT, &error);
     free((void*)data);
     if (!json){
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Deserialize credential from json failed.");
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Get credential json failed: %s", error.text);
         return NULL;
     }
 
-    return cJSON_Print(json);
+    return json_dumps(json, JSON_COMPACT);
 }
 
 Credential *Credential_FromJson(const char *json, DID *owner)
 {
-    cJSON *root;
+    json_t *root;
+    json_error_t error;
     Credential *cred;
 
     if (!json) {
@@ -761,14 +763,14 @@ Credential *Credential_FromJson(const char *json, DID *owner)
         return NULL;
     }
 
-    root = cJSON_Parse(json);
+    root = json_loads(json, JSON_COMPACT, &error);
     if (!root) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Deserialize credential from json failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Deserialize credential failed, error: %s.", error.text);
         return NULL;
     }
 
     cred = Parse_Credential(root, owner);
-    cJSON_Delete(root);
+    json_decref(root);
 
     return cred;
 }
@@ -937,7 +939,7 @@ int Credential_Copy(Credential *dest, Credential *src)
 
     DID_Copy(&dest->subject.id, &src->subject.id);
 
-    dest->subject.properties = cJSON_Duplicate(src->subject.properties, 1);
+    dest->subject.properties = json_deep_copy(src->subject.properties);
 
     memcpy(&dest->proof, &src->proof, sizeof(CredentialProof));
     CredentialMetaData_Copy(&dest->metadata, &src->metadata);
