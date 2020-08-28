@@ -25,18 +25,10 @@ set(SRC
 
 set(HEADERS
     crypto.h
-    HDkey.h
-    winhelper.h)
+    HDkey.h)
 
 set(LIBS
     crypto)
-
-if(WIN32)
-    set(LIBS
-        ${LIBS}
-        pthread
-        Ws2_32)
-endif()
 
 include_directories(
     BEFORE
@@ -56,6 +48,12 @@ if(WIN32)
 
     set(ENABLE_STATIC TRUE)
     set(STATIC_OUTPUT "hdkey_s")
+
+    set(LIBS
+        ${LIBS}
+        crystal
+        pthread
+        Ws2_32)
 else()
     set(STATIC_OUTPUT "hdkey")
 endif()

@@ -196,7 +196,7 @@ Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *credid,
         const char **types, size_t typesize, Property *subject, int size,
         time_t expires, const char *storepass)
 {
-    json_t *root, *item;
+    json_t *root;
     int i;
 
     if (!issuer ||!owner || !credid || !types || typesize <= 0||

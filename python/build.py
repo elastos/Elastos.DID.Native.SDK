@@ -17,7 +17,7 @@ ffibuilder.set_source("eladid",
     #include "ela_did.h"
     #include "ela_jwt.h"
 """,
-    libraries=['eladid', 'hdkey', 'cjson', 'curl', 'ssl', 'crypto', 'jansson', 'cjose', 'zip', 'z'],
+    libraries=['eladid', 'hdkey', 'curl', 'ssl', 'crypto', 'jansson', 'cjose', 'zip', 'z'],
     include_dirs=['include'],
     library_dirs=['lib'])
 

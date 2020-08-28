@@ -32,6 +32,7 @@
 #include <openssl/md5.h>
 #include <openssl/err.h>
 #include <openssl/ossl_typ.h>
+#include <crystal.h>
 
 #include "BRInt.h"
 #include "BRBase58.h"
@@ -39,7 +40,6 @@
 #include "BRBIP32Sequence.h"
 #include "HDkey.h"
 #include "crypto.h"
-#include "winhelper.h"
 
 typedef struct Sha256_Digest_i {
     EVP_MD_CTX ctx;

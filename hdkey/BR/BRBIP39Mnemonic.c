@@ -22,15 +22,15 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include "BRBIP39Mnemonic.h"
 #include "BRCrypto.h"
 #include "BRInt.h"
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <crystal.h>
 
-#include "winhelper.h"
+#include "BRBIP39Mnemonic.h"
 
 // returns number of bytes written to phrase including NULL terminator, or phraseLen needed if phrase is NULL
 size_t BRBIP39Encode(char *phrase, size_t phraseLen, const char *wordList[], const uint8_t *data, size_t dataLen)

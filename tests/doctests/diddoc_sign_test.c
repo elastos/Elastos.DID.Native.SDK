@@ -13,6 +13,7 @@
 #include "loader.h"
 #include "ela_did.h"
 #include "HDkey.h"
+#include "crypto.h"
 
 #define SIGNATURE_BYTES         64
 
@@ -74,7 +75,7 @@ static void test_diddoc_derive_fromidentifier(void)
         CU_ASSERT_PTR_NOT_NULL_FATAL(strkey);
 
         hdkey = HDKey_DeserializeBase58(&_hdkey, strkey, strlen(strkey) + 1);
-        size_t size = base58_decode((const char*)binkey, sizeof(binkey), (void*)strkey, strlen(strkey) + 1);
+        size_t size = base58_decode(binkey, sizeof(binkey), strkey);
         free((void*)strkey);
         CU_ASSERT_PTR_NOT_NULL_FATAL(hdkey);
         CU_ASSERT_EQUAL(size, EXTENDEDKEY_BYTES);

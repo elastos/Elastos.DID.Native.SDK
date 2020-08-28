@@ -22,9 +22,6 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include "BRKey.h"
-#include "BRAddress.h"
-#include "BRBase58.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -33,7 +30,15 @@
 #include <unistd.h>  // getpid()
 #endif
 
-#include "winhelper.h"
+#if defined(_WIN32) || defined(_WIN64)
+    #include <crystal.h>
+    #include <process.h>
+    #define getpid              _getpid
+#endif
+
+#include "BRKey.h"
+#include "BRAddress.h"
+#include "BRBase58.h"
 
 #define BITCOIN_PRIVKEY      128
 #define BITCOIN_PRIVKEY_TEST 239

@@ -526,7 +526,7 @@ int main(int argc, char *argv[])
     while ((opt = getopt_long(argc, argv, "d:h?", options, &idx)) != -1) {
         switch (opt) {
         case 'd':
-            datadir = opt;
+            datadir = optarg;
             break;
 
         case 1:

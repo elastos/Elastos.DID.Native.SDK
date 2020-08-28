@@ -29,7 +29,7 @@
 #include "diderror.h"
 
 #if defined(_WIN32) || defined(_WIN64)
-#include "winhelper.h"
+#include <crystal.h>
 #define __thread        __declspec(thread)
 #endif
 

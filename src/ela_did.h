@@ -895,7 +895,7 @@ DID_API int CredentialMetaData_SetExtraWithDouble(CredentialMetaData *metadata,
  * Get alias for id, mainly for credential.
  *
  * @param
- *      id                        [in] The handle of DIDURL.
+ *      metadata                     [in] The handle of CredentialMetaData.
  * @return
  *      If no error occurs, return alias string. Otherwise, return NULL.
  */
@@ -988,7 +988,7 @@ DID_API ssize_t DIDHistory_GetTransactionCount(DIDHistory *history);
  * @param
  *      history                       [in] The handle to DIDHistory.
  * @param
- *      idex                          [in] The index of transaction.
+ *      index                         [in] The index of transaction.
  * @return
  *      If no error occurs, return the handle to DID Document.
  *      Otherwise, return NULL.
@@ -1003,7 +1003,7 @@ DID_API DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int inde
  * @param
  *      history                       [in] The handle to DIDHistory.
  * @param
- *      idex                          [in] The index of transaction.
+ *      index                         [in] The index of transaction.
  * @return
  *      If no error occurs, return transaction.
  *      Otherwise, return NULL.
@@ -1017,7 +1017,7 @@ DID_API const char *DIDHistory_GetTransactionIdByIndex(DIDHistory *history, int 
  * @param
  *      history                       [in] The handle to DIDHistory.
  * @param
- *      idex                          [in] The index of transaction.
+ *      index                         [in] The index of transaction.
  * @return
 *      If no error occurs, return published time. Otherwise, return 0.
  */
@@ -1030,7 +1030,7 @@ DID_API time_t DIDHistory_GetPublishedByIndex(DIDHistory *history, int index);
  * @param
  *      history                       [in] The handle to DIDHistory.
  * @param
- *      idex                          [in] The index of transaction.
+ *      index                         [in] The index of transaction.
  * @return
  *       If no error occurs, return operation string.
  *       Otherwise, return -1.
@@ -2213,7 +2213,7 @@ DID_API ssize_t Credential_GetTypeCount(Credential *cred);
  * @return
  *      size of Credential types on success, -1 if an error occurred.
  */
-DID_API ssize_t Credential_GetTypes(Credential *cred, char **types, size_t size);
+DID_API ssize_t Credential_GetTypes(Credential *cred, const char **types, size_t size);
 
 /**
  * \~English
@@ -2373,25 +2373,23 @@ DID_API bool Credential_IsValid(Credential *cred);
  * Set Credential from DID Store.
  *
  * @param
- *      credential               [in] The handle to Credential.
- * @param
- *      alias                    [in] The nickname of credential.
+ *      cred                     [in] The handle to Credential.
  * @return
 *      0 on success, -1 if an error occurred.
  */
-DID_API int Credential_SaveMetaData(Credential *credential);
+DID_API int Credential_SaveMetaData(Credential *cred);
 
 /**
  * \~English
  * Get credential alias.
  *
  * @param
- *      credential                [in] The handle to Credential.
+ *      cred                  [in] The handle to Credential.
  * @return
  *      If no error occurs, return alias string.
  *      Otherwise, return NULL.
  */
-DID_API CredentialMetaData *Credential_GetMetaData(Credential *credential);
+DID_API CredentialMetaData *Credential_GetMetaData(Credential *cred);
 
 /******************************************************************************
  * Issuer
@@ -3056,8 +3054,6 @@ DID_API int DIDStore_ExportPrivateIdentity(DIDStore *store, const char *storepas
  *      store                   [in] The handle to DIDStore.
  * @param
  *      storepass               [in] Password for DIDStore.
- * @param
- *      did                     [in] The handle to DID.
  * @param
  *      file                    [in] Export file.
  * @param

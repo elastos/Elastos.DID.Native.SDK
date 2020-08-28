@@ -25,12 +25,12 @@
 #include <inttypes.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <crystal.h>
 
 #include "BRAddress.h"
 #include "BRBase58.h"
 #include "BRBech32.h"
 #include "BRInt.h"
-#include "winhelper.h"
 
 #define VAR_INT16_HEADER  0xfd
 #define VAR_INT32_HEADER  0xfe

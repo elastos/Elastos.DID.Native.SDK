@@ -22,8 +22,7 @@ static void test_vc_kycvc(void)
     Credential *cred;
     DIDURL *id;
     ssize_t size;
-    char* types[3];
-    const char *data;
+    const char *types[3], *data;
     int i;
 
     issuerdoc = TestData_LoadIssuerDoc();
@@ -67,8 +66,7 @@ static void test_vc_selfclaimvc(void)
     Credential *cred;
     DIDURL *id;
     ssize_t size;
-    char* types[2];
-    const char *prop;
+    const char *types[2], *prop;
     int i;
 
     cred = TestData_LoadProfileVc();
