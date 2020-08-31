@@ -118,7 +118,7 @@ Optional (Generate the Makefile): To be able to build a distribution with a spec
 ```shell
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=YOUR-INSTALL-PATH ../..
 ```
-
+tips:  Must update cmake version larger than 3.13, if enable python (-DENABLE_PYTHON=TURE) on Linux platform!
 ***
 
 Build the program:
@@ -460,55 +460,126 @@ make dist
 
 ## Build on Windows Host
 
-COMING SOON
+### 1. Brief introduction
 
-## Build API Documentation
+With CMake, Elastos DID can be cross-compiled to run only on Windows as target platform, while compilation is carried out on a Windows host.  Now only support 64-bit (32-bit later) target versions are supported.
 
-Currently, the API documentation can only be built on **Linux** hosts. MacOS has a bug issue with python, which would cause build process failure.
+### 2. Set up Environment
 
-### Build on Ubuntu / Debian / Linux Host
+**Prerequisites**:
 
-#### 1. Install Pre-Requirements
+- Visual Studio IDE is required. The Community version can be downloaded at [Visual Studio downloads](https://visualstudio.microsoft.com/downloads/) for free.
+- Download and install "Visual Studio Command Prompt (devCmd)" from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ShemeerNS.VisualStudioCommandPromptdevCmd).
+- Install 'Desktop development with C++' Workload
+
+Start the program 'Visual Studio Installer'.
+***
+Alternative:
+Start Visual Studio IDE.
+In the menu, go to "Tools >> Get Tools and Features", it will open the Visual Studio Installer.
+***
+
+Make sure 'Desktop development with C++' Workload is installed.
+
+On the right side, make sure in the 'Installation details' all of the following are installed:
+
+- "Windows 8.1 SDK and UCRT SDK" <- might have to be selected additionally
+- "Windows 10 SDK (10.0.17134.0)" <- might have to be selected additionally
+- "VC++ 2017 version 15.9 ... tools"
+- "C++ Profiling tools"
+- "Visual C++ tools for CMake"
+- "Visual C++ ATL for x86 and x64"
+
+Additional tools are optional, some additional ones are installed by default with the Workload.
+
+After modifications, restarting of Visual Studio might be required.
+
+### 3. Build to run on host
+
+To compile the project from source code for the target to run on Windows, carry out the following steps:
+
+In Visual Studio, open Visual Studio Command Prompt from the menu "Tools >> Visual Studio Command Prompt". It will open a new terminal window.
+
+***
+Note: To build for a 32-bit target , select `x86 Native Tools Command Console` to run building commands, otherwise, select `x64 Native Tools Command Console` for a 64-bit target.
+***
+
+Navigate to the previously downloaded folder that contains the source code of the DID project.
 
 ```shell
-sudo apt-get update
-sudo apt-get install doxygen python-sphinx graphviz
-curl -L -o /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py
-sudo python /tmp/get-pip.py
-sudo pip install breathe
+cd YOUR-PATH/Elastos.DID.Native.SDK
 ```
 
-#### 2. Build
-
-Change to the directory where the build for any target has been previously executed. For example, if the target was Linux, the folder structure would be similar to:
+Enter the 'build' folder.
 
 ```shell
-cd /YOUR-PATH/Elastos.DID.Native.SDK/build/linux
+cd build
 ```
 
-Run the following command:
-
-*Note: If "make" fails due to missing permissions, use "sudo make" instead.*
+Create a new folder with the target platform name, then change directory.
 
 ```shell
-cmake -DENABLE_DOCS=ON ../..
-make
+mkdir win
+cd win
 ```
 
-#### 3. View
-
-The generated API documentation will be created in the new **/docs** directory on the same directory level.
-
-Change to the docs folder:
+Generate the Makefile in the current directory:
 
 ```shell
-cd docs/html
+cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=outputs ..\..
 ```
 
-Open the index.html file in a browser from the terminal:
+Build the program:
 
 ```shell
-xdg-open index.html
+nmake
+```
+
+Install the program:
+
+```shell
+nmake install
+```
+
+Create distribution package:
+
+```shell
+nmake dist
+```
+
+### 4. Run DIDTest
+
+DIDTest is a shell program to imitate every DID flow and to prove DID API . The output is displayed in the terminal for a simple evaluation of test results.
+
+DIDTest supports two modules: normal test (dummy test) and stress test.
+
+To run DIDTest, first extract the distribution package created previously and enter the extracted folder. Then, change directory to the 'bin' folder.
+
+```shell
+cd YOUR-DISTRIBUTION-PACKAGE-PATH/bin
+```
+
+#### 4.1 Normal Test (Dummy Test)
+
+In Windows, Normal test is not support IDChain Transaction , so run normal module is equal to dummy module. 
+
+
+```shell
+./didtest
+```
+or
+```shell
+./didtest --dummy
+```
+
+#### 4.2 Stress Test
+
+At the same time, DIDTest supports stress test. Use Available commands in the shell can be listed by using the command **help**. Specific command usage descriptions can be displayed by using **help [Command]** where [Command] must be replaced with the specific command name.
+
+For example:
+
+```shell
+./didtest -s 100 -m memcheck
 ```
 
 ## Contribution
