@@ -39,6 +39,8 @@ if(HAVE_GLOB_H)
     add_definitions(-DHAVE_GLOB_H=1)
 endif()
 
+add_definitions(-DLIBCONFIG_STATIC)
+
 file(GLOB UTILITY_SOURCE "utility/*.c")
 file(GLOB VC-TESTS "vctests/*.c")
 file(GLOB DID-TESTS "didtests/*.c")
@@ -61,23 +63,7 @@ set(SRC
     ${VP-TESTS}
     ${ISSUER-TESTS}
     ${HDKEY-TESTS}
-    ${JWT-TESTS}
-    )
-
-if(NOT WIN32)
-    file(GLOB TEST-ADAPTER "testadapter/*.c")
-    set(SRC
-        ${SRC}
-        ${TEST-ADAPTER})
-endif()
-
-add_definitions(-DLIBCONFIG_STATIC)
-
-if(ENABLE_SHARED)
-    add_definitions(-DCRYSTAL_DYNAMIC)
-else()
-    add_definitions(-DCRYSTAL_STATIC)
-endif()
+    ${JWT-TESTS})
 
 if (NOT ENABLE_SHARED)
     set(STATIC_LIBS
@@ -89,40 +75,14 @@ set(LIBS
     ${STATIC_LIBS}
     eladid
     hdkey-static
-    crypto)
+    crypto
+    cunit
+    pthread)
 
 set(DEPS
     ela-did
     CUnit
     hdkey)
-
-if(WIN32)
-    add_definitions(-DWIN32_LEAN_AND_MEAN
-        -D_CRT_SECURE_NO_WARNINGS
-        -D_CRT_NONSTDC_NO_WARNINGS)
-
-    # Force source code encoding to utf-8
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
-    set(LIBS
-        ${LIBS}
-        cunit
-        pthread
-        Ws2_32
-        Shlwapi
-        crystal)
-    set(DEPS
-        ${DEPS}
-        libcrystal)
-else()
-    set(LIBS
-        ${LIBS}
-        cunit
-        pthread
-        spvadapter-shared)
-    set(DEPS
-        ${DEPS}
-        spvadapter)
-endif()
 
 set(INCLUDE
     utility
@@ -141,10 +101,41 @@ set(LINK
     ${PROJECT_INT_DIST_DIR}/lib)
 
 if(WIN32)
-    set(INCLUDE
-        ../src/win
-        ${INCLUDE})
+    add_definitions(-DWIN32_LEAN_AND_MEAN
+        -D_CRT_SECURE_NO_WARNINGS
+        -D_CRT_NONSTDC_NO_WARNINGS)
+
+    if(ENABLE_SHARED)
+        add_definitions(-DCRYSTAL_DYNAMIC)
+    else()
+        add_definitions(-DCRYSTAL_STATIC)
+    endif()
+
+    # Force source code encoding to utf-8
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
+    set(LIBS
+        ${LIBS}
+        Ws2_32
+        Shlwapi
+        crystal)
+
+    set(DEPS
+        ${DEPS}
+        libcrystal)
 else()
+    file(GLOB TEST-ADAPTER "testadapter/*.c")
+    set(SRC
+        ${SRC}
+        ${TEST-ADAPTER})
+
+    set(LIBS
+        ${LIBS}
+        spvadapter-shared)
+
+    set(DEPS
+        ${DEPS}
+        spvadapter)
+
     set(INCLUDE
         ../adapter/spvadapter
         ${INCLUDE})

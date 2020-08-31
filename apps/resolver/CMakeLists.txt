@@ -37,10 +37,6 @@ if(WIN32)
     set(LIBS
         ${LIBS}
         crystal)
-else()
-    set(LIBS
-        ${LIBS}
-        libcrystal)
 endif()
 
 add_executable(resolver ${SRC})

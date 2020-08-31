@@ -59,7 +59,7 @@ DID
 DIDMetaData
 ############
 
-.. doxygentypedef:: DID
+.. doxygentypedef:: DIDMetaData
    :project: DIDAPI
 
 DIDURL
@@ -71,7 +71,7 @@ DIDURL
 DIDHistory
 ############
 
-.. doxygentypedef:: DID
+.. doxygentypedef:: DIDHistory
    :project: DIDAPI
 
 PublicKey
@@ -175,17 +175,6 @@ DIDLogLevel
 Functions
 ---------
 
-DID Log Functions
-##################
-
-
-DID_Log_Init
-~~~~~~~~~~~~
-
-.. doxygenfunction:: DID_Log_Init
-   :project: DIDAPI
-
-
 DID Functions
 #############
 
@@ -234,7 +223,7 @@ DID_Resolve
 DID_ResolveHistory
 ~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DID_ResolveAll
+.. doxygenfunction:: DID_ResolveHistory
    :project: DIDAPI
 
 DID_GetMetaData
@@ -396,28 +385,28 @@ DIDHistory_GetTransactionCount
 .. doxygenfunction:: DIDHistory_GetTransactionCount
    :project: DIDAPI
 
-DIDHistory_GetTxDocumentByIndex
+DIDHistory_GetDocumentByIndex
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDHistory_GetTxDocumentByIndex
+.. doxygenfunction:: DIDHistory_GetDocumentByIndex
    :project: DIDAPI
 
-DIDHistory_GetTxIDByIndex
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DIDHistory_GetTransactionIdByIndex
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDHistory_GetTxIDByIndex
+.. doxygenfunction:: DIDHistory_GetTransactionIdByIndex
    :project: DIDAPI
 
-DIDHistory_GetTxPublishedByIndex
+DIDHistory_GetPublishedByIndex
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDHistory_GetTxPublishedByIndex
+.. doxygenfunction:: DIDHistory_GetPublishedByIndex
    :project: DIDAPI
 
-DIDHistory_GetTxOperationByIndex
+DIDHistory_GetOperationByIndex
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDHistory_GetTxOperationByIndex
+.. doxygenfunction:: DIDHistory_GetOperationByIndex
    :project: DIDAPI
 
 DIDHistory_Destroy

@@ -269,7 +269,7 @@ ssize_t Credential_GetTypeCount(Credential *cred)
     return cred->type.size;
 }
 
-ssize_t Credential_GetTypes(Credential *cred, char **types, size_t size)
+ssize_t Credential_GetTypes(Credential *cred, const char **types, size_t size)
 {
     size_t actual_size;
 
@@ -284,7 +284,7 @@ ssize_t Credential_GetTypes(Credential *cred, char **types, size_t size)
         return -1;
     }
 
-    memcpy(types, cred->type.types, sizeof(char*) * actual_size);
+    memcpy((void*)types, cred->type.types, sizeof(char*) * actual_size);
     return (ssize_t)actual_size;
 }
 

@@ -17,7 +17,7 @@ static DID *issuerid;
 static Issuer *issuer;
 static DIDStore *store;
 
-static bool has_type(char **types, size_t size, const char *type)
+static bool has_type(const char **types, size_t size, const char *type)
 {
     int i;
 
@@ -87,7 +87,7 @@ static void test_issuer_issuevc(void)
     CU_ASSERT_TRUE(isEquals);
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
-    char *tmptypes[2];
+    const char *tmptypes[2];
     size = Credential_GetTypes(vc, tmptypes, 2);
     CU_ASSERT_EQUAL(size, 2);
     CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
@@ -169,7 +169,7 @@ static void test_issuer_issueselfvc(void)
     CU_ASSERT_TRUE(isEquals);
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
-    char *tmptypes[3];
+    const char *tmptypes[3];
     size = Credential_GetTypes(vc, tmptypes, 3);
     CU_ASSERT_EQUAL(size, 3);
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
@@ -240,7 +240,7 @@ static void test_issuer_issuerbystring(void)
     CU_ASSERT_TRUE(isEquals);
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
-    char *tmptypes[2];
+    const char *tmptypes[2];
     size = Credential_GetTypes(vc, tmptypes, 2);
     CU_ASSERT_EQUAL(size, 2);
     CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));

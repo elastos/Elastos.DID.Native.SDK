@@ -72,13 +72,6 @@ set(SRC
     ${jwt-SOURCES}
     ${meta-SOURCES})
 
-if(WIN32)
-    file(GLOB win-SOURCES "win/*.c")
-    set(SRC
-        ${SRC}
-        ${win-SOURCES})
-endif()
-
 set(HEADERS
     ela_did.h
     jwt/ela_jwt.h)
@@ -99,6 +92,49 @@ else()
         "ela_*.h")
 endif()
 
+set(INCLUDE
+    BEFORE
+    utility
+    backend
+    adapter
+    jwt
+    meta
+    .
+    ../hdkey
+    ${PROJECT_INT_DIST_DIR}/include)
+
+set(LIBS
+    curl
+    ssl
+    crypto
+    cjose
+    jansson
+    zip
+    z)
+
+set(ELADID_DEPENDS libressl libcurl hdkey libjansson libcjose libzip)
+
+if(WIN32)
+    add_definitions(
+        -DWIN32_LEAN_AND_MEAN
+        -D_CRT_SECURE_NO_WARNINGS
+        -D_CRT_NONSTDC_NO_WARNINGS)
+
+    # Force source code encoding to utf-8
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
+
+    set(LIBS
+        ${LIBS}
+        crystal
+        pthread
+        Ws2_32
+        Crypt32)
+
+    set(ELADID_DEPENDS
+        libcrystal
+        ${ELADID_DEPENDS})
+endif()
+
 if(DARWIN OR IOS)
     set(SYMBOL_FORMAT
         "{printf \"_%s\\n\",$1}")
@@ -115,6 +151,8 @@ if(DARWIN OR IOS)
         COMMAND echo Generate export symbols...
         DEPENDS export.symbols
     )
+
+    set(ELADID_DEPENDS ${ELADID_DEPENDS} exportSymbols)
 endif()
 
 if(WIN32)
@@ -123,79 +161,15 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(SYSTEM_LIBS pthread m)
 endif()
 
-set(INCLUDE
-    BEFORE
-    utility
-    backend
-    adapter
-    jwt
-    meta
-    .
-    ../hdkey
-    ${PROJECT_INT_DIST_DIR}/include)
-
-if(WIN32)
-    set(INCLUDE
-        win
-        ${INCLUDE})
-endif()
-
 include_directories(${INCLUDE})
 
 link_directories(
     ../hdkey
     ${PROJECT_INT_DIST_DIR}/lib)
 
-#add_definitions(
-#    -DHAVE___INT128=1
-#    -DUSE_NUM_NONE=1
-#    -DUSE_FIELD_5X52=1
-#    -DUSE_FIELD_INV_BUILTIN=1
-#    -DUSE_SCALAR_4X64=1
-#    -DUSE_SCALAR_INV_BUILTIN=1)
-
-if(WIN32)
-    add_definitions(
-        -DWIN32_LEAN_AND_MEAN
-        -D_CRT_SECURE_NO_WARNINGS
-        -D_CRT_NONSTDC_NO_WARNINGS)
-
-    # Force source code encoding to utf-8
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
-endif()
-
-set(LIBS
-    curl
-    ssl
-    crypto
-    cjose
-    jansson
-    zip
-    z)
-
-if(WIN32)
-    set(LIBS
-        ${LIBS}
-        pthread
-        Ws2_32
-        Crypt32)
-endif()
-
 add_definitions(-DDID_BUILD)
 
 add_custom_target(ela-did)
-
-set(ELADID_DEPENDS libressl libcurl hdkey libjansson libcjose libzip)
-
-if(DARWIN OR IOS)
-    set(ELADID_DEPENDS ${ELADID_DEPENDS} exportSymbols)
-endif()
-
-if(WIN32)
-    set(ELADID_DEPENDS
-        libcrystal
-        ${ELADID_DEPENDS})
-endif()
 
 set(CMAKE_C_STANDARD 99)
 

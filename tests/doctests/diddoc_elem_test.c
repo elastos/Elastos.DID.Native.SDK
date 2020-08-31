@@ -896,7 +896,7 @@ static void test_diddoc_add_selfclaimed_credential(void)
     CU_ASSERT_STRING_EQUAL(provalue, "S653258Z07");
     free((void*)provalue);
 
-    char *types1[2];
+    const char *types1[2];
     rc = Credential_GetTypes(vc, types1, sizeof(types1));
     CU_ASSERT_NOT_EQUAL(rc, -1);
 

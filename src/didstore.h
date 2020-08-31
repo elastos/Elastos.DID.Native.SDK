@@ -29,7 +29,7 @@
 #include "credmeta.h"
 
 #if defined(_WIN32) || defined(_WIN64)
-    #define PATH_MAX           256
+    #include <crystal.h>
 #else
     #include <limits.h>
 #endif

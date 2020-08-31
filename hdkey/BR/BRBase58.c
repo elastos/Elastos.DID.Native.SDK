@@ -27,10 +27,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <crystal.h>
 
 #include "BRBase58.h"
 #include "BRCrypto.h"
-#include "winhelper.h"
 
 // base58 and base58check encoding: https://en.bitcoin.it/wiki/Base58Check_encoding
 
