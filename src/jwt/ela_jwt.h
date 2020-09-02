@@ -249,7 +249,7 @@ DID_API const char *JWTBuilder_Compact(JWTBuilder *builder);
 DID_API int JWTBuilder_Reset(JWTBuilder *builder);
 
 /******************************************************************************
- * JWTParser.
+ * JWSParser.
  *****************************************************************************/
 
 /**
@@ -257,11 +257,21 @@ DID_API int JWTBuilder_Reset(JWTBuilder *builder);
  * Parse jwt token.
  *
  * @param
- *      token           [in] The handle to JWTBuilder.
+ *      parser           [in] The handle to JWSParser.
+ * @param
+ *      token            [in] The token string.
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */
-DID_API JWS *JWTParser_Parse(const char *token);
+DID_API JWS *JWSParser_Parse(JWSParser *parser, const char *token);
+/**
+ * \~English
+ * Destroy the JWSParser.
+ *
+ * @param
+ *      parser             [in] The handle to JWSParser.
+ */
+DID_API void JWSParser_Destroy(JWSParser *parser);
 
 /******************************************************************************
  * JWS.

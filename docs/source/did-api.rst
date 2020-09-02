@@ -148,6 +148,12 @@ JWTBuilder
 .. doxygentypedef:: JWTBuilder
    :project: DIDAPI
 
+JWSParser
+##########
+
+.. doxygentypedef:: JWSParser
+   :project: DIDAPI
+
 DIDStore_DIDsCallback
 #####################
 
@@ -785,6 +791,12 @@ DIDDocument_GetJwtBuilder
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: DIDDocument_GetJwtBuilder
+   :project: DIDAPI
+
+DIDDocument_GetJwsParser
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocument_GetJwsParser
    :project: DIDAPI
 
 DIDDocument_Derive

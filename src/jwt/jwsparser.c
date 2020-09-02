@@ -32,10 +32,12 @@
 #include "crypto.h"
 #include "HDkey.h"
 #include "jws.h"
+#include "jwsparser.h"
 #include "diderror.h"
 #include "common.h"
+#include "diddocument.h"
 
-static cjose_jwk_t *get_jwk(JWS *jws)
+static cjose_jwk_t *get_jwk(JWSParser *parser, JWS *jws)
 {
     cjose_err err;
     DID *issuer = NULL;
@@ -56,9 +58,14 @@ static cjose_jwk_t *get_jwk(JWS *jws)
     if (!issuer)
         goto errorExit;
 
-    doc = DID_Resolve(issuer, false);
+    if (parser) {
+        doc = parser->doc;
+        if (doc && !DID_Equals(issuer, &doc->did))
+            goto errorExit;
+    }
+
     if (!doc)
-        goto errorExit;
+        doc = DID_Resolve(issuer, false);
 
     if (!JWS_GetKeyId(jws)) {
         keyid = DIDDocument_GetDefaultPublicKey(doc);
@@ -162,7 +169,7 @@ errorExit:
     return NULL;
 }
 
-static JWS *parse_jws(const char *token)
+static JWS *parse_jws(JWSParser *parser, const char *token)
 {
     JWS *jws = NULL;
     cjose_err err;
@@ -214,7 +221,7 @@ static JWS *parse_jws(const char *token)
     }
 
     //get jwk, must put after getting header and claims.
-    jwk = get_jwk(jws);
+    jwk = get_jwk(parser, jws);
     if (!jwk) {
         JWS_Destroy(jws);
         return NULL;
@@ -240,7 +247,7 @@ errorExit:
     return NULL;
 }
 
-JWS *JWTParser_Parse(const char *token)
+JWS *JWSParser_Parse(JWSParser *parser, const char *token)
 {
     size_t i, idx = 0;
     int dots[2] = {0, 0};
@@ -264,5 +271,46 @@ JWS *JWTParser_Parse(const char *token)
     if (dots[1] == strlen(token) - 1)
         return parse_jwt(token, dots[0]);
 
-    return parse_jws(token);
+    return parse_jws(parser, token);
+}
+
+JWSParser *JWSParser_Create(DIDDocument *document)
+{
+    JWSParser *parser;
+
+    parser = (JWSParser*)calloc(1, sizeof(JWSParser));
+    if (!parser) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for jws parser failed.");
+        return NULL;
+    }
+
+    if (document) {
+        parser->doc = (DIDDocument*)calloc(1, sizeof(DIDDocument));
+        if (!parser->doc) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for did document failed.");
+            goto errorExit;
+        }
+
+        if (DIDDocument_Copy(parser->doc, document) < 0) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Document copy failed.");
+            goto errorExit;
+        }
+    }
+    return parser;
+
+errorExit:
+    if (parser)
+       JWSParser_Destroy(parser);
+
+    return NULL;
+}
+
+void JWSParser_Destroy(JWSParser *parser)
+{
+    if (parser) {
+        if (parser->doc)
+            DIDDocument_Destroy(parser->doc);
+
+        free((void*)parser);
+    }
 }
