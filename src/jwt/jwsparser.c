@@ -247,15 +247,12 @@ errorExit:
     return NULL;
 }
 
-JWS *JWSParser_Parse(JWSParser *parser, const char *token)
+static JWS *jwsparser_parse(JWSParser *parser, const char *token)
 {
     size_t i, idx = 0;
     int dots[2] = {0, 0};
 
-    if (!token || !*token) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    assert(token && *token);
 
     // find the indexes of the dots
     for (i = 0; i < strlen(token) && idx < 2; ++i) {
@@ -272,6 +269,26 @@ JWS *JWSParser_Parse(JWSParser *parser, const char *token)
         return parse_jwt(token, dots[0]);
 
     return parse_jws(parser, token);
+}
+
+JWS *JWSParser_Parse(JWSParser *parser, const char *token)
+{
+    if (!parser || !token || !*token) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    return jwsparser_parse(parser, token);
+}
+
+JWS *JWSParser_DefaultParse(const char *token)
+{
+    if (!token || !*token) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    return jwsparser_parse(NULL, token);
 }
 
 JWSParser *JWSParser_Create(DIDDocument *document)
