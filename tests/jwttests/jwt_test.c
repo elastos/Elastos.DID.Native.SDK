@@ -108,7 +108,7 @@ static void test_jwt(void)
     token = JWTBuilder_Compact(builder);
     CU_ASSERT_PTR_NOT_NULL(token);
 
-    jws = JWSParser_DefaultParse(token);
+    jws = DefaultJWSParser_Parse(token);
     CU_ASSERT_PTR_NOT_NULL(jws);
     free((void*)token);
 
@@ -129,7 +129,7 @@ static void test_jwt_compatible(void)
     JWS *jws;
 
     const char *token = "eyJ0eXAiOiJKV1QiLCJjdHkiOiJqc29uIiwibGlicmFyeSI6IkVsYXN0b3MgRElEIiwidmVyc2lvbiI6IjEuMCIsImFsZyI6Im5vbmUifQ.eyJzdWIiOiJKd3RUZXN0IiwianRpIjoiMCIsImF1ZCI6IlRlc3QgY2FzZXMiLCJpYXQiOjE1OTA1NjE1MDQsImV4cCI6MTU5ODUxMDMwNCwibmJmIjoxNTg3OTY5NTA0LCJmb28iOiJiYXIiLCJpc3MiOiJkaWQ6ZWxhc3RvczppV0ZBVVloVGEzNWMxZlBlM2lDSnZpaFpIeDZxdXVtbnltIn0.";
-    jws = JWSParser_DefaultParse(token);
+    jws = DefaultJWSParser_Parse(token);
     CU_ASSERT_PTR_NOT_NULL(jws);
 
     CU_ASSERT_STRING_EQUAL("1.0", JWS_GetHeader(jws, "version"));
@@ -190,7 +190,7 @@ static void test_jws(void)
     token = JWTBuilder_Compact(builder);
     CU_ASSERT_PTR_NOT_NULL(token);
 
-    jws = JWSParser_DefaultParse(token);
+    jws = DefaultJWSParser_Parse(token);
     CU_ASSERT_PTR_NOT_NULL(jws);
     free((void*)token);
 
@@ -225,7 +225,7 @@ static void test_jws(void)
     token = JWTBuilder_Compact(builder);
     CU_ASSERT_PTR_NOT_NULL(token);
 
-    jws = JWSParser_DefaultParse(token);
+    jws = DefaultJWSParser_Parse(token);
     CU_ASSERT_PTR_NOT_NULL(jws);
     free((void*)token);
 
@@ -282,7 +282,7 @@ static void test_jws_withdefaultkey(void)
     CU_ASSERT_PTR_NOT_NULL(token);
     JWTBuilder_Destroy(builder);
 
-    jws = JWSParser_DefaultParse(token);
+    jws = DefaultJWSParser_Parse(token);
     CU_ASSERT_PTR_NOT_NULL(jws);
     free((void*)token);
 
@@ -313,7 +313,7 @@ static void test_jws_compatible_withdefaultkey(void)
     JWS *jws;
 
     const char *token = "eyJ0eXAiOiJKV1QiLCJjdHkiOiJqc29uIiwibGlicmFyeSI6IkVsYXN0b3MgRElEIiwidmVyc2lvbiI6IjEuMCIsImFsZyI6IkVTMjU2In0.eyJzdWIiOiJKd3RUZXN0IiwianRpIjoiMCIsImF1ZCI6IlRlc3QgY2FzZXMiLCJpYXQiOjE1OTA1Njk4NTEsImV4cCI6MTU5ODUxODY1MSwibmJmIjoxNTg3OTc3ODUxLCJmb28iOiJiYXIiLCJpc3MiOiJkaWQ6ZWxhc3RvczppV0ZBVVloVGEzNWMxZlBlM2lDSnZpaFpIeDZxdXVtbnltIn0.OJKyhS4MA4_VA24l2ZMYRywRpZj0QWkNyB--niL7qOrsJ5NlxDfItn0cW9SQF81xYi4rhTTnzujwY3qnIPnmnw";
-    jws = JWSParser_DefaultParse(token);
+    jws = DefaultJWSParser_Parse(token);
     CU_ASSERT_PTR_NOT_NULL(jws);
 
     CU_ASSERT_STRING_EQUAL("1.0", JWS_GetHeader(jws, "version"));
@@ -331,7 +331,7 @@ static void test_jws_compatible(void)
     JWS *jws;
 
     const char *token = "eyJ0eXAiOiJKV1QiLCJjdHkiOiJqc29uIiwibGlicmFyeSI6IkVsYXN0b3MgRElEIiwidmVyc2lvbiI6IjEuMCIsImtpZCI6IiNrZXkyIiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJkaWQ6ZWxhc3RvczppV0ZBVVloVGEzNWMxZlBlM2lDSnZpaFpIeDZxdXVtbnltIiwic3ViIjoiSnd0VGVzdCIsImp0aSI6IjAiLCJhdWQiOiJUZXN0IGNhc2VzIiwiaWF0IjoxNTkwNTY5OTM4LCJleHAiOjE1OTg1MTg3MzgsIm5iZiI6MTU4Nzk3NzkzOCwiZm9vIjoiYmFyIn0.Vx1d2Ua9eivcagpA4TbaB01PTa6S7MgdAZqHj3g2jx-65STR4gwPf5QoMmgRnUY0CWy36nz6tM0VyVO71XJRYA";
-    jws = JWSParser_DefaultParse(token);
+    jws = DefaultJWSParser_Parse(token);
     CU_ASSERT_PTR_NOT_NULL(jws);
 
     CU_ASSERT_STRING_EQUAL("1.0", JWS_GetHeader(jws, "version"));

@@ -104,10 +104,10 @@ JWTBuilder_Reset
 JWSParser Functions
 ###################
 
-JWSParser_DefaultParse
+DefaultJWSParser_Parse
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWSParser_DefaultParse
+.. doxygenfunction:: DefaultJWSParser_Parse
    :project: DIDAPI
 
 JWSParser_Parse

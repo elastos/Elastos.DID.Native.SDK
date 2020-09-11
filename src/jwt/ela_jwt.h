@@ -261,7 +261,7 @@ DID_API int JWTBuilder_Reset(JWTBuilder *builder);
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */
-DID_API JWS *JWSParser_DefaultParse(const char *token);
+DID_API JWS *DefaultJWSParser_Parse(const char *token);
 /**
  * \~English
  * Parse jwt token.

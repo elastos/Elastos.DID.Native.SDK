@@ -249,6 +249,16 @@ typedef struct JWS                 JWS;
 
 /**
  * \~English
+ * Parse jwt token without JWSParser.
+ *
+ * @param
+ *      token            [in] The token string.
+ * @return
+ *      If no error occurs, return 0. Otherwise, return -1.
+ */
+/* DID_API */ JWS *DefaultJWSParser_Parse(const char *token);
+/**
+ * \~English
  * Parse jws token.
  *
  * @param

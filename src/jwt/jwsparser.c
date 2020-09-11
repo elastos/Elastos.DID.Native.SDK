@@ -281,7 +281,7 @@ JWS *JWSParser_Parse(JWSParser *parser, const char *token)
     return jwsparser_parse(parser, token);
 }
 
-JWS *JWSParser_DefaultParse(const char *token)
+JWS *DefaultJWSParser_Parse(const char *token)
 {
     if (!token || !*token) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
