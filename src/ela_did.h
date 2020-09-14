@@ -85,7 +85,7 @@ typedef ptrdiff_t       ssize_t;
  * \~English
  * Mnemonic max length.
  */
-#define ELA_MAX_MNEMONIC_LEN            128
+#define ELA_MAX_MNEMONIC_LEN            256
 
 /**
  * \~English
@@ -2692,7 +2692,7 @@ DID_API DID *DIDStore_GetDIDByIndex(DIDStore *store, int index);
  * @param
  *      mnemonic           [out] The buffer that will receive the mnemonic.
  *                               The buffer size should at least
- *                               (ELA_MAX_ADDRESS_LEN + 1) bytes.
+ *                               (ELA_MAX_MNEMONIC_LEN + 1) bytes.
  * @param
  *      size               [in] The buffter size.
  * @return

@@ -178,6 +178,7 @@ static JWS *parse_jws(JWSParser *parser, const char *token)
     char *payload = NULL;
     size_t payload_len = 0;
     bool successed;
+    time_t current, exp, nbf;
 
     assert(token && *token);
 
@@ -232,6 +233,21 @@ static JWS *parse_jws(JWSParser *parser, const char *token)
     cjose_jwk_release(jwk);
     if (!successed) {
         DIDError_Set(DIDERR_JWT, "Verify jws failed.");
+        JWS_Destroy(jws);
+        return NULL;
+    }
+
+    time(&current);
+    exp = JWS_GetExpiration(jws);
+    if (exp > 0 && exp < current) {
+        DIDError_Set(DIDERR_JWT, "Token is expired.");
+        JWS_Destroy(jws);
+        return NULL;
+    }
+
+    nbf = JWS_GetNotBefore(jws);
+    if (nbf > 0 && nbf > current) {
+        DIDError_Set(DIDERR_JWT, "Token is not in the validity period.");
         JWS_Destroy(jws);
         return NULL;
     }
