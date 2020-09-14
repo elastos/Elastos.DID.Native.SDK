@@ -39,6 +39,7 @@
 #include "didmeta.h"
 #include "diderror.h"
 #include "jwtbuilder.h"
+#include "jwsparser.h"
 
 #define MAX_EXPIRES              5
 
@@ -2580,6 +2581,11 @@ JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document)
         return NULL;
 
     return builder;
+}
+
+JWSParser *DIDDocument_GetJwsParser(DIDDocument *document)
+{
+    return JWSParser_Create(document);
 }
 
 inline static uint32_t UInt32GetBE(const void *b4)

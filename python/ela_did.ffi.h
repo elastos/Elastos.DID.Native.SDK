@@ -192,6 +192,11 @@ typedef struct DIDResolver          DIDResolver;
 typedef struct JWTBuilder           JWTBuilder;
 /**
  * \~English
+ * JWSParser holds the DIDDocument to parse jws.
+ */
+typedef struct JWSParser           JWSParser;
+/**
+ * \~English
  * DID list callbacks, return alias about did.
  * @param
  *      did               [in] A handle to DID.
@@ -1936,6 +1941,19 @@ typedef enum DIDLogLevel {
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
 /* DID_API */ JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document);
+/**
+ * \~English
+ * Get JWSParser from document.
+ *
+ * @param
+ *      document                 [in] A handle to DID Document.
+ *                                    Support document is NULL.
+ * @return
+ *      If no error occurs, return the handle to JWSParser.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+/*DID_API*/ JWSParser *DIDDocument_GetJwsParser(DIDDocument *document);
 /**
  * \~English
  * Derive the default key of document by identifier and securityCode.

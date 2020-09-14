@@ -244,20 +244,40 @@ typedef struct JWS                 JWS;
 /* DID_API */ int JWTBuilder_Reset(JWTBuilder *builder);
 
 /******************************************************************************
- * JWTParser.
+ * JWSParser.
  *****************************************************************************/
 
 /**
  * \~English
- * Parse jwt token.
+ * Parse jwt token without JWSParser.
  *
  * @param
- *      token           [in] The handle to JWTBuilder.
+ *      token            [in] The token string.
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */
-/* DID_API */ JWS *JWTParser_Parse(const char *token);
+/* DID_API */ JWS *DefaultJWSParser_Parse(const char *token);
+/**
+ * \~English
+ * Parse jws token.
+ *
+ * @param
+ *      parser           [in] The handle to JWSParser.
+ * @param
+ *      token            [in] The token string.
+ * @return
+ *      If no error occurs, return 0. Otherwise, return -1.
+ */
+/* DID_API */ JWS *JWSParser_Parse(JWSParser *parser, const char *token);
 
+/**
+ * \~English
+ * Destroy the JWSParser.
+ *
+ * @param
+ *      parser             [in] The handle to JWSParser.
+ */
+/*DID_API */void JWSParser_Destroy(JWSParser *parser);
 /******************************************************************************
  * JWS.
  *****************************************************************************/
