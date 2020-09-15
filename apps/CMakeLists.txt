@@ -8,4 +8,4 @@ add_submodule(resolver
     DEPENDS libcrystal ela-did )
 add_submodule(validater
     DIRECTORY validater
-    DEPENDS ela-did)
+    DEPENDS libcrystal ela-did)

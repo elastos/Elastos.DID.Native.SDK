@@ -31,7 +31,7 @@
 #include "credmeta.h"
 
 #if defined(_WIN32) || defined(_WIN64)
-    #include "winhelper.h"
+    #include <crystal.h>
 #else
     #include "testadapter/didtest_adapter.h"
 #endif
