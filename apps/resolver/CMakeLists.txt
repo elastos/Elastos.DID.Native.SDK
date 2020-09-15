@@ -40,6 +40,7 @@ if(WIN32)
 endif()
 
 add_executable(resolver ${SRC})
+target_compile_definitions(resolver PRIVATE CRYSTAL_DYNAMIC)
 target_link_libraries(resolver ${LIBS})
 
 install(TARGETS resolver

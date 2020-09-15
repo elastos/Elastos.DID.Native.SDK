@@ -54,6 +54,7 @@ if(WIN32)
 endif()
 
 add_executable(agent ${SRC})
+target_compile_definitions(agent PRIVATE CRYSTAL_DYNAMIC)
 target_link_libraries(agent ${LIBS} ${SYSTEM_LIBS})
 
 install(TARGETS agent

@@ -11,6 +11,13 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_IO_H
+#include <io.h>
+#endif
+
+#if defined(_WIN32) || defined(_WIN64)
+   #include <crystal.h>
+#endif
 
 #include "ela_did.h"
 
@@ -79,9 +86,6 @@ int main(int argc, char *argv[])
 {
     char *vc_path = NULL, *doc_path = NULL, *url = MAINNET, *nettype = MAINTYPE;
     char cachedir[PATH_MAX];
-    const char *data;
-    DID *did;
-    DIDDocument *doc;
 
     int opt;
     int idx;
