@@ -829,7 +829,12 @@ bool Credential_IsExpired(Credential *cred)
     expires = Credential_GetExpirationDate(cred);
     now = time(NULL);
 
-    return (now > expires);
+    if (now > expires) {
+        DIDError_Set(DIDERR_EXPIRED, "Credential is expired.");
+        return true;
+    }
+
+    return false;
 }
 
 bool Credential_IsGenuine(Credential *cred)

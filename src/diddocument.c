@@ -1003,8 +1003,10 @@ bool DIDDocument_IsExpires(DIDDocument *document)
     }
 
     curtime = time(NULL);
-    if (curtime > document->expires)
+    if (curtime > document->expires) {
+        DIDError_Set(DIDERR_EXPIRED, "DID Document is expired.");
         return true;
+    }
 
     return false;
 }
