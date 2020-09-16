@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-struct JWS {
+struct JWT {
     cjose_header_t *header;
     json_t *claims;
 };

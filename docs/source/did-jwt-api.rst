@@ -4,10 +4,10 @@ Elastos DID Jwt APIs
 Data types
 ----------
 
-JWS
+JWT
 ####
 
-.. doxygentypedef:: JWS
+.. doxygentypedef:: JWT
    :project: DIDAPI
 
 Functions
@@ -104,8 +104,14 @@ JWTBuilder_Reset
 JWSParser Functions
 ###################
 
+JWTParser_Parse
+~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: JWTParser_Parse
+   :project: DIDAPI
+
 DefaultJWSParser_Parse
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: DefaultJWSParser_Parse
    :project: DIDAPI
@@ -114,98 +120,98 @@ JWSParser_Parse
 ~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: JWSParser_Parse
-   :project: DIDAPI
+   :project:
 
 JWSParser_Destroy
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: JWSParser_Destroy
    :project: DIDAPI
 
-JWS Functions
+JWT Functions
 ##############
 
-JWS_Destroy
+JWT_Destroy
 ~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWS_Destroy
+.. doxygenfunction:: JWT_Destroy
    :project: DIDAPI
 
-JWS_GetHeader
+JWT_GetHeader
 ~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWS_GetHeader
+.. doxygenfunction:: JWT_GetHeader
    :project: DIDAPI
 
 
-JWS_GetAlgorithm
+JWT_GetAlgorithm
 ~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWS_GetAlgorithm
+.. doxygenfunction:: JWT_GetAlgorithm
    :project: DIDAPI
 
-JWS_GetKeyId
+JWT_GetKeyId
 ~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWS_GetKeyId
+.. doxygenfunction:: JWT_GetKeyId
    :project: DIDAPI
 
-JWS_GetClaim
+JWT_GetClaim
 ~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWS_GetClaim
+.. doxygenfunction:: JWT_GetClaim
    :project: DIDAPI
 
-JWS_GetClaimAsJson
+JWT_GetClaimAsJson
 ~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWS_GetClaimAsJson
+.. doxygenfunction:: JWT_GetClaimAsJson
    :project: DIDAPI
 
-JWS_GetClaimAsInteger
+JWT_GetClaimAsInteger
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWS_GetClaimAsInteger
+.. doxygenfunction:: JWT_GetClaimAsInteger
    :project: DIDAPI
 
-JWS_GetClaimAsBoolean
+JWT_GetClaimAsBoolean
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWS_GetClaimAsBoolean
+.. doxygenfunction:: JWT_GetClaimAsBoolean
    :project: DIDAPI
 
-JWS_GetIssuer
+JWT_GetIssuer
 ~~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWS_GetIssuer
+.. doxygenfunction:: JWT_GetIssuer
    :project: DIDAPI
 
-JWS_GetAudience
+JWT_GetAudience
 ~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWS_GetAudience
+.. doxygenfunction:: JWT_GetAudience
    :project: DIDAPI
 
-JWS_GetId
+JWT_GetId
 ~~~~~~~~~~
 
-.. doxygenfunction:: JWS_GetId
+.. doxygenfunction:: JWT_GetId
    :project: DIDAPI
 
-JWS_GetExpiration
+JWT_GetExpiration
 ~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWS_GetExpiration
+.. doxygenfunction:: JWT_GetExpiration
    :project: DIDAPI
 
-JWS_GetNotBefore
+JWT_GetNotBefore
 ~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWS_GetNotBefore
+.. doxygenfunction:: JWT_GetNotBefore
    :project: DIDAPI
 
-JWS_GetIssuedAt
+JWT_GetIssuedAt
 ~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: JWS_GetIssuedAt
+.. doxygenfunction:: JWT_GetIssuedAt
    :project: DIDAPI

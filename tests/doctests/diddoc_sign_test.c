@@ -94,7 +94,6 @@ static void test_diddoc_derive_fromidentifier(void)
 static void test_diddoc_derive_compatible_withjava(void)
 {
     const char *key;
-    uint8_t binkey[EXTENDEDKEY_BYTES];
 
     const char *identifier = "org.elastos.did.test";
     const char *keybase1 = "xprvABa5HYokqCjsR5Pk9dvYLxHkYbFQtJ2rPKPjeousKdcsh87vTSFmj8KrrnQfocDYWbgXeT9c5wnBb281JxWv8X4Xm3vh5eCcRpjCuhYnY3V";   //security code: 10

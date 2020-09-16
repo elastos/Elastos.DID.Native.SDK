@@ -31,13 +31,13 @@
 #include "ela_jwt.h"
 #include "crypto.h"
 #include "HDkey.h"
-#include "jws.h"
+#include "jwt.h"
 #include "jwsparser.h"
 #include "diderror.h"
 #include "common.h"
 #include "diddocument.h"
 
-static cjose_jwk_t *get_jwk(JWSParser *parser, JWS *jws)
+static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
 {
     cjose_err err;
     DID *issuer = NULL;
@@ -50,11 +50,11 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWS *jws)
     cjose_jwk_t *jwk = NULL;
     int rc = -1;
 
-    assert(jws);
-    assert(jws->header);
-    assert(jws->claims);
+    assert(jwt);
+    assert(jwt->header);
+    assert(jwt->claims);
 
-    issuer = DID_FromString(JWS_GetIssuer(jws));
+    issuer = DID_FromString(JWT_GetIssuer(jwt));
     if (!issuer)
         goto errorExit;
 
@@ -67,12 +67,12 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWS *jws)
     if (!doc)
         doc = DID_Resolve(issuer, false);
 
-    if (!JWS_GetKeyId(jws)) {
+    if (!JWT_GetKeyId(jwt)) {
         keyid = DIDDocument_GetDefaultPublicKey(doc);
         key = DIDDocument_GetPublicKey(doc, keyid);
     }
     else {
-        keyid = DIDURL_FromString(JWS_GetKeyId(jws), issuer);
+        keyid = DIDURL_FromString(JWT_GetKeyId(jwt), issuer);
         key = DIDDocument_GetPublicKey(doc, keyid);
         DIDURL_Destroy(keyid);
     }
@@ -107,18 +107,18 @@ errorExit:
     return jwk;
 }
 
-static JWS *parse_jwt(const char *token, int dot)
+static JWT *parse_jwt(const char *token, int dot)
 {
-    JWS *jws = NULL;
+    JWT *jwt = NULL;
     char *claims, *header, *_token;
     size_t len;
 
     assert(token && *token);
     assert(dot > 0 && dot < (int)strlen(token));
 
-    jws = (JWS *)calloc(1, sizeof(JWS));
-    if (!jws) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Remalloc buffer for JWS failed.");
+    jwt = (JWT *)calloc(1, sizeof(JWT));
+    if (!jwt) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Remalloc buffer for JWT failed.");
         return NULL;
     }
 
@@ -138,8 +138,8 @@ static JWS *parse_jwt(const char *token, int dot)
     }
     claims[len] = 0;
 
-    jws->claims = json_loadb(claims, len, 0, NULL);
-    if (!jws->claims) {
+    jwt->claims = json_loadb(claims, len, 0, NULL);
+    if (!jwt->claims) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Load jwt body failed.");
         goto errorExit;
     }
@@ -154,24 +154,24 @@ static JWS *parse_jwt(const char *token, int dot)
         goto errorExit;
     }
 
-    jws->header = json_loadb(header, len, 0, NULL);
-    if (!jws->header) {
+    jwt->header = json_loadb(header, len, 0, NULL);
+    if (!jwt->header) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Load jwt header failed.");
         goto errorExit;
     }
 
-    return jws;
+    return jwt;
 
 errorExit:
-    if (jws)
-        JWS_Destroy(jws);
+    if (jwt)
+        JWT_Destroy(jwt);
 
     return NULL;
 }
 
-static JWS *parse_jws(JWSParser *parser, const char *token)
+static JWT *parse_jws(JWSParser *parser, const char *token)
 {
-    JWS *jws = NULL;
+    JWT *jwt = NULL;
     cjose_err err;
     cjose_jwk_t *jwk = NULL;
     cjose_jws_t *jws_t = NULL;
@@ -182,28 +182,28 @@ static JWS *parse_jws(JWSParser *parser, const char *token)
 
     assert(token && *token);
 
-    jws = (JWS *)calloc(1, sizeof(JWS));
-    if (!jws) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Remalloc buffer for JWS failed.");
+    jwt = (JWT *)calloc(1, sizeof(JWT));
+    if (!jwt) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Remalloc buffer for JWT failed.");
         return NULL;
     }
 
-    //set jws
+    //set jwt
     jws_t = cjose_jws_import(token, strlen(token), &err);
     if (!jws_t) {
-        DIDError_Set(DIDERR_JWT, "Import token to jws failed.");
+        DIDError_Set(DIDERR_JWT, "Import token to jwt failed.");
         goto errorExit;
     }
 
     //get header
     json_t *json = cjose_jws_get_protected(jws_t);
     if (!json) {
-        DIDError_Set(DIDERR_JWT, "Get jws protected part failed.");
+        DIDError_Set(DIDERR_JWT, "Get jwt protected part failed.");
         goto errorExit;
     }
 
-    jws->header = json_deep_copy(json);
-    if (!jws->header) {
+    jwt->header = json_deep_copy(json);
+    if (!jwt->header) {
         DIDError_Set(DIDERR_JWT, "Get jwt header failed.");
         goto errorExit;
     }
@@ -215,16 +215,16 @@ static JWS *parse_jws(JWSParser *parser, const char *token)
         goto errorExit;
     }
 
-    jws->claims = json_loadb(payload, payload_len, 0, NULL);;
-    if (!jws->claims) {
+    jwt->claims = json_loadb(payload, payload_len, 0, NULL);;
+    if (!jwt->claims) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Load jwt body failed.");
         goto errorExit;
     }
 
     //get jwk, must put after getting header and claims.
-    jwk = get_jwk(parser, jws);
+    jwk = get_jwk(parser, jwt);
     if (!jwk) {
-        JWS_Destroy(jws);
+        JWT_Destroy(jwt);
         return NULL;
     }
 
@@ -232,38 +232,38 @@ static JWS *parse_jws(JWSParser *parser, const char *token)
     cjose_jws_release(jws_t);
     cjose_jwk_release(jwk);
     if (!successed) {
-        DIDError_Set(DIDERR_JWT, "Verify jws failed.");
-        JWS_Destroy(jws);
+        DIDError_Set(DIDERR_JWT, "Verify jwt failed.");
+        JWT_Destroy(jwt);
         return NULL;
     }
 
     time(&current);
-    exp = JWS_GetExpiration(jws);
+    exp = JWT_GetExpiration(jwt);
     if (exp > 0 && exp < current) {
         DIDError_Set(DIDERR_JWT, "Token is expired.");
-        JWS_Destroy(jws);
+        JWT_Destroy(jwt);
         return NULL;
     }
 
-    nbf = JWS_GetNotBefore(jws);
+    nbf = JWT_GetNotBefore(jwt);
     if (nbf > 0 && nbf > current) {
         DIDError_Set(DIDERR_JWT, "Token is not in the validity period.");
-        JWS_Destroy(jws);
+        JWT_Destroy(jwt);
         return NULL;
     }
 
-    return jws;
+    return jwt;
 
 errorExit:
     if (jws_t)
         cjose_jws_release(jws_t);
-    if (jws)
-        JWS_Destroy(jws);
+    if (jwt)
+        JWT_Destroy(jwt);
 
     return NULL;
 }
 
-static JWS *jwsparser_parse(JWSParser *parser, const char *token)
+static int is_jwt(const char *token)
 {
     size_t i, idx = 0;
     int dots[2] = {0, 0};
@@ -278,16 +278,57 @@ static JWS *jwsparser_parse(JWSParser *parser, const char *token)
 
     if (idx != 2 || !(dots[0] > 0 && dots[1] < (int)strlen(token))) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid jwt token! Please check it.");
-        return NULL;
+        return -1;
     }
 
-    if (dots[1] == strlen(token) - 1)
-        return parse_jwt(token, dots[0]);
+    //token is jwt, return the first '.' pos
+    if (dots[1] == strlen(token) -1)
+        return dots[0];
+
+    //jws
+    return 0;
+}
+
+static JWT *jwsparser_parse(JWSParser *parser, const char *token)
+{
+    int isjwt;
+
+    assert(token && *token);
+
+    isjwt = is_jwt(token);
+    if (isjwt == -1)
+        return NULL;
+
+    if (isjwt > 0) {
+        DIDError_Set(DIDERR_JWT, "Unsupport parse JWT token.");
+        return NULL;
+    }
 
     return parse_jws(parser, token);
 }
 
-JWS *JWSParser_Parse(JWSParser *parser, const char *token)
+JWT *JWTParser_Parse(const char *token)
+{
+    int isjwt;
+
+    if (!token || !*token) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    isjwt = is_jwt(token);
+    if (isjwt == -1)
+        return NULL;
+
+    if (isjwt == 0) {
+        DIDError_Set(DIDERR_JWT, "Unsupport parse JWS token.");
+        return NULL;
+    }
+
+    return parse_jwt(token, isjwt);
+}
+
+JWT *JWSParser_Parse(JWSParser *parser, const char *token)
 {
     if (!parser || !token || !*token) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -297,7 +338,7 @@ JWS *JWSParser_Parse(JWSParser *parser, const char *token)
     return jwsparser_parse(parser, token);
 }
 
-JWS *DefaultJWSParser_Parse(const char *token)
+JWT *DefaultJWSParser_Parse(const char *token)
 {
     if (!token || !*token) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");

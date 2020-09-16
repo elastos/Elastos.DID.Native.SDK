@@ -2599,7 +2599,6 @@ inline static uint32_t UInt32GetBE(const void *b4)
 static int map_to_derivepath(int *paths, size_t size, const char *identifier)
 {
     uint8_t digest[SHA256_BYTES];
-    int rc;
 
     assert(paths);
     assert(size == 8);

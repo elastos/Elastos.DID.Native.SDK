@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <CUnit/Basic.h>
+#include <crystal.h>
 
 #include "crypto.h"
 #include "loader.h"

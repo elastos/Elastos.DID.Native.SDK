@@ -27,9 +27,9 @@
 
 /**
  * \~English
- * JWS is from parsing jwt token，signing the given plaintext within the given header.
+ * JWT is from parsing jwt token，signing the given plaintext within the given header.
  */
-typedef struct JWS                 JWS;
+typedef struct JWT                 JWT;
 
 /******************************************************************************
  * JWTBuilder.
@@ -249,217 +249,226 @@ DID_API const char *JWTBuilder_Compact(JWTBuilder *builder);
 DID_API int JWTBuilder_Reset(JWTBuilder *builder);
 
 /******************************************************************************
- * JWSParser.
+ * JWTParser/JWSParser.
  *****************************************************************************/
-
 /**
  * \~English
- * Parse jwt token without JWSParser.
+ * Default parser for JWT only.
  *
  * @param
  *      token            [in] The token string.
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */
-DID_API JWS *DefaultJWSParser_Parse(const char *token);
+DID_API JWT *JWTParser_Parse(const char *token);
+/**
+ * \~English
+ * Default parser for JWS only.
+ *
+ * @param
+ *      token            [in] The token string.
+ * @return
+ *      If no error occurs, return 0. Otherwise, return -1.
+ */
+DID_API JWT *DefaultJWSParser_Parse(const char *token);
 /**
  * \~English
  * Parse jwt token.
  *
  * @param
- *      parser           [in] The handle to JWSParser.
+ *      parser           [in] The handle to JWTParser.
  * @param
  *      token            [in] The token string.
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */
-DID_API JWS *JWSParser_Parse(JWSParser *parser, const char *token);
+DID_API JWT *JWSParser_Parse(JWSParser *parser, const char *token);
 /**
  * \~English
- * Destroy the JWSParser.
+ * Destroy the JWTParser.
  *
  * @param
- *      parser             [in] The handle to JWSParser.
+ *      parser             [in] The handle to JWTParser.
  */
 DID_API void JWSParser_Destroy(JWSParser *parser);
 
 /******************************************************************************
- * JWS.
+ * JWT.
  *****************************************************************************/
 
 /**
  * \~English
- * Destroy the JWS.
+ * Destroy the JWT.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  */
-DID_API void JWS_Destroy(JWS *jws);
+DID_API void JWT_Destroy(JWT *jwt);
 
 /**
  * \~English
  * Get header value by header key.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @param
  *      attr            [in] The key to header.
  * @return
  *      If no error occurs, return value string. Otherwise, return NULL.
  */
-DID_API const char *JWS_GetHeader(JWS *jws, const char *attr);
+DID_API const char *JWT_GetHeader(JWT *jwt, const char *attr);
 
 /**
  * \~English
  * Get algorithm string.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @return
  *      If no error occurs, return algorithm string. Otherwise, return NULL.
  */
-DID_API const char *JWS_GetAlgorithm(JWS *jws);
+DID_API const char *JWT_GetAlgorithm(JWT *jwt);
 
 /**
  * \~English
  * Get sign key.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @return
  *      If no error occurs, return key string. Otherwise, return NULL.
  */
-DID_API const char *JWS_GetKeyId(JWS *jws);
+DID_API const char *JWT_GetKeyId(JWT *jwt);
 
 /**
  * \~English
- * Get claim from JWS.
+ * Get claim from JWT.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @param
  *      key             [in] The key to claim.
  * @return
  *      If no error occurs, return value string. Otherwise, return NULL.
  */
-DID_API const char *JWS_GetClaim(JWS *jws, const char *key);
+DID_API const char *JWT_GetClaim(JWT *jwt, const char *key);
 
 /**
  * \~English
- * Get claim from JWS.
+ * Get claim from JWT.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @param
  *      key             [in] The key to claim.
  * @return
  *      If no error occurs, return value json string. Otherwise, return NULL.
  *      Free the return value after using it.
  */
-DID_API const char *JWS_GetClaimAsJson(JWS *jws, const char *key);
+DID_API const char *JWT_GetClaimAsJson(JWT *jwt, const char *key);
 
 /**
  * \~English
  * Get integar value of claim by key value.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @param
  *      key             [in] The key to claim.
  * @return
  *      If no error occurs, return integar value. Otherwise, return 0.
  */
-DID_API long JWS_GetClaimAsInteger(JWS *jws, const char *key);
+DID_API long JWT_GetClaimAsInteger(JWT *jwt, const char *key);
 
 /**
  * \~English
  * Get boolean value of claim by key value.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @param
  *      key             [in] The key to claim.
  * @return
  *      If no error occurs, return boolean value. Otherwise, return false.
  */
-DID_API bool JWS_GetClaimAsBoolean(JWS *jws, const char *key);
+DID_API bool JWT_GetClaimAsBoolean(JWT *jwt, const char *key);
 
 /**
  * \~English
  * Get jwt issuer.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @return
  *      If no error occurs, return issuer string. Otherwise, return NULL.
  */
-DID_API const char *JWS_GetIssuer(JWS *jws);
+DID_API const char *JWT_GetIssuer(JWT *jwt);
 
 /**
  * \~English
  * Get jwt subject.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @return
  *      If no error occurs, return subject string. Otherwise, return NULL.
  */
-DID_API const char *JWS_GetSubject(JWS *jws);
+DID_API const char *JWT_GetSubject(JWT *jwt);
 
 /**
  * \~English
  * Get jwt audience.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @return
  *      If no error occurs, return audience string. Otherwise, return NULL.
  */
-DID_API const char *JWS_GetAudience(JWS *jws);
+DID_API const char *JWT_GetAudience(JWT *jwt);
 
 /**
  * \~English
  * Get jwt id.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @return
  *      If no error occurs, return id string. Otherwise, return NULL.
  */
-DID_API const char *JWS_GetId(JWS *jws);
+DID_API const char *JWT_GetId(JWT *jwt);
 
 /**
  * \~English
  * Get jwt expire time.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @return
  *      If no error occurs, return expire time. Otherwise, return 0.
  */
-DID_API time_t JWS_GetExpiration(JWS *jws);
+DID_API time_t JWT_GetExpiration(JWT *jwt);
 
 /**
  * \~English
  * Get jwt not before time.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @return
  *      If no error occurs, return not before time. Otherwise, return 0.
  */
-DID_API time_t JWS_GetNotBefore(JWS *jws);
+DID_API time_t JWT_GetNotBefore(JWT *jwt);
 
 /**
  * \~English
  * Get jwt issued time.
  *
  * @param
- *      jws             [in] The handle to JWS.
+ *      jwt             [in] The handle to JWT.
  * @return
  *      If no error occurs, return issued time. Otherwise, return 0.
  */
-DID_API time_t JWS_GetIssuedAt(JWS *jws);
+DID_API time_t JWT_GetIssuedAt(JWT *jwt);
 
 #ifdef __cplusplus
 }
