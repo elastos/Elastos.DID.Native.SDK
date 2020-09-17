@@ -26,34 +26,34 @@
 #include <time.h>
 
 #include "ela_jwt.h"
-#include "jws.h"
+#include "jwt.h"
 #include "claims.h"
 #include "diderror.h"
 
-void JWS_Destroy(JWS *jws)
+void JWT_Destroy(JWT *jwt)
 {
-    if (!jws)
+    if (!jwt)
         return;
 
-    if (jws->header)
-        json_decref(jws->header);
-    if (jws->claims)
-        json_decref(jws->claims);
+    if (jwt->header)
+        json_decref(jwt->header);
+    if (jwt->claims)
+        json_decref(jwt->claims);
 
-    free(jws);
+    free(jwt);
 }
 
-const char *JWS_GetHeader(JWS *jws, const char *attr)
+const char *JWT_GetHeader(JWT *jwt, const char *attr)
 {
     cjose_err err;
     const char *data;
 
-    if (!jws || !attr) {
+    if (!jwt || !attr) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    data = cjose_header_get(jws->header, attr, &err);
+    data = cjose_header_get(jwt->header, attr, &err);
     if (!data) {
         DIDError_Set(DIDERR_JWT, "Get header '%s' failed.", attr);
         return NULL;
@@ -62,27 +62,27 @@ const char *JWS_GetHeader(JWS *jws, const char *attr)
     return data;
 }
 
-const char *JWS_GetAlgorithm(JWS *jws)
+const char *JWT_GetAlgorithm(JWT *jwt)
 {
-    return JWS_GetHeader(jws, CJOSE_HDR_ALG);
+    return JWT_GetHeader(jwt, CJOSE_HDR_ALG);
 }
 
-const char *JWS_GetKeyId(JWS *jws)
+const char *JWT_GetKeyId(JWT *jwt)
 {
-    return JWS_GetHeader(jws, CJOSE_HDR_KID);
+    return JWT_GetHeader(jwt, CJOSE_HDR_KID);
 }
 
-const char *JWS_GetClaim(JWS *jws, const char *key)
+const char *JWT_GetClaim(JWT *jwt, const char *key)
 {
     json_t *value;
     const char *data;
 
-    if (!jws || !key || !*key) {
+    if (!jwt || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    value = json_object_get(jws->claims, key);
+    value = json_object_get(jwt->claims, key);
     if (!value) {
         DIDError_Set(DIDERR_JWT, "No claim: %s.", key);
         return NULL;
@@ -102,17 +102,17 @@ const char *JWS_GetClaim(JWS *jws, const char *key)
     return data;
 }
 
-const char *JWS_GetClaimAsJson(JWS *jws, const char *key)
+const char *JWT_GetClaimAsJson(JWT *jwt, const char *key)
 {
     json_t *value;
     const char *data;
 
-    if (!jws || !key || !*key) {
+    if (!jwt || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    value = json_object_get(jws->claims, key);
+    value = json_object_get(jwt->claims, key);
     if (!value) {
         DIDError_Set(DIDERR_JWT, "No claim: %s.", key);
         return NULL;
@@ -138,16 +138,16 @@ const char *JWS_GetClaimAsJson(JWS *jws, const char *key)
     return NULL;
 }
 
-long JWS_GetClaimAsInteger(JWS *jws, const char *key)
+long JWT_GetClaimAsInteger(JWT *jwt, const char *key)
 {
     json_t *value;
 
-    if (!jws || !key || !*key) {
+    if (!jwt || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
-    value = json_object_get(jws->claims, key);
+    value = json_object_get(jwt->claims, key);
     if (!value) {
         DIDError_Set(DIDERR_JWT, "No claim: %s.", key);
         return 0;
@@ -160,16 +160,16 @@ long JWS_GetClaimAsInteger(JWS *jws, const char *key)
     return json_integer_value(value);
 }
 
-bool JWS_GetClaimAsBoolean(JWS *jws, const char *key)
+bool JWT_GetClaimAsBoolean(JWT *jwt, const char *key)
 {
     json_t *value;
 
-    if (!jws || !key || !*key) {
+    if (!jwt || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    value = json_object_get(jws->claims, key);
+    value = json_object_get(jwt->claims, key);
     if (!value) {
         DIDError_Set(DIDERR_JWT, "No claim: %s.", key);
         return false;
@@ -182,37 +182,37 @@ bool JWS_GetClaimAsBoolean(JWS *jws, const char *key)
     return json_boolean_value(value);
 }
 
-const char *JWS_GetIssuer(JWS *jws)
+const char *JWT_GetIssuer(JWT *jwt)
 {
-    return JWS_GetClaim(jws, ISSUER);
+    return JWT_GetClaim(jwt, ISSUER);
 }
 
-const char *JWS_GetSubject(JWS *jws)
+const char *JWT_GetSubject(JWT *jwt)
 {
-    return JWS_GetClaim(jws, SUBJECT);
+    return JWT_GetClaim(jwt, SUBJECT);
 }
 
-const char *JWS_GetAudience(JWS *jws)
+const char *JWT_GetAudience(JWT *jwt)
 {
-    return JWS_GetClaim(jws, AUDIENCE);
+    return JWT_GetClaim(jwt, AUDIENCE);
 }
 
-const char *JWS_GetId(JWS *jws)
+const char *JWT_GetId(JWT *jwt)
 {
-    return JWS_GetClaim(jws, ID);
+    return JWT_GetClaim(jwt, ID);
 }
 
-time_t JWS_GetExpiration(JWS *jws)
+time_t JWT_GetExpiration(JWT *jwt)
 {
-    return JWS_GetClaimAsInteger(jws, EXPIRATION);
+    return JWT_GetClaimAsInteger(jwt, EXPIRATION);
 }
 
-time_t JWS_GetNotBefore(JWS *jws)
+time_t JWT_GetNotBefore(JWT *jwt)
 {
-    return JWS_GetClaimAsInteger(jws, NOT_BEFORE);
+    return JWT_GetClaimAsInteger(jwt, NOT_BEFORE);
 }
 
-time_t JWS_GetIssuedAt(JWS *jws)
+time_t JWT_GetIssuedAt(JWT *jwt)
 {
-    return JWS_GetClaimAsInteger(jws, ISSUER_AT);
+    return JWT_GetClaimAsInteger(jwt, ISSUER_AT);
 }
