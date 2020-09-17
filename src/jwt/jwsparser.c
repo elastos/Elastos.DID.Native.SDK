@@ -107,14 +107,19 @@ errorExit:
     return jwk;
 }
 
-static JWT *parse_jwt(const char *token, int dot)
+static JWT *parse_jwt(const char *token)
 {
     JWT *jwt = NULL;
     char *claims, *header, *_token;
+    const char *pos;
     size_t len;
+    int dot;
 
     assert(token && *token);
-    assert(dot > 0 && dot < (int)strlen(token));
+
+    pos = strchr(token, '.');
+    assert(pos);
+    dot = pos - token;
 
     jwt = (JWT *)calloc(1, sizeof(JWT));
     if (!jwt) {
@@ -263,48 +268,33 @@ errorExit:
     return NULL;
 }
 
-static int is_jwt(const char *token)
+static int check_token(const char *token)
 {
     size_t i, idx = 0;
     int dots[2] = {0, 0};
+    size_t len;
 
     assert(token && *token);
 
+    len = strlen(token);
+
     // find the indexes of the dots
-    for (i = 0; i < strlen(token) && idx < 2; ++i) {
+    for (i = 0; i < len && idx < 2; ++i) {
         if (token[i] == '.')
             dots[idx++] = i;
     }
 
-    if (idx != 2 || !(dots[0] > 0 && dots[1] < (int)strlen(token))) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid jwt token! Please check it.");
+    if (idx != 2 || dots[0] == 0) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid token! Please check it.");
         return -1;
     }
 
     //token is jwt, return the first '.' pos
-    if (dots[1] == strlen(token) -1)
-        return dots[0];
+    if (dots[1] == len -1)
+        return 0;
 
     //jws
-    return 0;
-}
-
-static JWT *jwsparser_parse(JWSParser *parser, const char *token)
-{
-    int isjwt;
-
-    assert(token && *token);
-
-    isjwt = is_jwt(token);
-    if (isjwt == -1)
-        return NULL;
-
-    if (isjwt > 0) {
-        DIDError_Set(DIDERR_JWT, "Unsupport parse JWT token.");
-        return NULL;
-    }
-
-    return parse_jws(parser, token);
+    return 1;
 }
 
 JWT *JWTParser_Parse(const char *token)
@@ -316,36 +306,58 @@ JWT *JWTParser_Parse(const char *token)
         return NULL;
     }
 
-    isjwt = is_jwt(token);
+    isjwt = check_token(token);
     if (isjwt == -1)
         return NULL;
 
-    if (isjwt == 0) {
-        DIDError_Set(DIDERR_JWT, "Unsupport parse JWS token.");
+    if (isjwt == 1) {
+        DIDError_Set(DIDERR_JWT, "Not support JWS token.");
         return NULL;
     }
 
-    return parse_jwt(token, isjwt);
+    return parse_jwt(token);
 }
 
 JWT *JWSParser_Parse(JWSParser *parser, const char *token)
 {
+    int isjwt;
+
     if (!parser || !token || !*token) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    return jwsparser_parse(parser, token);
+    isjwt = check_token(token);
+    if (isjwt == -1)
+        return NULL;
+
+    if (isjwt == 0) {
+        DIDError_Set(DIDERR_JWT, "Not support JWT token.");
+        return NULL;
+    }
+
+    return parse_jws(parser, token);
 }
 
 JWT *DefaultJWSParser_Parse(const char *token)
 {
+    int isjwt;
+
     if (!token || !*token) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    return jwsparser_parse(NULL, token);
+    isjwt = check_token(token);
+    if (isjwt == -1)
+        return NULL;
+
+    if (isjwt == 0) {
+        DIDError_Set(DIDERR_JWT, "Not support JWT token.");
+        return NULL;
+    }
+
+    return parse_jws(NULL, token);
 }
 
 JWSParser *JWSParser_Create(DIDDocument *document)
