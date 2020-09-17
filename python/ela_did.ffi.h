@@ -47,7 +47,7 @@ typedef struct va_list va_list;
  * \~English
  * Mnemonic max length.
  */
-#define ELA_MAX_MNEMONIC_LEN            128
+#define ELA_MAX_MNEMONIC_LEN            256
 
 /**
  * \~English
