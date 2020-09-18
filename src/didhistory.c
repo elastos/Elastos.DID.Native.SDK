@@ -40,6 +40,7 @@ void DIDHistory_Destroy(DIDHistory *history)
 
         for (i = 0; i < history->txinfos.size; i++)
             DIDTransactionInfo_Destroy(&history->txinfos.infos[i]);
+        free(history->txinfos.infos);
     }
     free(history);
 }

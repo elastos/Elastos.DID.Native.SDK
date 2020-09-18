@@ -197,6 +197,7 @@ static void test_jws(void)
 
     jwt = JWSParser_Parse(parser, token);
     CU_ASSERT_PTR_NOT_NULL(jwt);
+    JWSParser_Destroy(parser);
     free((void*)token);
 
     CU_ASSERT_STRING_EQUAL("json", JWT_GetHeader(jwt, "ctyp"));

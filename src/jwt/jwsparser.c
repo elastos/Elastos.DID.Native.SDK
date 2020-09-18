@@ -49,6 +49,7 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
     KeySpec _spec, *spec;
     cjose_jwk_t *jwk = NULL;
     int rc = -1;
+    bool isresolved = false;
 
     assert(jwt);
     assert(jwt->header);
@@ -64,8 +65,10 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
             goto errorExit;
     }
 
-    if (!doc)
+    if (!doc) {
         doc = DID_Resolve(issuer, false);
+        isresolved = true;
+    }
 
     if (!JWT_GetKeyId(jwt)) {
         keyid = DIDDocument_GetDefaultPublicKey(doc);
@@ -76,8 +79,10 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
         key = DIDDocument_GetPublicKey(doc, keyid);
         DIDURL_Destroy(keyid);
     }
-    if (!key)
+    if (!key) {
+        DIDDocument_Destroy(doc);
         goto errorExit;
+    }
 
     keybase58 = PublicKey_GetPublicKeyBase58(key);
     if (!keybase58)
@@ -101,7 +106,7 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
 errorExit:
     if (issuer)
         DID_Destroy(issuer);
-    if (doc)
+    if (isresolved && doc)
         DIDDocument_Destroy(doc);
 
     return jwk;

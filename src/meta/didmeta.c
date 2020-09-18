@@ -134,7 +134,6 @@ time_t DIDMetaData_GetLastModified(DIDMetaData *metadata)
     assert(metadata);
 
     return (time_t)MetaData_GetExtraAsInteger(&metadata->base, LAST_MODIFIED);
-
 }
 
 const char *DIDMetaData_GetTxid(DIDMetaData *metadata)
