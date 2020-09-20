@@ -79,10 +79,8 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
         key = DIDDocument_GetPublicKey(doc, keyid);
         DIDURL_Destroy(keyid);
     }
-    if (!key) {
-        DIDDocument_Destroy(doc);
+    if (!key)
         goto errorExit;
-    }
 
     keybase58 = PublicKey_GetPublicKeyBase58(key);
     if (!keybase58)
