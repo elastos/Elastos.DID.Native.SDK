@@ -158,8 +158,7 @@ int MetaData_SetExtra(MetaData *metadata, const char* key, const char *value)
         return -1;
 
     rc = MetaData_Set(metadata, key, json);
-    if (rc < 0)
-        json_decref(json);
+    json_decref(json);
 
     return rc;
 }
@@ -177,8 +176,7 @@ int MetaData_SetExtraWithBoolean(MetaData *metadata, const char *key, bool value
         return -1;
 
     rc = MetaData_Set(metadata, key, json);
-    if (rc < 0)
-        json_decref(json);
+    json_decref(json);
 
     return rc;
 }
@@ -196,8 +194,7 @@ int MetaData_SetExtraWithDouble(MetaData *metadata, const char *key, double valu
         return -1;
 
     rc = MetaData_Set(metadata, key, json);
-    if (rc < 0)
-        json_decref(json);
+    json_decref(json);
 
     return rc;
 }
@@ -215,8 +212,7 @@ int MetaData_SetExtraWithInteger(MetaData *metadata, const char *key, int value)
         return -1;
 
     rc = MetaData_Set(metadata, key, json);
-    if (rc < 0)
-        json_decref(json);
+    json_decref(json);
 
     return rc;
 }
