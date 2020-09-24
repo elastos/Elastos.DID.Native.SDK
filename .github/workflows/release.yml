@@ -29,7 +29,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          upload_url: https://github.com/repos/chenyukaola/Elastos.DID.Native.SDK/releases/${{ steps.get_release.outputs.upload_url }}/assets?name=Elastos-DID-1.0.0-linux-x86_64-Debug.tar.gz
+          upload_url: https://github.com/repos/chenyukaola/Elastos.DID.Native.SDK/releases/${{ steps.get_release.outputs.upload_url }}/assets{?name,label}
           asset_path: ./build/linux/Elastos-DID-1.0.0-linux-x86_64-Debug.tar.gz
           asset_name: Elastos-DID-1.0.0-linux-x86_64-Debug.tar.gz
           asset_content_type: application/gzip
