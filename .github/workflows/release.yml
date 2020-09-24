@@ -1,0 +1,35 @@
+name: Publish
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build-linux:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, ubuntu-16.04]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: build and test
+        run: |
+          mkdir -p build/linux
+          cd build/linux
+          echo src > Elastos-DID-1.0.0-linux-x86_64-Debug.tar.gz
+          cd ../..
+      - name: Upload release binary
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: https://github.com/repos/chenyukaola/Elastos.DID.Native.SDK/releases/${{ steps.get_release.outputs.upload_url }}/assets{?name,label}
+          asset_path: ./build/linux/Elastos-DID-1.0.0-linux-x86_64-Debug.tar.gz
+          asset_name: Elastos-DID-1.0.0-linux-x86_64-Debug.tar.gz
+          asset_content_type: application/gzip
