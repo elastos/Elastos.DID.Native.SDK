@@ -13,23 +13,168 @@ jobs:
         os: [ubuntu-18.04, ubuntu-16.04]
     steps:
       - uses: actions/checkout@v2
+      - uses: rishabhgupta/split-by@v1
+        id: split
+        with:
+            string: ${{ github.ref }}
+            split-by: '/'
       - name: Get release
         id: get_release
         uses: bruceadams/get-release@v1.2.1
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - name: build and test
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: build and package
         run: |
           mkdir -p build/linux
           cd build/linux
-          echo src > Elastos-DID-1.0.0-linux-x86_64-Debug.tar.gz
-          cd ../..
-      - name: Upload release binary
+          cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_PYTHON=true -DCMAKE_INSTALL_PREFIX=dist ../..
+          make
+          make install
+          make dist
+          tar czvf ElastosDID-${{ steps.split.outputs._2 }}-python-${{ matrix.os }}.tar.gz ./python/eladid.cpython-38-x86_64-linux-gnu.so
+      - name: Upload DID release binary
         uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          upload_url: https://github.com/repos/chenyukaola/Elastos.DID.Native.SDK/releases/${{ steps.get_release.outputs.upload_url }}/assets{?name,label}
-          asset_path: ./build/linux/Elastos-DID-1.0.0-linux-x86_64-Debug.tar.gz
-          asset_name: Elastos-DID-1.0.0-linux-x86_64-Debug.tar.gz
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./build/linux/Elastos-DID-1.0.0-linux-x86_64-Release.tar.gz
+          asset_name: ElastosDID-${{ steps.split.outputs._2 }}-${{ matrix.os }}.tar.gz
           asset_content_type: application/gzip
+      - name: Upload DID python release binary
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./build/linux/ElastosDID-${{ steps.split.outputs._2 }}-python-${{ matrix.os }}.tar.gz
+          asset_name: ElastosDID-${{ steps.split.outputs._2 }}-python-${{ matrix.os }}.tar.gz
+          asset_content_type: application/gzip
+
+  build-macos:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-10.15]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: rishabhgupta/split-by@v1
+        id: split
+        with:
+            string: ${{ github.ref }}
+            split-by: '/'
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: build and package
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+          if [[ $(brew list | grep 'autoconf') != *autoconf* ]]; then
+            brew install autoconf
+          fi
+          if [[ $(brew list | grep 'automake') != *automake* ]]; then
+            brew install automake
+          fi
+          if [[ $(brew list | grep 'libtool') != *libtool* ]]; then
+            brew install libtool
+          fi
+          if [[ $(brew list | grep 'pkg-config') != *pkg-config* ]]; then
+            brew install pkg-config
+          fi
+
+          mkdir -p build/macos
+          cd build/macos
+          cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_PYTHON=true -DCMAKE_INSTALL_PREFIX=dist ../..
+          make
+          make install
+          make dist
+          ls -la
+          tar czvf ElastosDID-${{ steps.split.outputs._2 }}-python-${{ matrix.os }}.tar.gz ./python/eladid.cpython-38-darwin.so
+      - name: Upload DID release binary
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./build/macos/Elastos-DID-1.0.0-darwin-x86_64-Release.tar.gz
+          asset_name: ElastosDID-${{ steps.split.outputs._2 }}-${{ matrix.os }}.tar.gz
+          asset_content_type: application/gzip
+      - name: Upload DID python release binary
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./build/macos/ElastosDID-${{ steps.split.outputs._2 }}-python-${{ matrix.os }}.tar.gz
+          asset_name: ElastosDID-${{ steps.split.outputs._2 }}-python-${{ matrix.os }}.tar.gz
+          asset_content_type: application/gzip
+
+      - name: build ios tool
+        run: |
+          mkdir -p build/ios
+          cd build/ios
+          cmake -DCMAKE_BUILD_TYPE=Release -DIOS_PLATFORM=iphonesimulator -DCMAKE_TOOLCHAIN_FILE=../../cmake/iOSToolchain.cmake -DHDKEY_ONLY=true -DCMAKE_INSTALL_PREFIX=dist ../..
+          make
+          make install
+          make dist
+      - name: Upload hdkey release binary
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./build/ios/Elastos-DID-1.0.0-ios-x86_64-Release.tar.gz
+          asset_name: ElastosDID-${{ steps.split.outputs._2 }}-hdkey-${{ matrix.os }}.tar.gz
+          asset_content_type: application/gzip
+
+  build-windows:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2016]
+        arch: [x86, amd64]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: rishabhgupta/split-by@v1
+        id: split
+        with:
+            string: ${{ github.ref }}
+            split-by: '/'
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: build and package
+        shell: cmd
+        run: |
+          if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" (
+            call   "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=${{matrix.arch}}
+          )
+          if exist "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat" (
+            call   "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=${{matrix.arch}}
+          )
+          mkdir build\windows
+          cd build\windows
+          cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=dist ..\..
+          nmake
+          nmake install
+          nmake dist
+      - name: Upload DID release binary
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./build/windows/Elastos-DID-1.0.0-windows-x86_64-Debug.tar.gz
+          asset_name: ElastosDID-${{ steps.split.outputs._2 }}-${{ matrix.os }}.tar.gz
+          asset_content_type: application/gzip
+
