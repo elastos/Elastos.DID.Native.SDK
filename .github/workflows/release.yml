@@ -157,14 +157,14 @@ jobs:
         shell: cmd
         run: |
           if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" (
-            call   "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=${{matrix.arch}}
+            call   "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=${{ matrix.arch }}
           )
           if exist "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat" (
-            call   "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=${{matrix.arch}}
+            call   "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=${{ matrix.arch }}
           )
           mkdir build\windows
           cd build\windows
-          cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=dist ..\..
+          cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=dist ..\..
           nmake
           nmake install
           nmake dist
@@ -174,7 +174,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: ./build/windows/Elastos-DID-1.0.0-windows-x86_64-Debug.tar.gz
-          asset_name: ElastosDID-${{ steps.split.outputs._2 }}-${{ matrix.os }}.tar.gz
+          asset_path: ./build/windows/Elastos-DID-1.0.0-windows-${{ matrix.arch }}-Release.tar.gz
+          asset_name: ElastosDID-${{ steps.split.outputs._2 }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
           asset_content_type: application/gzip
+
 
