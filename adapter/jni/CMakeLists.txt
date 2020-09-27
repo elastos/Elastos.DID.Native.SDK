@@ -2,8 +2,19 @@ project(spvadapterjni VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
-FIND_PACKAGE(JNI REQUIRED)
-FIND_PACKAGE(Java REQUIRED)
+if(NOT DEFINED JAVA_HOME)
+  message(STATUS "JAVA_HOME not set, will try to find JAVA automatically. Please set JAVA_HOME manually if get error on java related projects.")
+endif()
+
+find_package(Java COMPONENTS Runtime Development)
+if(NOT Java_FOUND)
+  message(FATAL_ERROR "Java runtime or development package not found.")
+endif()
+
+find_package(JNI)
+if(NOT JNI_FOUND)
+  message(FATAL_ERROR "Java JNI package not found.")
+endif()
 
 include(ProjectDefaults)
 
@@ -13,14 +24,6 @@ include(ProjectDefaults)
 #       -outdir java/org/elastos/did/adapter \
 #       -o spvadapter_wrap.c \
 #       spvadapter.i
-
-if(NOT DEFINED JDK_HOME)
-    if (NOT DEFINED ENV{JDK_HOME})
-        message(FATAL_ERROR "JDK_HOME variable not set.")
-    endif()
-
-    set(JDK_HOME $ENV{JDK_HOME})
-endif()
 
 set(SRC
     spvadapter_wrap.c)
@@ -50,9 +53,7 @@ endif()
 include_directories(
     BEFORE
     ../spvadapter
-    ${JDK_HOME}/include
-    ${JDK_HOME}/include/darwin
-    ${JDK_HOME}/include/linux
+    ${JNI_INCLUDE_DIRS}
     ${PROJECT_INT_DIST_DIR}/include)
 
 if(DARWIN)
@@ -85,7 +86,7 @@ if(WIN32)
     set_target_properties(spvadapterjni PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
 endif()
 
-target_link_libraries(spvadapterjni ${LIBS} ${SYSTEM_LIBS})
+target_link_libraries(spvadapterjni ${JNI_LIBRARIES} ${LIBS} ${SYSTEM_LIBS})
 
 install(TARGETS spvadapterjni
     RUNTIME DESTINATION "bin"
