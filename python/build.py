@@ -1,4 +1,10 @@
+import os
+import platform
 from cffi import FFI
+
+# Work around on MacOS
+if (platform.system() == "Darwin"):
+    os.environ['ARCHFLAGS'] = '-arch x86_64'
 
 ffibuilder = FFI()
 
