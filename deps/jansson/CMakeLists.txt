@@ -19,10 +19,12 @@ ExternalProject_Add(
 )
 
 if(WIN32)
-    ExternalProject_Add_Step(
-        libjansson post-install
-        DEPENDEES install
-        WORKING_DIRECTORY "${PROJECT_INT_DIST_DIR}/lib"
-        COMMAND copy jansson_d.lib jansson.lib /y
-    )
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        ExternalProject_Add_Step(
+            libjansson post-install
+            DEPENDEES install
+            WORKING_DIRECTORY "${PROJECT_INT_DIST_DIR}/lib"
+            COMMAND copy jansson_d.lib jansson.lib /y
+        )
+    endif()
 endif()
