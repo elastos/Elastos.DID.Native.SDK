@@ -10,8 +10,8 @@ string(REGEX REPLACE "\n$" "" CFFI_EXT "${CFFI_EXT}")
 set(CFFI_MODULE_NAME "eladid${CFFI_EXT}")
 
 add_custom_command(
-    COMMAND python3 -m venv ${CMAKE_CURRENT_BINARY_DIR}/venv
-    COMMAND source ${CMAKE_CURRENT_BINARY_DIR}/venv/bin/activate && pip install cffi
+    COMMAND ${Python3_EXECUTABLE} -m venv ${CMAKE_CURRENT_BINARY_DIR}/venv
+    COMMAND . ${CMAKE_CURRENT_BINARY_DIR}/venv/bin/activate && pip install cffi
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/venv
     VERBATIM
 )
@@ -44,7 +44,7 @@ add_custom_command(
 )
 
 add_custom_command(
-    COMMAND source ${CMAKE_CURRENT_BINARY_DIR}/venv/bin/activate && python ${CMAKE_CURRENT_SOURCE_DIR}/build.py
+    COMMAND . ${CMAKE_CURRENT_BINARY_DIR}/venv/bin/activate && python ${CMAKE_CURRENT_SOURCE_DIR}/build.py
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/venv ${CMAKE_CURRENT_BINARY_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/lib ${CMAKE_CURRENT_SOURCE_DIR}/build.py
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CFFI_MODULE_NAME}
     VERBATIM
