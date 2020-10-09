@@ -1002,6 +1002,41 @@ static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
     return document;
 }
 
+static DIDDocument *create_customied_document(DIDStore *store, DID *did,
+        DID *controller, const char *storepass, const char *alias)
+{
+    DIDDocument *document;
+    DIDDocumentBuilder *builder;
+
+    assert(did);
+    assert(controller);
+    assert(storepass && *storepass);
+
+    builder = did_createbuilder(did, store);
+    if (!builder)
+        return NULL;
+
+    if (DIDDocumentBuilder_AddController(builder, controller) == -1) {
+        DIDDocumentBuilder_Destroy(builder);
+        return NULL;
+    }
+
+    if (DIDDocumentBuilder_SetExpires(builder, 0) == -1) {
+        DIDDocumentBuilder_Destroy(builder);
+        return NULL;
+    }
+
+    document = DIDDocumentBuilder_Seal(builder, storepass);
+    DIDDocumentBuilder_Destroy(builder);
+    if (!document)
+        return NULL;
+
+    DIDMetaData_SetAlias(&document->metadata, alias);
+    DIDMetaData_SetDeactivated(&document->metadata, false);
+    memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetaData));
+    return document;
+}
+
 static int store_credential(DIDStore *store, Credential *credential)
 {
     const char *data;
@@ -2151,6 +2186,46 @@ DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass, const char 
     }
 
     return document;
+}
+
+DIDDocument *DIDStore_NewCustomiedDID(DIDStore *store, const char *storepass,
+        const char *customieddid, DID *controller, const char *alias)
+{
+    DIDDocument *controller_doc;
+    DIDDocument *doc;
+    DIDURL key;
+    DID did;
+
+    if (!store || !storepass || !*storepass || !customieddid || !*customieddid || !controller) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    controller_doc = DID_Resolve(controller, true);
+    if (!controller_doc)
+        return NULL;
+    DIDDocument_Destroy(controller_doc);
+
+    if (Init_DIDURL(&key, controller, "primary") == -1)
+        return NULL;
+
+    if (!DIDStore_ContainsPrivateKey(store, controller, &key))
+        return NULL;
+
+    if (Init_DID(&did, customieddid) == -1)
+        return NULL;
+
+    doc = create_customied_document(store, &did, controller, storepass, alias);
+    if (!doc)
+        return NULL;
+
+    if (DIDStore_StoreDID(store, doc) == -1) {
+        DIDDocument_Destroy(doc);
+        return NULL;
+    }
+
+    DIDDocument_SetStore(doc, store);
+    return doc;
 }
 
 //free DID after use it.

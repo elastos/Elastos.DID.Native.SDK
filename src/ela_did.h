@@ -134,7 +134,7 @@ typedef struct Property {
  * a centralized registration authority.
  * It includes method specific string. (elastos:id:ixxxxxxxxxx).
  */
-typedef struct DID                  DID;
+typedef struct DID                     DID;
 /**
  * \~English
  * DID URL defines by the did-url rule, refers to a URL that begins with a DID
@@ -142,26 +142,26 @@ typedef struct DID                  DID;
  * identifies the resource to be located.
  * DIDURL includes DID and Url fragment by user defined.
  */
-typedef struct DIDURL               DIDURL;
+typedef struct DIDURL                  DIDURL;
 /**
  * \~English
  * Public keys are used for digital signatures, encryption and
  * other cryptographic operations, which are the basis for purposes such as
  * authentication or establishing secure communication with service endpoints.
  */
-typedef struct PublicKey            PublicKey;
+typedef struct PublicKey               PublicKey;
 /**
  * \~English
  * Credential is a set of one or more claims made by the same entity.
  * Credentials might also include an identifier and metadata to
  * describe properties of the credential.
  */
-typedef struct Credential           Credential;
+typedef struct Credential              Credential;
 /**
  * \~English
  * CredentialMetaData stores information about Credential except information in Credential.
  */
-typedef struct CredentialMetaData   CredentialMetaData;
+typedef struct CredentialMetaData      CredentialMetaData;
 /**
  * \~English
  * A Presentation can be targeted to a specific verifier by using a Linked Data
@@ -169,14 +169,14 @@ typedef struct CredentialMetaData   CredentialMetaData;
  * This also helps prevent a verifier from reusing a verifiable presentation as
  * their own.
  */
-typedef struct Presentation         Presentation;
+typedef struct Presentation            Presentation;
 /**
  * \~English
  * A service endpoint may represent any type of service the subject
  * wishes to advertise, including decentralized identity management services
  * for further discovery, authentication, authorization, or interaction.
  */
-typedef struct Service              Service;
+typedef struct Service                 Service;
 /**
  * \~English
  * A DID resolves to a DID Document. This is the concrete serialization of
@@ -186,22 +186,23 @@ typedef struct Service              Service;
  * credential and services. One document must be have only subject,
  * and at least one public key.
  */
-typedef struct DIDDocument          DIDDocument;
+typedef struct DIDDocument             DIDDocument;
 /**
  * \~English
  DIDMetaData is store for other information about DID except DIDDocument information.
  */
-typedef struct DIDMetaData          DIDMetaData;
+typedef struct DIDMetaData             DIDMetaData;
 /**
  * \~English
  DIDHistroy stores all did transactions from chain.
  */
-typedef struct DIDHistory           DIDHistory;
+typedef struct DIDHistory              DIDHistory;
 /**
  * \~English
  * A DIDDocument Builder to modify DIDDocument elems.
  */
-typedef struct DIDDocumentBuilder   DIDDocumentBuilder;
+typedef struct DIDDocumentBuilder      DIDDocumentBuilder;
+
 /**
  * \~English
  * A issuer is the did to issue credential. Issuer includes issuer's did and
@@ -1165,6 +1166,18 @@ DID_API DID* DIDDocument_GetSubject(DIDDocument *document);
 
 /**
  * \~English
+ * Get the controller only about customied DID.
+ *
+ * @param
+ *      document             [in] A handle to DID Document.
+ * @return
+ *      return the handle to controller. If the DID is normal one, the returned value
+ *      is NULL.
+ */
+DID_API DID *DIDDocument_GetController(DIDDocument *document);
+
+/**
+ * \~English
  * Get DIDDocument Builder to modify document.
  *
  * @param
@@ -1332,6 +1345,19 @@ DID_API int DIDDocumentBuilder_AuthorizationDid(DIDDocumentBuilder *builder,
  */
 DID_API int DIDDocumentBuilder_RemoveAuthorizationKey(DIDDocumentBuilder *builder,
         DIDURL *keyid);
+
+/**
+ * \~English
+ * Add controller for DIDDocument.
+ *
+ * @param
+ *      builder               [in] A handle to DIDDocument Builder.
+ * @param
+ *      controller            [in] The controller for DIDDocument.
+ * @return
+ *      0 on success, -1 if an error occurred.
+ */
+DID_API int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controller);
 
 /**
  * \~English
@@ -2646,6 +2672,31 @@ DID_API int DIDStore_Synchronize(DIDStore *store, const char *storepass,
  */
 DID_API DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass,
         const char *alias);
+
+/**
+ * \~English
+ * Create a new DID Document and store in the DID Store by customied string.
+ *
+ * @param
+ *      store                     [in] THe handle to DIDStore.
+ * @param
+ *      storepass                 [in] Password for DIDStore.
+ * @param
+ *      customieddid              [in] The nickname of DID.
+ *                                     'customieddid' supports NULL.
+ * @param
+ *      controller                [in] The controller for customied DID.
+ *                                     'customieddid' supports NULL.
+ * @param
+ *      alias                     [in] The nickname of DID.
+ *                                     ‘alias' supports NULL.
+ * @return
+ *      If no error occurs, return the handle to DID Document.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API DIDDocument *DIDStore_NewCustomiedDID(DIDStore *store, const char *storepass,
+        const char *customieddid, DID *controller, const char *alias);
 
 /**
  * \~English

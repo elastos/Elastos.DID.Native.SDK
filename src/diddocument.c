@@ -614,6 +614,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
 {
     DIDDocument *doc;
     json_t *item;
+    bool bCustomied = false;
 
     assert(root);
 
@@ -634,30 +635,45 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
         goto errorExit;
     }
 
+    //parse constroller
+    item = json_object_get(root, "controller");
+    if (item) {
+        if (!json_is_string(item)) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid controller.");
+            goto errorExit;
+        }
+        doc->controller = DID_FromString(json_string_value(item));
+        if (!doc->controller) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Create controller failed.");
+            goto errorExit;
+        }
+        bCustomied = true;
+    }
+
     //parse publickey
     item = json_object_get(root, "publicKey");
-    if (!item) {
+    if (!bCustomied && !item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing document id.");
         goto errorExit;
     }
-    if (!json_is_array(item)) {
+    if (item && !json_is_array(item)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid document id.");
         goto errorExit;
     }
-    if (Parse_PublicKeys(doc, &doc->did, item) < 0)
+    if (item && Parse_PublicKeys(doc, &doc->did, item) < 0)
         goto errorExit;
 
     //parse authentication
     item = json_object_get(root, "authentication");
-    if (!item) {
+    if (!bCustomied && !item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing authentication key.");
         goto errorExit;
     }
-    if (!json_is_array(item)) {
+    if (item && !json_is_array(item)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid authentication key.");
         goto errorExit;
     }
-    if (Parse_Auth_PublicKeys(doc, item, KeyType_Authentication) < 0)
+    if (item && Parse_Auth_PublicKeys(doc, item, KeyType_Authentication) < 0)
         goto errorExit;
 
     //parse authorization
@@ -758,13 +774,20 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
     CHECK(JsonGenerator_WriteStartObject(gen));
     CHECK(JsonGenerator_WriteStringField(gen, "id",
             DID_ToString(&doc->did, id, sizeof(id))));
-    CHECK(JsonGenerator_WriteFieldName(gen, "publicKey"));
-    CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
-            compact, KeyType_PublicKey));
+    if (doc->controller)
+        CHECK(JsonGenerator_WriteStringField(gen, "controller",
+               DID_ToString(doc->controller, id, sizeof(id))));
+    if (doc->publickeys.size > 0) {
+        CHECK(JsonGenerator_WriteFieldName(gen, "publicKey"));
+        CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
+                compact, KeyType_PublicKey));
 
-    CHECK(JsonGenerator_WriteFieldName(gen, "authentication"));
-    CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
-            compact, KeyType_Authentication));
+        if (DIDDocument_GetAuthenticationCount(doc) > 0) {
+            CHECK(JsonGenerator_WriteFieldName(gen, "authentication"));
+            CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
+                    compact, KeyType_Authentication));
+        }
+    }
 
     if (DIDDocument_GetAuthorizationCount(doc) > 0) {
         CHECK(JsonGenerator_WriteFieldName(gen, "authorization"));
@@ -855,6 +878,9 @@ void DIDDocument_Destroy(DIDDocument *document)
 
     if (!document)
         return;
+
+    if (document->controller)
+        DID_Destroy(document->controller);
 
     for (i = 0; i < document->publickeys.size; i++)
         PublicKey_Destroy(document->publickeys.pks[i]);
@@ -1139,16 +1165,28 @@ int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc)
 
     DID_Copy(&destdoc->did, &srcdoc->did);
 
-    if (publickeys_copy(destdoc, srcdoc->publickeys.pks, srcdoc->publickeys.size) == -1)
+    if (srcdoc->controller) {
+        destdoc->controller = DID_New(srcdoc->controller->idstring);
+        if (!destdoc->controller)
+            return -1;
+    }
+
+    if (publickeys_copy(destdoc, srcdoc->publickeys.pks, srcdoc->publickeys.size) == -1) {
+        DID_Destroy(destdoc->controller);
         return -1;
+    }
 
     if (srcdoc->credentials.size != 0  && credentials_copy(destdoc,
-            srcdoc->credentials.credentials, srcdoc->credentials.size) == -1)
+            srcdoc->credentials.credentials, srcdoc->credentials.size) == -1) {
+        DID_Destroy(destdoc->controller);
         return -1;
+    }
 
     if (srcdoc->services.size != 0 && services_copy(destdoc,
-            srcdoc->services.services, srcdoc->services.size) == -1)
+            srcdoc->services.services, srcdoc->services.size) == -1) {
+        DID_Destroy(destdoc->controller);
         return -1;
+    }
 
     destdoc->expires = srcdoc->expires;
     memcpy(&destdoc->proof, &srcdoc->proof, sizeof(DocumentProof));
@@ -1156,6 +1194,16 @@ int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc)
     DIDMetaData_SetLastModified(&destdoc->metadata, 0);
     memcpy(&destdoc->did.metadata, &destdoc->metadata, sizeof(DIDMetaData));
     return 0;
+}
+
+DID *DIDDocument_GetController(DIDDocument *document)
+{
+    if (!document) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    return document->controller;
 }
 
 DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document)
@@ -1197,7 +1245,7 @@ void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder)
 
 DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *storepass)
 {
-    DIDDocument *doc;
+    DIDDocument *doc, *controller_doc = NULL;
     DIDURL *key;
     const char *data;
     char signature[SIGNATURE_BYTES * 2 + 16];
@@ -1209,21 +1257,30 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
     }
 
     doc = builder->document;
-    key = DIDDocument_GetDefaultPublicKey(doc);
+    if (!doc->controller) {
+        controller_doc = doc;
+    } else {
+        controller_doc = DID_Resolve(doc->controller, false);
+        if (!controller_doc)
+            return NULL;
+        DIDDocument_SetStore(controller_doc, builder->document->did.metadata.base.store);
+    }
+
+    key = DIDDocument_GetDefaultPublicKey(controller_doc);
     if (!key) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "No default key.");
-        return NULL;
+        goto errorExit;
     }
 
     data = diddocument_tojson_forsign(doc, false, true);
     if (!data)
-        return NULL;
+        goto errorExit;
 
-    rc = DIDDocument_Sign(doc, key, storepass, signature, 1,
+    rc = DIDDocument_Sign(controller_doc, key, storepass, signature, 1,
             (unsigned char*)data, strlen(data));
     free((void*)data);
     if (rc)
-        return NULL;
+        goto errorExit;
 
     strcpy(doc->proof.type, ProofType);
     time(&doc->proof.created);
@@ -1231,7 +1288,15 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
     strcpy(doc->proof.signatureValue, signature);
 
     builder->document = NULL;
+    if (controller_doc != doc)
+        DIDDocument_Destroy(controller_doc);
     return doc;
+
+errorExit:
+    if (controller_doc != doc)
+        DIDDocument_Destroy(controller_doc);
+
+    return NULL;
 }
 
 static
@@ -1604,6 +1669,31 @@ static int diddocument_addcredential(DIDDocument *document, Credential *credenti
 
     creds[document->credentials.size++] = credential;
     document->credentials.credentials = creds;
+    return 0;
+}
+
+int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controller)
+{
+    DIDDocument *document;
+
+    if (!builder || !builder->document || !controller) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    document = builder->document;
+    if (DID_Equals(DIDDocument_GetSubject(document), controller)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "DIDDocument does not controlled by itself.");
+        return -1;
+    }
+
+    if (document->controller)
+        DID_Destroy(document->controller);
+
+    document->controller = DID_New(controller->idstring);
+    if (!document->controller)
+        return -1;
+
     return 0;
 }
 
