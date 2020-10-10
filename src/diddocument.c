@@ -988,34 +988,69 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
     return isdeactived;
 }
 
+static DIDDocument *get_controller_document(DIDStore *store, DID *controller)
+{
+    DIDDocument *doc = NULL;
+
+    assert(controller);
+
+    if (store)
+        doc = DIDStore_LoadDID(store, controller);
+
+    if (!doc) {
+        doc = DID_Resolve(controller, false);
+        if (doc && store)
+            DIDDocument_SetStore(doc, store);
+    }
+
+    if (!doc)
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Controller DID does not already exist.");
+
+    return doc;
+}
+
 bool DIDDocument_IsGenuine(DIDDocument *document)
 {
+    DIDDocument *controller_doc;
     const char *data;
-    int rc;
+    int rc = -1;
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(document),
+    if (!document->controller) {
+        controller_doc = document;
+    } else {
+        controller_doc = get_controller_document(document->metadata.base.store, document->controller);
+        if(!controller_doc)
+            return false;
+    }
+
+    if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(controller_doc),
             &document->proof.creater)) {
         DIDError_Set(DIDERR_INVALID_KEY, "Document creater is not match with default key.");
-        return false;
+        goto errorExit;
     }
 
     if (strcmp(document->proof.type, ProofType)) {
         DIDError_Set(DIDERR_UNKNOWN, "Unsupported public key type.");
-        return false;
+        goto errorExit;
     }
 
     data = diddocument_tojson_forsign(document, false, true);
     if (!data)
-        return false;
+        goto errorExit;
 
-    rc = DIDDocument_Verify(document, NULL, document->proof.signatureValue, 1,
+    rc = DIDDocument_Verify(controller_doc, NULL, document->proof.signatureValue, 1,
             data, strlen(data));
     free((void*)data);
+
+errorExit:
+    if (controller_doc != document)
+        DIDDocument_Destroy(controller_doc);
+
     return rc == 0 ? true : false;
 }
 
@@ -1260,10 +1295,9 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
     if (!doc->controller) {
         controller_doc = doc;
     } else {
-        controller_doc = DID_Resolve(doc->controller, false);
+        controller_doc = get_controller_document(builder->document->did.metadata.base.store, doc->controller);
         if (!controller_doc)
             return NULL;
-        DIDDocument_SetStore(controller_doc, builder->document->did.metadata.base.store);
     }
 
     key = DIDDocument_GetDefaultPublicKey(controller_doc);
@@ -1927,17 +1961,13 @@ int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires)
 {
     time_t max_expires;
     struct tm *tm = NULL;
-    DIDDocument *document;
+    DIDDocument *document, *controller_doc;
+    DID *controller;
 
     if (!builder || expires < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
-
-    max_expires = time(NULL);
-    tm = gmtime(&max_expires);
-    tm->tm_year += MAX_EXPIRES;
-    max_expires = mktime(tm);
 
     document = builder->document;
     if (!document) {
@@ -1945,16 +1975,31 @@ int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires)
         return -1;
     }
 
+    controller = document->controller;
+    if (!controller) {
+        max_expires = time(NULL);
+        tm = gmtime(&max_expires);
+        tm->tm_year += MAX_EXPIRES;
+        max_expires = mktime(tm);
+    } else {
+        controller_doc = get_controller_document(builder->document->did.metadata.base.store, controller);
+        if (!controller_doc)
+            return -1;
+
+        max_expires = DIDDocument_GetExpires(controller_doc);
+    }
+
     if (expires == 0) {
         document->expires = max_expires;
         return 0;
     }
 
-    tm = gmtime(&expires);
-    expires = mktime(tm);
+    //Don't delete these two codes: get local time.
+    //tm = gmtime(&expires);
+    //expires = mktime(tm);
 
     if (expires > max_expires) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Expire time is too long, not longer than five years.");
+        DIDError_Set(DIDERR_INVALID_ARGS, "Expire time is too long.");
         return -1;
     }
 

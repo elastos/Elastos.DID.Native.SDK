@@ -47,6 +47,8 @@ static void test_new_customiedid(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(customied_doc);
     DID_Destroy(subject);
 
+    CU_ASSERT_TRUE(DIDDocument_IsValid(customied_doc));
+
     subject = DIDDocument_GetSubject(customied_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(subject);
     CU_ASSERT_STRING_EQUAL(DID_GetMethodSpecificId(subject), customiedid);
@@ -62,6 +64,8 @@ static void test_new_customiedid(void)
 
     bEquals = DIDURL_Equals(creater, DIDDocument_GetDefaultPublicKey(controller_doc));
     CU_ASSERT_TRUE(bEquals);
+
+    CU_ASSERT_EQUAL(DIDDocument_GetExpires(customied_doc), DIDDocument_GetExpires(controller_doc));
 
     DIDDocument_Destroy(customied_doc);
     DIDDocument_Destroy(controller_doc);

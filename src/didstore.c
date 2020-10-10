@@ -1002,8 +1002,8 @@ static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
     return document;
 }
 
-static DIDDocument *create_customied_document(DIDStore *store, DID *did,
-        DID *controller, const char *storepass, const char *alias)
+static DIDDocument *create_customied_document(DIDStore *store, const char *storepass,
+        DID *did, DID *controller, const char *alias)
 {
     DIDDocument *document;
     DIDDocumentBuilder *builder;
@@ -2215,7 +2215,7 @@ DIDDocument *DIDStore_NewCustomiedDID(DIDStore *store, const char *storepass,
     if (Init_DID(&did, customieddid) == -1)
         return NULL;
 
-    doc = create_customied_document(store, &did, controller, storepass, alias);
+    doc = create_customied_document(store, storepass,  &did, controller, alias);
     if (!doc)
         return NULL;
 
