@@ -154,6 +154,6 @@ DID *DIDTransactionInfo_GetOwner(DIDTransactionInfo *txinfo)
     if (!txinfo)
         return NULL;
 
-    return &txinfo->request.proof.verificationMethod.did;
+    return &txinfo->request.did;
 }
 

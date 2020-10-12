@@ -17,7 +17,7 @@ static const char *customiedid = "littlefish";
 
 static void test_new_customiedid(void)
 {
-    DIDDocument *controller_doc, *customied_doc;
+    DIDDocument *controller_doc, *customied_doc, *resolve_doc;
     DID *controller, *_controller, *subject;
     bool bEquals;
     int rc;
@@ -43,6 +43,15 @@ static void test_new_customiedid(void)
 
     subject = DID_New(customiedid);
     CU_ASSERT_PTR_NOT_NULL_FATAL(subject);
+    CU_ASSERT_TRUE_FATAL(DIDStore_PublishDID(store, storepass, subject, NULL, true));
+
+    customied_doc = DID_Resolve(subject, true);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(customied_doc);
+
+    rc = DIDStore_StoreDID(store, customied_doc);
+    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    DIDDocument_Destroy(customied_doc);
+
     customied_doc = DIDStore_LoadDID(store, subject);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customied_doc);
     DID_Destroy(subject);
@@ -67,6 +76,22 @@ static void test_new_customiedid(void)
 
     CU_ASSERT_EQUAL(DIDDocument_GetExpires(customied_doc), DIDDocument_GetExpires(controller_doc));
 
+    //update
+    rc = DIDStore_PublishDID(store, storepass, subject, NULL, false);
+    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+
+    resolve_doc = DID_Resolve(subject, true);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
+
+    const char *data1 = DIDDocument_ToJson(customied_doc, true);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(data1);
+    const char *data2 = DIDDocument_ToJson(resolve_doc, true);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(data2);
+    CU_ASSERT_STRING_EQUAL(data1, data2);
+
+    free((void*)data1);
+    free((void*)data2);
+    DIDDocument_Destroy(resolve_doc);
     DIDDocument_Destroy(customied_doc);
     DIDDocument_Destroy(controller_doc);
     TestData_Free();

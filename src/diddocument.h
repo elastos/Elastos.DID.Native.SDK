@@ -48,6 +48,7 @@ typedef struct DocumentProof {
 struct DIDDocument {
     DID did;
     DID *controller;   //optional
+    DIDDocument *controllerdoc;   //optional
 
     struct {
         size_t size;

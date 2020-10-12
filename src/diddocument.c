@@ -614,7 +614,6 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
 {
     DIDDocument *doc;
     json_t *item;
-    bool bCustomied = false;
 
     assert(root);
 
@@ -647,12 +646,14 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
             DIDError_Set(DIDERR_OUT_OF_MEMORY, "Create controller failed.");
             goto errorExit;
         }
-        bCustomied = true;
+        doc->controllerdoc = DID_Resolve(doc->controller, true);
+        if (!doc->controllerdoc)
+            goto errorExit;
     }
 
     //parse publickey
     item = json_object_get(root, "publicKey");
-    if (!bCustomied && !item) {
+    if (!doc->controller && !item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing document id.");
         goto errorExit;
     }
@@ -665,7 +666,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
 
     //parse authentication
     item = json_object_get(root, "authentication");
-    if (!bCustomied && !item) {
+    if (!doc->controller && !item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing authentication key.");
         goto errorExit;
     }
@@ -882,6 +883,9 @@ void DIDDocument_Destroy(DIDDocument *document)
     if (document->controller)
         DID_Destroy(document->controller);
 
+    if (document->controllerdoc)
+        DIDDocument_Destroy(document->controllerdoc);
+
     for (i = 0; i < document->publickeys.size; i++)
         PublicKey_Destroy(document->publickeys.pks[i]);
 
@@ -964,7 +968,7 @@ const char *DIDDocument_GetProofSignature(DIDDocument *document)
 
 bool DIDDocument_IsDeactivated(DIDDocument *document)
 {
-    DIDDocument *resolvedoc;
+    DIDDocument *resolvedoc, *controller_doc;
     bool isdeactived;
 
     if (!document) {
@@ -980,33 +984,32 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
     if (!resolvedoc)
         return false;
 
-    //todo: check the flow
-    if (isdeactived != DIDMetaData_GetDeactivated(&resolvedoc->metadata))
-        DIDStore_StoreDID(document->metadata.base.store, resolvedoc);
+    isdeactived = DIDMetaData_GetDeactivated(&resolvedoc->metadata);
+    if (isdeactived)
+        goto storeexit;
+
+    //check the controller
+    if (document->controller) {
+        controller_doc = DID_Resolve(document->controller, true);
+        if (!controller_doc) {
+            isdeactived = true;
+            goto storeexit;
+        }
+
+        isdeactived = DIDMetaData_GetDeactivated(&controller_doc->metadata);
+        DIDDocument_Destroy(controller_doc);
+        if (isdeactived)
+            goto storeexit;
+    }
+
+storeexit:
+    if (isdeactived) {
+        DIDMetaData_SetDeactivated(&resolvedoc->metadata, true);
+        DIDDocument_SaveMetaData(resolvedoc);
+    }
 
     DIDDocument_Destroy(resolvedoc);
     return isdeactived;
-}
-
-static DIDDocument *get_controller_document(DIDStore *store, DID *controller)
-{
-    DIDDocument *doc = NULL;
-
-    assert(controller);
-
-    if (store)
-        doc = DIDStore_LoadDID(store, controller);
-
-    if (!doc) {
-        doc = DID_Resolve(controller, false);
-        if (doc && store)
-            DIDDocument_SetStore(doc, store);
-    }
-
-    if (!doc)
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Controller DID does not already exist.");
-
-    return doc;
 }
 
 bool DIDDocument_IsGenuine(DIDDocument *document)
@@ -1020,37 +1023,27 @@ bool DIDDocument_IsGenuine(DIDDocument *document)
         return false;
     }
 
-    if (!document->controller) {
-        controller_doc = document;
-    } else {
-        controller_doc = get_controller_document(document->metadata.base.store, document->controller);
-        if(!controller_doc)
-            return false;
-    }
+    if (document->controller && document->controllerdoc && !DIDDocument_IsGenuine(document->controllerdoc))
+        return false;
 
-    if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(controller_doc),
+    if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(document),
             &document->proof.creater)) {
         DIDError_Set(DIDERR_INVALID_KEY, "Document creater is not match with default key.");
-        goto errorExit;
+        return false;
     }
 
     if (strcmp(document->proof.type, ProofType)) {
         DIDError_Set(DIDERR_UNKNOWN, "Unsupported public key type.");
-        goto errorExit;
+        return false;
     }
 
     data = diddocument_tojson_forsign(document, false, true);
     if (!data)
-        goto errorExit;
+        return false;
 
-    rc = DIDDocument_Verify(controller_doc, NULL, document->proof.signatureValue, 1,
+    rc = DIDDocument_Verify(document, NULL, document->proof.signatureValue, 1,
             data, strlen(data));
     free((void*)data);
-
-errorExit:
-    if (controller_doc != document)
-        DIDDocument_Destroy(controller_doc);
-
     return rc == 0 ? true : false;
 }
 
@@ -1280,7 +1273,7 @@ void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder)
 
 DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *storepass)
 {
-    DIDDocument *doc, *controller_doc = NULL;
+    DIDDocument *doc;
     DIDURL *key;
     const char *data;
     char signature[SIGNATURE_BYTES * 2 + 16];
@@ -1292,29 +1285,21 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
     }
 
     doc = builder->document;
-    if (!doc->controller) {
-        controller_doc = doc;
-    } else {
-        controller_doc = get_controller_document(builder->document->did.metadata.base.store, doc->controller);
-        if (!controller_doc)
-            return NULL;
-    }
-
-    key = DIDDocument_GetDefaultPublicKey(controller_doc);
+    key = DIDDocument_GetDefaultPublicKey(doc);
     if (!key) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "No default key.");
-        goto errorExit;
+        return NULL;
     }
 
     data = diddocument_tojson_forsign(doc, false, true);
     if (!data)
-        goto errorExit;
+        return NULL;
 
-    rc = DIDDocument_Sign(controller_doc, key, storepass, signature, 1,
+    rc = DIDDocument_Sign(doc, NULL, storepass, signature, 1,
             (unsigned char*)data, strlen(data));
     free((void*)data);
     if (rc)
-        goto errorExit;
+        return NULL;
 
     strcpy(doc->proof.type, ProofType);
     time(&doc->proof.created);
@@ -1322,15 +1307,7 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
     strcpy(doc->proof.signatureValue, signature);
 
     builder->document = NULL;
-    if (controller_doc != doc)
-        DIDDocument_Destroy(controller_doc);
     return doc;
-
-errorExit:
-    if (controller_doc != doc)
-        DIDDocument_Destroy(controller_doc);
-
-    return NULL;
 }
 
 static
@@ -1728,6 +1705,13 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
     if (!document->controller)
         return -1;
 
+    if (document->controllerdoc)
+        DIDDocument_Destroy(document->controllerdoc);
+
+    document->controllerdoc = DID_Resolve(document->controller, true);
+    if (!document->controllerdoc)
+        return -1;
+
     return 0;
 }
 
@@ -1961,13 +1945,17 @@ int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires)
 {
     time_t max_expires;
     struct tm *tm = NULL;
-    DIDDocument *document, *controller_doc;
-    DID *controller;
+    DIDDocument *document;
 
     if (!builder || expires < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
+
+    max_expires = time(NULL);
+    tm = gmtime(&max_expires);
+    tm->tm_year += MAX_EXPIRES;
+    max_expires = mktime(tm);
 
     document = builder->document;
     if (!document) {
@@ -1975,31 +1963,17 @@ int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires)
         return -1;
     }
 
-    controller = document->controller;
-    if (!controller) {
-        max_expires = time(NULL);
-        tm = gmtime(&max_expires);
-        tm->tm_year += MAX_EXPIRES;
-        max_expires = mktime(tm);
-    } else {
-        controller_doc = get_controller_document(builder->document->did.metadata.base.store, controller);
-        if (!controller_doc)
-            return -1;
-
-        max_expires = DIDDocument_GetExpires(controller_doc);
-    }
-
     if (expires == 0) {
         document->expires = max_expires;
         return 0;
     }
 
-    //Don't delete these two codes: get local time.
+    //Don't remove, get local time
     //tm = gmtime(&expires);
     //expires = mktime(tm);
 
     if (expires > max_expires) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Expire time is too long.");
+        DIDError_Set(DIDERR_INVALID_ARGS, "Expire time is too long, not longer than five years.");
         return -1;
     }
 
@@ -2020,12 +1994,19 @@ DID* DIDDocument_GetSubject(DIDDocument *document)
 
 ssize_t DIDDocument_GetPublicKeyCount(DIDDocument *document)
 {
+    size_t count;
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    return (ssize_t)document->publickeys.size;
+    count = document->publickeys.size;
+
+    if (document->controller && document->controllerdoc)
+        count += document->controllerdoc->publickeys.size;
+
+    return (ssize_t)count;
 }
 
 PublicKey *DIDDocument_GetPublicKey(DIDDocument *document, DIDURL *keyid)
@@ -2045,15 +2026,24 @@ PublicKey *DIDDocument_GetPublicKey(DIDDocument *document, DIDURL *keyid)
     }
 
     size = document->publickeys.size;
-    if (!size) {
+    if (!size && !document->controller) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "No public key in document.");
         return NULL;
     }
 
-    for (i = 0; i < size; i++ ) {
+    for (i = 0; i < size; i++) {
         pk = document->publickeys.pks[i];
         if (DIDURL_Equals(keyid, &pk->id))
             return pk;
+    }
+
+    if (document->controller && document->controllerdoc) {
+        size = document->controllerdoc->publickeys.size;
+        for (i = 0; i < size; i++) {
+            pk = document->controllerdoc->publickeys.pks[i];
+            if (DIDURL_Equals(keyid, &pk->id))
+                return pk;
+        }
     }
 
     DIDError_Set(DIDERR_NOT_EXISTS, "No this public key in document.");
@@ -2063,20 +2053,25 @@ PublicKey *DIDDocument_GetPublicKey(DIDDocument *document, DIDURL *keyid)
 ssize_t DIDDocument_GetPublicKeys(DIDDocument *document, PublicKey **pks,
         size_t size)
 {
-    size_t actual_size;
+    size_t actual_size, length;
 
     if (!document || !pks || size <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    actual_size = document->publickeys.size;
+    actual_size = DIDDocument_GetPublicKeyCount(document);
     if (actual_size > size) {
         DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
         return -1;
     }
 
-    memcpy(pks, document->publickeys.pks, sizeof(PublicKey*) * actual_size);
+    length = sizeof(PublicKey*) * (document->publickeys.size);
+    memcpy(pks, document->publickeys.pks, length);
+    if (document->controller && document->controllerdoc)
+        memcpy(pks + length, document->controllerdoc->publickeys.pks,
+               sizeof(PublicKey*) * (document->controllerdoc->publickeys.size));
+
     return (ssize_t)actual_size;
 }
 
@@ -2122,11 +2117,31 @@ ssize_t DIDDocument_SelectPublicKeys(DIDDocument *document, const char *type,
         pks[actual_size++] = pk;
     }
 
+    if (document->controller && document->controllerdoc) {
+        total_size = document->controllerdoc->publickeys.size;
+        for (i = 0; i < total_size; i++) {
+            PublicKey *pk = document->controllerdoc->publickeys.pks[i];
+
+            if (keyid && !DIDURL_Equals(keyid, &pk->id))
+                continue;
+            if (type && strcmp(type, pk->type))
+                continue;
+
+            if (actual_size >= size) {
+                DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
+                return -1;
+            }
+
+            pks[actual_size++] = pk;
+        }
+    }
+
     return (ssize_t)actual_size;
 }
 
 DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
 {
+    DIDDocument *doc;
     char idstring[MAX_ID_SPECIFIC_STRING];
     uint8_t binkey[PUBLICKEY_BYTES];
     PublicKey *pk;
@@ -2137,9 +2152,14 @@ DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
         return NULL;
     }
 
-    for (i = 0; i < document->publickeys.size; i++) {
-        pk = document->publickeys.pks[i];
-        if (DID_Equals(&pk->controller, &document->did) == 0)
+    if (document->controller)
+        doc = document->controllerdoc;
+    else
+        doc = document;
+
+    for (i = 0; i < doc->publickeys.size; i++) {
+        pk = doc->publickeys.pks[i];
+        if (DID_Equals(&pk->controller, &doc->did) == 0)
             continue;
 
         base58_decode(binkey, sizeof(binkey), pk->publicKeyBase58);
@@ -2617,6 +2637,14 @@ int DIDDocument_Sign(DIDDocument *document, DIDURL *keyid, const char *storepass
         return -1;
     }
 
+    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_DID, "Not attached with DID store.");
+        return -1;
+    }
+
+    if (keyid && !DIDDocument_IsAuthenticationKey(document, keyid))
+        return -1;
+
     if (!keyid)
         keyid = DIDDocument_GetDefaultPublicKey(document);
 
@@ -2628,7 +2656,8 @@ int DIDDocument_Sign(DIDDocument *document, DIDURL *keyid, const char *storepass
         return -1;
     }
 
-    return DIDDocument_SignDigest(document, keyid, storepass, sig, digest, sizeof(digest));
+    return DIDStore_Sign(document->metadata.base.store, storepass,
+            DIDURL_GetDid(keyid), keyid, sig, digest, sizeof(digest));
 }
 
 int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
@@ -2639,11 +2668,19 @@ int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
         return -1;
     }
 
+    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_DID, "Not attached with DID store.");
+        return -1;
+    }
+
+    if (keyid && !DIDDocument_IsAuthenticationKey(document, keyid))
+        return -1;
+
     if (!keyid)
         keyid = DIDDocument_GetDefaultPublicKey(document);
 
     return DIDStore_Sign(document->metadata.base.store, storepass,
-        DIDDocument_GetSubject(document), keyid, sig, digest, size);
+            DIDURL_GetDid(keyid), keyid, sig, digest, size);
 }
 
 int DIDDocument_Verify(DIDDocument *document, DIDURL *keyid, char *sig,
@@ -2686,6 +2723,11 @@ int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
     publickey = DIDDocument_GetPublicKey(document, keyid);
     if (!publickey) {
         DIDError_Set(DIDERR_INVALID_KEY, "No this sign key.");
+        return -1;
+    }
+
+    if (!PublicKey_IsAuthenticationKey(publickey)) {
+        DIDError_Set(DIDERR_INVALID_KEY, "The key is not an authentication key.");
         return -1;
     }
 

@@ -63,7 +63,7 @@ static int proof_toJson(JsonGenerator *gen, DIDRequest *req)
     assert(gen);
     assert(req);
 
-    method = DIDURL_ToString(&req->proof.verificationMethod, _method, ELA_MAX_DIDURL_LEN, 1);
+    method = DIDURL_ToString(&req->proof.verificationMethod, _method, ELA_MAX_DIDURL_LEN, 0);
     if (!method)
         return -1;
 
@@ -123,11 +123,6 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL 
     assert(document);
     assert(signkey);
     assert(storepass && *storepass);
-
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_MALFORMED_DID, "Not attached with DID store.");
-        return NULL;
-    }
 
     if (type == RequestType_Create || type == RequestType_Deactivate) {
         prevtxid = "";

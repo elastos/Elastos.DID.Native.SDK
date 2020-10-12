@@ -1257,6 +1257,14 @@ DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did)
     if (!document)
         return NULL;
 
+    if (document->controller) {
+        document->controllerdoc = DID_Resolve(document->controller, true);
+        if (!document->controllerdoc) {
+            DIDDocument_Destroy(document);
+            return NULL;
+        }
+    }
+
     if (load_didmeta(store, &document->metadata, document->did.idstring) == -1) {
         DIDDocument_Destroy(document);
         return NULL;
@@ -2201,11 +2209,6 @@ DIDDocument *DIDStore_NewCustomiedDID(DIDStore *store, const char *storepass,
         return NULL;
     }
 
-    controller_doc = DID_Resolve(controller, true);
-    if (!controller_doc)
-        return NULL;
-    DIDDocument_Destroy(controller_doc);
-
     if (Init_DIDURL(&key, controller, "primary") == -1)
         return NULL;
 
@@ -2215,7 +2218,7 @@ DIDDocument *DIDStore_NewCustomiedDID(DIDStore *store, const char *storepass,
     if (Init_DID(&did, customieddid) == -1)
         return NULL;
 
-    doc = create_customied_document(store, storepass,  &did, controller, alias);
+    doc = create_customied_document(store, storepass, &did, controller, alias);
     if (!doc)
         return NULL;
 
