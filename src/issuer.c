@@ -63,7 +63,7 @@ Issuer *Issuer_Create(DID *did, DIDURL *signkey, DIDStore *store)
         }
     }
 
-    if (!DIDStore_ContainsPrivateKey(store, did, signkey)) {
+    if (!DIDStore_ContainsPrivateKey(store, DIDURL_GetDid(signkey), signkey)) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Missing private key paired with signkey.");
         DIDDocument_Destroy(doc);
         return NULL;
@@ -200,8 +200,7 @@ Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *credid,
     int i;
 
     if (!issuer ||!owner || !credid || !types || typesize <= 0||
-            !subject || size <= 0 || expires <= 0 ||
-            !storepass || !*storepass) {
+            !subject || size <= 0 || expires <= 0 || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }

@@ -141,7 +141,7 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL 
         payload = strdup(data);
     }
     else {
-        data = DIDDocument_ToJson(document, false);
+        data = DIDDocument_ToJson(document, true);
         if (!data)
             return NULL;
 
@@ -292,6 +292,7 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json)
         docJson[len] = 0;
 
         request->doc = DIDDocument_FromJson(docJson);
+
         free(docJson);
         if (!request->doc) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Deserialize transaction payload from json failed.");

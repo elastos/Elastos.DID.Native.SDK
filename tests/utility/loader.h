@@ -119,6 +119,10 @@ DIDDocument *TestData_LoadDoc(void);
 
 DIDDocument *TestData_LoadIssuerDoc(void);
 
+DIDDocument *TestData_LoadEmptyCustomizedDoc(void);
+
+DIDDocument *TestData_LoadCustomizedDoc(void);
+
 const char *TestData_LoadRestoreMnemonic(void);
 
 #ifdef __cplusplus

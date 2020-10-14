@@ -609,6 +609,34 @@ int DIDDocument_SetStore(DIDDocument *document, DIDStore *store)
     return 0;
 }
 
+static size_t get_self_authentication_count(DIDDocument *document)
+{
+    size_t size = 0, i;
+
+    assert(document);
+
+    for (i = 0; i < document->publickeys.size; i++) {
+        if(document->publickeys.pks[i]->authenticationKey)
+            size++;
+    }
+
+    return size;
+}
+
+static size_t get_self_authorization_count(DIDDocument *document)
+{
+    size_t size = 0, i;
+
+    assert(document);
+
+    for (i = 0; i < document->publickeys.size; i++) {
+        if(document->publickeys.pks[i]->authorizationKey)
+            size++;
+    }
+
+    return size;
+}
+
 ////////////////////////////////Document/////////////////////////////////////
 DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
 {
@@ -783,14 +811,14 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
         CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
                 compact, KeyType_PublicKey));
 
-        if (DIDDocument_GetAuthenticationCount(doc) > 0) {
+        if (get_self_authentication_count(doc) > 0) {
             CHECK(JsonGenerator_WriteFieldName(gen, "authentication"));
             CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
                     compact, KeyType_Authentication));
         }
     }
 
-    if (DIDDocument_GetAuthorizationCount(doc) > 0) {
+    if (get_self_authorization_count(doc) > 0) {
         CHECK(JsonGenerator_WriteFieldName(gen, "authorization"));
         CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks,
                 doc->publickeys.size, compact, KeyType_Authorization));
@@ -1199,7 +1227,21 @@ int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc)
             return -1;
     }
 
-    if (publickeys_copy(destdoc, srcdoc->publickeys.pks, srcdoc->publickeys.size) == -1) {
+    if (srcdoc->controllerdoc) {
+        destdoc->controllerdoc = (DIDDocument*)calloc(1, sizeof(DIDDocument));
+        if (!destdoc->controllerdoc) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for controller document failed.");
+            return -1;
+        }
+
+        if (DIDDocument_Copy(destdoc->controllerdoc, srcdoc->controllerdoc) < 0) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Copy controller document failed.");
+            return -1;
+        }
+    }
+
+    if (srcdoc->publickeys.size != 0 &&
+            publickeys_copy(destdoc, srcdoc->publickeys.pks, srcdoc->publickeys.size) == -1) {
         DID_Destroy(destdoc->controller);
         return -1;
     }
@@ -1366,8 +1408,12 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
 
     //check keyid is existed in pk array
     document = builder->document;
-    size = DIDDocument_GetPublicKeyCount(document);
-    for (i = 0; i < size; i++) {
+    if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
+        DIDError_Set(DIDERR_INVALID_KEY, "The key id does not owned by this DID.");
+        return -1;
+    }
+
+    for (i = 0; i < document->publickeys.size; i++) {
         pk = document->publickeys.pks[i];
         if (DIDURL_Equals(&pk->id, keyid) ||
                !strcmp(pk->publicKeyBase58, key)) {
@@ -1414,6 +1460,11 @@ int DIDDocumentBuilder_RemovePublicKey(DIDDocumentBuilder *builder, DIDURL *keyi
         return -1;
     }
 
+    if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
+        DIDError_Set(DIDERR_INVALID_KEY, "Can't remove other DID's key!!!!");
+        return -1;
+    }
+
     return remove_publickey(document, keyid);
 }
 
@@ -1441,6 +1492,11 @@ int DIDDocumentBuilder_AddAuthenticationKey(DIDDocumentBuilder *builder,
     }
 
     document = builder->document;
+    if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
+        DIDError_Set(DIDERR_INVALID_KEY, "The key id does not owned by this DID.");
+        return -1;
+    }
+
     //check new authentication key is exist in publickeys
     pk = DIDDocument_GetPublicKey(document, keyid);
     if (pk) {
@@ -1494,6 +1550,11 @@ int DIDDocumentBuilder_RemoveAuthenticationKey(DIDDocumentBuilder *builder, DIDU
     key = DIDDocument_GetDefaultPublicKey(document);
     if (DIDURL_Equals(key, keyid)) {
         DIDError_Set(DIDERR_INVALID_KEY, "Can't remove default key!!!!");
+        return -1;
+    }
+
+    if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
+        DIDError_Set(DIDERR_INVALID_KEY, "Can't remove other DID's authentication key!!!!");
         return -1;
     }
 
@@ -1552,6 +1613,11 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
     }
 
     document = builder->document;
+    if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
+        DIDError_Set(DIDERR_INVALID_KEY, "The key id does not owned by this DID.");
+        return -1;
+    }
+
     if (controller && DID_Equals(controller, DIDDocument_GetSubject(document))) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Key cannot used for authorizating.");
         return -1;
@@ -1603,12 +1669,23 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
 int DIDDocumentBuilder_AuthorizationDid(DIDDocumentBuilder *builder, DIDURL *keyid,
         DID *controller, DIDURL *authorkeyid)
 {
-    DIDDocument *doc;
+    DIDDocument *doc, *document;
     PublicKey *pk;
     int rc;
 
     if (!builder || !builder->document || !keyid || !controller) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    document = builder->document;
+    if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
+        DIDError_Set(DIDERR_INVALID_KEY, "The key id does not owned by this DID.");
+        return -1;
+    }
+
+    if (DID_Equals(controller, DIDDocument_GetSubject(document))) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Key cannot used for authorizating.");
         return -1;
     }
 
@@ -1649,6 +1726,11 @@ int DIDDocumentBuilder_RemoveAuthorizationKey(DIDDocumentBuilder *builder, DIDUR
     key = DIDDocument_GetDefaultPublicKey(document);
     if (DIDURL_Equals(key, keyid)) {
         DIDError_Set(DIDERR_INVALID_KEY, "Can't remove default key!!!!");
+        return -1;
+    }
+
+    if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
+        DIDError_Set(DIDERR_INVALID_KEY, "Can't remove other DID's authentication key!!!!");
         return -1;
     }
 
@@ -2066,10 +2148,9 @@ ssize_t DIDDocument_GetPublicKeys(DIDDocument *document, PublicKey **pks,
         return -1;
     }
 
-    length = sizeof(PublicKey*) * (document->publickeys.size);
-    memcpy(pks, document->publickeys.pks, length);
+    memcpy(pks, document->publickeys.pks, sizeof(PublicKey*) * (document->publickeys.size));
     if (document->controller && document->controllerdoc)
-        memcpy(pks + length, document->controllerdoc->publickeys.pks,
+        memcpy(pks + document->publickeys.size, document->controllerdoc->publickeys.pks,
                sizeof(PublicKey*) * (document->controllerdoc->publickeys.size));
 
     return (ssize_t)actual_size;
@@ -2176,17 +2257,16 @@ DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
 ///////////////////////Authentications/////////////////////////////
 ssize_t DIDDocument_GetAuthenticationCount(DIDDocument *document)
 {
-    size_t size = 0, i;
+    size_t size, i;
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    for (i = 0; i < document->publickeys.size; i++) {
-        if(document->publickeys.pks[i]->authenticationKey)
-            size++;
-    }
+    size = get_self_authentication_count(document);
+    if (document->controller && document->controllerdoc)
+        size += get_self_authentication_count(document->controllerdoc);
 
     return (ssize_t)size;
 }
@@ -2194,20 +2274,32 @@ ssize_t DIDDocument_GetAuthenticationCount(DIDDocument *document)
 ssize_t DIDDocument_GetAuthenticationKeys(DIDDocument *document, PublicKey **pks,
         size_t size)
 {
-    size_t actual_size = 0, i;
+    size_t actual_size = 0, i, j;
+    DIDDocument *docs[2] = {0};
 
     if (!document || !pks || size <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    for (i = 0; i < document->publickeys.size; i++) {
-        if(document->publickeys.pks[i]->authenticationKey){
-            if (actual_size >= size) {
-                DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
-                return -1;
+    if (size < DIDDocument_GetAuthenticationCount(document)) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
+        return -1;
+    }
+
+    docs[0] = document;
+    if (document->controller && document->controllerdoc)
+        docs[1] = document->controllerdoc;
+
+    for (i = 0; i < 2 && docs[i]; i++) {
+        for (j = 0; j < docs[i]->publickeys.size; j++) {
+            if(docs[i]->publickeys.pks[j]->authenticationKey){
+                if (actual_size >= size) {
+                    DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
+                    return -1;
+                }
+                pks[actual_size++] = docs[i]->publickeys.pks[j];
             }
-            pks[actual_size++] = document->publickeys.pks[i];
         }
     }
 
@@ -2243,8 +2335,9 @@ PublicKey *DIDDocument_GetAuthenticationKey(DIDDocument *document, DIDURL *keyid
 ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
         const char *type, DIDURL *keyid, PublicKey **pks, size_t size)
 {
-    size_t actual_size = 0, i;
+    size_t actual_size = 0, i, j;
     PublicKey *pk;
+    DIDDocument *docs[2] = {0};
 
     if (!document || !pks || size <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2260,21 +2353,27 @@ ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
         return -1;
     }
 
-    for (i = 0; i < document->publickeys.size; i++) {
-        pk = document->publickeys.pks[i];
-        if (!pk->authenticationKey)
-            continue;
-        if (keyid && !DIDURL_Equals(keyid, &pk->id))
-            continue;
-        if (type && strcmp(type, pk->type))
-            continue;
+    docs[0] = document;
+    if (document->controller && document->controllerdoc)
+        docs[1] = document->controllerdoc;
 
-        if (actual_size >= size) {
-            DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
-            return -1;
+    for (i = 0; i < 2 && docs[i]; i++) {
+        for (j = 0; j < docs[i]->publickeys.size; j++) {
+            pk = docs[i]->publickeys.pks[j];
+            if (!pk->authenticationKey)
+                continue;
+            if (keyid && !DIDURL_Equals(keyid, &pk->id))
+                continue;
+            if (type && strcmp(type, pk->type))
+                continue;
+
+            if (actual_size >= size) {
+                DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
+                return -1;
+            }
+
+            pks[actual_size++] = pk;
         }
-
-        pks[actual_size++] = pk;
     }
 
     return (ssize_t)actual_size;
@@ -2283,17 +2382,16 @@ ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
 ////////////////////////////Authorization//////////////////////////
 ssize_t DIDDocument_GetAuthorizationCount(DIDDocument *document)
 {
-    size_t size = 0, i;
+    size_t size;
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    for (i = 0; i < document->publickeys.size; i++) {
-        if(document->publickeys.pks[i]->authorizationKey)
-            size++;
-    }
+    size = get_self_authorization_count(document);
+    if (document->controller && document->controllerdoc)
+        size += get_self_authorization_count(document->controllerdoc);
 
     return (ssize_t)size;
 }
@@ -2301,21 +2399,33 @@ ssize_t DIDDocument_GetAuthorizationCount(DIDDocument *document)
 ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
         size_t size)
 {
-    size_t actual_size = 0, i;
+    size_t actual_size = 0, i, j;
+    DIDDocument *docs[2] = {0};
 
     if (!document || !pks || size <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    for (i = 0; i < document->publickeys.size; i++) {
-        if(document->publickeys.pks[i]->authorizationKey){
-            if (actual_size >= size) {
-                DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
-                return -1;
-            }
+    if (size < DIDDocument_GetAuthorizationCount(document)) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
+        return -1;
+    }
 
-            pks[actual_size++] = document->publickeys.pks[i];
+    docs[0] = document;
+    if (document->controller && document->controllerdoc)
+        docs[1] = document->controllerdoc;
+
+    for (i = 0; i < 2 && docs[i]; i++) {
+        for (j = 0; j < docs[i]->publickeys.size; j++) {
+            if(docs[i]->publickeys.pks[j]->authorizationKey){
+                if (actual_size >= size) {
+                    DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
+                    return -1;
+                }
+
+                pks[actual_size++] = docs[i]->publickeys.pks[j];
+            }
         }
     }
 
@@ -2346,8 +2456,9 @@ PublicKey *DIDDocument_GetAuthorizationKey(DIDDocument *document, DIDURL *keyid)
 ssize_t DIDDocument_SelectAuthorizationKeys(DIDDocument *document,
         const char *type, DIDURL *keyid, PublicKey **pks, size_t size)
 {
-    size_t actual_size = 0, i;
+    size_t actual_size = 0, i, j;
     PublicKey *pk;
+    DIDDocument *docs[2] = {0};
 
     if (!document || !pks || size <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2363,21 +2474,27 @@ ssize_t DIDDocument_SelectAuthorizationKeys(DIDDocument *document,
         return -1;
     }
 
-    for (i = 0; i < document->publickeys.size; i++) {
-        pk = document->publickeys.pks[i];
-        if (!pk->authorizationKey)
-            continue;
-        if (keyid && !DIDURL_Equals(keyid, &pk->id))
-            continue;
-        if (type && strcmp(type, pk->type))
-            continue;
+    docs[0] = document;
+    if (document->controller && document->controllerdoc)
+        docs[1] = document->controllerdoc;
 
-        if (actual_size >= size) {
-            DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
-            return -1;
+    for (i = 0; i < 2 && docs[i]; i++) {
+        for (j = 0; j < docs[i]->publickeys.size; j++) {
+            pk = docs[i]->publickeys.pks[j];
+            if (!pk->authorizationKey)
+                continue;
+            if (keyid && !DIDURL_Equals(keyid, &pk->id))
+                continue;
+            if (type && strcmp(type, pk->type))
+                continue;
+
+            if (actual_size >= size) {
+                DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
+                return -1;
+            }
+
+            pks[actual_size++] = pk;
         }
-
-        pks[actual_size++] = pk;
     }
 
     return (ssize_t)actual_size;

@@ -51,6 +51,9 @@ typedef struct TestData {
     char *docCompactJson;
     char *docNormalizedJson;
 
+    DIDDocument *emptycustomieddoc;
+    DIDDocument *customieddoc;
+
     Credential *profileVc;
     char *profileVcCompactJson;
     char *profileVcNormalizedJson;
@@ -767,6 +770,52 @@ DIDDocument *TestData_LoadIssuerDoc(void)
     return testdata.issuerdoc;
 }
 
+DIDDocument *TestData_LoadEmptyCustomizedDoc(void)
+{
+    DIDDocument *doc;
+    DID *subject;
+
+    TestData_LoadIssuerDoc();
+    TestData_LoadDoc();
+
+    if (!testdata.emptycustomieddoc)
+        testdata.emptycustomieddoc = store_document("customized-did-empty.json", "empty customized doc");
+
+    subject = DIDDocument_GetSubject(testdata.emptycustomieddoc);
+    if (!subject)
+        return NULL;
+
+    doc = DID_Resolve(subject, true);
+    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.emptycustomieddoc;
+}
+
+DIDDocument *TestData_LoadCustomizedDoc(void)
+{
+    DIDDocument *doc;
+    DID *subject;
+
+    TestData_LoadIssuerDoc();
+    TestData_LoadDoc();
+
+    if (!testdata.customieddoc)
+        testdata.customieddoc = store_document("customized-did.json", "customized doc");
+
+    subject = DIDDocument_GetSubject(testdata.customieddoc);
+    if (!subject)
+        return NULL;
+
+    doc = DID_Resolve(subject, true);
+    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.customieddoc;
+}
+
 const char *TestData_LoadRestoreMnemonic(void)
 {
     if (!testdata.restoreMnemonic)
@@ -796,6 +845,11 @@ void TestData_Free(void)
         free(testdata.docCompactJson);
     if (testdata.docNormalizedJson)
         free(testdata.docNormalizedJson);
+
+    if (testdata.emptycustomieddoc)
+        DIDDocument_Destroy(testdata.emptycustomieddoc);
+    if (testdata.customieddoc)
+        DIDDocument_Destroy(testdata.customieddoc);
 
     if (testdata.profileVc)
         Credential_Destroy(testdata.profileVc);
