@@ -816,12 +816,12 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
             CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
                     compact, KeyType_Authentication));
         }
-    }
 
-    if (get_self_authorization_count(doc) > 0) {
-        CHECK(JsonGenerator_WriteFieldName(gen, "authorization"));
-        CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks,
-                doc->publickeys.size, compact, KeyType_Authorization));
+        if (get_self_authorization_count(doc) > 0) {
+            CHECK(JsonGenerator_WriteFieldName(gen, "authorization"));
+            CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks,
+                    doc->publickeys.size, compact, KeyType_Authorization));
+        }
     }
 
     if (doc->credentials.size > 0) {
@@ -1024,8 +1024,11 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
             goto storeexit;
         }
 
+        if (document->controllerdoc)
+            DIDDocument_Destroy(document->controllerdoc);
+        document->controllerdoc = controller_doc;
+
         isdeactived = DIDMetaData_GetDeactivated(&controller_doc->metadata);
-        DIDDocument_Destroy(controller_doc);
         if (isdeactived)
             goto storeexit;
     }
@@ -2233,7 +2236,7 @@ DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
         return NULL;
     }
 
-    if (document->controller)
+    if (document->controller && document->controllerdoc)
         doc = document->controllerdoc;
     else
         doc = document;

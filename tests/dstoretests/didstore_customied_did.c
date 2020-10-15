@@ -33,9 +33,7 @@ static void test_new_customiedid(void)
 
     controller = DIDDocument_GetSubject(controller_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller);
-
-    rc = DIDStore_PublishDID(store, storepass, controller, NULL, true);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_TRUE_FATAL(DIDStore_PublishDID(store, storepass, controller, NULL, true));
 
     customied_doc = DIDStore_NewCustomiedDID(store, storepass, customiedid, controller, NULL);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customied_doc);
