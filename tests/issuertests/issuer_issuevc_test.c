@@ -263,6 +263,69 @@ static void test_issuer_issuerbystring(void)
     Credential_Destroy(vc);
 }
 
+static void test_issuer_issuerbystring_with_ctrl_chars(void)
+{
+    Credential *vc;
+    DIDURL *credid;
+    DID *vcdid;
+    time_t expires;
+    bool isEquals;
+    ssize_t size;
+    const char *provalue;
+
+    expires = DIDDocument_GetExpires(issuerdoc);
+
+    credid = DIDURL_NewByDid(issuerid, "mycredential");
+    CU_ASSERT_PTR_NOT_NULL(credid);
+
+    const char *types[] = {"BasicProfileCredential",
+            "SelfProclaimedCredential"};
+
+    const char *propdata = "{\"editTime\":\"1602998098\",\"customInfos\":\"\",\"didName\":\"cr03-did\",\"email\":\"\",\"nickname\":\"macdev\",\"gender\":\"\",\"did\":\"did:elastos:imnP8SJsFJfFb5mUrc6qLe9qyf18KAGH1X\",\"introduction\":\"Hello I\'m \\\"MacDev\\\"\\nThis is the \\\"MacDev\\\"\\nWhat\'s the matter?\"}";
+
+    vc = Issuer_CreateCredentialByString(issuer, issuerid, credid, types, 2,
+            propdata, expires, storepass);
+    DIDURL_Destroy(credid);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
+    CU_ASSERT_FALSE(Credential_IsExpired(vc));
+    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
+    CU_ASSERT_TRUE(Credential_IsValid(vc));
+
+    vcdid = DIDURL_GetDid(Credential_GetId(vc));
+    isEquals = DID_Equals(vcdid, issuerid);
+    CU_ASSERT_TRUE(isEquals);
+    isEquals = DID_Equals(Credential_GetOwner(vc), issuerid);
+    CU_ASSERT_TRUE(isEquals);
+    isEquals = DID_Equals(Credential_GetIssuer(vc), issuerid);
+    CU_ASSERT_TRUE(isEquals);
+
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
+    const char *tmptypes[2];
+    size = Credential_GetTypes(vc, tmptypes, 2);
+    CU_ASSERT_EQUAL(size, 2);
+    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 2, "PhoneCredential"));
+
+    provalue = Credential_GetProperty(vc, "editTime");
+    CU_ASSERT_STRING_EQUAL(provalue, "1602998098");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "didName");
+    CU_ASSERT_STRING_EQUAL(provalue, "cr03-did");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "nickname");
+    CU_ASSERT_STRING_EQUAL(provalue, "macdev");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "introduction");
+    CU_ASSERT_STRING_EQUAL(provalue, "Hello I'm \"MacDev\"\nThis is the \"MacDev\"\nWhat's the matter?");
+    free((void*)provalue);
+
+    provalue = Credential_GetProperties(vc);
+    CU_ASSERT_PTR_NOT_NULL(provalue);
+    CU_ASSERT_EQUAL(strlen(propdata), strlen(provalue));
+    Credential_Destroy(vc);
+}
+
 static int issuer_issuevc_test_suite_init(void)
 {
     DIDURL *signkey;
@@ -317,6 +380,7 @@ static CU_TestInfo cases[] = {
     { "test_issuer_issuevc",                   test_issuer_issuevc       },
     { "test_issuer_issueselfvc",               test_issuer_issueselfvc   },
     { "test_issuer_issuerbystring",            test_issuer_issuerbystring},
+    { "test_issuer_issuerbystring_with_ctrl_chars", test_issuer_issuerbystring_with_ctrl_chars },
     { NULL,                                    NULL                      }
 };
 
