@@ -278,8 +278,57 @@ int JsonGenerator_WriteString(JsonGenerator *generator, const char *value)
 
     if (value) {
         generator->buffer[generator->pos++] = start_string_quote;
-        strcpy(generator->buffer + generator->pos, value);
-        generator->pos += len;
+        for (const char *p = value; *p != 0; p++) {
+            switch (*p) {
+                case '\b':
+                    if (ensure_capacity(generator, len + 1) == -1)
+                        return -1;
+                    generator->buffer[generator->pos++] = '\\';
+                    generator->buffer[generator->pos++] = 'b';
+                    break;
+                case '\f':
+                    if (ensure_capacity(generator, len + 1) == -1)
+                        return -1;
+                    generator->buffer[generator->pos++] = '\\';
+                    generator->buffer[generator->pos++] = 'f';
+                    break;
+                case '\n':
+                    if (ensure_capacity(generator, len + 1) == -1)
+                        return -1;
+                    generator->buffer[generator->pos++] = '\\';
+                    generator->buffer[generator->pos++] = 'n';
+                    break;
+                case '\r':
+                    if (ensure_capacity(generator, len + 1) == -1)
+                        return -1;
+                    generator->buffer[generator->pos++] = '\\';
+                    generator->buffer[generator->pos++] = 'r';
+                    break;
+                 case '\t':
+                    if (ensure_capacity(generator, len + 1) == -1)
+                        return -1;
+                    generator->buffer[generator->pos++] = '\\';
+                    generator->buffer[generator->pos++] = 't';
+                    break;
+                case '"':
+                    if (ensure_capacity(generator, len + 1) == -1)
+                        return -1;
+                    generator->buffer[generator->pos++] = '\\';
+                    generator->buffer[generator->pos++] = '"';
+                    break;
+                case '\\':
+                    if (ensure_capacity(generator, len + 1) == -1)
+                        return -1;
+                    generator->buffer[generator->pos++] = '\\';
+                    generator->buffer[generator->pos++] = '\\';
+                    break;
+                default:
+                    generator->buffer[generator->pos++] = *p;
+                    break;
+           }
+
+           len--;
+        }
         generator->buffer[generator->pos++] = end_string_quote;
     } else {
         strcpy(generator->buffer + generator->pos, "null");

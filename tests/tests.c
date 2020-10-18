@@ -105,9 +105,6 @@ int main(int argc, char *argv[])
     sys_coredump_set(true);
 #endif
 
-    getchar();
-    getchar();
-
     //for stress test
     while ((opt = getopt_long(argc, argv, "s:m:h?", options, &idx)) != -1) {
         switch (opt) {
@@ -137,6 +134,8 @@ int main(int argc, char *argv[])
         printf("Wait for debugger attaching, process id is: %d.\n", getpid());
 #ifndef _MSC_VER
         printf("After debugger attached, press any key to continue......");
+        getchar();
+        printf("Attached, press any key to continue......");
         getchar();
 #else
         DebugBreak();
