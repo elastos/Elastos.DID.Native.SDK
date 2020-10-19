@@ -223,16 +223,20 @@ typedef struct DIDAdapter           DIDAdapter;
  * DIDResolver is support method to resolve did document from chain.
  */
 typedef struct DIDResolver          DIDResolver;
-/**
- * \~English
- * JWTBuilder records the content about jwt.
- */
-typedef struct JWTBuilder           JWTBuilder;
-/**
- * \~English
- * JWSBuilder holds the DIDDocument to parse jws.
- */
-typedef struct JWSParser           JWSParser;
+
+#ifndef DISABLE_JWT
+    /**
+     * \~English
+     * JWTBuilder records the content about jwt.
+     */
+    typedef struct JWTBuilder           JWTBuilder;
+    /**
+     * \~English
+     * JWSBuilder holds the DIDDocument to parse jws.
+     */
+    typedef struct JWSParser           JWSParser;
+#endif
+
 /**
  * \~English
  * DID list callbacks, return alias about did.
@@ -1958,6 +1962,7 @@ DID_API time_t DIDDocument_GetProofCreatedTime(DIDDocument *document);
  */
 DID_API const char *DIDDocument_GetProofSignature(DIDDocument *document);
 
+#ifndef DISABLE_JWT
 /**
  * \~English
  * Get JWTBuilder from document.
@@ -2001,6 +2006,8 @@ DID_API JWSParser *DIDDocument_GetJwsParser(DIDDocument *document);
  *      If no error occurs, return serialize HDKey string. Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
+#endif
+
 DID_API const char *DIDDocument_Derive(DIDDocument *document, const char *identifier,
         int securityCode, const char *storepass);
 
@@ -2996,13 +3003,13 @@ DID_API bool DIDStore_DeactivateDID(DIDStore *store, const char *storepass,
  * @param
  *      store                   [in] The handle to DIDStore.
  * @param
- *      new                     [in] New store password for DIDStore.
+ *      newpw                   [in] New store password for DIDStore.
  * @param
- *      old                     [in] Old store password for DIDStore.
+ *      oldpw                   [in] Old store password for DIDStore.
  * @return
  *      0 on success, -1 if an error occurred. Caller should free the returned value.
  */
-DID_API int DIDStore_ChangePassword(DIDStore *store, const char *new, const char *old);
+DID_API int DIDStore_ChangePassword(DIDStore *store, const char *newpw, const char *oldpw);
 
 /**
  * \~English
@@ -3522,11 +3529,14 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
  * Unsupported error.
  */
 #define DIDERR_UNSUPPOTED                           0x8D000016
+
+#ifndef DISABLE_JWT
 /**
  * \~English
  * JWT error.
  */
 #define DIDERR_JWT                                  0x8D000017
+#endif
 /**
  * \~English
  * JWT error.

@@ -27,7 +27,6 @@
 #include <assert.h>
 
 #include "ela_did.h"
-#include "ela_jwt.h"
 #include "did.h"
 #include "diddocument.h"
 #include "didstore.h"
@@ -38,8 +37,12 @@
 #include "HDkey.h"
 #include "didmeta.h"
 #include "diderror.h"
-#include "jwtbuilder.h"
-#include "jwsparser.h"
+
+#ifndef DISABLE_JWT
+    #include "ela_jwt.h"
+    #include "jwtbuilder.h"
+    #include "jwsparser.h"
+#endif
 
 #define MAX_EXPIRES              5
 
@@ -2564,6 +2567,7 @@ int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
     return 0;
 }
 
+#ifndef DISABLE_JWT
 JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document)
 {
     DID *did;
@@ -2589,6 +2593,7 @@ JWSParser *DIDDocument_GetJwsParser(DIDDocument *document)
 {
     return JWSParser_Create(document);
 }
+#endif
 
 inline static uint32_t UInt32GetBE(const void *b4)
 {

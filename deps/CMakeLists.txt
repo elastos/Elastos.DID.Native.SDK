@@ -21,9 +21,11 @@ if(NOT HDKEY_ONLY)
     add_submodule(libjansson
         DIRECTORY jansson
         DEPENDS platform-specific)
-    add_submodule(libcjose
-        DIRECTORY cjose
-        DEPENDS libjansson libressl platform-specific)
+    if (ENABLE_JWT)
+        add_submodule(libcjose
+            DIRECTORY cjose
+            DEPENDS libjansson libressl platform-specific)
+    endif()
 endif()
 
 if (ENABLE_SPVADAPTER)
