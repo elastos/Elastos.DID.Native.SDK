@@ -2549,7 +2549,7 @@ static bool need_reencrypt(const char *path)
     return false;
 }
 
-int dir_copy(const char *dst, const char *src, const char *new, const char *old);
+int dir_copy(const char *dst, const char *src, const char *newpw, const char *oldpw);
 
 static int dir_copy_helper(const char *path, void *context)
 {
@@ -2570,7 +2570,7 @@ static int dir_copy_helper(const char *path, void *context)
     return dir_copy(dstpath, srcpath, dh->newpassword, dh->oldpassword);
 }
 
-int dir_copy(const char *dst, const char *src, const char *new, const char *old)
+int dir_copy(const char *dst, const char *src, const char *newpw, const char *oldpw)
 {
     int rc;
     Dir_Copy_Helper dh;
@@ -2597,8 +2597,8 @@ int dir_copy(const char *dst, const char *src, const char *new, const char *old)
 
         dh.srcpath = src;
         dh.dstpath = dst;
-        dh.oldpassword = old;
-        dh.newpassword = new;
+        dh.oldpassword = oldpw;
+        dh.newpassword = newpw;
 
         if (list_dir(src, "*", dir_copy_helper, (void*)&dh) == -1) {
             DIDError_Set(DIDERR_DIDSTORE_ERROR, "Copy directory failed.");
@@ -2625,14 +2625,14 @@ int dir_copy(const char *dst, const char *src, const char *new, const char *old)
     }
 
     //src is encrypted file.
-    size = decrypt_from_base64(plain, old, string);
+    size = decrypt_from_base64(plain, oldpw, string);
     free((void*)string);
     if (size < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt %s failed.", src);
         return -1;
     }
 
-    size = encrypt_to_base64((char*)data, new, plain, size);
+    size = encrypt_to_base64((char*)data, newpw, plain, size);
     memset(plain, 0, sizeof(plain));
     if (size < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt %s with new pass word failed.", src);
@@ -2646,15 +2646,15 @@ int dir_copy(const char *dst, const char *src, const char *new, const char *old)
     return rc;
 }
 
-static int change_password(DIDStore *store, const char *new, const char *old)
+static int change_password(DIDStore *store, const char *newpw, const char *oldpw)
 {
     char private_dir[PATH_MAX] = {0}, private_journal[PATH_MAX]= {0};
     char did_dir[PATH_MAX]= {0}, did_journal[PATH_MAX]= {0};
     char path[PATH_MAX] = {0};
 
     assert(store);
-    assert(new && *new);
-    assert(old && *old);
+    assert(newpw && *newpw);
+    assert(oldpw && *oldpw);
 
     if (get_dir(private_dir, 0, 2, store->root, PRIVATE_DIR) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Private identity doesn't exist.");
@@ -2692,12 +2692,12 @@ static int change_password(DIDStore *store, const char *new, const char *old)
         return -1;
     }
 
-    if (dir_copy(private_journal, private_dir, new, old) == -1) {
+    if (dir_copy(private_journal, private_dir, newpw, oldpw) == -1) {
         delete_file(private_journal);
         return -1;
     }
 
-    if (dir_copy(did_journal, did_dir, new, old) == -1) {
+    if (dir_copy(did_journal, did_dir, newpw, oldpw) == -1) {
         delete_file(private_journal);
         delete_file(did_journal);
         return -1;
@@ -2713,14 +2713,14 @@ static int change_password(DIDStore *store, const char *new, const char *old)
     return store_file(path, "");
 }
 
-int DIDStore_ChangePassword(DIDStore *store, const char *new, const char *old)
+int DIDStore_ChangePassword(DIDStore *store, const char *newpw, const char *oldpw)
 {
-    if (!store || !old || !*old || !new || !*new) {
+    if (!store || !oldpw || !*oldpw || !newpw || !*newpw) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    if (change_password(store, new, old) == -1)
+    if (change_password(store, newpw, oldpw) == -1)
         return -1;
 
     return postchange_password(store);

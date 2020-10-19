@@ -51,6 +51,10 @@ if(HAVE_DIRECT_H)
     add_definitions(-DHAVE_DIRECT_H=1)
 endif()
 
+if(NOT ENABLE_JWT)
+    add_definitions(-DDISABLE_JWT=1)
+endif()
+
 file(GLOB utility-SOURCES "utility/*.c")
 file(GLOB backend-SOURCES "backend/*.c")
 file(GLOB jwt-SOURCES "jwt/*.c")
@@ -69,12 +73,19 @@ set(SRC
     issuer.c
     ${utility-SOURCES}
     ${backend-SOURCES}
-    ${jwt-SOURCES}
     ${meta-SOURCES})
 
 set(HEADERS
-    ela_did.h
-    jwt/ela_jwt.h)
+    ela_did.h)
+
+if(ENABLE_JWT)
+    set(HEADERS
+        ${HEADERS}
+        jwt/ela_jwt.h)
+    set(SRC
+        ${SRC}
+        ${jwt-SOURCES})
+endif()
 
 if(ENABLE_TESTS)
     set(HEADERS
@@ -89,7 +100,18 @@ if(ENABLE_TESTS)
         "*.h")
 else()
     set(HEADER_FILTER
-        "ela_*.h")
+        "ela_did.h")
+    if(ENABLE_JWT)
+        set(HEADER_FILTER
+            ${HEADER_FILTER}
+            "ela_jwt.h")
+    endif()
+endif()
+
+if(ENABLE_JWT)
+   set(JWT_INCLUDE jwt)
+   set(JWT_LIBS cjose)
+   set(JWT_DEPENDS libcjose)
 endif()
 
 set(INCLUDE
@@ -97,7 +119,7 @@ set(INCLUDE
     utility
     backend
     adapter
-    jwt
+    ${JWT_INCLUDE}
     meta
     .
     ../hdkey
@@ -107,12 +129,12 @@ set(LIBS
     curl
     ssl
     crypto
-    cjose
+    ${JWT_LIBS}
     jansson
     zip
     z)
 
-set(ELADID_DEPENDS libressl libcurl hdkey libjansson libcjose libzip)
+set(ELADID_DEPENDS libressl libcurl hdkey libjansson ${JWT_DEPENDS} libzip)
 
 if(WIN32)
     add_definitions(
@@ -135,13 +157,28 @@ if(WIN32)
         ${ELADID_DEPENDS})
 endif()
 
+set(EXPORT_FILES ela_did.h)
+
+if(ENABLE_JWT)
+    set(EXPORT_FILES
+        ${EXPORT_FILES}
+        jwt/ela_jwt.h)
+endif()
+
 if(DARWIN OR IOS)
     set(SYMBOL_FORMAT
         "{printf \"_%s\\n\",$1}")
 
+    if(ENABLE_JWT)
+        set(GEN_CMD grep -r --include=${HEADER_FILTER} "^DID_API" ${CMAKE_CURRENT_SOURCE_DIR} | grep -o "[A-Za-z0-9_]*(" | awk -F "(" ${SYMBOL_FORMAT} > ${CMAKE_CURRENT_BINARY_DIR}/export.symbols)
+    else()
+        set(GEN_CMD grep -r --include=${HEADER_FILTER} "^DID_API" ${CMAKE_CURRENT_SOURCE_DIR} | grep -o "[A-Za-z0-9_]*(" | awk -F "(" ${SYMBOL_FORMAT} | grep -v "_GetJw" > ${CMAKE_CURRENT_BINARY_DIR}/export.symbols)
+    endif()
+
     add_custom_command(
-        COMMAND grep -r --include=${HEADER_FILTER} "^DID_API" ${CMAKE_CURRENT_SOURCE_DIR} | grep -o "[A-Za-z0-9_]*(" | awk -F "(" ${SYMBOL_FORMAT} > ${CMAKE_CURRENT_BINARY_DIR}/export.symbols
-        DEPENDS ela_did.h jwt/ela_jwt.h
+        COMMAND ${GEN_CMD}
+        #DEPENDS ela_did.h jwt/ela_jwt.h
+        DEPENDS ${EXPORT_FILES}
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/export.symbols
         VERBATIM
     )
