@@ -991,7 +991,7 @@ static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
         return NULL;
     }
 
-    document = DIDDocumentBuilder_Seal(builder, storepass);
+    document = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     DIDDocumentBuilder_Destroy(builder);
     if (!document)
         return NULL;
@@ -1002,23 +1002,29 @@ static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
     return document;
 }
 
-static DIDDocument *create_customied_document(DIDStore *store, const char *storepass,
-        DID *did, DID *controller, const char *alias)
+static DIDDocument *create_customized_document(DIDStore *store, const char *storepass,
+        DID *did, DID **controllers, size_t size, DID *controller)
 {
     DIDDocument *document;
     DIDDocumentBuilder *builder;
+    int i;
 
-    assert(did);
-    assert(controller);
+    assert(store);
     assert(storepass && *storepass);
+    assert(did);
+    assert(controllers);
+    assert(size > 0);
+    assert(controller);
 
     builder = did_createbuilder(did, store);
     if (!builder)
         return NULL;
 
-    if (DIDDocumentBuilder_AddController(builder, controller) == -1) {
-        DIDDocumentBuilder_Destroy(builder);
-        return NULL;
+    for (i = 0; i < size; i++) {
+        if (DIDDocumentBuilder_AddController(builder, controllers[i]) == -1) {
+            DIDDocumentBuilder_Destroy(builder);
+            return NULL;
+        }
     }
 
     if (DIDDocumentBuilder_SetExpires(builder, 0) == -1) {
@@ -1026,12 +1032,11 @@ static DIDDocument *create_customied_document(DIDStore *store, const char *store
         return NULL;
     }
 
-    document = DIDDocumentBuilder_Seal(builder, storepass);
+    document = DIDDocumentBuilder_Seal(builder, controller, storepass);
     DIDDocumentBuilder_Destroy(builder);
     if (!document)
         return NULL;
 
-    DIDMetaData_SetAlias(&document->metadata, alias);
     DIDMetaData_SetDeactivated(&document->metadata, false);
     memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetaData));
     return document;
@@ -1256,14 +1261,6 @@ DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did)
     free((void*)data);
     if (!document)
         return NULL;
-
-    if (document->controller) {
-        document->controllerdoc = DID_Resolve(document->controller, true);
-        if (!document->controllerdoc) {
-            DIDDocument_Destroy(document);
-            return NULL;
-        }
-    }
 
     if (load_didmeta(store, &document->metadata, document->did.idstring) == -1) {
         DIDDocument_Destroy(document);
@@ -2196,29 +2193,55 @@ DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass, const char 
     return document;
 }
 
-DIDDocument *DIDStore_NewCustomiedDID(DIDStore *store, const char *storepass,
-        const char *customieddid, DID *controller, const char *alias)
+DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
+        const char *customizeddid, DID **controllers, size_t size, DID *controller)
 {
     DIDDocument *controller_doc;
     DIDDocument *doc;
-    DIDURL key;
+    DIDURL *key;
     DID did;
+    bool iscontain;
 
-    if (!store || !storepass || !*storepass || !customieddid || !*customieddid || !controller) {
+    if (!store || !storepass || !*storepass || !customizeddid || !*customizeddid ||
+            !controllers|| size <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    if (Init_DIDURL(&key, controller, "primary") == -1)
+    if (!controller && size != 1) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Please specified the default controller.");
+        return NULL;
+    }
+
+    if (!controller)
+        controller = controllers[0];
+
+    if (!Contains_DID(controllers, size, controller)) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Controller must be in the controller array.");
+        return NULL;
+    }
+
+    controller_doc = DID_Resolve(controller, false);
+    if (!controller_doc) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "No controller's document in chain.");
+        return NULL;
+    }
+
+    key = DIDDocument_GetDefaultPublicKey(controller_doc);
+    if (!key) {
+        DIDDocument_Destroy(controller_doc);
+        return NULL;
+    }
+
+    iscontain = DIDStore_ContainsPrivateKey(store, controller, key);
+    DIDDocument_Destroy(controller_doc);
+    if (!iscontain)
         return NULL;
 
-    if (!DIDStore_ContainsPrivateKey(store, controller, &key))
+    if (Init_DID(&did, customizeddid) == -1)
         return NULL;
 
-    if (Init_DID(&did, customieddid) == -1)
-        return NULL;
-
-    doc = create_customied_document(store, storepass, &did, controller, alias);
+    doc = create_customized_document(store, storepass, &did, controllers, size, controller);
     if (!doc)
         return NULL;
 
@@ -2474,8 +2497,11 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
         goto errorExit;
     }
 
-    if (!signkey)
+    if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(doc);
+        if (!signkey)
+            goto errorExit;
+    }
 
     resolve_doc = DID_Resolve(did, true);
     if (!resolve_doc) {

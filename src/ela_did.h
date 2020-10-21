@@ -1166,18 +1166,6 @@ DID_API DID* DIDDocument_GetSubject(DIDDocument *document);
 
 /**
  * \~English
- * Get the controller only about customied DID.
- *
- * @param
- *      document             [in] A handle to DID Document.
- * @return
- *      return the handle to controller. If the DID is normal one, the returned value
- *      is NULL.
- */
-DID_API DID *DIDDocument_GetController(DIDDocument *document);
-
-/**
- * \~English
  * Get DIDDocument Builder to modify document.
  *
  * @param
@@ -1205,6 +1193,8 @@ DID_API void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder);
  * @param
  *      builder              [in] A handle to DIDDocument Builder.
  * @param
+ *      controller           [in] The controller to sign.
+ * @param
  *      storepass            [in] Pass word to sign.
  * @return
  *      If no error occurs, return a handle to DIDDocument.
@@ -1212,7 +1202,7 @@ DID_API void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder);
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
 DID_API DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder,
-            const char *storepass);
+            DID *controller, const char *storepass);
 
 /**
  * \~English
@@ -1459,6 +1449,34 @@ DID_API int DIDDocumentBuilder_RemoveService(DIDDocumentBuilder *builder,
  *      0 on success, -1 if an error occurred.
  */
 DID_API int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires);
+
+/**
+ * \~English
+ * Get the count of controllers. The customized DID Document has controller, so the controller
+ * is optional.
+ *
+ * @param
+ *      document             [in] A handle to DID Document.
+ * @return
+ *      size of controllers on success, -1 if an error occurred.
+ */
+DID_API ssize_t DIDDocument_GetControllerCount(DIDDocument *document);
+
+/**
+ * \~English
+ * Get the array of controllers. A DID Document MAY include a controller property.
+ *
+ * @param
+ *      document             [in] A handle to DID Document.
+ * @param
+ *      controllers          [out] The buffer that will receive the controllers.
+ * @param
+ *      size                 [in] The buffer size of controllers.
+ * @return
+ *      size of controllers on success, -1 if an error occurred.
+ */
+DID_API ssize_t DIDDocument_GetControllers(DIDDocument *document,
+        DID **controllers, size_t size);
 
 /**
  * \~English
@@ -2675,28 +2693,31 @@ DID_API DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass,
 
 /**
  * \~English
- * Create a new DID Document and store in the DID Store by customied string.
+ * Create a new DID Document and store in the DID Store by customized string.
  *
  * @param
  *      store                     [in] THe handle to DIDStore.
  * @param
  *      storepass                 [in] Password for DIDStore.
  * @param
- *      customieddid              [in] The nickname of DID.
- *                                     'customieddid' supports NULL.
+ *      customizeddid              [in] The nickname of DID.
+ *                                     'customizeddid' supports NULL.
  * @param
- *      controller                [in] The controller for customied DID.
- *                                     'customieddid' supports NULL.
+ *      controllers               [in] The controllers for customized DID.
  * @param
- *      alias                     [in] The nickname of DID.
- *                                     ‘alias' supports NULL.
+ *      size                      [in] The count of controllers.
+ * @param
+ *      controller                [in] The controller for customized DID.
+ *                                     'customizeddid' supports NULL.
+ * tip: if the count of controllers is one, 'controller' supports NULL. Otherwise,
+ * the error occures.
  * @return
  *      If no error occurs, return the handle to DID Document.
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API DIDDocument *DIDStore_NewCustomiedDID(DIDStore *store, const char *storepass,
-        const char *customieddid, DID *controller, const char *alias);
+DID_API DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
+        const char *customizeddid, DID **controllers, size_t size, DID *controller);
 
 /**
  * \~English
@@ -3583,6 +3604,11 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
  * JWT error.
  */
 #define DIDERR_MALFORMED_EXPORTDID                  0x8D000018
+/**
+ * \~English
+ * JWT error.
+ */
+#define DIDERR_INVALID_CONTROLLER                   0x8D000019
 /**
  * \~English
  * Unknown error.

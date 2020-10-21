@@ -223,7 +223,7 @@ static int resolve_from_backend(ResolveResult *result, DID *did, bool all)
     data = resolverInstance->resolve(resolverInstance,
             DID_ToString(did, _idstring, sizeof(_idstring)), all);
     if (!data) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve did %s failed.", did->idstring);
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve data %s from chain failed.", did->idstring);
         return rc;
     }
 

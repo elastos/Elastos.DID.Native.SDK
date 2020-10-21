@@ -339,8 +339,11 @@ Presentation *Presentation_Create(DID *did, DIDURL *signkey, DIDStore *store,
         return NULL;
     }
 
-    if (!signkey)
+    if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(doc);
+        if (!signkey)
+            return NULL;
+    }
 
     if (!DIDDocument_IsAuthenticationKey(doc, signkey)) {
         DIDError_Set(DIDERR_INVALID_KEY, "Invalid authentication key.");

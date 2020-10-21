@@ -89,7 +89,7 @@ static void test_idchain_publishdid_and_resolve(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
@@ -149,7 +149,7 @@ static void test_idchain_publishdid_and_resolve(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(3, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(3, DIDDocument_GetAuthenticationCount(doc));
@@ -260,7 +260,7 @@ static void test_idchain_publishdid_with_credential(void)
     rc = DIDDocumentBuilder_AddSelfClaimedCredential(builder, credid, types, 2, props, 1, 0, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     DIDDocumentBuilder_Destroy(builder);
 

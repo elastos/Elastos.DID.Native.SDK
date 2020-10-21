@@ -513,3 +513,19 @@ int DIDURL_SaveMetaData(DIDURL *id)
 
     return 0;
 }
+
+bool Contains_DID(DID **dids, size_t size, DID *did)
+{
+    int i;
+
+    assert(dids);
+    assert(size > 0);
+    assert(did);
+
+    for (i = 0; i < size; i++) {
+        if (DID_Equals(dids[i], did))
+            return true;
+    }
+
+    return false;
+}

@@ -19,7 +19,7 @@ static void test_get_publickey_with_emptycid(void)
     PublicKey *pks[4];
     PublicKey *pk;
     DIDURL *id, *defaultkey, *primaryid;
-    DID *did;
+    DID *did, *controller;
     ssize_t size;
     int i;
     bool isEquals;
@@ -34,20 +34,24 @@ static void test_get_publickey_with_emptycid(void)
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
 
-    CU_ASSERT_EQUAL(DIDDocument_GetPublicKeyCount(doc), 4);
+    CU_ASSERT_EQUAL(1, DIDDocument_GetControllerCount(doc));
+    CU_ASSERT_EQUAL(4, DIDDocument_GetPublicKeyCount(doc));
+
+    controller = &(doc->controllers.docs[0]->did);
+    CU_ASSERT_PTR_NOT_NULL(controller);
 
     size = DIDDocument_GetPublicKeys(doc, pks, sizeof(pks));
-    CU_ASSERT_EQUAL(size, 4);
+    CU_ASSERT_EQUAL(4, size);
 
     for (i = 0; i < size; i++) {
         pk = pks[i];
         id = PublicKey_GetId(pk);
 
-        isEquals = DID_Equals(doc->controller, &(id->did));
+        isEquals = DID_Equals(controller, &(id->did));
         CU_ASSERT_TRUE(isEquals);
         CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
 
-        isEquals = DID_Equals(doc->controller, PublicKey_GetController(pk));
+        isEquals = DID_Equals(controller, PublicKey_GetController(pk));
         if (!strcmp(id->fragment, "recovery")) {
             CU_ASSERT_FALSE(isEquals);
         } else {
@@ -63,7 +67,7 @@ static void test_get_publickey_with_emptycid(void)
     defaultkey = DIDDocument_GetDefaultPublicKey(doc);
     CU_ASSERT_PTR_NOT_NULL(defaultkey);
 
-    primaryid = DIDURL_NewByDid(doc->controller, "primary");
+    primaryid = DIDURL_NewByDid(controller, "primary");
     CU_ASSERT_PTR_NOT_NULL(primaryid);
     pk = DIDDocument_GetPublicKey(doc, primaryid);
     CU_ASSERT_PTR_NOT_NULL(pk);
@@ -72,7 +76,7 @@ static void test_get_publickey_with_emptycid(void)
     isEquals = DIDURL_Equals(primaryid, defaultkey);
     CU_ASSERT_TRUE(isEquals);
 
-    id = DIDURL_NewByDid(doc->controller, "key2");
+    id = DIDURL_NewByDid(controller, "key2");
     CU_ASSERT_PTR_NOT_NULL(id);
     pk = DIDDocument_GetPublicKey(doc, id);
     CU_ASSERT_PTR_NOT_NULL(pk);
@@ -126,7 +130,7 @@ static void test_get_publickey_with_cid(void)
     PublicKey *pks[6];
     PublicKey *pk;
     DIDURL *id, *defaultkey, *primaryid;
-    DID *did;
+    DID *did, *controller;
     ssize_t size;
     int i;
     bool isEquals;
@@ -141,26 +145,29 @@ static void test_get_publickey_with_cid(void)
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
 
-    CU_ASSERT_EQUAL(DIDDocument_GetPublicKeyCount(doc), 6);
+    controller = &(doc->controllers.docs[0]->did);
+    CU_ASSERT_PTR_NOT_NULL(controller);
+
+    CU_ASSERT_EQUAL(6, DIDDocument_GetPublicKeyCount(doc));
 
     size = DIDDocument_GetPublicKeys(doc, pks, 6);
-    CU_ASSERT_EQUAL(size, 6);
+    CU_ASSERT_EQUAL(6, size);
 
     for (i = 0; i < size; i++) {
         pk = pks[i];
         id = PublicKey_GetId(pk);
 
         //isEquals = DID_Equals(doc->controller, &(id->did));
-        CU_ASSERT_TRUE(DID_Equals(doc->controller, &(id->did)) ||
+        CU_ASSERT_TRUE(DID_Equals(controller, &(id->did)) ||
                 DID_Equals(&doc->did, &(id->did)));
         CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
 
         //isEquals = DID_Equals(doc->controller, PublicKey_GetController(pk));
         if (!strcmp(id->fragment, "recovery")) {
-            CU_ASSERT_FALSE(DID_Equals(doc->controller, PublicKey_GetController(pk)));
+            CU_ASSERT_FALSE(DID_Equals(controller, PublicKey_GetController(pk)));
         } else {
             CU_ASSERT_TRUE(DID_Equals(&doc->did, PublicKey_GetController(pk)) ||
-                   DID_Equals(doc->controller, PublicKey_GetController(pk)));
+                   DID_Equals(controller, PublicKey_GetController(pk)));
             CU_ASSERT_TRUE(!strcmp(id->fragment, "k1") ||
                     !strcmp(id->fragment, "k2") || !strcmp(id->fragment, "primary") ||
                     !strcmp(id->fragment, "key2") || !strcmp(id->fragment, "key3") ||
@@ -180,7 +187,7 @@ static void test_get_publickey_with_cid(void)
     CU_ASSERT_TRUE(isEquals);
     DIDURL_Destroy(id);
 
-    primaryid = DIDURL_NewByDid(doc->controller, "primary");
+    primaryid = DIDURL_NewByDid(controller, "primary");
     CU_ASSERT_PTR_NOT_NULL(primaryid);
     pk = DIDDocument_GetPublicKey(doc, primaryid);
     CU_ASSERT_PTR_NOT_NULL(pk);
@@ -189,7 +196,7 @@ static void test_get_publickey_with_cid(void)
     isEquals = DIDURL_Equals(primaryid, defaultkey);
     CU_ASSERT_TRUE(isEquals);
 
-    id = DIDURL_NewByDid(doc->controller, "key2");
+    id = DIDURL_NewByDid(controller, "key2");
     CU_ASSERT_PTR_NOT_NULL(id);
     pk = DIDDocument_GetPublicKey(doc, id);
     CU_ASSERT_PTR_NOT_NULL(pk);
@@ -204,7 +211,7 @@ static void test_get_publickey_with_cid(void)
     CU_ASSERT_PTR_NULL(pk);
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(doc->controller, "notExist");
+    id = DIDURL_NewByDid(controller, "notExist");
     CU_ASSERT_PTR_NOT_NULL(id);
     pk = DIDDocument_GetPublicKey(doc, id);
     CU_ASSERT_PTR_NULL(pk);
@@ -233,7 +240,7 @@ static void test_get_publickey_with_cid(void)
     CU_ASSERT_TRUE(isEquals);
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(doc->controller, "key3");
+    id = DIDURL_NewByDid(controller, "key3");
     CU_ASSERT_PTR_NOT_NULL(id);
     size = DIDDocument_SelectPublicKeys(doc, NULL, id, pks, 6);
     CU_ASSERT_EQUAL(size, 1);
@@ -282,7 +289,7 @@ static void test_add_publickey_with_cid(void)
     rc = DIDDocumentBuilder_AddPublicKey(builder, id2, did, keybase);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -316,7 +323,7 @@ static void test_remove_publickey_with_cid(void)
     DIDDocumentBuilder *builder;
     DIDURL *recoveryid, *keyid1, *keyid2, *keyid;
     PublicKey *pk;
-    DID *did;
+    DID *did, *controller;
     int rc;
 
     DIDStore *store = TestData_SetupStore(true);
@@ -329,25 +336,30 @@ static void test_remove_publickey_with_cid(void)
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
 
+    controller = &(doc->controllers.docs[0]->did);
+    CU_ASSERT_PTR_NOT_NULL(controller);
+
     builder = DIDDocument_Edit(doc);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // can not remove the controller's key
-    keyid = DIDURL_NewByDid(doc->controller, "key2");
-    CU_ASSERT_PTR_NOT_NULL(keyid);
-    rc = DIDDocumentBuilder_RemovePublicKey(builder, keyid, false);
-    CU_ASSERT_EQUAL(rc, -1);
-    DIDURL_Destroy(keyid);
-
-    keyid1 = DIDURL_NewByDid(did, "k1");
+    keyid = DIDURL_NewByDid(controller, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     rc = DIDDocumentBuilder_RemovePublicKey(builder, keyid, false);
     CU_ASSERT_EQUAL(rc, -1);
     rc = DIDDocumentBuilder_RemovePublicKey(builder, keyid, true);
+    CU_ASSERT_EQUAL(rc, -1);
+    DIDURL_Destroy(keyid);
+
+    keyid1 = DIDURL_NewByDid(did, "k1");
+    CU_ASSERT_PTR_NOT_NULL(keyid1);
+    rc = DIDDocumentBuilder_RemovePublicKey(builder, keyid1, false);
+    CU_ASSERT_EQUAL(rc, -1);
+    rc = DIDDocumentBuilder_RemovePublicKey(builder, keyid1, true);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     keyid2 = DIDURL_NewByDid(did, "k2");
-    CU_ASSERT_PTR_NOT_NULL(keyid);
+    CU_ASSERT_PTR_NOT_NULL(keyid2);
     rc = DIDDocumentBuilder_RemovePublicKey(builder, keyid2, true);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
@@ -355,7 +367,7 @@ static void test_remove_publickey_with_cid(void)
             DIDDocument_GetDefaultPublicKey(doc), true);
     CU_ASSERT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -391,7 +403,7 @@ static void test_get_authentication_key_with_cid(void)
     ssize_t size;
     PublicKey *pk;
     DIDURL *keyid1, *keyid2, *keyid3, *id;
-    DID *did;
+    DID *did, *controller;
     bool isEquals;
     int i;
 
@@ -406,6 +418,9 @@ static void test_get_authentication_key_with_cid(void)
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
 
+    controller = &(doc->controllers.docs[0]->did);
+    CU_ASSERT_PTR_NOT_NULL(controller);
+
     CU_ASSERT_EQUAL(5, DIDDocument_GetAuthenticationCount(doc));
 
     size = DIDDocument_GetAuthenticationKeys(doc, pks, 5);
@@ -417,12 +432,12 @@ static void test_get_authentication_key_with_cid(void)
 
         //isEquals = DID_Equals(did, &id->did);
         CU_ASSERT_TRUE(DID_Equals(did, &id->did) ||
-               DID_Equals(doc->controller, &id->did));
+               DID_Equals(controller, &id->did));
         CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
 
         //isEquals = DID_Equals(did, PublicKey_GetController(pk));
         CU_ASSERT_TRUE(DID_Equals(did, PublicKey_GetController(pk)) ||
-               DID_Equals(doc->controller, PublicKey_GetController(pk)));
+               DID_Equals(controller, PublicKey_GetController(pk)));
 
         CU_ASSERT_TRUE(!strcmp(id->fragment, "primary") ||
                 !strcmp(id->fragment, "key2") || !strcmp(id->fragment, "key3") ||
@@ -430,7 +445,7 @@ static void test_get_authentication_key_with_cid(void)
     }
 
     // AuthenticationKey getter
-    id = DIDURL_NewByDid(doc->controller, "primary");
+    id = DIDURL_NewByDid(controller, "primary");
     CU_ASSERT_PTR_NOT_NULL(id);
     pk = DIDDocument_GetAuthenticationKey(doc, id);
     CU_ASSERT_PTR_NOT_NULL(pk);
@@ -438,7 +453,7 @@ static void test_get_authentication_key_with_cid(void)
     CU_ASSERT_TRUE(isEquals);
     DIDURL_Destroy(id);
 
-    keyid3 = DIDURL_NewByDid(doc->controller, "key3");
+    keyid3 = DIDURL_NewByDid(controller, "key3");
     CU_ASSERT_PTR_NOT_NULL(keyid3);
     pk = DIDDocument_GetAuthenticationKey(doc, keyid3);
     CU_ASSERT_PTR_NOT_NULL(pk);
@@ -466,7 +481,7 @@ static void test_get_authentication_key_with_cid(void)
     CU_ASSERT_PTR_NULL(pk);
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(doc->controller, "notExist");
+    id = DIDURL_NewByDid(controller, "notExist");
     CU_ASSERT_PTR_NOT_NULL(id);
     pk = DIDDocument_GetAuthenticationKey(doc, id);
     CU_ASSERT_PTR_NULL(pk);
@@ -506,7 +521,7 @@ static void test_add_authentication_key_with_cid(void)
 {
     DIDDocument *sealeddoc;
     DIDDocumentBuilder *builder;
-    DID *did;
+    DID *did, *controller;
     char publickeybase58[MAX_PUBLICKEY_BASE58];
     const char *keybase;
     bool isEquals;
@@ -521,6 +536,9 @@ static void test_add_authentication_key_with_cid(void)
 
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
+
+    controller = &(doc->controllers.docs[0]->did);
+    CU_ASSERT_PTR_NOT_NULL(controller);
 
     builder = DIDDocument_Edit(doc);
     CU_ASSERT_PTR_NOT_NULL(builder);
@@ -574,13 +592,13 @@ static void test_add_authentication_key_with_cid(void)
     DIDURL_Destroy(id);
 
     // Try to add a key not owned by self, should fail.
-    id = DIDURL_NewByDid(doc->controller, "recovery");
+    id = DIDURL_NewByDid(controller, "recovery");
     CU_ASSERT_PTR_NOT_NULL(id);
     rc = DIDDocumentBuilder_AddAuthenticationKey(builder, id, NULL);
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -624,7 +642,7 @@ static void test_remove_authentication_key_with_cid(void)
 {
     DIDDocument *sealeddoc;
     DIDDocumentBuilder *builder;
-    DID *did;
+    DID *did, *controller;
     char publickeybase58[MAX_PUBLICKEY_BASE58];
     const char *keybase;
     int rc;
@@ -638,6 +656,9 @@ static void test_remove_authentication_key_with_cid(void)
 
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
+
+    controller = &(doc->controllers.docs[0]->did);
+    CU_ASSERT_PTR_NOT_NULL(controller);
 
     CU_ASSERT_EQUAL(6, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(5, DIDDocument_GetAuthenticationCount(doc));
@@ -665,13 +686,13 @@ static void test_remove_authentication_key_with_cid(void)
     DIDURL_Destroy(id);
 
     // Remove controller's key, should fail.
-    id = DIDURL_NewByDid(doc->controller, "key2");
+    id = DIDURL_NewByDid(controller, "key2");
     CU_ASSERT_PTR_NOT_NULL(id);
     rc = DIDDocumentBuilder_RemoveAuthenticationKey(builder, id);
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -702,7 +723,7 @@ static void test_get_authorization_key_with_cid(void)
     PublicKey *pk;
     DIDURL *keyid, *id;
     bool isEquals;
-    DID *did;
+    DID *did, *controller;
     int i;
 
     DIDStore *store = TestData_SetupStore(true);
@@ -715,6 +736,9 @@ static void test_get_authorization_key_with_cid(void)
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
 
+    controller = &(doc->controllers.docs[0]->did);
+    CU_ASSERT_PTR_NOT_NULL(controller);
+
     CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(doc));
 
     size = DIDDocument_GetAuthorizationKeys(doc, pks, 1);
@@ -724,18 +748,18 @@ static void test_get_authorization_key_with_cid(void)
         pk = pks[i];
         id = PublicKey_GetId(pk);
 
-        isEquals = DID_Equals(doc->controller, &id->did);
+        isEquals = DID_Equals(controller, &id->did);
         CU_ASSERT_TRUE(isEquals);
         CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
 
-        isEquals = DID_Equals(doc->controller, PublicKey_GetController(pk));
+        isEquals = DID_Equals(controller, PublicKey_GetController(pk));
         CU_ASSERT_FALSE(isEquals);
 
         CU_ASSERT_TRUE(!strcmp(id->fragment, "recovery"));
     }
 
     // AuthorizationKey getter
-    keyid = DIDURL_NewByDid(doc->controller, "recovery");
+    keyid = DIDURL_NewByDid(controller, "recovery");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     pk = DIDDocument_GetAuthorizationKey(doc, keyid);
     CU_ASSERT_PTR_NOT_NULL(pk);
@@ -749,7 +773,7 @@ static void test_get_authorization_key_with_cid(void)
     CU_ASSERT_PTR_NULL(pk);
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(doc->controller, "notExistKey");
+    id = DIDURL_NewByDid(controller, "notExistKey");
     CU_ASSERT_PTR_NOT_NULL(id);
     pk = DIDDocument_GetAuthorizationKey(doc, id);
     CU_ASSERT_PTR_NULL(pk);
@@ -780,7 +804,7 @@ static void test_add_authorization_key_with_cid(void)
     char publickeybase58[MAX_PUBLICKEY_BASE58];
     HDKey _dkey, *dkey;
     const char *keybase, *idstring;
-    DID controller, *did;
+    DID controller, *did, *_controller;
     bool isEquals;
     int rc;
 
@@ -793,6 +817,9 @@ static void test_add_authorization_key_with_cid(void)
 
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
+
+    _controller = &(doc->controllers.docs[0]->did);
+    CU_ASSERT_PTR_NOT_NULL(_controller);
 
     builder = DIDDocument_Edit(doc);
     CU_ASSERT_PTR_NOT_NULL(builder);
@@ -857,13 +884,13 @@ static void test_add_authorization_key_with_cid(void)
     DIDURL_Destroy(id);
 
     // Try to add controller's key, should fail.
-    id = DIDURL_NewByDid(doc->controller, "recovery");
+    id = DIDURL_NewByDid(_controller, "recovery");
     CU_ASSERT_PTR_NOT_NULL(id);
     rc = DIDDocumentBuilder_AddAuthorizationKey(builder, id, NULL, NULL);
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -910,7 +937,7 @@ static void test_remove_authorization_key_with_cid(void)
     char publickeybase58[MAX_PUBLICKEY_BASE58];
     HDKey _dkey, *dkey;
     const char *keybase, *idstring;
-    DID controller, *did;
+    DID controller, *did, *_controller;
     int rc;
 
     DIDStore *store = TestData_SetupStore(true);
@@ -922,6 +949,9 @@ static void test_remove_authorization_key_with_cid(void)
 
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
+
+    _controller = &(doc->controllers.docs[0]->did);
+    CU_ASSERT_PTR_NOT_NULL(_controller);
 
     builder = DIDDocument_Edit(doc);
     CU_ASSERT_PTR_NOT_NULL(builder);
@@ -951,7 +981,7 @@ static void test_remove_authorization_key_with_cid(void)
     rc = DIDDocumentBuilder_AddAuthorizationKey(builder, id2, &controller, keybase);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -971,7 +1001,7 @@ static void test_remove_authorization_key_with_cid(void)
     rc = DIDDocumentBuilder_RemoveAuthorizationKey(builder, id2);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    DIDURL *recoveryid = DIDURL_NewByDid(doc->controller, "recovery");
+    DIDURL *recoveryid = DIDURL_NewByDid(_controller, "recovery");
     CU_ASSERT_PTR_NOT_NULL(recoveryid);
     rc = DIDDocumentBuilder_RemoveAuthorizationKey(builder, recoveryid);
     CU_ASSERT_EQUAL(rc, -1);
@@ -983,7 +1013,7 @@ static void test_remove_authorization_key_with_cid(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1011,12 +1041,12 @@ static void test_remove_authorization_key_with_cid(void)
     TestData_Free();
 }
 
-static int diddoc_customieddoc_test_suite_init(void)
+static int diddoc_customizeddoc_test_suite_init(void)
 {
     return  0;
 }
 
-static int diddoc_customieddoc_test_suite_cleanup(void)
+static int diddoc_customizeddoc_test_suite_cleanup(void)
 {
     return 0;
 }
@@ -1035,11 +1065,11 @@ static CU_TestInfo cases[] = {
 };
 
 static CU_SuiteInfo suite[] = {
-    { "diddoc customied doc test", diddoc_customieddoc_test_suite_init,  diddoc_customieddoc_test_suite_cleanup,  NULL, NULL, cases },
+    { "diddoc customized doc test", diddoc_customizeddoc_test_suite_init,  diddoc_customizeddoc_test_suite_cleanup,  NULL, NULL, cases },
     {  NULL,                       NULL,                         NULL,                            NULL, NULL, NULL  }
 };
 
-CU_SuiteInfo* diddoc_customieddoc_test_suite_info(void)
+CU_SuiteInfo* diddoc_customizeddoc_test_suite_info(void)
 {
     return suite;
 }

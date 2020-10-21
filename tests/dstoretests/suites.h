@@ -26,7 +26,7 @@
 DECL_TESTSUITE(didstore_initial_test);
 DECL_TESTSUITE(didstore_openstore_test);
 DECL_TESTSUITE(didstore_did_op_test);
-DECL_TESTSUITE(didstore_customied_did_test);
+DECL_TESTSUITE(didstore_customized_did_test);
 DECL_TESTSUITE(didstore_vc_op_test);
 DECL_TESTSUITE(didstore_change_password_test);
 DECL_TESTSUITE(didstore_export_store_test);
@@ -35,7 +35,7 @@ DECL_TESTSUITE(didstore_export_store_test);
     DEFINE_TESTSUITE(didstore_change_password_test), \
     DEFINE_TESTSUITE(didstore_did_op_test), \
     DEFINE_TESTSUITE(didstore_initial_test), \
-    DEFINE_TESTSUITE(didstore_customied_did_test), \
+    DEFINE_TESTSUITE(didstore_customized_did_test), \
     DEFINE_TESTSUITE(didstore_openstore_test), \
     DEFINE_TESTSUITE(didstore_vc_op_test), \
     DEFINE_TESTSUITE(didstore_export_store_test)

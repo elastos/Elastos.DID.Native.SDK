@@ -73,7 +73,7 @@ static void test_issuer_create_with_invalidkey1(void)
     rc = DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, publickeybase);
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(doc));
     DIDDocumentBuilder_Destroy(builder);

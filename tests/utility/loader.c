@@ -51,8 +51,8 @@ typedef struct TestData {
     char *docCompactJson;
     char *docNormalizedJson;
 
-    DIDDocument *emptycustomieddoc;
-    DIDDocument *customieddoc;
+    DIDDocument *emptycustomizeddoc;
+    DIDDocument *customizeddoc;
 
     Credential *profileVc;
     char *profileVcCompactJson;
@@ -778,10 +778,10 @@ DIDDocument *TestData_LoadEmptyCustomizedDoc(void)
     TestData_LoadIssuerDoc();
     TestData_LoadDoc();
 
-    if (!testdata.emptycustomieddoc)
-        testdata.emptycustomieddoc = store_document("customized-did-empty.json", "empty customized doc");
+    if (!testdata.emptycustomizeddoc)
+        testdata.emptycustomizeddoc = store_document("customized-did-empty.json", "empty customized doc");
 
-    subject = DIDDocument_GetSubject(testdata.emptycustomieddoc);
+    subject = DIDDocument_GetSubject(testdata.emptycustomizeddoc);
     if (!subject)
         return NULL;
 
@@ -790,7 +790,7 @@ DIDDocument *TestData_LoadEmptyCustomizedDoc(void)
         return NULL;
     DIDDocument_Destroy(doc);
 
-    return testdata.emptycustomieddoc;
+    return testdata.emptycustomizeddoc;
 }
 
 DIDDocument *TestData_LoadCustomizedDoc(void)
@@ -801,10 +801,10 @@ DIDDocument *TestData_LoadCustomizedDoc(void)
     TestData_LoadIssuerDoc();
     TestData_LoadDoc();
 
-    if (!testdata.customieddoc)
-        testdata.customieddoc = store_document("customized-did.json", "customized doc");
+    if (!testdata.customizeddoc)
+        testdata.customizeddoc = store_document("customized-did.json", "customized doc");
 
-    subject = DIDDocument_GetSubject(testdata.customieddoc);
+    subject = DIDDocument_GetSubject(testdata.customizeddoc);
     if (!subject)
         return NULL;
 
@@ -813,7 +813,7 @@ DIDDocument *TestData_LoadCustomizedDoc(void)
         return NULL;
     DIDDocument_Destroy(doc);
 
-    return testdata.customieddoc;
+    return testdata.customizeddoc;
 }
 
 const char *TestData_LoadRestoreMnemonic(void)
@@ -846,10 +846,10 @@ void TestData_Free(void)
     if (testdata.docNormalizedJson)
         free(testdata.docNormalizedJson);
 
-    if (testdata.emptycustomieddoc)
-        DIDDocument_Destroy(testdata.emptycustomieddoc);
-    if (testdata.customieddoc)
-        DIDDocument_Destroy(testdata.customieddoc);
+    if (testdata.emptycustomizeddoc)
+        DIDDocument_Destroy(testdata.emptycustomizeddoc);
+    if (testdata.customizeddoc)
+        DIDDocument_Destroy(testdata.customizeddoc);
 
     if (testdata.profileVc)
         Credential_Destroy(testdata.profileVc);

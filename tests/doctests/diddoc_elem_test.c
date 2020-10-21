@@ -139,7 +139,7 @@ static void test_diddoc_add_publickey(void)
     rc = DIDDocumentBuilder_AddPublicKey(builder, id2, did, keybase);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -199,7 +199,7 @@ static void test_diddoc_remove_publickey(void)
             DIDDocument_GetDefaultPublicKey(doc), true);
     CU_ASSERT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -362,7 +362,7 @@ static void test_diddoc_add_authentication_key(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -450,7 +450,7 @@ static void test_diddoc_remove_authentication_key(void)
             DIDDocument_GetDefaultPublicKey(doc));
     CU_ASSERT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -615,7 +615,7 @@ static void test_diddoc_add_authorization_key(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -707,7 +707,7 @@ static void test_diddoc_remove_authorization_key(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -828,7 +828,7 @@ static void test_diddoc_add_credential(void)
     rc = DIDDocumentBuilder_AddCredential(builder, TestData_LoadTwitterVc());
     CU_ASSERT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -882,7 +882,7 @@ static void test_diddoc_add_selfclaimed_credential(void)
             types, 2, props, 2, DIDDocument_GetExpires(doc), storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -944,7 +944,7 @@ static void test_diddoc_remove_credential(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1077,7 +1077,7 @@ static void test_diddoc_add_service(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1125,7 +1125,7 @@ static void test_diddoc_remove_service(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
