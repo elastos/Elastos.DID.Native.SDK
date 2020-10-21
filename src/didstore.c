@@ -170,8 +170,10 @@ static int load_didmeta(DIDStore *store, DIDMetaData *meta, const char *did)
 {
     const char *data;
     char path[PATH_MAX];
-    int rc;
     time_t lastmodified;
+    DIDDocument *doc;
+    DID _did;
+    int rc;
 
     assert(store);
     assert(meta);
@@ -203,8 +205,19 @@ static int load_didmeta(DIDStore *store, DIDMetaData *meta, const char *did)
 
     rc = DIDMetaData_FromJson(meta, data);
     free((void*)data);
-    if (rc < 0)
-        return -1;
+    if (rc < 0) {
+        delete_file(path);
+        Init_DID(&_did, did);
+        doc = DID_Resolve(&_did, false);
+        if (!doc) {
+            memset(meta, 0, sizeof(DIDMetaData));
+            DIDMetaData_SetDeactivated(meta, false);
+        } else {
+            DIDMetaData_Copy(meta, &doc->metadata);
+        }
+        DIDDocument_Destroy(doc);
+        DIDStore_StoreDIDMetaData(store, meta, &_did);
+    }
 
     //set last modified
     if (get_file(path, 0, 4, store->root, DID_DIR, did, DOCUMENT_FILE) == -1) {
@@ -350,8 +363,11 @@ static int load_credmeta(DIDStore *store, CredentialMetaData *meta, const char *
 
     rc = CredentialMetaData_FromJson(meta, data);
     free((void*)data);
-    if (rc < 0)
-        return -1;
+    if (rc < 0) {
+        //compatible with the oldest version
+        delete_file(path);
+        memset(meta, 0, sizeof(CredentialMetaData));
+    }
 
     //set last modified
     if (get_file(path, 0, 6, store->root, DID_DIR, did, CREDENTIALS_DIR,
