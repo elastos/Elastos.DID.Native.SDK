@@ -234,9 +234,9 @@ static int proof_toJson(JsonGenerator *gen, DIDDocument *doc, int compact)
         CHECK(JsonGenerator_WriteStringField(gen, "type", doc->proof.type));
     CHECK(JsonGenerator_WriteStringField(gen, "created",
             get_time_string(_timestring, sizeof(_timestring), &doc->proof.created)));
-    if (!compact)
+    if (!compact || !DID_Equals(&doc->did, &doc->proof.creater.did))
         CHECK(JsonGenerator_WriteStringField(gen, "creator",
-                DIDURL_ToString(&doc->proof.creater, id, sizeof(id), compact)));
+                DIDURL_ToString(&doc->proof.creater, id, sizeof(id), false)));
     CHECK(JsonGenerator_WriteStringField(gen, "signatureValue", doc->proof.signatureValue));
     CHECK(JsonGenerator_WriteEndObject(gen));
     return 0;
@@ -355,7 +355,7 @@ static int Parse_Controllers(DIDDocument *document, json_t *json)
         return -1;
     }
 
-    for (int i = 0; i < size; i++) {
+    for (i = 0; i < size; i++) {
         if (json_is_string(json))
             field = json;
         else
@@ -976,14 +976,14 @@ const char *DIDDocument_ToString(DIDDocument *document, bool normalized)
     if (!data)
         return NULL;
 
-    json = json_loads(data, JSON_COMPACT, &error);
+    json = json_loads(data, JSON_INDENT(4), &error);
     free((void*)data);
     if (!json) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Deserialize document failed, error: %s.", error.text);
         return NULL;
     }
 
-    return json_dumps(json, JSON_COMPACT);
+    return json_dumps(json, JSON_INDENT(4));
 }
 
 void DIDDocument_Destroy(DIDDocument *document)
@@ -2225,7 +2225,7 @@ ssize_t DIDDocument_GetControllers(DIDDocument *document, DID **controllers, siz
 {
     int i;
 
-    if (!document || !controllers || size > 0) {
+    if (!document || !controllers || size <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }

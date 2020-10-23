@@ -350,7 +350,7 @@ Presentation *Presentation_Create(DID *did, DIDURL *signkey, DIDStore *store,
         goto errorExit;
     }
 
-    if (!DIDStore_ContainsPrivateKey(store, did, signkey)) {
+    if (!DIDStore_ContainsPrivateKey(store, &signkey->did, signkey)) {
         DIDError_Set(DIDERR_INVALID_KEY, "No private key.");
         goto errorExit;
     }

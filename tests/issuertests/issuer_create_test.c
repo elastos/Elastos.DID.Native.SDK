@@ -101,6 +101,95 @@ static void test_issuer_create_with_invalidkey2(void)
     DIDURL_Destroy(key);
 }
 
+static void test_issuer_create_by_cid(void)
+{
+    Issuer *issuer;
+
+    DIDDocument *customized_doc = TestData_LoadCustomizedDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
+
+    DIDDocument *doc = TestData_LoadDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
+
+    DIDURL *signerkey = DIDURL_NewByDid(&doc->did, "key3");
+    CU_ASSERT_PTR_NOT_NULL_FATAL(signerkey);
+
+    issuer = Issuer_Create(&customized_doc->did, signerkey, store);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
+    CU_ASSERT_TRUE(DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
+    CU_ASSERT_TRUE(DIDURL_Equals(signerkey, Issuer_GetSignKey(issuer)));
+    DIDURL_Destroy(signerkey);
+    Issuer_Destroy(issuer);
+
+    signerkey = DIDURL_NewByDid(&customized_doc->did, "k1");
+    CU_ASSERT_PTR_NOT_NULL_FATAL(signerkey);
+
+    issuer = Issuer_Create(&customized_doc->did, signerkey, store);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
+    CU_ASSERT_TRUE(DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
+    CU_ASSERT_TRUE(DIDURL_Equals(signerkey, Issuer_GetSignKey(issuer)));
+    DIDURL_Destroy(signerkey);
+    Issuer_Destroy(issuer);
+
+    signerkey = DIDDocument_GetDefaultPublicKey(doc);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(signerkey);
+
+    issuer = Issuer_Create(&customized_doc->did, NULL, store);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
+    CU_ASSERT_TRUE(DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
+    CU_ASSERT_TRUE(DIDURL_Equals(signerkey, Issuer_GetSignKey(issuer)));
+    Issuer_Destroy(issuer);
+}
+
+static void test_issuer_create_by_multicid(void)
+{
+    Issuer *issuer;
+    DID controller1, controller2;
+    ssize_t size;
+
+    DIDDocument *customized_doc = TestData_LoadMultiCustomizedDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
+
+    DID *controllers[2] = {0};
+    size = DIDDocument_GetControllers(customized_doc, controllers, 2);
+    CU_ASSERT_EQUAL(2, size);
+    DID_Copy(&controller1, controllers[0]);
+    DID_Copy(&controller2, controllers[1]);
+
+    DIDURL *signerkey = DIDURL_NewByDid(&controller1, "key3");
+    CU_ASSERT_PTR_NOT_NULL_FATAL(signerkey);
+
+    issuer = Issuer_Create(&customized_doc->did, signerkey, store);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
+    CU_ASSERT_TRUE(DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
+    CU_ASSERT_TRUE(DIDURL_Equals(signerkey, Issuer_GetSignKey(issuer)));
+    DIDURL_Destroy(signerkey);
+    Issuer_Destroy(issuer);
+
+    signerkey = DIDURL_NewByDid(&controller2, "pk1");
+    CU_ASSERT_PTR_NOT_NULL_FATAL(signerkey);
+
+    issuer = Issuer_Create(&customized_doc->did, signerkey, store);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
+    CU_ASSERT_TRUE(DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
+    CU_ASSERT_TRUE(DIDURL_Equals(signerkey, Issuer_GetSignKey(issuer)));
+    DIDURL_Destroy(signerkey);
+    Issuer_Destroy(issuer);
+
+    signerkey = DIDURL_NewByDid(&customized_doc->did, "k1");
+    CU_ASSERT_PTR_NOT_NULL_FATAL(signerkey);
+
+    issuer = Issuer_Create(&customized_doc->did, signerkey, store);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
+    CU_ASSERT_TRUE(DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
+    CU_ASSERT_TRUE(DIDURL_Equals(signerkey, Issuer_GetSignKey(issuer)));
+    DIDURL_Destroy(signerkey);
+    Issuer_Destroy(issuer);
+
+    issuer = Issuer_Create(&customized_doc->did, NULL, store);
+    CU_ASSERT_PTR_NULL(issuer);
+}
+
 static int issuer_create_test_suite_init(void)
 {
     int rc;
@@ -147,6 +236,8 @@ static CU_TestInfo cases[] = {
     { "test_issuer_create_without_key",         test_issuer_create_without_key         },
     { "test_issuer_create_with_invalidkey1",    test_issuer_create_with_invalidkey1    },
     { "test_issuer_create_with_invalidkey2",    test_issuer_create_with_invalidkey2    },
+    { "test_issuer_create_by_cid",              test_issuer_create_by_cid              },
+    { "test_issuer_create_by_multicid",         test_issuer_create_by_multicid         },
     { NULL,                                     NULL                                   }
 };
 

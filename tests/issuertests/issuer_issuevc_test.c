@@ -11,6 +11,7 @@
 #include "loader.h"
 #include "constant.h"
 #include "credential.h"
+#include "diddocument.h"
 
 static DIDDocument *issuerdoc;
 static DIDDocument *doc;
@@ -508,6 +509,410 @@ static void test_cidissuer_issue_selfvc(void)
     Issuer_Destroy(issuer);
 }
 
+//------------------------------------------------------------------
+static void test_issuer_issue_multicidvc(void)
+{
+    DIDDocument *customizeddoc;
+    Issuer *issuer;
+    DIDURL *credid, *signkey;
+    time_t expires;
+    DID *subject;
+    Credential *vc;
+    ssize_t size;
+    const char* provalue;
+
+    expires = DIDDocument_GetExpires(issuerdoc);
+
+    customizeddoc = TestData_LoadMultiCustomizedDoc();
+    CU_ASSERT_PTR_NOT_NULL(customizeddoc);
+
+    subject = DIDDocument_GetSubject(customizeddoc);
+    CU_ASSERT_PTR_NOT_NULL(subject);
+
+    issuer = Issuer_Create(issuerid, NULL, store);
+    CU_ASSERT_PTR_NOT_NULL(issuer);
+
+    credid = DIDURL_NewByDid(subject, "testcredential");
+    CU_ASSERT_PTR_NOT_NULL(credid);
+
+    const char *types[] = {"BasicProfileCredential", "InternetAccountCredential"};
+    Property props[6];
+    props[0].key = "name";
+    props[0].value = "John";
+    props[1].key = "gender";
+    props[1].value = "Male";
+    props[2].key = "nation";
+    props[2].value = "Singapore";
+    props[3].key = "language";
+    props[3].value = "English";
+    props[4].key = "email";
+    props[4].value = "john@example.com";
+    props[5].key = "twitter";
+    props[5].value = "@john";
+
+    vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
+            props, 6, expires, storepass);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
+    CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
+    CU_ASSERT_FALSE(Credential_IsExpired(vc));
+    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
+    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    DIDURL_Destroy(credid);
+
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
+    const char *tmptypes[2];
+    size = Credential_GetTypes(vc, tmptypes, 2);
+    CU_ASSERT_EQUAL(size, 2);
+    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 2, "InternetAccountCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
+
+    CU_ASSERT_TRUE(DID_Equals(issuerid, Credential_GetIssuer(vc)));
+
+    provalue = Credential_GetProperty(vc, "name");
+    CU_ASSERT_STRING_EQUAL(provalue, "John");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "gender");
+    CU_ASSERT_STRING_EQUAL(provalue, "Male");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "nation");
+    CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "language");
+    CU_ASSERT_STRING_EQUAL(provalue, "English");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "email");
+    CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "twitter");
+    CU_ASSERT_STRING_EQUAL(provalue, "@john");
+    free((void*)provalue);
+
+    Credential_Destroy(vc);
+    Issuer_Destroy(issuer);
+}
+
+static void test_multicidissuer_issue_kycvc(void)
+{
+    DIDDocument *customizeddoc;
+    Issuer *issuer;
+    DIDURL *credid, *signkey;
+    time_t expires;
+    DID *subject;
+    Credential *vc;
+    ssize_t size;
+    const char* provalue;
+
+    expires = DIDDocument_GetExpires(doc);
+
+    customizeddoc = TestData_LoadMultiCustomizedDoc();
+    CU_ASSERT_PTR_NOT_NULL(customizeddoc);
+
+    subject = DIDDocument_GetSubject(customizeddoc);
+    CU_ASSERT_PTR_NOT_NULL(subject);
+
+    signkey = DIDURL_NewByDid(&customizeddoc->controllers.docs[0]->did, "key2");
+    CU_ASSERT_PTR_NOT_NULL(signkey);
+
+    issuer = Issuer_Create(subject, signkey, store);
+    CU_ASSERT_PTR_NOT_NULL(issuer);
+    DIDURL_Destroy(signkey);
+
+    credid = DIDURL_NewByDid(did, "testcredential");
+    CU_ASSERT_PTR_NOT_NULL(credid);
+
+    const char *types[] = {"BasicProfileCredential", "InternetAccountCredential"};
+    Property props[6];
+    props[0].key = "name";
+    props[0].value = "John";
+    props[1].key = "gender";
+    props[1].value = "Male";
+    props[2].key = "nation";
+    props[2].value = "Singapore";
+    props[3].key = "language";
+    props[3].value = "English";
+    props[4].key = "email";
+    props[4].value = "john@example.com";
+    props[5].key = "twitter";
+    props[5].value = "@john";
+
+    vc = Issuer_CreateCredential(issuer, did, credid, types, 2,
+            props, 6, expires, storepass);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
+    CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
+    CU_ASSERT_FALSE(Credential_IsExpired(vc));
+    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
+    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    DIDURL_Destroy(credid);
+
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
+    const char *tmptypes[2];
+    size = Credential_GetTypes(vc, tmptypes, 2);
+    CU_ASSERT_EQUAL(size, 2);
+    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 2, "InternetAccountCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
+
+    CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
+
+    provalue = Credential_GetProperty(vc, "name");
+    CU_ASSERT_STRING_EQUAL(provalue, "John");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "gender");
+    CU_ASSERT_STRING_EQUAL(provalue, "Male");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "nation");
+    CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "language");
+    CU_ASSERT_STRING_EQUAL(provalue, "English");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "email");
+    CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "twitter");
+    CU_ASSERT_STRING_EQUAL(provalue, "@john");
+    free((void*)provalue);
+
+    Credential_Destroy(vc);
+    Issuer_Destroy(issuer);
+}
+
+static void test_multicidissuer_issue_kycvc2(void)
+{
+    DIDDocument *customizeddoc;
+    Issuer *issuer;
+    DIDURL *credid, *signkey;
+    time_t expires;
+    DID *subject;
+    Credential *vc;
+    ssize_t size;
+    const char* provalue;
+
+    expires = DIDDocument_GetExpires(doc);
+
+    customizeddoc = TestData_LoadMultiCustomizedDoc();
+    CU_ASSERT_PTR_NOT_NULL(customizeddoc);
+
+    subject = DIDDocument_GetSubject(customizeddoc);
+    CU_ASSERT_PTR_NOT_NULL(subject);
+
+    signkey = DIDURL_NewByDid(subject, "k1");
+    CU_ASSERT_PTR_NOT_NULL(signkey);
+
+    issuer = Issuer_Create(subject, signkey, store);
+    CU_ASSERT_PTR_NOT_NULL(issuer);
+    DIDURL_Destroy(signkey);
+
+    credid = DIDURL_NewByDid(issuerid, "testcredential");
+    CU_ASSERT_PTR_NOT_NULL(credid);
+
+    const char *types[] = {"BasicProfileCredential", "InternetAccountCredential"};
+    Property props[6];
+    props[0].key = "name";
+    props[0].value = "John";
+    props[1].key = "gender";
+    props[1].value = "Male";
+    props[2].key = "nation";
+    props[2].value = "Singapore";
+    props[3].key = "language";
+    props[3].value = "English";
+    props[4].key = "email";
+    props[4].value = "john@example.com";
+    props[5].key = "twitter";
+    props[5].value = "@john";
+
+    vc = Issuer_CreateCredential(issuer, issuerid, credid, types, 2,
+            props, 6, expires, storepass);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
+    CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
+    CU_ASSERT_FALSE(Credential_IsExpired(vc));
+    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
+    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    DIDURL_Destroy(credid);
+
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
+    const char *tmptypes[2];
+    size = Credential_GetTypes(vc, tmptypes, 2);
+    CU_ASSERT_EQUAL(size, 2);
+    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 2, "InternetAccountCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
+
+    CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
+
+    provalue = Credential_GetProperty(vc, "name");
+    CU_ASSERT_STRING_EQUAL(provalue, "John");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "gender");
+    CU_ASSERT_STRING_EQUAL(provalue, "Male");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "nation");
+    CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "language");
+    CU_ASSERT_STRING_EQUAL(provalue, "English");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "email");
+    CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "twitter");
+    CU_ASSERT_STRING_EQUAL(provalue, "@john");
+    free((void*)provalue);
+
+    Credential_Destroy(vc);
+    Issuer_Destroy(issuer);
+}
+
+static void test_multicidissuer_issue_selfvc(void)
+{
+    DIDDocument *customizeddoc;
+    Issuer *issuer;
+    DIDURL *credid, *signkey;
+    time_t expires;
+    DID *subject;
+    Credential *vc;
+    ssize_t size;
+    const char* provalue;
+
+    customizeddoc = TestData_LoadMultiCustomizedDoc();
+    CU_ASSERT_PTR_NOT_NULL(customizeddoc);
+    expires = DIDDocument_GetExpires(customizeddoc);
+
+    subject = DIDDocument_GetSubject(customizeddoc);
+    CU_ASSERT_PTR_NOT_NULL(subject);
+
+    signkey = DIDURL_NewByDid(&customizeddoc->controllers.docs[1]->did, "pk1");
+    CU_ASSERT_PTR_NOT_NULL(signkey);
+
+    issuer = Issuer_Create(subject, signkey, store);
+    CU_ASSERT_PTR_NOT_NULL(issuer);
+
+    credid = DIDURL_NewByDid(subject, "testcredential");
+    CU_ASSERT_PTR_NOT_NULL(credid);
+
+    const char *types[] = {"BasicProfileCredential", "SelfProclaimedCredential"};
+    Property props[4];
+    props[0].key = "name";
+    props[0].value = "Testing Issuer";
+    props[1].key = "nation";
+    props[1].value = "Singapore";
+    props[2].key = "language";
+    props[2].value = "English";
+    props[3].key = "email";
+    props[3].value = "john@example.com";
+
+    vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
+            props, 4, expires, storepass);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
+    CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
+    CU_ASSERT_FALSE(Credential_IsExpired(vc));
+    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
+    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    DIDURL_Destroy(credid);
+
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
+    const char *tmptypes[2];
+    size = Credential_GetTypes(vc, tmptypes, 2);
+    CU_ASSERT_EQUAL(size, 2);
+    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 2, "InternetAccountCredential"));
+
+    CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
+
+    provalue = Credential_GetProperty(vc, "name");
+    CU_ASSERT_STRING_EQUAL(provalue, "Testing Issuer");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "nation");
+    CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "language");
+    CU_ASSERT_STRING_EQUAL(provalue, "English");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "email");
+    CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
+    free((void*)provalue);
+
+    Credential_Destroy(vc);
+    Issuer_Destroy(issuer);
+}
+
+static void test_multicidissuer_issue_selfvc2(void)
+{
+    DIDDocument *customizeddoc;
+    Issuer *issuer;
+    DIDURL *credid, *signkey;
+    time_t expires;
+    DID *subject;
+    Credential *vc;
+    ssize_t size;
+    const char* provalue;
+
+    customizeddoc = TestData_LoadMultiCustomizedDoc();
+    CU_ASSERT_PTR_NOT_NULL(customizeddoc);
+    expires = DIDDocument_GetExpires(customizeddoc);
+
+    subject = DIDDocument_GetSubject(customizeddoc);
+    CU_ASSERT_PTR_NOT_NULL(subject);
+
+    signkey = DIDURL_NewByDid(subject, "k1");
+    CU_ASSERT_PTR_NOT_NULL(signkey);
+
+    issuer = Issuer_Create(subject, signkey, store);
+    CU_ASSERT_PTR_NOT_NULL(issuer);
+
+    credid = DIDURL_NewByDid(subject, "testcredential");
+    CU_ASSERT_PTR_NOT_NULL(credid);
+
+    const char *types[] = {"BasicProfileCredential", "SelfProclaimedCredential"};
+    Property props[4];
+    props[0].key = "name";
+    props[0].value = "Testing Issuer";
+    props[1].key = "nation";
+    props[1].value = "Singapore";
+    props[2].key = "language";
+    props[2].value = "English";
+    props[3].key = "email";
+    props[3].value = "john@example.com";
+
+    vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
+            props, 4, expires, storepass);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
+    CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
+    CU_ASSERT_FALSE(Credential_IsExpired(vc));
+    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
+    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    DIDURL_Destroy(credid);
+
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
+    const char *tmptypes[2];
+    size = Credential_GetTypes(vc, tmptypes, 2);
+    CU_ASSERT_EQUAL(size, 2);
+    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 2, "InternetAccountCredential"));
+
+    CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
+
+    provalue = Credential_GetProperty(vc, "name");
+    CU_ASSERT_STRING_EQUAL(provalue, "Testing Issuer");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "nation");
+    CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "language");
+    CU_ASSERT_STRING_EQUAL(provalue, "English");
+    free((void*)provalue);
+    provalue = Credential_GetProperty(vc, "email");
+    CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
+    free((void*)provalue);
+
+    Credential_Destroy(vc);
+    Issuer_Destroy(issuer);
+}
+
+
 static int issuer_issuevc_test_suite_init(void)
 {
     DIDURL *signkey;
@@ -551,13 +956,19 @@ static int issuer_issuevc_test_suite_cleanup(void)
 }
 
 static CU_TestInfo cases[] = {
-    { "test_issuer_issuevc",                   test_issuer_issuevc       },
-    { "test_issuer_issueselfvc",               test_issuer_issueselfvc   },
-    { "test_issuer_issuerbystring",            test_issuer_issuerbystring},
-    { "test_issuer_issue_cidvc",               test_issuer_issue_cidvc   },
-    { "test_cidissuer_issue_kycvc",            test_cidissuer_issue_kycvc},
-    { "test_cidissuer_issue_selfvc",           test_cidissuer_issue_selfvc},
-    { NULL,                                    NULL                      }
+    { "test_issuer_issuevc",                   test_issuer_issuevc             },
+    { "test_issuer_issueselfvc",               test_issuer_issueselfvc         },
+    { "test_issuer_issuerbystring",            test_issuer_issuerbystring      },
+    { "test_issuer_issue_cidvc",               test_issuer_issue_cidvc         },
+    { "test_cidissuer_issue_kycvc",            test_cidissuer_issue_kycvc      },
+    { "test_cidissuer_issue_selfvc",           test_cidissuer_issue_selfvc     },
+    //----------------------------------------------------------------------
+    { "test_issuer_issue_multicidvc",          test_issuer_issue_multicidvc    },
+    { "test_multicidissuer_issue_kycvc",       test_multicidissuer_issue_kycvc },
+    { "test_multicidissuer_issue_kycvc2",      test_multicidissuer_issue_kycvc2},
+    { "test_multicidissuer_issue_selfvc",      test_multicidissuer_issue_selfvc},
+    { "test_multicidissuer_issue_selfvc2",     test_multicidissuer_issue_selfvc2},
+    { NULL,                                    NULL                             }
 };
 
 static CU_SuiteInfo suite[] = {

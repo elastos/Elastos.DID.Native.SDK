@@ -1,0 +1,28 @@
+{
+    "id": "did:elastos:littlefish",
+    "controller": [
+        "did:elastos:iWFAUYhTa35c1fPe3iCJvihZHx6quumnym",
+        "did:elastos:ijSM3fffVzAtAWM4DSypiFBY2mZSmN7JPv"
+    ],
+    "publicKey": [
+        {
+            "id": "#k1",
+            "publicKeyBase58": "25DZg8y2zDWibR7v8LCpdHbTmS6u81LVkTkJJo3fMzQuk"
+        },
+        {
+            "id": "#k2",
+            "publicKeyBase58": "rE11iFZFQzeZ9buaukRddxTyK4zqEdCA8i77LA3yXh4d"
+        }
+    ],
+    "authentication": [
+        "#k1",
+        "#k2"
+    ],
+    "expires": "2025-10-23T06:53:49Z",
+    "proof": {
+        "created": "2020-10-23T14:53:49Z",
+        "creator": "did:elastos:ijSM3fffVzAtAWM4DSypiFBY2mZSmN7JPv#primary",
+        "signatureValue": "KVLTdTO_ITEtiKgAMtnC9M3u_ReCuxh5abFnQj1aSADRGIh1RNIIfCG8VHbHQmzzAjtVUUsomh6idHALRiOQwg"
+    }
+}
+

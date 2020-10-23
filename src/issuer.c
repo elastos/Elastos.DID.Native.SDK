@@ -40,24 +40,24 @@ Issuer *Issuer_Create(DID *did, DIDURL *signkey, DIDStore *store)
 {
     Issuer *issuer;
     DIDDocument *doc;
-    bool isAuthKey;
 
     if (!did || !store) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    //doc = DID_Resolve(did);
     doc = DIDStore_LoadDID(store, did);
     if (!doc)
         return NULL;
 
-    if (!signkey)
+    if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(doc);
-    else {
-        isAuthKey = DIDDocument_IsAuthenticationKey(doc, signkey);
-        if (!isAuthKey) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Invalid authentication key.");
+        if (!signkey) {
+            DIDDocument_Destroy(doc);
+            return NULL;
+        }
+    } else {
+        if (!DIDDocument_IsAuthenticationKey(doc, signkey)) {
             DIDDocument_Destroy(doc);
             return NULL;
         }
