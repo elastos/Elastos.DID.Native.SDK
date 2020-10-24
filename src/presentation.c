@@ -314,18 +314,140 @@ static const char* presentation_tojson_forsign(Presentation *pre, bool compact, 
     return JsonGenerator_Finish(gen);
 }
 
+static Presentation *create_presentation(DIDDocument *doc, DIDURL *signkey, DIDStore *store)
+{
+    Presentation *pre = NULL;
+
+    assert(doc);
+    assert(store);
+
+    if (!DIDDocument_IsAuthenticationKey(doc, signkey)) {
+        DIDError_Set(DIDERR_INVALID_KEY, "Invalid authentication key.");
+        return NULL;
+    }
+
+    if (!DIDStore_ContainsPrivateKey(store, &doc->did, signkey)) {
+        DIDError_Set(DIDERR_INVALID_KEY, "No private key.");
+        return NULL;
+    }
+
+    pre = (Presentation*)calloc(1, sizeof(Presentation));
+    if (!pre) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for presentation failed.");
+        return NULL;
+    }
+
+    strcpy(pre->type, PresentationType);
+
+    return pre;
+}
+
+static int add_credentials_to_presentation(Presentation *pre, int count, va_list list)
+{
+    Credential **creds = NULL, *cred;
+    int i;
+
+    assert(pre);
+    assert(count >= 0);
+
+    if (count > 0) {
+        creds = (Credential**)calloc(count, sizeof(Credential*));
+        if (!creds) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for credentials failed.");
+            return -1;
+        }
+
+        for (i = 0; i < count; i++) {
+            cred = va_arg(list, Credential*);
+            if (Credential_Verify(cred) == -1 || Credential_IsExpired(cred)) {
+                free(creds);
+                va_end(list);
+                return -1;
+            }
+
+            add_credential(creds, i, cred);
+        }
+    }
+
+    pre->credentials.credentials = creds;
+    pre->credentials.size = count;
+    return 0;
+}
+
+static int add_credentialarray_to_presentation(Presentation *pre, int count, Credential **creds)
+{
+    Credential **credentials = NULL;
+    int i;
+
+    assert(pre);
+    assert(count >= 0);
+    assert(creds);
+
+    if (count > 0) {
+        credentials = (Credential**)calloc(count, sizeof(Credential*));
+        if (!credentials) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for credentials failed.");
+            return -1;
+        }
+
+        for (i = 0; i < count && creds[i]; i++) {
+            if (Credential_Verify(creds[i]) == -1 || Credential_IsExpired(creds[i])) {
+                free(credentials);
+                return -1;
+            }
+
+            add_credential(credentials, i, creds[i]);
+        }
+    }
+
+    pre->credentials.credentials = credentials;
+    pre->credentials.size = count;
+    return 0;
+}
+
+static int seal_presentation(Presentation *pre, DIDDocument *doc, DIDURL *signkey,
+        const char *storepass, const char *nonce, const char *realm)
+{
+    const char *data;
+    char signature[SIGNATURE_BYTES * 2 + 16];
+    int rc;
+
+    assert(pre);
+    assert(doc);
+    assert(signkey);
+    assert(storepass && *storepass);
+    assert(nonce && *nonce);
+    assert(realm && *realm);
+
+    time(&pre->created);
+
+    data = presentation_tojson_forsign(pre, false, true);
+    if (!data)
+        return -1;
+
+    rc = DIDDocument_Sign(doc, signkey, storepass, signature, 3, (unsigned char*)data, strlen(data),
+            (unsigned char*)realm, strlen(realm), (unsigned char*)nonce, strlen(nonce));
+    free((void*)data);
+    if (rc < 0)
+        return -1;
+
+    strcpy(pre->proof.type, ProofType);
+    DIDURL_Copy(&pre->proof.verificationMethod, signkey);
+    strcpy(pre->proof.nonce, nonce);
+    strcpy(pre->proof.realm, realm);
+    strcpy(pre->proof.signatureValue, signature);
+
+    return 0;
+}
+
 ////////////////////////////////////////////////////////////////////////////
 Presentation *Presentation_Create(DID *did, DIDURL *signkey, DIDStore *store,
         const char *storepass, const char *nonce, const char *realm, int count, ...)
 {
     va_list list;
-    Credential *cred;
     Presentation *pre = NULL;
     DIDDocument *doc;
-    const char *data;
-    char signature[SIGNATURE_BYTES * 2 + 16];
-    Credential **creds = NULL;
-    int rc, i;
+    int rc;
 
     if (!did || !store || !storepass || !*storepass || !nonce || !*nonce ||
             !realm || !*realm || count < 0) {
@@ -339,75 +461,72 @@ Presentation *Presentation_Create(DID *did, DIDURL *signkey, DIDStore *store,
         return NULL;
     }
 
-    if (!signkey)
+    if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(doc);
-
-    if (!DIDDocument_IsAuthenticationKey(doc, signkey)) {
-        DIDError_Set(DIDERR_INVALID_KEY, "Invalid authentication key.");
-        goto errorExit;
-    }
-
-    if (!DIDStore_ContainsPrivateKey(store, did, signkey)) {
-        DIDError_Set(DIDERR_INVALID_KEY, "No private key.");
-        goto errorExit;
-    }
-
-    pre = (Presentation*)calloc(1, sizeof(Presentation));
-    if (!pre) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for presentation failed.");
-        goto errorExit;
-    }
-
-    strcpy(pre->type, PresentationType);
-    time(&pre->created);
-
-    if (count > 0) {
-        creds = (Credential**)calloc(count, sizeof(Credential*));
-        if (!creds) {
-            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for credentials failed.");
+        if (!signkey)
             goto errorExit;
-        }
-
-        va_start(list, count);
-        for (i = 0; i < count; i++) {
-            cred = va_arg(list, Credential*);
-            if (Credential_Verify(cred) == -1) {
-                DIDError_Set(DIDERR_NOT_GENUINE, "Credential is invalid.");
-                free(creds);
-                va_end(list);
-                goto errorExit;
-            }
-
-            if (Credential_IsExpired(cred)) {
-                DIDError_Set(DIDERR_EXPIRED, "Credential is expired.");
-                free(creds);
-                va_end(list);
-                goto errorExit;
-            }
-
-            add_credential(creds, i, cred);
-        }
-        va_end(list);
     }
 
-    pre->credentials.credentials = creds;
-    pre->credentials.size = count;
-
-    data = presentation_tojson_forsign(pre, false, true);
-    if (!data)
+    pre = create_presentation(doc, signkey, store);
+    if (!pre)
         goto errorExit;
 
-    rc = DIDDocument_Sign(doc, signkey, storepass, signature, 3, (unsigned char*)data, strlen(data),
-            (unsigned char*)realm, strlen(realm), (unsigned char*)nonce, strlen(nonce));
-    free((void*)data);
-    if (rc)
+    va_start(list, count);
+    rc = add_credentials_to_presentation(pre, count, list);
+    va_end(list);
+    if (rc < 0)
         goto errorExit;
 
-    strcpy(pre->proof.type, ProofType);
-    DIDURL_Copy(&pre->proof.verificationMethod, signkey);
-    strcpy(pre->proof.nonce, nonce);
-    strcpy(pre->proof.realm, realm);
-    strcpy(pre->proof.signatureValue, signature);
+    rc = seal_presentation(pre, doc, signkey, storepass, nonce, realm);
+    if (rc < 0)
+        goto errorExit;
+
+    DIDDocument_Destroy(doc);
+    return pre;
+
+errorExit:
+    DIDDocument_Destroy(doc);
+    Presentation_Destroy(pre);
+    return NULL;
+}
+
+Presentation *Presentation_CreateByCredentials(DID *did, DIDURL *signkey,
+        DIDStore *store, const char *storepass, const char *nonce, const char *realm,
+        Credential **creds, size_t count)
+{
+    Presentation *pre = NULL;
+    DIDDocument *doc;
+    int rc;
+
+    if (!did || !store || !storepass || !*storepass || !nonce || !*nonce ||
+            !realm || !*realm || count < 0 || !creds) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    doc = DIDStore_LoadDID(store, did);
+    if (!doc) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Can not load DID.");
+        return NULL;
+    }
+
+    if (!signkey) {
+        signkey = DIDDocument_GetDefaultPublicKey(doc);
+        if (!signkey)
+            goto errorExit;
+    }
+
+    pre = create_presentation(doc, signkey, store);
+    if (!pre)
+        goto errorExit;
+
+    rc = add_credentialarray_to_presentation(pre, count, creds);
+    if (rc < 0)
+        goto errorExit;
+
+    rc = seal_presentation(pre, doc, signkey, storepass, nonce, realm);
+    if (rc < 0)
+        goto errorExit;
 
     DIDDocument_Destroy(doc);
     return pre;
