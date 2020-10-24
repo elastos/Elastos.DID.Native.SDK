@@ -185,6 +185,84 @@ static void test_vp_create(void)
     Presentation_Destroy(vp);
 }
 
+static void test_vp_create_by_credarray(void)
+{
+    Presentation *vp;
+    DID *did;
+    Credential *creds[4], **cred, *vcs[4] = {0};
+    bool isEqual;
+    ssize_t size;
+    DIDURL *id;
+    DID *signer;
+    int i;
+
+    did = DIDDocument_GetSubject(testdoc);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(did);
+
+    vcs[0] = TestData_LoadProfileVc();
+    vcs[1] = TestData_LoadEmailVc();
+    vcs[2] = TestData_LoadPassportVc();
+    vcs[3] = TestData_LoadTwitterVc();
+    vp = Presentation_CreateByCredentials(did, NULL, store, storepass,
+            "873172f58701a9ee686f0630204fee59", "https://example.com/", vcs, 4);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(vp);
+
+    CU_ASSERT_NOT_EQUAL_FATAL(Presentation_GetType(vp), PresentationType);
+    isEqual = DID_Equals(did, Presentation_GetSigner(vp));
+    CU_ASSERT_TRUE(isEqual);
+
+    size = Presentation_GetCredentialCount(vp);
+    CU_ASSERT_EQUAL(size, 4);
+
+    size = Presentation_GetCredentials(vp, creds, sizeof(creds));
+    CU_ASSERT_EQUAL(size, 4);
+
+    cred = creds;
+    for (i = 0; i < size; i++, cred++) {
+        isEqual = DID_Equals(DIDDocument_GetSubject(testdoc), Credential_GetOwner(*cred));
+        CU_ASSERT_TRUE(isEqual);
+
+        const char *fragment = DIDURL_GetFragment(Credential_GetId(*cred));
+        CU_ASSERT_PTR_NOT_NULL(fragment);
+
+        CU_ASSERT_TRUE(!strcmp(fragment, "profile") || !strcmp(fragment, "email") ||
+                 !strcmp(fragment, "twitter") || !strcmp(fragment, "passport"));
+    }
+
+    signer = Presentation_GetSigner(vp);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(signer);
+
+    id = DIDURL_NewByDid(signer, "profile");
+    CU_ASSERT_PTR_NOT_NULL_FATAL(id);
+    CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
+    DIDURL_Destroy(id);
+
+    id = DIDURL_NewByDid(signer, "email");
+    CU_ASSERT_PTR_NOT_NULL_FATAL(id);
+    CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
+    DIDURL_Destroy(id);
+
+    id = DIDURL_NewByDid(signer, "twitter");
+    CU_ASSERT_PTR_NOT_NULL_FATAL(id);
+    CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
+    DIDURL_Destroy(id);
+
+    id = DIDURL_NewByDid(signer, "passport");
+    CU_ASSERT_PTR_NOT_NULL_FATAL(id);
+    CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
+    DIDURL_Destroy(id);
+
+    id = DIDURL_NewByDid(signer, "notexist");
+    CU_ASSERT_PTR_NOT_NULL_FATAL(id);
+    CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
+    DIDURL_Destroy(id);
+
+    CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
+    CU_ASSERT_TRUE(Presentation_IsValid(vp));
+
+    Presentation_Destroy(vp);
+}
+
 static void test_vp_create_without_creds(void)
 {
     Presentation *vp;
@@ -256,6 +334,7 @@ static CU_TestInfo cases[] = {
     { "test_vp_getelem",                          test_vp_getelem                  },
     { "test_vp_parse",                            test_vp_parse                    },
     { "test_vp_create",                           test_vp_create                   },
+    { "test_vp_create_by_credarray",              test_vp_create_by_credarray      },
     { "test_vp_create_without_creds",             test_vp_create_without_creds     },
     { NULL,                                       NULL                             }
 };

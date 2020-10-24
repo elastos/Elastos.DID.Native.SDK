@@ -3197,6 +3197,36 @@ DID_API Presentation *Presentation_Create(DID *did, DIDURL *signkey, DIDStore *s
 
 /**
  * \~English
+ * Create a presentation including some credentials.
+ *
+ * @param
+ *      did                      [in] The handle to DID.
+ * @param
+ *      signkey                  [in] The key id to sign.
+ * @param
+ *      store                    [in] The handle to DIDStore.
+ * @param
+ *      storepass                [in] The password of DIDStore.
+ * @param
+ *      nonce                    [in] Indicate the usage of Presentation.
+  * @param
+ *      realm                    [in] Indicate where the Presentation is use.
+ * @param
+ *      creds                    [in] The Credential array.
+ * @param
+ *      count                    [in] The count of Credentials.
+ * @return
+ *      If no error occurs, return the handle to Presentataion.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API Presentation *Presentation_CreateByCredentials(DID *did, DIDURL *signkey,
+        DIDStore *store, const char *storepass, const char *nonce, const char *realm,
+        Credential **creds, size_t count);
+
+
+/**
+ * \~English
  * Destroy Presentation.
  *
  * @param
