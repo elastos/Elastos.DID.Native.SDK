@@ -134,7 +134,7 @@ typedef struct Property {
  * a centralized registration authority.
  * It includes method specific string. (elastos:id:ixxxxxxxxxx).
  */
-typedef struct DID                  DID;
+typedef struct DID                     DID;
 /**
  * \~English
  * DID URL defines by the did-url rule, refers to a URL that begins with a DID
@@ -142,26 +142,26 @@ typedef struct DID                  DID;
  * identifies the resource to be located.
  * DIDURL includes DID and Url fragment by user defined.
  */
-typedef struct DIDURL               DIDURL;
+typedef struct DIDURL                  DIDURL;
 /**
  * \~English
  * Public keys are used for digital signatures, encryption and
  * other cryptographic operations, which are the basis for purposes such as
  * authentication or establishing secure communication with service endpoints.
  */
-typedef struct PublicKey            PublicKey;
+typedef struct PublicKey               PublicKey;
 /**
  * \~English
  * Credential is a set of one or more claims made by the same entity.
  * Credentials might also include an identifier and metadata to
  * describe properties of the credential.
  */
-typedef struct Credential           Credential;
+typedef struct Credential              Credential;
 /**
  * \~English
  * CredentialMetaData stores information about Credential except information in Credential.
  */
-typedef struct CredentialMetaData   CredentialMetaData;
+typedef struct CredentialMetaData      CredentialMetaData;
 /**
  * \~English
  * A Presentation can be targeted to a specific verifier by using a Linked Data
@@ -169,14 +169,14 @@ typedef struct CredentialMetaData   CredentialMetaData;
  * This also helps prevent a verifier from reusing a verifiable presentation as
  * their own.
  */
-typedef struct Presentation         Presentation;
+typedef struct Presentation            Presentation;
 /**
  * \~English
  * A service endpoint may represent any type of service the subject
  * wishes to advertise, including decentralized identity management services
  * for further discovery, authentication, authorization, or interaction.
  */
-typedef struct Service              Service;
+typedef struct Service                 Service;
 /**
  * \~English
  * A DID resolves to a DID Document. This is the concrete serialization of
@@ -186,22 +186,23 @@ typedef struct Service              Service;
  * credential and services. One document must be have only subject,
  * and at least one public key.
  */
-typedef struct DIDDocument          DIDDocument;
+typedef struct DIDDocument             DIDDocument;
 /**
  * \~English
  DIDMetaData is store for other information about DID except DIDDocument information.
  */
-typedef struct DIDMetaData          DIDMetaData;
+typedef struct DIDMetaData             DIDMetaData;
 /**
  * \~English
  DIDHistroy stores all did transactions from chain.
  */
-typedef struct DIDHistory           DIDHistory;
+typedef struct DIDHistory              DIDHistory;
 /**
  * \~English
  * A DIDDocument Builder to modify DIDDocument elems.
  */
-typedef struct DIDDocumentBuilder   DIDDocumentBuilder;
+typedef struct DIDDocumentBuilder      DIDDocumentBuilder;
+
 /**
  * \~English
  * A issuer is the did to issue credential. Issuer includes issuer's did and
@@ -1196,6 +1197,8 @@ DID_API void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder);
  * @param
  *      builder              [in] A handle to DIDDocument Builder.
  * @param
+ *      controller           [in] The controller to sign.
+ * @param
  *      storepass            [in] Pass word to sign.
  * @return
  *      If no error occurs, return a handle to DIDDocument.
@@ -1203,7 +1206,7 @@ DID_API void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder);
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
 DID_API DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder,
-            const char *storepass);
+            DID *controller, const char *storepass);
 
 /**
  * \~English
@@ -1339,6 +1342,19 @@ DID_API int DIDDocumentBuilder_RemoveAuthorizationKey(DIDDocumentBuilder *builde
 
 /**
  * \~English
+ * Add controller for DIDDocument.
+ *
+ * @param
+ *      builder               [in] A handle to DIDDocument Builder.
+ * @param
+ *      controller            [in] The controller for DIDDocument.
+ * @return
+ *      0 on success, -1 if an error occurred.
+ */
+DID_API int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controller);
+
+/**
+ * \~English
  * Add one credential to credential array.
  *
  * @param
@@ -1437,6 +1453,34 @@ DID_API int DIDDocumentBuilder_RemoveService(DIDDocumentBuilder *builder,
  *      0 on success, -1 if an error occurred.
  */
 DID_API int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires);
+
+/**
+ * \~English
+ * Get the count of controllers. The customized DID Document has controller, so the controller
+ * is optional.
+ *
+ * @param
+ *      document             [in] A handle to DID Document.
+ * @return
+ *      size of controllers on success, -1 if an error occurred.
+ */
+DID_API ssize_t DIDDocument_GetControllerCount(DIDDocument *document);
+
+/**
+ * \~English
+ * Get the array of controllers. A DID Document MAY include a controller property.
+ *
+ * @param
+ *      document             [in] A handle to DID Document.
+ * @param
+ *      controllers          [out] The buffer that will receive the controllers.
+ * @param
+ *      size                 [in] The buffer size of controllers.
+ * @return
+ *      size of controllers on success, -1 if an error occurred.
+ */
+DID_API ssize_t DIDDocument_GetControllers(DIDDocument *document,
+        DID **controllers, size_t size);
 
 /**
  * \~English
@@ -2656,6 +2700,34 @@ DID_API DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass,
 
 /**
  * \~English
+ * Create a new DID Document and store in the DID Store by customized string.
+ *
+ * @param
+ *      store                     [in] THe handle to DIDStore.
+ * @param
+ *      storepass                 [in] Password for DIDStore.
+ * @param
+ *      customizeddid              [in] The nickname of DID.
+ *                                     'customizeddid' supports NULL.
+ * @param
+ *      controllers               [in] The controllers for customized DID.
+ * @param
+ *      size                      [in] The count of controllers.
+ * @param
+ *      controller                [in] The controller for customized DID.
+ *                                     'customizeddid' supports NULL.
+ * tip: if the count of controllers is one, 'controller' supports NULL. Otherwise,
+ * the error occures.
+ * @return
+ *      If no error occurs, return the handle to DID Document.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
+        const char *customizeddid, DID **controllers, size_t size, DID *controller);
+
+/**
+ * \~English
  * Create new DID document and store it in the DID store with given index.
  *
  * @param
@@ -3572,6 +3644,11 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
  * JWT error.
  */
 #define DIDERR_MALFORMED_EXPORTDID                  0x8D000018
+/**
+ * \~English
+ * JWT error.
+ */
+#define DIDERR_INVALID_CONTROLLER                   0x8D000019
 /**
  * \~English
  * Unknown error.

@@ -103,7 +103,7 @@ static void test_idchain_publishdid(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
@@ -171,7 +171,7 @@ static void test_idchain_publishdid(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(3, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(3, DIDDocument_GetAuthenticationCount(doc));
@@ -309,7 +309,7 @@ static void test_idchain_publishdid_without_txid(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
@@ -379,7 +379,7 @@ static void test_idchain_publishdid_without_txid(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(3, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(3, DIDDocument_GetAuthenticationCount(doc));
@@ -497,7 +497,7 @@ static void test_idchain_publishdid_without_signature(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
@@ -565,7 +565,7 @@ static void test_idchain_publishdid_without_signature(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(3, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(3, DIDDocument_GetAuthenticationCount(doc));
@@ -683,7 +683,7 @@ static void test_idchain_publishdid_without_prevsignature(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
@@ -749,7 +749,7 @@ static void test_idchain_publishdid_without_prevsignature(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(3, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(3, DIDDocument_GetAuthenticationCount(doc));
@@ -870,7 +870,7 @@ static void test_idchain_publishdid_without_prevsignature_and_signature(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
@@ -955,7 +955,7 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
@@ -1070,7 +1070,7 @@ static void test_updatedid_with_diffprevsignature_only(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
@@ -1176,7 +1176,7 @@ static void test_updatedid_with_diffsignature_only(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
@@ -1238,7 +1238,7 @@ static void test_updatedid_with_diffsignature_only(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(3, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(3, DIDDocument_GetAuthenticationCount(doc));
@@ -1357,7 +1357,7 @@ static void test_updatedid_with_diff_prevsignature_and_signature(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
@@ -1440,7 +1440,7 @@ static void test_force_updatedid_with_wrongsignature(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
@@ -1556,7 +1556,7 @@ static void test_idchain_publishdid_with_credential(void)
     rc = DIDDocumentBuilder_AddSelfClaimedCredential(builder, credid, types, 2, props, 1, 0, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     DIDDocumentBuilder_Destroy(builder);
 
@@ -1753,7 +1753,7 @@ static void test_idchain_deactivedid_after_update(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
@@ -1893,7 +1893,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    targetdoc = DIDDocumentBuilder_Seal(builder, storepass);
+    targetdoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(targetdoc);
     DIDDocumentBuilder_Destroy(builder);
     CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(targetdoc));
@@ -2003,7 +2003,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(doc);
     DIDDocumentBuilder_Destroy(builder);
 
@@ -2054,7 +2054,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    targetdoc = DIDDocumentBuilder_Seal(builder, storepass);
+    targetdoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(targetdoc);
     CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(targetdoc));
     DIDDocumentBuilder_Destroy(builder);

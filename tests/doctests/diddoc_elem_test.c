@@ -29,7 +29,7 @@ static void test_diddoc_get_publickey(void)
 
     CU_ASSERT_EQUAL(DIDDocument_GetPublicKeyCount(doc), 4);
 
-    size = DIDDocument_GetPublicKeys(doc, pks, sizeof(pks));
+    size = DIDDocument_GetPublicKeys(doc, pks, 4);
     CU_ASSERT_EQUAL(size, 4);
 
     for (i = 0; i < size; i++) {
@@ -81,23 +81,23 @@ static void test_diddoc_get_publickey(void)
     DIDURL_Destroy(id);
 
     // Selector
-    size = DIDDocument_SelectPublicKeys(doc, default_type, defaultkey, pks, sizeof(pks));
+    size = DIDDocument_SelectPublicKeys(doc, default_type, defaultkey, pks, 4);
     CU_ASSERT_EQUAL(size, 1);
     isEquals = DIDURL_Equals(PublicKey_GetId(pks[0]), primaryid);
     CU_ASSERT_TRUE(isEquals);
 
-    size = DIDDocument_SelectPublicKeys(doc, NULL, defaultkey, pks, sizeof(pks));
+    size = DIDDocument_SelectPublicKeys(doc, NULL, defaultkey, pks, 4);
     CU_ASSERT_EQUAL(size, 1);
     isEquals = DIDURL_Equals(PublicKey_GetId(pks[0]), primaryid);
     CU_ASSERT_TRUE(isEquals);
     DIDURL_Destroy(primaryid);
 
-    size = DIDDocument_SelectPublicKeys(doc, default_type, NULL, pks, sizeof(pks));
+    size = DIDDocument_SelectPublicKeys(doc, default_type, NULL, pks, 4);
     CU_ASSERT_EQUAL(size, 4);
 
     id = DIDURL_NewByDid(did, "key2");
     CU_ASSERT_PTR_NOT_NULL(id);
-    size = DIDDocument_SelectPublicKeys(doc, default_type, id, pks, sizeof(pks));
+    size = DIDDocument_SelectPublicKeys(doc, default_type, id, pks, 4);
     CU_ASSERT_EQUAL(size, 1);
     isEquals = DIDURL_Equals(PublicKey_GetId(pks[0]), id);
     CU_ASSERT_TRUE(isEquals);
@@ -105,7 +105,7 @@ static void test_diddoc_get_publickey(void)
 
     id = DIDURL_NewByDid(did, "key3");
     CU_ASSERT_PTR_NOT_NULL(id);
-    size = DIDDocument_SelectPublicKeys(doc, NULL, id, pks, sizeof(pks));
+    size = DIDDocument_SelectPublicKeys(doc, NULL, id, pks, 4);
     CU_ASSERT_EQUAL(size, 1);
     isEquals = DIDURL_Equals(PublicKey_GetId(pks[0]), id);
     CU_ASSERT_TRUE(isEquals);
@@ -139,7 +139,7 @@ static void test_diddoc_add_publickey(void)
     rc = DIDDocumentBuilder_AddPublicKey(builder, id2, did, keybase);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -199,7 +199,7 @@ static void test_diddoc_remove_publickey(void)
             DIDDocument_GetDefaultPublicKey(doc), true);
     CU_ASSERT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -226,13 +226,13 @@ static void test_diddoc_get_authentication_key(void)
     PublicKey *pks[3];
     ssize_t size;
     PublicKey *pk;
-    DIDURL *keyid, *id;
+    DIDURL *keyid, *keyid3, *id;
     bool isEquals;
     int i;
 
     CU_ASSERT_EQUAL(3, DIDDocument_GetAuthenticationCount(doc));
 
-    size = DIDDocument_GetAuthenticationKeys(doc, pks, sizeof(pks));
+    size = DIDDocument_GetAuthenticationKeys(doc, pks, 3);
     CU_ASSERT_EQUAL(3, size);
 
     for (i = 0; i < size; i++) {
@@ -274,28 +274,28 @@ static void test_diddoc_get_authentication_key(void)
     DIDURL_Destroy(id);
 
     // Selector
-    size = DIDDocument_SelectAuthenticationKeys(doc, default_type, keyid, pks, sizeof(pks));
+    size = DIDDocument_SelectAuthenticationKeys(doc, default_type, keyid, pks, 3);
     CU_ASSERT_EQUAL(size, 1);
     isEquals = DIDURL_Equals(PublicKey_GetId(pks[0]), keyid);
     CU_ASSERT_TRUE(isEquals);
 
-    size = DIDDocument_SelectAuthenticationKeys(doc, NULL, keyid, pks, sizeof(pks));
+    size = DIDDocument_SelectAuthenticationKeys(doc, NULL, keyid, pks, 3);
     CU_ASSERT_EQUAL(size, 1);
     isEquals = DIDURL_Equals(PublicKey_GetId(pks[0]), keyid);
     CU_ASSERT_TRUE(isEquals);
     DIDURL_Destroy(keyid);
 
-    size = DIDDocument_SelectAuthenticationKeys(doc, default_type, NULL, pks, sizeof(pks));
+    size = DIDDocument_SelectAuthenticationKeys(doc, default_type, NULL, pks, 3);
     CU_ASSERT_EQUAL(size, 3);
 
     id = DIDURL_NewByDid(did, "key2");
     CU_ASSERT_PTR_NOT_NULL(id);
-    size = DIDDocument_SelectAuthenticationKeys(doc, default_type, id, pks, sizeof(pks));
+    size = DIDDocument_SelectAuthenticationKeys(doc, default_type, id, pks, 3);
     CU_ASSERT_EQUAL(size, 1);
     isEquals = DIDURL_Equals(PublicKey_GetId(pks[0]), id);
     CU_ASSERT_TRUE(isEquals);
 
-    size = DIDDocument_SelectAuthenticationKeys(doc, NULL, id, pks, sizeof(pks));
+    size = DIDDocument_SelectAuthenticationKeys(doc, NULL, id, pks, 3);
     CU_ASSERT_EQUAL(size, 1);
     isEquals = DIDURL_Equals(PublicKey_GetId(pks[0]), id);
     CU_ASSERT_TRUE(isEquals);
@@ -362,7 +362,7 @@ static void test_diddoc_add_authentication_key(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -450,7 +450,7 @@ static void test_diddoc_remove_authentication_key(void)
             DIDDocument_GetDefaultPublicKey(doc));
     CU_ASSERT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -486,7 +486,8 @@ static void test_diddoc_get_authorization_key(void)
 
     CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(doc));
 
-    size = DIDDocument_GetAuthorizationKeys(doc, pks, sizeof(pks));
+    size = DIDDocument_GetAuthorizationKeys(doc, pks, 1);
+    CU_ASSERT_NOT_EQUAL(size, -1);
     CU_ASSERT_EQUAL(1, size);
 
     for (i = 0; i < size; i++) {
@@ -519,18 +520,18 @@ static void test_diddoc_get_authorization_key(void)
     DIDURL_Destroy(id);
 
     // Selector
-    size = DIDDocument_SelectAuthorizationKeys(doc, default_type, keyid, pks, sizeof(pks));
+    size = DIDDocument_SelectAuthorizationKeys(doc, default_type, keyid, pks, 1);
     CU_ASSERT_EQUAL(size, 1);
     isEquals = DIDURL_Equals(PublicKey_GetId(pks[0]), keyid);
     CU_ASSERT_TRUE(isEquals);
 
-    size = DIDDocument_SelectAuthorizationKeys(doc, NULL, keyid, pks, sizeof(pks));
+    size = DIDDocument_SelectAuthorizationKeys(doc, NULL, keyid, pks, 1);
     CU_ASSERT_EQUAL(size, 1);
     isEquals = DIDURL_Equals(PublicKey_GetId(pks[0]), keyid);
     CU_ASSERT_TRUE(isEquals);
     DIDURL_Destroy(keyid);
 
-    size = DIDDocument_SelectAuthorizationKeys(doc, default_type, NULL, pks, sizeof(pks));
+    size = DIDDocument_SelectAuthorizationKeys(doc, default_type, NULL, pks, 1);
     CU_ASSERT_EQUAL(size, 1);
 }
 
@@ -614,7 +615,7 @@ static void test_diddoc_add_authorization_key(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -706,7 +707,7 @@ static void test_diddoc_remove_authorization_key(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -743,7 +744,7 @@ static void test_diddoc_get_credential(void)
 
     CU_ASSERT_EQUAL(2, DIDDocument_GetCredentialCount(doc));
 
-    size = DIDDocument_GetCredentials(doc, vcs, sizeof(vcs));
+    size = DIDDocument_GetCredentials(doc, vcs, 2);
     CU_ASSERT_EQUAL(2, size);
 
     for (i = 0; i < size; i++) {
@@ -789,7 +790,7 @@ static void test_diddoc_get_credential(void)
     isEquals = DIDURL_Equals(Credential_GetId(vcs[0]), profileid);
     CU_ASSERT_TRUE(isEquals);
 
-    size = DIDDocument_SelectCredentials(doc, NULL, profileid, vcs, sizeof(vcs));
+    size = DIDDocument_SelectCredentials(doc, NULL, profileid, vcs, 2);
     CU_ASSERT_EQUAL(size, 1);
     isEquals = DIDURL_Equals(Credential_GetId(vcs[0]), profileid);
     CU_ASSERT_TRUE(isEquals);
@@ -801,7 +802,7 @@ static void test_diddoc_get_credential(void)
     CU_ASSERT_TRUE(isEquals);
     DIDURL_Destroy(profileid);
 
-    size = DIDDocument_SelectCredentials(doc, "TestingCredential", NULL, vcs, sizeof(vcs));
+    size = DIDDocument_SelectCredentials(doc, "TestingCredential", NULL, vcs, 2);
     CU_ASSERT_EQUAL(size, 0);
 }
 
@@ -827,7 +828,7 @@ static void test_diddoc_add_credential(void)
     rc = DIDDocumentBuilder_AddCredential(builder, TestData_LoadTwitterVc());
     CU_ASSERT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -881,7 +882,7 @@ static void test_diddoc_add_selfclaimed_credential(void)
             types, 2, props, 2, DIDDocument_GetExpires(doc), storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -943,7 +944,7 @@ static void test_diddoc_remove_credential(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1076,7 +1077,7 @@ static void test_diddoc_add_service(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1086,7 +1087,7 @@ static void test_diddoc_add_service(void)
 
     // Try to select new added 2 services
     size = DIDDocument_SelectServices(sealeddoc, "Service.Testing", NULL,
-            services, sizeof(services));
+            services, 3);
     CU_ASSERT_EQUAL(2, size);
     CU_ASSERT_STRING_EQUAL("Service.Testing", Service_GetType(services[0]));
     CU_ASSERT_STRING_EQUAL("Service.Testing", Service_GetType(services[1]));
@@ -1124,7 +1125,7 @@ static void test_diddoc_remove_service(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);

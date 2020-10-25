@@ -151,6 +151,8 @@ int main(int argc, char *argv[])
     signal(SIGHUP, signal_handler);
 #endif
 
+    //test by chenyu
+    printf("1111\n");
     if (memstats_file) {
         pid_t pid = getpid();
         delete_file(memstats_file);

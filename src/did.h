@@ -54,6 +54,8 @@ int Parse_DIDURL(DIDURL *id, const char *idstring, DID *base);
 int Init_DIDURL(DIDURL *id, DID *did, const char *fragment);
 DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src);
 
+bool Contains_DID(DID **dids, size_t size, DID *did);
+
 #ifdef __cplusplus
 }
 #endif

@@ -326,7 +326,7 @@ static Presentation *create_presentation(DIDDocument *doc, DIDURL *signkey, DIDS
         return NULL;
     }
 
-    if (!DIDStore_ContainsPrivateKey(store, &doc->did, signkey)) {
+    if (!DIDStore_ContainsPrivateKey(store, &signkey->did, signkey)) {
         DIDError_Set(DIDERR_INVALID_KEY, "No private key.");
         return NULL;
     }

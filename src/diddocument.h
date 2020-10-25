@@ -48,6 +48,11 @@ typedef struct DocumentProof {
 struct DIDDocument {
     DID did;
 
+    struct {                  //optional
+        size_t size;
+        DIDDocument **docs;
+    } controllers;
+
     struct {
         size_t size;
         PublicKey **pks;
