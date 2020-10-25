@@ -807,9 +807,7 @@ int Credential_Verify(Credential *cred)
     }
 
     rc = DIDDocument_Verify(doc, &cred->proof.verificationMethod,
-                            cred->proof.signatureValue,
-                            1, data, strlen(data));
-
+            cred->proof.signatureValue, 1, data, strlen(data));
     free((void *)data);
     DIDDocument_Destroy(doc);
 

@@ -220,7 +220,7 @@ static void test_sync_with_localmodification1(void)
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
     DIDURL_Destroy(serviceid);
 
-    modified_doc = DIDDocumentBuilder_Seal(builder, storepass);
+    modified_doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
     DIDDocumentBuilder_Destroy(builder);
 
@@ -317,7 +317,7 @@ static void test_sync_with_localmodification2(void)
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
     DIDURL_Destroy(serviceid);
 
-    modified_doc = DIDDocumentBuilder_Seal(builder, storepass);
+    modified_doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
     DIDDocumentBuilder_Destroy(builder);
 

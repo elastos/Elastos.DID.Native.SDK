@@ -46,6 +46,8 @@ void delete_file(const char *path);
 
 char *load_file(const char *file);
 
+int store_file(const char *path, const char *string);
+
 const char *Generater_Publickey(char *publickeybase58, size_t size);
 
 HDKey *Generater_KeyPair(HDKey *hdkey);
@@ -118,6 +120,17 @@ const char *TestData_LoadVpNormJson(void);
 DIDDocument *TestData_LoadDoc(void);
 
 DIDDocument *TestData_LoadIssuerDoc(void);
+
+DIDDocument *TestData_LoadEmptyCustomizedDoc(void);
+
+DIDDocument *TestData_LoadCustomizedDoc(void);
+
+DIDDocument *TestData_LoadControllerDoc(void);
+
+//customized doc with multi-controllers
+DIDDocument *TestData_LoadEmptyMultiCustomizedDoc(void);
+
+DIDDocument *TestData_LoadMultiCustomizedDoc(void);
 
 const char *TestData_LoadRestoreMnemonic(void);
 

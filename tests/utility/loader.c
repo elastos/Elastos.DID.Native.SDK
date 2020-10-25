@@ -51,6 +51,14 @@ typedef struct TestData {
     char *docCompactJson;
     char *docNormalizedJson;
 
+    DIDDocument *controllerdoc;
+
+    DIDDocument *emptycustomizeddoc;
+    DIDDocument *customizeddoc;
+
+    DIDDocument *emptyMultiCustomizedDoc;
+    DIDDocument *multiCustomizedDoc;
+
     Credential *profileVc;
     char *profileVcCompactJson;
     char *profileVcNormalizedJson;
@@ -150,6 +158,29 @@ char *load_file(const char *file)
 
     close(fd);
     return readstring;
+}
+
+int store_file(const char *path, const char *string)
+{
+    int fd;
+    size_t len, size;
+
+    if (!path || !*path || !string)
+        return -1;
+
+    fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (fd == -1)
+        return -1;
+
+    len = strlen(string);
+    size = write(fd, string, len);
+    if (size < len) {
+        close(fd);
+        return -1;
+    }
+
+    close(fd);
+    return 0;
 }
 
 static char *load_testdata_file(const char *file)
@@ -381,7 +412,8 @@ bool dir_exist(const char* path)
 static int import_privatekey(DIDURL *id, const char *storepass, const char *file)
 {
     char *skbase;
-    uint8_t privatekey[PRIVATEKEY_BYTES];
+    uint8_t privatekey[EXTENDEDKEY_BYTES];
+    HDKey _hdkey, *hdkey;
 
     if (!id || !file || !*file)
         return -1;
@@ -390,14 +422,19 @@ static int import_privatekey(DIDURL *id, const char *storepass, const char *file
     if (!skbase || !*skbase)
         return -1;
 
-    if (base58_decode(privatekey, sizeof(privatekey), skbase) != PRIVATEKEY_BYTES) {
-        free(skbase);
-        return -1;
+    if (base58_decode(privatekey, sizeof(privatekey), skbase) == EXTENDEDKEY_BYTES) {
+        hdkey = HDKey_FromExtendedKeyBase58(skbase, strlen(skbase), &_hdkey);
+        if (!hdkey) {
+            free(skbase);
+            return -1;
+        }
+
+        memcpy(privatekey, HDKey_GetPrivateKey(hdkey), PRIVATEKEY_BYTES);
     }
 
     free(skbase);
     if (DIDStore_StorePrivateKey(testdata.store, storepass, DIDURL_GetDid(id),
-            id, privatekey, sizeof(privatekey)) == -1)
+            id, privatekey, PRIVATEKEY_BYTES) == -1)
         return -1;
 
     return 0;
@@ -742,6 +779,37 @@ DIDDocument *TestData_LoadDoc(void)
     return testdata.doc;
 }
 
+DIDDocument *TestData_LoadControllerDoc(void)
+{
+    DIDURL *id;
+    DID *subject;
+    int rc;
+    DIDDocument *doc;
+
+    if (!testdata.controllerdoc)
+       testdata.controllerdoc = store_document("controller.json", "controller test");
+
+    subject = DIDDocument_GetSubject(testdata.controllerdoc);
+    id = DIDURL_NewByDid(subject, "pk1");
+    rc = import_privatekey(id, storepass, "controller.pk1.sk");
+    DIDURL_Destroy(id);
+    if (rc)
+        return NULL;
+
+    id = DIDURL_NewByDid(subject, "primary");
+    rc = import_privatekey(id, storepass, "controller.primary.sk");
+    DIDURL_Destroy(id);
+    if (rc)
+        return NULL;
+
+    doc = DID_Resolve(subject, true);
+    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.controllerdoc;
+}
+
 DIDDocument *TestData_LoadIssuerDoc(void)
 {
     DIDURL *id;
@@ -765,6 +833,141 @@ DIDDocument *TestData_LoadIssuerDoc(void)
 
     DIDDocument_Destroy(doc);
     return testdata.issuerdoc;
+}
+
+DIDDocument *TestData_LoadEmptyCustomizedDoc(void)
+{
+    DIDDocument *doc;
+    DID *subject;
+
+    TestData_LoadIssuerDoc();
+    TestData_LoadDoc();
+
+    if (!testdata.emptycustomizeddoc)
+        testdata.emptycustomizeddoc = store_document("customized-did-empty.json", "empty customized doc");
+
+    subject = DIDDocument_GetSubject(testdata.emptycustomizeddoc);
+    if (!subject)
+        return NULL;
+
+    doc = DID_Resolve(subject, true);
+    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.emptycustomizeddoc;
+}
+
+DIDDocument *TestData_LoadCustomizedDoc(void)
+{
+    DIDDocument *doc;
+    DID *subject;
+    DIDURL *id;
+    int rc;
+
+    TestData_LoadIssuerDoc();
+    TestData_LoadDoc();
+
+    if (!testdata.customizeddoc)
+        testdata.customizeddoc = store_document("customized-did.json", "customized doc");
+
+    subject = DIDDocument_GetSubject(testdata.customizeddoc);
+    if (!subject)
+        return NULL;
+
+    id = DIDURL_NewByDid(subject, "k1");
+    rc = import_privatekey(id, storepass, "customized.k1.sk");
+    DIDURL_Destroy(id);
+    if (rc)
+        return NULL;
+
+    id = DIDURL_NewByDid(subject, "k2");
+    rc = import_privatekey(id, storepass, "customized.k2.sk");
+    DIDURL_Destroy(id);
+    if (rc)
+        return NULL;
+
+    doc = DID_Resolve(subject, true);
+    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.customizeddoc;
+}
+
+DIDDocument *TestData_LoadEmptyMultiCustomizedDoc(void)
+{
+    DIDDocument *doc, *controller_doc;
+    DID *subject;
+    DIDURL *signkey;
+
+    TestData_LoadIssuerDoc();
+    TestData_LoadControllerDoc();
+    controller_doc = TestData_LoadDoc();
+    if (!controller_doc)
+        return NULL;
+
+    if (!testdata.emptyMultiCustomizedDoc)
+        testdata.emptyMultiCustomizedDoc = store_document("customized-multicontroller-empty.json", "empty multi-controller customized doc");
+
+    subject = DIDDocument_GetSubject(testdata.emptyMultiCustomizedDoc);
+    if (!subject)
+        return NULL;
+
+    signkey = DIDDocument_GetDefaultPublicKey(controller_doc);
+    if (!signkey)
+        return NULL;
+
+    doc = DID_Resolve(subject, true);
+    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.emptyMultiCustomizedDoc;
+}
+
+DIDDocument *TestData_LoadMultiCustomizedDoc(void)
+{
+    DIDDocument *doc, *controller_doc;
+    DID *subject;
+    DIDURL *signkey, *id;
+    int rc;
+
+    TestData_LoadIssuerDoc();
+    TestData_LoadControllerDoc();
+    controller_doc = TestData_LoadDoc();
+    if (!controller_doc)
+        return NULL;
+
+    if (!testdata.multiCustomizedDoc)
+        testdata.multiCustomizedDoc = store_document("customized-multicontroller.json", "multi-controller customized doc");
+
+    subject = DIDDocument_GetSubject(testdata.multiCustomizedDoc);
+    if (!subject)
+        return NULL;
+
+    id = DIDURL_NewByDid(subject, "k1");
+    rc = import_privatekey(id, storepass, "customized.k1.sk");
+    DIDURL_Destroy(id);
+    if (rc)
+        return NULL;
+
+    id = DIDURL_NewByDid(subject, "k2");
+    rc = import_privatekey(id, storepass, "customized.k2.sk");
+    DIDURL_Destroy(id);
+    if (rc)
+        return NULL;
+
+    signkey = DIDDocument_GetDefaultPublicKey(controller_doc);
+    if (!signkey)
+        return NULL;
+
+    doc = DID_Resolve(subject, true);
+    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.multiCustomizedDoc;
 }
 
 const char *TestData_LoadRestoreMnemonic(void)
@@ -796,6 +999,19 @@ void TestData_Free(void)
         free(testdata.docCompactJson);
     if (testdata.docNormalizedJson)
         free(testdata.docNormalizedJson);
+
+    if (testdata.controllerdoc)
+        DIDDocument_Destroy(testdata.controllerdoc);
+
+    if (testdata.emptycustomizeddoc)
+        DIDDocument_Destroy(testdata.emptycustomizeddoc);
+    if (testdata.customizeddoc)
+        DIDDocument_Destroy(testdata.customizeddoc);
+
+    if (testdata.emptyMultiCustomizedDoc)
+        DIDDocument_Destroy(testdata.emptyMultiCustomizedDoc);
+    if (testdata.multiCustomizedDoc)
+        DIDDocument_Destroy(testdata.multiCustomizedDoc);
 
     if (testdata.profileVc)
         Credential_Destroy(testdata.profileVc);
