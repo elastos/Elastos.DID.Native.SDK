@@ -13,3 +13,11 @@
 - Generate the export symbols automatically.
 - Add validater tool to prove doc or credential.
 - Fix some bugs and improve some flows.
+
+10/27/2020 Chen Yu chenyu_kaola@126.com Version 1.2, main points listed:
+
+- Update python cffi module compile with Xcode 12.
+- Support seperating JWT from DID SDk.
+- Use findjava variables in JNI adapter CMake file.
+- Compatible the oldest version.
+- Fix some bugs and improve some flows.
