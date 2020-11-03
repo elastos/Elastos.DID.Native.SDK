@@ -2210,7 +2210,7 @@ DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass, const char 
 }
 
 DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
-        const char *customizeddid, DID **controllers, size_t size, DID *controller)
+        const char *customizeddid, DID *controller, DID **controllers, size_t size)
 {
     DIDDocument *controller_doc;
     DIDDocument *doc;
@@ -2479,6 +2479,244 @@ int DIDStore_Sign(DIDStore *store, const char *storepass, DID *did,
 
     memset(binkey, 0, sizeof(binkey));
     return 0;
+}
+
+static int document_set_multisig(DIDDocument *document, DIDDocument *resolve_doc, int multisig)
+{
+    char buffer[128] = {0}, *_buffer = "0:0";
+    ssize_t controller_size;
+
+    assert(document);
+
+    if (multisig > document->controllers.size)
+        return -1;
+
+    controller_size = document->controllers.size;
+    if ((controller_size == 0 && multisig != 0) || (controller_size == 1 && multisig > 1))
+        return -1;
+
+    if (controller_size == 1 && (multisig == 0 || multisig == 1))
+        _buffer = set_multisig(buffer, sizeof(buffer), 1, 1);
+
+    if (controller_size > 1 && multisig > 0)
+        _buffer = set_multisig(buffer, sizeof(buffer), controller_size, multisig);
+
+    if (controller_size > 1 && multisig == 0) {
+        if (!resolve_doc)
+            return -1;
+
+        if (controller_size != resolve_doc->controllers.size) {
+            DIDDocument_Destroy(resolve_doc);
+            return -1;
+        }
+        _buffer = (char*)DIDMetaData_GetMultisig(&resolve_doc->metadata);
+    }
+
+    DIDMetaData_SetMultisig(&document->metadata, _buffer);
+    DIDMetaData_SetMultisig(&document->did.metadata, _buffer);
+    return 0;
+}
+
+// return: 0 -- create; 1 --- update; -1 ---- error
+static int merge_chaincopy(DIDDocument *document, DIDDocument *resolve_doc, bool force)
+{
+    const char *last_txid, *local_signature, *local_prevsignature, *resolve_signature = NULL;
+    char buffer[128], *_buffer;
+    int controller_size, m = 0, n = 0;
+    ssize_t rc = -1;
+
+    assert(document);
+    assert(resolve_doc);
+
+    if (DIDDocument_IsDeactivated(resolve_doc)) {
+        DIDError_Set(DIDERR_EXPIRED, "Did already deactivated.");
+        return -1;
+    }
+
+    resolve_signature = resolve_doc->proof.signatureValue;
+    if (!resolve_signature || !*resolve_signature) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing resolve signature.");
+        return -1;
+    }
+    last_txid = DIDMetaData_GetTxid(&resolve_doc->metadata);
+
+    if (!force) {
+        resolve_signature = DIDDocument_GetProofSignature(resolve_doc);
+        if (!resolve_signature || !*resolve_signature) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Missing document signature on chain.");
+            return -1;
+        }
+
+        local_signature = DIDMetaData_GetSignature(&document->metadata);
+        local_prevsignature = DIDMetaData_GetPrevSignature(&document->metadata);
+        if ((!local_signature || !*local_signature) && (!local_prevsignature || !*local_prevsignature)) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR,
+                    "Missing signatures information, DID SDK dosen't know how to handle it, use force mode to ignore checks.");
+            return -1;
+        } else if (!local_signature || !local_prevsignature) {
+            const char *sig = local_signature != NULL ? local_signature : local_prevsignature;
+            if (strcmp(sig, resolve_signature)) {
+                DIDError_Set(DIDERR_DIDSTORE_ERROR,
+                        "Current copy not based on the lastest on-chain copy.");
+                return -1;
+            }
+        } else {
+            if (strcmp(local_signature, resolve_signature) &&
+                    strcmp(local_prevsignature, resolve_signature)) {
+                DIDError_Set(DIDERR_DIDSTORE_ERROR,
+                        "Current copy not based on the lastest on-chain copy.");
+                return -1;
+            }
+
+        }
+    }
+
+    DIDMetaData_SetTxid(&document->metadata, last_txid);
+    DIDMetaData_SetTxid(&document->did.metadata, last_txid);
+    return 0;
+}
+
+const char *DIDStore_SignDIDRequest(DIDStore *store, DID *did, int multisig,
+        DIDURL *signkey, const char *storepass, bool force)
+{
+    DIDDocument *doc, *resolve_doc;
+    const char *reqstring = NULL;
+    ssize_t type;
+
+    if (!store || !did || multisig < 0 || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    doc = DIDStore_LoadDID(store, did);
+    if (!doc)
+        return NULL;
+
+    if (!DIDDocument_IsGenuine(doc)) {
+        DIDError_Set(DIDERR_NOT_GENUINE, "Did document is not genuine.");
+        goto errorExit;
+    }
+
+    if (DIDDocument_IsDeactivated(doc)) {
+        DIDError_Set(DIDERR_DID_DEACTIVATED, "Did is already deactivated.");
+        goto errorExit;
+    }
+
+    if (!force && DIDDocument_IsExpires(doc)) {
+        DIDError_Set(DIDERR_EXPIRED, "Did already expired, use force mode to publish anyway.");
+        goto errorExit;
+    }
+
+    resolve_doc = DID_Resolve(did, true);
+    if (document_set_multisig(doc, resolve_doc, multisig) < 0)
+        goto errorExit;
+
+    if (!resolve_doc) {
+        type = 0;
+        if (!Is_DefaultKey(doc, signkey))
+            goto errorExit;
+    } else {
+        type = 1;
+        if (doc->controllers.size == 0 && !Is_DefaultKey(doc, signkey))
+            goto errorExit;
+        if (doc->controllers.size > 0 && !Is_Controller_DefaultKey(resolve_doc, signkey))
+            goto errorExit;
+
+        if (merge_chaincopy(doc, resolve_doc, force) < 0)
+            goto errorExit;
+    }
+
+    reqstring = DIDRequest_Sign((int)type, doc, signkey, storepass);
+
+errorExit:
+    DIDDocument_Destroy(doc);
+    return reqstring;
+}
+
+static int get_type(const char *type)
+{
+    assert(type);
+    assert(*type);
+
+    if (!strcmp(type, "create"))
+        return 0;
+    if (!strcmp(type, "update"))
+        return 1;
+    else
+        return 2;
+}
+
+const char *DIDStore_CounterSignDIDRequest(DIDStore *store, const char *idrequest,
+       DIDURL *signkey, const char *storepass)
+{
+    DIDRequest request;
+    DIDDocument *doc, *resolve_doc;
+    const char *data, *reqstring;
+    DID *did, **controllers;
+
+    if (!store || !idrequest || !*idrequest || !signkey || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    doc = DIDRequest_FromJson(&request, idrequest);
+    if (!doc && strcmp(request.header.op, "deactivated")) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Payload is not didrequest format.");
+        goto errorExit;
+    }
+
+    if (!DIDRequest_IsValid(&request))
+        goto errorExit;
+
+    if (!DIDDocument_IsGenuine(doc)) {
+        DIDError_Set(DIDERR_NOT_GENUINE, "Did document is not genuine.");
+        goto errorExit;
+    }
+
+    if (DIDDocument_IsDeactivated(doc)) {
+        DIDError_Set(DIDERR_DID_DEACTIVATED, "Did is already deactivated.");
+        goto errorExit;
+    }
+
+    if (DIDDocument_IsExpires(doc)) {
+        DIDError_Set(DIDERR_EXPIRED, "Did already expired, use force mode to publish anyway.");
+        goto errorExit;
+    }
+
+    DIDMetaData_SetStore(&doc->metadata, store);
+    DIDMetaData_SetStore(&doc->did.metadata, store);
+
+    resolve_doc = DID_Resolve(&doc->did, true);
+    if (!DIDRequest_CheckWithPrevious(&request, resolve_doc))
+        goto errorExit;
+
+    data = DIDRequest_Sign(get_type(request.header.op), doc, signkey, storepass);
+    if (!data)
+        goto errorExit;
+
+    reqstring = DIDDtore_MergeMultisigDIDRequest(2, idrequest, data);
+    free((void*)data);
+
+errorExit:
+    DIDDocument_Destroy(doc);
+    return reqstring;
+}
+
+const char *DIDDtore_MergeMultisigDIDRequest(int count, ...)
+{
+    return NULL;
+}
+
+bool DIDStore_PublishIdRequest(DIDStore *store, const char *idrequest)
+{
+    bool bsuccessed;
+
+    if (!store || !idrequest || !*idrequest) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    return DIDBackend_PublishDID(&store->backend, idrequest);
 }
 
 bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,

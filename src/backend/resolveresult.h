@@ -53,6 +53,8 @@ DIDTransactionInfo *ResolveResult_GetTransactionInfo(ResolveResult *result, int 
 
 DIDHistory *ResolveResult_ToDIDHistory(ResolveResult *result);
 
+ssize_t ResolveResult_ExtractRequests(ResolveResult *result, DIDRequest *reqs, size_t count);
+
 #ifdef __cplusplus
 }
 #endif

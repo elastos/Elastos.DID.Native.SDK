@@ -101,6 +101,29 @@ int DIDBackend_Initialize(DIDResolver *resolver, const char *cachedir)
     return 0;
 }
 
+bool DIDBackend_PublishDID(DIDBackend *backend, const char *payload)
+{
+    bool successed;
+    DIDRequest request;
+
+    assert(backend);
+    assert(payload && *payload);
+
+    if (!DIDRequest_FromJson(&request, payload)) {
+        DIDError_Set(DIDERR_INVALID_BACKEND, "Payload is invalid.");
+        return false;
+    }
+
+    if (!DIDRequest_IsValid(&request))
+        return false;
+
+    successed = backend->adapter->createIdTransaction(backend->adapter, payload, "");
+    if (!successed)
+        DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction failed.");
+
+    return successed;
+}
+
 bool DIDBackend_Create(DIDBackend *backend, DIDDocument *document,
         DIDURL *signkey, const char *storepass)
 {
@@ -270,7 +293,8 @@ static int resolve_internal(ResolveResult *result, DID *did, bool all, bool forc
 {
     assert(result);
     assert(did);
-    assert(!all || (all && force));
+    //Don't remove!
+    //assert(!all || (all && force));
 
     if (!force && ResolverCache_Load(result, did, ttl) == 0)
         return 0;
@@ -284,6 +308,7 @@ static int resolve_internal(ResolveResult *result, DID *did, bool all, bool forc
 DIDDocument *DIDBackend_Resolve(DID *did, bool force)
 {
     DIDDocument *doc = NULL;
+    DIDDocument *docs[1] = {0};
     ResolveResult result;
     size_t i;
 
@@ -305,29 +330,10 @@ DIDDocument *DIDBackend_Resolve(DID *did, bool force)
     }
 
     memset(&result, 0, sizeof(ResolveResult));
-    if (resolve_internal(&result, did, false, force) == -1) {
-        ResolveResult_Destroy(&result);
+    if (DIDBackend_ResolvePayload(did, docs, 1, force) < 0)
         return NULL;
-    }
 
-    if (ResolveResult_GetStatus(&result) == DIDStatus_NotFound) {
-        ResolveResult_Destroy(&result);
-        DIDError_Set(DIDERR_NOT_EXISTS, "DID not exists.");
-        return NULL;
-    } else if (ResolveResult_GetStatus(&result) == DIDStatus_Deactivated) {
-        ResolveResult_Destroy(&result);
-        DIDError_Set(DIDERR_DID_DEACTIVATED, "DID is deactivated.");
-        return NULL;
-    } else {
-        doc = result.txinfos.infos[0].request.doc;
-        for (i = 1; i < result.txinfos.size; i++)
-            DIDDocument_Destroy(result.txinfos.infos[i].request.doc);
-        ResolveResult_Free(&result);
-        if (!doc)
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "Malformed resolver response.");
-    }
-
-    return doc;
+    return docs[0];
 }
 
 DIDHistory *DIDBackend_ResolveHistory(DID *did)
@@ -357,6 +363,59 @@ DIDHistory *DIDBackend_ResolveHistory(DID *did)
     }
 
     return ResolveResult_ToDIDHistory(&result);
+}
+
+ssize_t DIDBackend_ResolvePayload(DID *did, DIDDocument **docs, int count, bool force)
+{
+    DIDRequest *reqs;
+    ssize_t size;
+    int i;
+
+    assert(did);
+    assert(docs);
+    assert(count > 0);
+
+    reqs = (DIDRequest*)alloca(count * sizeof(DIDRequest));
+    if (!reqs) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for didrequests failed.");
+        return -1;
+    }
+
+    size = DIDBackend_ResolveRequest(did, reqs, count, force);
+    if (size < 0)
+        return -1;
+
+    for (i = 0; i < count; i++) {
+        docs[i] = reqs[i].doc;
+        DIDRequest_Free(&reqs[i]);
+    }
+
+    return count;
+}
+
+ssize_t DIDBackend_ResolveRequest(DID *did, DIDRequest *reqs, int count, bool force)
+{
+    DIDDocument *doc = NULL;
+    ResolveResult result;
+    size_t i;
+
+    assert(did);
+    assert(reqs);
+    assert(count > 0);
+
+    if (!resolverInstance || !resolverInstance->resolve) {
+        DIDError_Set(DIDERR_INVALID_BACKEND, "DID resolver not initialized.");
+        return -1;
+    }
+
+    memset(&result, 0, sizeof(ResolveResult));
+    //todo: when the chain support the count transaction, it must be modify.
+    if (resolve_internal(&result, did, true, force) == -1) {
+        ResolveResult_Destroy(&result);
+        return -1;
+    }
+
+    return ResolveResult_ExtractRequests(&result, reqs, count);
 }
 
 void DIDBackend_SetTTL(long _ttl)

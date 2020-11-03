@@ -40,6 +40,7 @@ static const char *SIGNATURE = "DX-signature";
 static const char *PUBLISHED = "DX-published";
 static const char *DEACTIVATED = "DX-deactivated";
 static const char *LAST_MODIFIED= "DX-lastModified";
+static const char *MULTISIG = "DX-multisig";
 
 int DIDMetaData_ToJson_Internal(DIDMetaData *metadata, JsonGenerator *gen)
 {
@@ -129,6 +130,13 @@ int DIDMetaData_SetLastModified(DIDMetaData *metadata, time_t time)
     return MetaData_SetExtraWithInteger(&metadata->base, LAST_MODIFIED, (int)time);
 }
 
+int DIDMetaData_SetMultisig(DIDMetaData *metadata, const char *multisig)
+{
+    assert(metadata);
+
+    return MetaData_SetExtra(&metadata->base, MULTISIG, multisig);
+}
+
 time_t DIDMetaData_GetLastModified(DIDMetaData *metadata)
 {
     assert(metadata);
@@ -155,6 +163,13 @@ const char *DIDMetaData_GetPrevSignature(DIDMetaData *metadata)
     assert(metadata);
 
     return MetaData_GetExtra(&metadata->base, PREV_SIGNATURE);
+}
+
+const char *DIDMetaData_GetMultisig(DIDMetaData *metadata)
+{
+    assert(metadata);
+
+    return MetaData_GetExtra(&metadata->base, MULTISIG);
 }
 
 int DIDMetaData_Merge(DIDMetaData *tometa, DIDMetaData *frommeta)

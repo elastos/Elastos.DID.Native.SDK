@@ -730,6 +730,58 @@ static size_t get_self_authorization_count(DIDDocument *document)
     return size;
 }
 
+
+bool Is_Controller_DefaultKey(DIDDocument *document, DIDURL *keyid)
+{
+    DIDDocument *controller_doc;
+
+    assert(document);
+    assert(document->controllers.size > 0 && document->controllers.docs);
+    assert(keyid);
+
+    controller_doc = Contains_Controller(document->controllers.docs, document->controllers.size, &keyid->did);
+    if (!controller_doc) {
+        DIDError_Set(DIDERR_INVALID_KEY, "The key does not owned to the controllers of this did.");
+        return false;
+    }
+
+    if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(controller_doc), keyid)) {
+        DIDError_Set(DIDERR_INVALID_KEY, "The key is not the default key for controller.");
+        return false;
+    }
+
+    return true;
+}
+
+bool Is_Self_DefaultKey(DIDDocument *document, DIDURL *keyid)
+{
+    assert(document);
+    assert(keyid);
+
+    if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(document), keyid)) {
+        DIDError_Set(DIDERR_INVALID_KEY, "The key is not the default key for self document.");
+        return false;
+    }
+
+    return true;
+}
+
+bool Is_DefaultKey(DIDDocument *document, DIDURL *keyid)
+{
+    assert(document);
+    assert(keyid);
+
+    if (Is_Self_DefaultKey(document, keyid))
+        return true;
+
+    if (document->controllers.size > 0 && document->controllers.docs &&
+            Is_Controller_DefaultKey(document, keyid))
+        return true;
+
+    DIDError_Set(DIDERR_INVALID_KEY, "The key is not the default key.");
+    return false;
+}
+
 ////////////////////////////////Document/////////////////////////////////////
 DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
 {
@@ -1414,7 +1466,7 @@ void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder)
     free(builder);
 }
 
-static DIDDocument *contais_controller(DIDDocument **docs, size_t size, DID *controller)
+DIDDocument *Contains_Controller(DIDDocument **docs, size_t size, DID *controller)
 {
     DIDDocument *doc;
     int i;
@@ -1454,7 +1506,7 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, DID *controlle
             return NULL;
         }
 
-        _doc = contais_controller(doc->controllers.docs, doc->controllers.size, controller);
+        _doc = Contains_Controller(doc->controllers.docs, doc->controllers.size, controller);
         if (!_doc) {
             DIDError_Set(DIDERR_INVALID_ARGS, "DIDDocument does not support this controller.");
             return NULL;
@@ -1595,7 +1647,7 @@ int DIDDocumentBuilder_RemovePublicKey(DIDDocumentBuilder *builder, DIDURL *keyi
     }
 
     if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
-        DIDError_Set(DIDERR_INVALID_KEY, "Can't remove other DID's key!!!!");
+        DIDError_Set(DIDERR_INVALID_KEY, "Can't remove other DID's key or controller's key!!!!");
         return -1;
     }
 
@@ -1903,6 +1955,8 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
 {
     DIDDocument **docs;
     DIDDocument *controllerdoc, *document;
+    DID *did;
+    int i;
 
     if (!builder || !builder->document || !controller) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1913,6 +1967,13 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
     if (DID_Equals(DIDDocument_GetSubject(document), controller)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "DIDDocument does not controlled by itself.");
         return -1;
+    }
+
+    for (i = 0; i < document->controllers.size && document->controllers.docs; i++) {
+        if (document->controllers.docs[i] && DID_Equals(&document->controllers.docs[i]->did, controller)) {
+            DIDError_Set(DIDERR_UNSUPPOTED, "The controller already exists in the document.");
+            return -1;
+        }
     }
 
     controllerdoc = DID_Resolve(controller, true);
@@ -2292,7 +2353,7 @@ PublicKey *DIDDocument_GetPublicKey(DIDDocument *document, DIDURL *keyid)
             DIDError_Set(DIDERR_NOT_EXISTS, "Document has no controllers.");
             return NULL;
         }
-        doc = contais_controller(document->controllers.docs, document->controllers.size, &keyid->did);
+        doc = Contains_Controller(document->controllers.docs, document->controllers.size, &keyid->did);
         if (!doc) {
             DIDError_Set(DIDERR_NOT_EXISTS, "The owner of this key is not the controller of document.");
             return NULL;
@@ -3011,7 +3072,7 @@ int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
             DIDError_Set(DIDERR_MALFORMED_DID, "There are no controller in document.");
             return -1;
         }
-        doc = contais_controller(document->controllers.docs, document->controllers.size,
+        doc = Contains_Controller(document->controllers.docs, document->controllers.size,
                &keyid->did);
         if (!doc) {
             DIDError_Set(DIDERR_INVALID_KEY, "The sign key does not owned to document.");

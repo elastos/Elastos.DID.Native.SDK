@@ -102,6 +102,14 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root);
 
 int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc);
 
+DIDDocument *Contains_Controller(DIDDocument **docs, size_t size, DID *controller);
+
+bool Is_Controller_DefaultKey(DIDDocument *document, DIDURL *keyid);
+
+bool Is_Self_DefaultKey(DIDDocument *document, DIDURL *keyid);
+
+bool Is_DefaultKey(DIDDocument *document, DIDURL *keyid);
+
 #ifdef __cplusplus
 }
 #endif

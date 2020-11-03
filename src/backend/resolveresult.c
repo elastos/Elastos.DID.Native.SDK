@@ -37,6 +37,7 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
 {
     json_t *item, *field;
     int i, size = 0;
+    char buffer[128];
 
     assert(result);
     assert(json);
@@ -118,6 +119,8 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
                 DIDMetaData_SetTxid(&doc->metadata, txinfo->txid);
                 DIDMetaData_SetSignature(&doc->metadata, doc->proof.signatureValue);
                 DIDMetaData_SetDeactivated(&doc->metadata, result->status);
+                DIDMetaData_SetMultisig(&doc->metadata,
+                       set_multisig(buffer, sizeof(buffer), txinfo->request.header.multisig_m, txinfo->request.header.multisig_n));
                 memcpy(&doc->did.metadata, &doc->metadata, sizeof(DIDMetaData));
             }
             result->txinfos.size++;
@@ -246,4 +249,40 @@ DIDHistory *ResolveResult_ToDIDHistory(ResolveResult *result)
 
     memcpy(history, result, sizeof(DIDHistory));
     return history;
+}
+
+ssize_t ResolveResult_ExtractRequests(ResolveResult *result, DIDRequest *reqs, size_t count)
+{
+    size_t i;
+    DIDDocument *doc;
+
+    assert(result);
+    assert(reqs);
+    assert(count > 0);
+
+    if (ResolveResult_GetStatus(result) == DIDStatus_NotFound) {
+        ResolveResult_Destroy(result);
+        DIDError_Set(DIDERR_NOT_EXISTS, "DID not exists.");
+        return 0;
+    } else if (ResolveResult_GetStatus(result) == DIDStatus_Deactivated) {
+        ResolveResult_Destroy(result);
+        DIDError_Set(DIDERR_DID_DEACTIVATED, "DID is deactivated.");
+        return -1;
+    } else {
+        if (count > result->txinfos.size) {
+            ResolveResult_Destroy(result);
+            DIDError_Set(DIDERR_UNSUPPOTED, "The count is more than the total transactions.");
+            return -1;
+        }
+
+        for (i = 0; i < count; i++)
+            memcpy(&reqs[i], &result->txinfos.infos[i].request, sizeof(DIDRequest));
+
+        for (i = count; i < result->txinfos.size; i++)
+            DIDRequest_Destroy(&result->txinfos.infos[i].request);
+
+        free(result->txinfos.infos);
+    }
+
+    return i;
 }

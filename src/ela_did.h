@@ -2710,12 +2710,12 @@ DID_API DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass,
  *      customizeddid              [in] The nickname of DID.
  *                                     'customizeddid' supports NULL.
  * @param
+ *      controller                [in] The controller for customized DID.
+ *                                     'customizeddid' supports NULL.
+ * @param
  *      controllers               [in] The controllers for customized DID.
  * @param
  *      size                      [in] The count of controllers.
- * @param
- *      controller                [in] The controller for customized DID.
- *                                     'customizeddid' supports NULL.
  * tip: if the count of controllers is one, 'controller' supports NULL. Otherwise,
  * the error occures.
  * @return
@@ -2724,7 +2724,7 @@ DID_API DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass,
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
 DID_API DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
-        const char *customizeddid, DID **controllers, size_t size, DID *controller);
+        const char *customizeddid, DID *controller, DID **controllers, size_t size);
 
 /**
  * \~English
@@ -3026,9 +3026,77 @@ DID_API int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass,
  * @param
  *      did                     [in] The handle to DID.
  * @param
- *      keyid                    [in] The identifier of public key.
+ *      keyid                   [in] The identifier of public key.
  */
 DID_API void DIDStore_DeletePrivateKey(DIDStore *store, DID *did, DIDURL *keyid);
+
+/**
+ * \~English
+ * Get DIDRequest string by the first time.
+ *
+ * @param
+ *      store                    [in] The handle to DID Store.
+ * @param
+ *      did                      [in] The DID which is to be signed.
+ * @param
+ *      multisig                 [in] The count of signers.
+ * @param
+ *      signkey                  [in] The public key to sign.
+ * @param
+ *      storepass                [in] The password to DIDStore.
+ * @param
+ *      force                    [in] Indicate if load document from cache or not.
+ *                                   force = true, document gets only from chain.
+ *                                   force = false, document can get from cache,
+ *                                   if no document is in the cache, resolve it from chain.
+ * @return
+ *      idrequest string if no error occurred and user should be free the returned value.
+ */
+DID_API const char *DIDStore_SignDIDRequest(DIDStore *store, DID *did, int multisig,
+        DIDURL *signkey, const char *storepass, bool force);
+
+/**
+ * \~English
+ * Get DIDRequest string by multiple signing.
+ *
+ * @param
+ *      store                    [in] The handle to DID Store.
+ * @param
+ *      storepass                [in] The password to DIDStore.
+ * @param
+ *      idrequest                [in] The idrequest string to be signed.
+ * @param
+ *      signkey                  [in] The public key to sign.
+ *                                    If signkey is NULL, did must be not NULL.
+ * @return
+ *      idrequest string if no error occurred and user should be free the returned value.
+ */
+DID_API const char *DIDStore_CounterSignDIDRequest(DIDStore *store, const char *idrequest,
+       DIDURL *signkey, const char *storepass);
+
+/**
+ * \~English
+ * Merge the several idrequest.
+ *
+ * @param
+ *      count                    [in] The count of idrequest string.
+ * @return
+ *      idrequest string if no error occurred and user should be free the returned value.
+ */
+DID_API const char *DIDDtore_MergeMultisigDIDRequest(int count, ...);
+
+/**
+ * \~English
+ * Publish a DID and its associated DID Document to chain.
+ *
+ * @param
+ *      store                    [in] The handle to DID Store.
+ * @param
+ *      idrequest                 [in] The content published into chain.
+ * @return
+ *      true on success, false if an error occurred. Caller should free the returned value.
+ */
+DID_API bool DIDStore_PublishIdRequest(DIDStore *store, const char *idrequest);
 
 /**
  * \~English
@@ -3649,6 +3717,11 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
  * JWT error.
  */
 #define DIDERR_INVALID_CONTROLLER                   0x8D000019
+/**
+ * \~English
+ * JWT error.
+ */
+#define DIDERR_INVALID_REQUEST                      0x8D000020
 /**
  * \~English
  * Unknown error.

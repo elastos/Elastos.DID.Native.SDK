@@ -91,11 +91,14 @@ static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *p
         return false;
     }
 
-    doc = DIDRequest_FromJson(&info->request, root);
+    doc = DIDRequest_FromJson_Internal(&info->request, root);
     if (strcmp(info->request.header.op, "deactivate")) {
         if (!doc || !DIDDocument_IsValid(doc))
-        goto errorExit;
+           goto errorExit;
     }
+
+    if (!DIDRequest_IsValid(&info->request))
+        goto errorExit;
 
     lastinfo = get_lasttransaction(&info->request.did);
     if (!strcmp(info->request.header.op, "create")) {

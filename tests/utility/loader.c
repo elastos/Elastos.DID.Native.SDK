@@ -830,8 +830,8 @@ DIDDocument *TestData_LoadIssuerDoc(void)
     doc = DID_Resolve(subject, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
-
     DIDDocument_Destroy(doc);
+
     return testdata.issuerdoc;
 }
 

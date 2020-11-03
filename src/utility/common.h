@@ -92,6 +92,10 @@ time_t get_file_lastmodified(const char *path);
 
 int set_file_lastmodified(const char *path, time_t lastmodified);
 
+char *set_multisig(char *buffer, size_t size, int m, int n);
+
+void get_multisig(const char *buffer, int *m, int *n);
+
 #ifdef __cplusplus
 }
 #endif

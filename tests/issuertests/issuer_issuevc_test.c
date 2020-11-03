@@ -338,6 +338,7 @@ static void test_issuer_issuerbystring_with_ctrl_chars(void)
     provalue = Credential_GetProperties(vc);
     CU_ASSERT_PTR_NOT_NULL(provalue);
     CU_ASSERT_EQUAL(strlen(propdata), strlen(provalue));
+    free((void*)provalue);
     Credential_Destroy(vc);
 }
 

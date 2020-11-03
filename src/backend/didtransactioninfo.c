@@ -72,7 +72,7 @@ int DIDTransactionInfo_FromJson(DIDTransactionInfo *txinfo, json_t *json)
         return -1;
     }
 
-    txinfo->request.doc = DIDRequest_FromJson(&txinfo->request, item);
+    txinfo->request.doc = DIDRequest_FromJson_Internal(&txinfo->request, item);
     if (!txinfo->request.doc && strcmp(txinfo->request.header.op, "deactivate") != 0)
         return -1;
     return 0;
