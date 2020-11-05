@@ -99,12 +99,10 @@ if(ENABLE_TESTS)
     set(HEADER_FILTER
         "*.h")
 else()
-    set(HEADER_FILTER
-        "ela_did.h")
     if(ENABLE_JWT)
-        set(HEADER_FILTER
-            ${HEADER_FILTER}
-            "ela_jwt.h")
+        set(HEADER_FILTER "ela_*.h")
+    else()
+        set(HEADER_FILTER "ela_did.h")
     endif()
 endif()
 
