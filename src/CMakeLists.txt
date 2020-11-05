@@ -88,8 +88,17 @@ if(ENABLE_TESTS)
     set(HEADER_FILTER
         "*.h")
 else()
-    set(HEADER_FILTER
-        "ela_*.h")
+    if(ENABLE_JWT)
+        set(HEADER_FILTER "ela_*.h")
+    else()
+        set(HEADER_FILTER "ela_did.h")
+    endif()
+endif()
+
+if(ENABLE_JWT)
+   set(JWT_INCLUDE jwt)
+   set(JWT_LIBS cjose)
+   set(JWT_DEPENDS libcjose)
 endif()
 
 set(INCLUDE
