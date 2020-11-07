@@ -29,7 +29,7 @@
 #include "diderror.h"
 #include "didresolver.h"
 
-#define DID_RESOLVE_REQUEST "{\"method\":\"resolvedid\",\"params\":{\"did\":\"%s\",\"all\":%s}}"
+#define DID_RESOLVE_REQUEST "{\"method\":\"resolvedid\",\"params\":{\"did\":\"%s\",\"all\":%s,\"txid\":%s}}"
 
 typedef struct HttpResponseBody {
     size_t used;
@@ -105,7 +105,7 @@ static size_t HttpRequestBodyReadCallback(void *dest, size_t size,
 }
 
 // Caller need free the pointer
-static const char *DefaultResolver_Resolve(DIDResolver *resolver, const char *did, int all)
+static const char *DefaultResolver_Resolve(DIDResolver *resolver, const char *did, const char *txid, int all)
 {
     DefaultResolver *_resolver = (DefaultResolver *)resolver;
 
@@ -128,7 +128,7 @@ static const char *DefaultResolver_Resolve(DIDResolver *resolver, const char *di
     forAll = !all ? "false" : "true";
 
     request.used = 0;
-    request.sz = sprintf(buffer, DID_RESOLVE_REQUEST, did, forAll);
+    request.sz = sprintf(buffer, DID_RESOLVE_REQUEST, did, forAll, txid);
     request.data = buffer;
 
     CURL *curl = curl_easy_init();

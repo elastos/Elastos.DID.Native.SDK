@@ -469,7 +469,7 @@ char *set_multisig(char *buffer, size_t size, int m, int n)
     assert(buffer);
     assert(size > 3);
 
-    if (m > 1)
+    if (n > 1)
         snprintf(buffer, size, "%d:%d", m, n);
     else
         memset(buffer, 0, size);

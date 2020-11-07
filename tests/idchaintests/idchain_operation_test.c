@@ -49,7 +49,7 @@ static void test_idchain_publishdid_and_resolve(void)
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     while(!resolvedoc) {
-        resolvedoc = DID_Resolve(&did, true);
+        resolvedoc = DID_Resolve(&did, NULL, true);
         if (!resolvedoc) {
             printf(".");
             sleep(30);
@@ -110,7 +110,7 @@ static void test_idchain_publishdid_and_resolve(void)
             DIDDocument_Destroy(resolvedoc);
 
         sleep(30);
-        resolvedoc = DID_Resolve(&did, true);
+        resolvedoc = DID_Resolve(&did, NULL, true);
         if (!resolvedoc) {
             break;
         } else {
@@ -170,7 +170,7 @@ static void test_idchain_publishdid_and_resolve(void)
             DIDDocument_Destroy(resolvedoc);
 
         sleep(30);
-        resolvedoc = DID_Resolve(&did, true);
+        resolvedoc = DID_Resolve(&did, NULL, true);
         if (!resolvedoc) {
             break;
         } else {
@@ -219,7 +219,7 @@ static void test_idchain_publishdid_with_credential(void)
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     while(!resolvedoc) {
-        resolvedoc = DID_Resolve(&did, true);
+        resolvedoc = DID_Resolve(&did, NULL, true);
         if (!resolvedoc) {
             printf(".");
             sleep(30);
@@ -282,7 +282,7 @@ static void test_idchain_publishdid_with_credential(void)
             DIDDocument_Destroy(resolvedoc);
 
         sleep(30);
-        resolvedoc = DID_Resolve(&did, true);
+        resolvedoc = DID_Resolve(&did, NULL, true);
         if (!resolvedoc) {
             break;
         } else {

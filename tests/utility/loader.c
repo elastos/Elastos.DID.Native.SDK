@@ -771,7 +771,7 @@ DIDDocument *TestData_LoadDoc(void)
     if (rc)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
+    doc = DID_Resolve(subject, NULL, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
     DIDDocument_Destroy(doc);
@@ -802,7 +802,7 @@ DIDDocument *TestData_LoadControllerDoc(void)
     if (rc)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
+    doc = DID_Resolve(subject, NULL, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
     DIDDocument_Destroy(doc);
@@ -827,7 +827,7 @@ DIDDocument *TestData_LoadIssuerDoc(void)
     if (rc)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
+    doc = DID_Resolve(subject, NULL, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
     DIDDocument_Destroy(doc);
@@ -850,7 +850,7 @@ DIDDocument *TestData_LoadEmptyCustomizedDoc(void)
     if (!subject)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
+    doc = DID_Resolve(subject, NULL, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
     DIDDocument_Destroy(doc);
@@ -887,7 +887,7 @@ DIDDocument *TestData_LoadCustomizedDoc(void)
     if (rc)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
+    doc = DID_Resolve(subject, NULL, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
     DIDDocument_Destroy(doc);
@@ -900,6 +900,8 @@ DIDDocument *TestData_LoadEmptyMultiCustomizedDoc(void)
     DIDDocument *doc, *controller_doc;
     DID *subject;
     DIDURL *signkey;
+    int rc;
+    bool bsuccessed;
 
     TestData_LoadIssuerDoc();
     TestData_LoadControllerDoc();
@@ -918,9 +920,19 @@ DIDDocument *TestData_LoadEmptyMultiCustomizedDoc(void)
     if (!signkey)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
-        return NULL;
+    doc = DID_Resolve(subject, NULL, true);
+    //if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+    if (!doc) {
+        const char *idrequest = DIDStore_SignDIDRequest(testdata.store, subject, 1,
+                signkey, storepass, false);
+        if (!idrequest)
+            return NULL;
+
+        bsuccessed = DIDStore_PublishIdRequest(testdata.store, idrequest);
+        free((void*)idrequest);
+        if (!bsuccessed)
+            return NULL;
+    }
     DIDDocument_Destroy(doc);
 
     return testdata.emptyMultiCustomizedDoc;
@@ -932,6 +944,7 @@ DIDDocument *TestData_LoadMultiCustomizedDoc(void)
     DID *subject;
     DIDURL *signkey, *id;
     int rc;
+    bool bsuccessed;
 
     TestData_LoadIssuerDoc();
     TestData_LoadControllerDoc();
@@ -962,10 +975,18 @@ DIDDocument *TestData_LoadMultiCustomizedDoc(void)
     if (!signkey)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
-        return NULL;
-    DIDDocument_Destroy(doc);
+    doc = DID_Resolve(subject, NULL, true);
+    if (!doc) {
+        const char *idrequest = DIDStore_SignDIDRequest(testdata.store, subject, 1,
+                signkey, storepass, false);
+        if (!idrequest)
+            return NULL;
+
+        bsuccessed = DIDStore_PublishIdRequest(testdata.store, idrequest);
+        free((void*)idrequest);
+        if (!bsuccessed)
+            return NULL;
+    }
 
     return testdata.multiCustomizedDoc;
 }

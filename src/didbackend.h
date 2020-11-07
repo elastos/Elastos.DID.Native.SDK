@@ -36,13 +36,13 @@ typedef struct DIDBackend {
 
 bool DIDBackend_PublishDID(DIDBackend *backend, const char *payload);
 
-DIDDocument *DIDBackend_Resolve(DID *did, bool force);
+DIDDocument *DIDBackend_Resolve(DID *did, const char *txid, bool force);
 
 DIDHistory *DIDBackend_ResolveHistory(DID *did);
 
-ssize_t DIDBackend_ResolvePayload(DID *did, DIDDocument **docs, int count, bool force);
+ssize_t DIDBackend_ResolvePayload(DID *did, const char *txid, DIDDocument **docs, int count, bool force);
 
-ssize_t DIDBackend_ResolveRequest(DID *did, DIDRequest *reqs, int count, bool force);
+ssize_t DIDBackend_ResolveDIDTransactions(DID *did, const char *txid, DIDTransactionInfo **infos, int count, bool force);
 
 bool DIDBackend_Create(DIDBackend *backend, DIDDocument *document,
         DIDURL *signkey, const char *storepass);

@@ -28,6 +28,8 @@
 #include "diderror.h"
 #include "diddocument.h"
 #include "didhistory.h"
+#include "didtransactioninfo.h"
+#include "didrequest.h"
 
 void DIDHistory_Destroy(DIDHistory *history)
 {
@@ -39,7 +41,7 @@ void DIDHistory_Destroy(DIDHistory *history)
         assert(history->txinfos.size > 0);
 
         for (i = 0; i < history->txinfos.size; i++)
-            DIDTransactionInfo_Destroy(&history->txinfos.infos[i]);
+            DIDTransactionInfo_Destroy(history->txinfos.infos[i]);
         free(history->txinfos.infos);
     }
     free(history);
@@ -100,7 +102,7 @@ DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int index)
         return NULL;
     }
 
-    if (DIDDocument_Copy(doc, history->txinfos.infos[index].request.doc) < 0) {
+    if (DIDDocument_Copy(doc, history->txinfos.infos[index]->request->doc) < 0) {
         DIDDocument_Destroy(doc);
         return NULL;
     }
@@ -120,7 +122,7 @@ const char *DIDHistory_GetTransactionIdByIndex(DIDHistory *history, int index)
         return NULL;
     }
 
-    return history->txinfos.infos[index].txid;
+    return history->txinfos.infos[index]->txid;
 }
 
 time_t DIDHistory_GetPublishedByIndex(DIDHistory *history, int index)
@@ -135,7 +137,7 @@ time_t DIDHistory_GetPublishedByIndex(DIDHistory *history, int index)
         return 0;
     }
 
-    return history->txinfos.infos[index].timestamp;
+    return history->txinfos.infos[index]->timestamp;
 }
 
 const char *DIDHistory_GetOperationByIndex(DIDHistory *history, int index)
@@ -150,5 +152,5 @@ const char *DIDHistory_GetOperationByIndex(DIDHistory *history, int index)
         return NULL;
     }
 
-    return history->txinfos.infos[index].request.header.op;
+    return history->txinfos.infos[index]->request->header.op;
 }

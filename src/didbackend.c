@@ -103,25 +103,28 @@ int DIDBackend_Initialize(DIDResolver *resolver, const char *cachedir)
 
 bool DIDBackend_PublishDID(DIDBackend *backend, const char *payload)
 {
-    bool successed;
-    DIDRequest request;
+    DIDRequest *request;
+    bool isvalid;
 
     assert(backend);
     assert(payload && *payload);
 
-    if (!DIDRequest_FromJson(&request, payload)) {
+    request = DIDRequest_FromJson(payload);
+    if (!request) {
         DIDError_Set(DIDERR_INVALID_BACKEND, "Payload is invalid.");
         return false;
     }
 
-    if (!DIDRequest_IsValid(&request))
+    isvalid = DIDRequest_IsValid(request, true);
+    DIDRequest_Destroy(request);
+    if (!isvalid)
         return false;
 
-    successed = backend->adapter->createIdTransaction(backend->adapter, payload, "");
-    if (!successed)
+    isvalid = backend->adapter->createIdTransaction(backend->adapter, payload, "");
+    if (!isvalid)
         DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction failed.");
 
-    return successed;
+    return isvalid;
 }
 
 bool DIDBackend_Create(DIDBackend *backend, DIDDocument *document,
@@ -232,7 +235,7 @@ bool DIDBackend_Deactivate(DIDBackend *backend, DID *did, DIDURL *signkey,
     return successed;
 }
 
-static int resolve_from_backend(ResolveResult *result, DID *did, bool all)
+static int resolve_from_backend(ResolveResult *result, DID *did, const char *txid, bool all)
 {
     const char *data = NULL;
     json_t *root = NULL, *item, *field;
@@ -244,7 +247,7 @@ static int resolve_from_backend(ResolveResult *result, DID *did, bool all)
     assert(did);
 
     data = resolverInstance->resolve(resolverInstance,
-            DID_ToString(did, _idstring, sizeof(_idstring)), all);
+            DID_ToString(did, _idstring, sizeof(_idstring)), txid, all);
     if (!data) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve data %s from chain failed.", did->idstring);
         return rc;
@@ -289,23 +292,23 @@ errorExit:
     return rc;
 }
 
-static int resolve_internal(ResolveResult *result, DID *did, bool all, bool force)
+static int resolve_internal(ResolveResult *result, DID *did, const char *txid, bool all, bool force)
 {
     assert(result);
     assert(did);
     //Don't remove!
     //assert(!all || (all && force));
 
-    if (!force && ResolverCache_Load(result, did, ttl) == 0)
+    if (!force && !txid && ResolverCache_Load(result, did, ttl) == 0)
         return 0;
 
-    if (resolve_from_backend(result, did, all) < 0)
+    if (resolve_from_backend(result, did, txid, all) < 0)
         return -1;
 
     return 0;
 }
 
-DIDDocument *DIDBackend_Resolve(DID *did, bool force)
+DIDDocument *DIDBackend_Resolve(DID *did, const char *txid, bool force)
 {
     DIDDocument *doc = NULL;
     DIDDocument *docs[1] = {0};
@@ -330,7 +333,7 @@ DIDDocument *DIDBackend_Resolve(DID *did, bool force)
     }
 
     memset(&result, 0, sizeof(ResolveResult));
-    if (DIDBackend_ResolvePayload(did, docs, 1, force) < 0)
+    if (DIDBackend_ResolvePayload(did, txid, docs, 1, force) < 0)
         return NULL;
 
     return docs[0];
@@ -351,7 +354,7 @@ DIDHistory *DIDBackend_ResolveHistory(DID *did)
     }
 
     memset(&result, 0, sizeof(ResolveResult));
-    if (resolve_internal(&result, did, true, true) == -1) {
+    if (resolve_internal(&result, did, NULL, true, true) == -1) {
         ResolveResult_Destroy(&result);
         return NULL;
     }
@@ -365,9 +368,9 @@ DIDHistory *DIDBackend_ResolveHistory(DID *did)
     return ResolveResult_ToDIDHistory(&result);
 }
 
-ssize_t DIDBackend_ResolvePayload(DID *did, DIDDocument **docs, int count, bool force)
+ssize_t DIDBackend_ResolvePayload(DID *did, const char* txid, DIDDocument **docs, int count, bool force)
 {
-    DIDRequest *reqs;
+    DIDTransactionInfo **infos;
     ssize_t size;
     int i;
 
@@ -375,32 +378,32 @@ ssize_t DIDBackend_ResolvePayload(DID *did, DIDDocument **docs, int count, bool 
     assert(docs);
     assert(count > 0);
 
-    reqs = (DIDRequest*)alloca(count * sizeof(DIDRequest));
-    if (!reqs) {
+    infos = (DIDTransactionInfo**)alloca(count * sizeof(DIDTransactionInfo*));
+    if (!infos) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for didrequests failed.");
         return -1;
     }
 
-    size = DIDBackend_ResolveRequest(did, reqs, count, force);
+    size = DIDBackend_ResolveDIDTransactions(did, txid, infos, count, force);
     if (size < 0)
         return -1;
 
     for (i = 0; i < count; i++) {
-        docs[i] = reqs[i].doc;
-        DIDRequest_Free(&reqs[i]);
+        docs[i] = infos[i]->request->doc;
+        DIDTransactionInfo_Free(infos[i]);
     }
 
     return count;
 }
 
-ssize_t DIDBackend_ResolveRequest(DID *did, DIDRequest *reqs, int count, bool force)
+ssize_t DIDBackend_ResolveDIDTransactions(DID *did, const char *txid, DIDTransactionInfo **infos, int count, bool force)
 {
     DIDDocument *doc = NULL;
     ResolveResult result;
     size_t i;
 
     assert(did);
-    assert(reqs);
+    assert(infos);
     assert(count > 0);
 
     if (!resolverInstance || !resolverInstance->resolve) {
@@ -410,12 +413,12 @@ ssize_t DIDBackend_ResolveRequest(DID *did, DIDRequest *reqs, int count, bool fo
 
     memset(&result, 0, sizeof(ResolveResult));
     //todo: when the chain support the count transaction, it must be modify.
-    if (resolve_internal(&result, did, true, force) == -1) {
+    if (resolve_internal(&result, did, txid, true, force) == -1) {
         ResolveResult_Destroy(&result);
         return -1;
     }
 
-    return ResolveResult_ExtractRequests(&result, reqs, count);
+    return ResolveResult_GetTransactions(&result, infos, count);
 }
 
 void DIDBackend_SetTTL(long _ttl)

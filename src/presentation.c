@@ -602,7 +602,7 @@ int Presentation_Verify(Presentation *pre)
         }
     }
 
-    doc = DID_Resolve(signer, false);
+    doc = DID_Resolve(signer, NULL, false);
     if (!doc) {
         DIDError_Set(DIDERR_MALFORMED_DID, "Presentation signer is not a published did.");
         return -1;
@@ -803,7 +803,7 @@ bool Presentation_IsGenuine(Presentation *pre)
         return false;
     }
 
-    doc = DID_Resolve(signer, false);
+    doc = DID_Resolve(signer, NULL, false);
     if (!doc) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Presentation signer is not a published did.");
         return false;
@@ -870,7 +870,7 @@ bool Presentation_IsValid(Presentation *pre)
     if (!signer)
         return false;
 
-    doc = DID_Resolve(signer, false);
+    doc = DID_Resolve(signer, NULL, false);
     if (!doc) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Presentation signer is not a published did.");
         return false;

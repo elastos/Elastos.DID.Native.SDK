@@ -29,65 +29,103 @@
 #include "common.h"
 #include "diddocument.h"
 #include "didtransactioninfo.h"
+#include "didrequest.h"
 
-int DIDTransactionInfo_FromJson(DIDTransactionInfo *txinfo, json_t *json)
+DIDTransactionInfo *DIDTransactionInfo_FromJson_Internal(json_t *json)
 {
+    DIDTransactionInfo *txinfo = NULL;
     json_t *item;
 
-    assert(txinfo);
     assert(json);
+
+    txinfo = (DIDTransactionInfo*)calloc(1, sizeof(DIDTransactionInfo));
+    if (!txinfo) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for did transaction failed.");
+        return NULL;
+    }
 
     item = json_object_get(json, "txid");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing transaction id.");
-        return -1;
+        goto errorExit;
     }
     if (!json_is_string(item)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid transaction id.");
-        return -1;
+        goto errorExit;
     }
     if (strlen(json_string_value(item)) >= ELA_MAX_TXID_LEN) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Transaction id is too long.");
-        return -1;
+        goto errorExit;
     }
     strcpy(txinfo->txid, json_string_value(item));
 
     item = json_object_get(json, "timestamp");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing time stamp.");
-        return -1;
+        goto errorExit;
     }
     if (!json_is_string(item) || parse_time(&txinfo->timestamp, json_string_value(item)) == -1) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid time stamp.");
-        return -1;
+        goto errorExit;
     }
 
     item = json_object_get(json, "operation");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing ID operation.");
-        return -1;
+        goto errorExit;
     }
     if (!json_is_object(item)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid ID operation.");
-        return -1;
+        goto errorExit;
     }
 
-    txinfo->request.doc = DIDRequest_FromJson_Internal(&txinfo->request, item);
-    if (!txinfo->request.doc && strcmp(txinfo->request.header.op, "deactivate") != 0)
-        return -1;
-    return 0;
+    txinfo->request = DIDRequest_FromJson_Internal(item);
+    if (!txinfo->request)
+        goto errorExit;
+
+    return txinfo;
+
+errorExit:
+    DIDTransactionInfo_Destroy(txinfo);
+    return NULL;
+}
+
+DIDTransactionInfo *DIDTransactionInfo_FromJson(const char *json)
+{
+    DIDTransactionInfo *txinfo;
+    json_t *root;
+    json_error_t error;
+
+    if (!json || !*json) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    root = json_loads(json, JSON_COMPACT, &error);
+    if (!root) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Deserialize document failed, error: %s.", error.text);
+        return NULL;
+    }
+
+    txinfo = DIDTransactionInfo_FromJson_Internal(root);
+    json_decref(root);
+    return txinfo;
 }
 
 void DIDTransactionInfo_Destroy(DIDTransactionInfo *txinfo)
 {
-    if (txinfo)
-        DIDRequest_Destroy(&txinfo->request);
+    if (!txinfo) {
+        DIDRequest_Destroy(txinfo->request);
+        free((void*)txinfo);
+    }
 }
 
 void DIDTransactionInfo_Free(DIDTransactionInfo *txinfo)
 {
-    if (txinfo)
-        DIDRequest_Free(&txinfo->request);
+    if (txinfo) {
+        DIDRequest_Free(txinfo->request);
+        free((void*)txinfo);
+    }
 }
 
 int DIDTransactionInfo_ToJson_Internal(JsonGenerator *gen, DIDTransactionInfo *txinfo)
@@ -102,7 +140,7 @@ int DIDTransactionInfo_ToJson_Internal(JsonGenerator *gen, DIDTransactionInfo *t
     CHECK(JsonGenerator_WriteStringField(gen, "timestamp",
             get_time_string(_timestring, sizeof(_timestring), &txinfo->timestamp)));
     CHECK(JsonGenerator_WriteFieldName(gen, "operation"));
-    CHECK(DIDRequest_ToJson_Internal(gen, &txinfo->request));
+    CHECK(DIDRequest_ToJson_Internal(gen, txinfo->request));
     CHECK(JsonGenerator_WriteEndObject(gen));
     return 0;
 }
@@ -130,21 +168,30 @@ const char *DIDTransactionInfo_ToJson(DIDTransactionInfo *txinfo)
 
 DIDRequest *DIDTransactionInfo_GetRequest(DIDTransactionInfo *txinfo)
 {
-    assert(txinfo);
+    if (!txinfo) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
 
-    return &txinfo->request;
+    return txinfo->request;
 }
 
 const char *DIDTransactionInfo_GetTransactionId(DIDTransactionInfo *txinfo)
 {
-    assert(txinfo);
+    if (!txinfo) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
 
     return txinfo->txid;
 }
 
 time_t DIDTransactionInfo_GetTimeStamp(DIDTransactionInfo *txinfo)
 {
-    assert(txinfo);
+    if (!txinfo) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return 0;
+    }
 
     return txinfo->timestamp;
 }
@@ -154,6 +201,6 @@ DID *DIDTransactionInfo_GetOwner(DIDTransactionInfo *txinfo)
     if (!txinfo)
         return NULL;
 
-    return &txinfo->request.did;
+    return &txinfo->request->did;
 }
 

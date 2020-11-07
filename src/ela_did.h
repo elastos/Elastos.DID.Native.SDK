@@ -194,6 +194,16 @@ typedef struct DIDDocument             DIDDocument;
 typedef struct DIDMetaData             DIDMetaData;
 /**
  * \~English
+ * DIDRequest is for storing request information.
+ */
+typedef struct DIDRequest             DIDRequest;
+/**
+ * \~English
+ * DIDTransactionInfo is for storing transaction.
+ */
+typedef struct DIDTransactionInfo     DIDTransactionInfo;
+/**
+ * \~English
  DIDHistroy stores all did transactions from chain.
  */
 typedef struct DIDHistory              DIDHistory;
@@ -317,13 +327,15 @@ struct DIDResolver {
      * @param
      *      did                  [in] Specified DID.
      * @param
+     *      txid                 [in] Transaction id string.
+     * @param
      *      all                  [in] Resolve all transaction data or the lastest one.
      *                           all = 1: all transaction; all = 0: only the lastest transaction.
      * @return
      *      If no error occurs, return transaction id.
      *      Otherwise, return NULL.
      */
-    const char* (*resolve) (DIDResolver *resolver, const char *did, int all);
+    const char* (*resolve) (DIDResolver *resolver, const char *did, const char *txid, int all);
 };
 
 /******************************************************************************
@@ -503,6 +515,8 @@ DID_API void DID_Destroy(DID *did);
  * @param
  *      did                      [in] The handle of DID.
  * @param
+ *      txid                     [in] The specific transaction id about DID.
+ * @param
  *      force                    [in] Indicate if load document from cache or not.
  *                               force = true, document gets only from chain.
  *                               force = false, document can get from cache,
@@ -512,7 +526,7 @@ DID_API void DID_Destroy(DID *did);
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API DIDDocument *DID_Resolve(DID *did, bool force);
+DID_API DIDDocument *DID_Resolve(DID *did, const char *txid, bool force);
 
 /**
  * \~English
@@ -1619,7 +1633,6 @@ DID_API PublicKey *DIDDocument_GetAuthenticationKey(DIDDocument *document, DIDUR
  */
 DID_API ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document, const char *type,
         DIDURL *keyid, PublicKey **pks, size_t size);
-
 
 /**
  * \~English
@@ -3539,6 +3552,233 @@ DID_API bool Presentation_IsGenuine(Presentation *pre);
  */
 DID_API bool Presentation_IsValid(Presentation *pre);
 
+/******************************************************************************
+ * DIDRequest
+ *****************************************************************************/
+/**
+ * \~English
+ * Get DID Request from json context.
+ *
+ * @param
+ *      json               [in] Context of did conforming to json informat.
+ * @return
+ *      If no error occurs, return the handle to DID Request.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API DIDRequest *DIDRequest_FromJson(const char *json);
+
+/**
+ * \~English
+ * Get json context from DID Request.
+ *
+ * @param
+ *      request             [in] A handle to DID Request.
+ * @return
+ *      If no error occurs, return json context. Otherwise, return NULL.
+ *      Notice that user need to free the returned value that it's memory.
+ */
+DID_API const char *DIDRequest_ToJson(DIDRequest *request);
+
+/**
+ * \~English
+ * Destroy DIDRequest.
+ *
+ * @param
+ *      request             [in] A handle to DID Request.
+ */
+DID_API void DIDRequest_Destroy(DIDRequest *request);
+
+/**
+ * \~English
+ * Get multisig from DID Request.
+ *
+ * @param
+ *      request             [in] A handle to DID Request.
+ * @param
+ *      multisig_m          [in] A handle to buffer stored multisig_m.
+ * @param
+ *      multisig_n          [in] A handle to buffer stored multisig_n.
+ * @return
+ *      0 on success, -1 if an error occurred.
+ */
+DID_API int DIDRequest_GetMultisig(DIDRequest *request, int *multisig_m, int *multisig_n);
+
+/**
+ * \~English
+ * Get payload from DID Request.
+ *
+ * @param
+ *      request             [in] A handle to DID Request.
+ * @return
+ *      If no error occurs, return payload context. Otherwise, return NULL.
+ */
+DID_API const char *DIDRequest_GetPayload(DIDRequest *request);
+
+/**
+ * \~English
+ * Get version information from DID Request.
+ *
+ * @param
+ *      request             [in] A handle to DID Request.
+ * @return
+ *      If no error occurs, return version context. Otherwise, return NULL.
+ */
+DID_API const char *DIDRequest_GetVersion(DIDRequest *request);
+
+/**
+ * \~English
+ * Get operation from DID Request.
+ *
+ * @param
+ *      request             [in] A handle to DID Request.
+ * @return
+ *      If no error occurs, return operation context. Otherwise, return NULL.
+ */
+DID_API const char *DIDRequest_GetOperation(DIDRequest *request);
+
+/**
+ * \~English
+ * Get the count of proofs from DID Request.
+ *
+ * @param
+ *      request             [in] A handle to DID Request.
+ * @return
+ *      If no error occurs, return the proof count. Otherwise, return -1.
+ */
+DID_API ssize_t DIDRequest_GetProofCount(DIDRequest *request);
+
+/**
+ * \~English
+ * Get the specfic proof from DID Request by index.
+ *
+ * @param
+ *      request        [in] A handle to DID Request.
+ * @param
+ *      index          [in] A handle to DID Request.
+ * @param
+ *      keyid          [out] A handle to the buffer to store sign key.
+ * @param
+ *      created        [out] A handle to create time.
+ * @param
+ *      signature      [out] A handle to the buffer to store signature.
+ * @param
+ *      size           [in] The size of buffer.
+ * @return
+ *      If no error occurs, return 0. Otherwise, return -1.
+ */
+DID_API int DIDRequest_GetProof(DIDRequest *request, int index, DIDURL **keyid,
+        time_t *created, const char *signature, size_t size);
+
+/**
+ * \~English
+ * Check the DIDRequest is valid or not.
+ *
+ * @param
+ *      request              [in] A handle to DID Request.
+ * @param
+ *      isqualified          [in] To check the count of proof or not.
+ * @return
+ *      If DIDRequest is valid, return true. Otherwise, return false.
+ */
+DID_API bool DIDRequest_IsValid(DIDRequest *request, bool isqualified);
+
+/**
+ * \~English
+ * Check that the count of DIDRequest's proof reaches the multisig setting.
+ *
+ * @param
+ *      request              [in] A handle to DID Request.
+ * @return
+ *      If DIDRequest is qualified, return true. Otherwise, return false.
+ */
+DID_API bool DIDRequest_IsQualified(DIDRequest *request);
+
+/******************************************************************************
+ * DIDTransactionInfo
+ *****************************************************************************/
+
+/**
+ * \~English
+ * Get DID TransactionInfo from json context.
+ *
+ * @param
+ *      json               [in] Context of did conforming to json informat.
+ * @return
+ *      If no error occurs, return the handle to DIDTransactionInfo.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DIDTransactionInfo *DIDTransactionInfo_FromJson(const char *json);
+
+/**
+ * \~English
+ * Destroy DIDTransactionInfo.
+ *
+ * @param
+ *      txinfo               [in] A handle to DIDTransactionInfo.
+ */
+void DIDTransactionInfo_Destroy(DIDTransactionInfo *txinfo);
+
+/**
+ * \~English
+ * Get json non-formatted context from DID Transaction.
+ *
+ * @param
+ *      txinfo             [in] A handle to DID Transacaion.
+ * @return
+ *      If no error occurs, return json context. Otherwise, return NULL.
+ *      Notice that user need to free the returned value that it's memory.
+ */
+const char *DIDTransactionInfo_ToJson(DIDTransactionInfo *txinfo);
+
+/**
+ * \~English
+ * Get DID Request from DID Transaction.
+ *
+ * @param
+ *      txinfo             [in] A handle to DID Transaction.
+ * @return
+ *      If no error occurs, return the handle to DIDRequest. Otherwise, return NULL.
+ */
+DIDRequest *DIDTransactionInfo_GetRequest(DIDTransactionInfo *txinfo);
+
+/**
+ * \~English
+ * Get transaction id from DID Transaction.
+ *
+ * @param
+ *      txinfo             [in] A handle to DID Transaction.
+ * @return
+ *      If no error occurs, return transaction id string. Otherwise, return NULL.
+ */
+const char *DIDTransactionInfo_GetTransactionId(DIDTransactionInfo *txinfo);
+
+/**
+ * \~English
+ * Get time stamp from DID Transaction.
+ *
+ * @param
+ *      txinfo             [in] A handle to DID Transaction.
+ * @return
+ *      If no error occurs, return the time stamp. Otherwise, return 0.
+ */
+time_t DIDTransactionInfo_GetTimeStamp(DIDTransactionInfo *txinfo);
+
+/**
+ * \~English
+ * Get the owner from DID Transaction.
+ *
+ * @param
+ *      txinfo             [in] A handle to DID Transaction.
+ * @return
+ *      If no error occurs, return the handle of DID. Otherwise, return NULL.
+ */
+DID *DIDTransactionInfo_GetOwner(DIDTransactionInfo *txinfo);
+
+/******************************************************************************
+ * DIDBackend
+ *****************************************************************************/
 /**
  * \~English
  * Initialize DIDBackend to resolve by url.
@@ -3721,7 +3961,7 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
  * \~English
  * JWT error.
  */
-#define DIDERR_INVALID_REQUEST                      0x8D000020
+#define DIDERR_MALFORMED_REQUEST                      0x8D000020
 /**
  * \~English
  * Unknown error.

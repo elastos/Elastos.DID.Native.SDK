@@ -24,7 +24,6 @@
 #define __DIDHISTORY_H__
 
 #include "ela_did.h"
-#include "didtransactioninfo.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,7 +43,7 @@ struct DIDHistory {
 
     struct {
         size_t size;
-        DIDTransactionInfo *infos;
+        DIDTransactionInfo **infos;
     } txinfos;
 };
 

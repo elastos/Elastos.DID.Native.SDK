@@ -373,7 +373,7 @@ static int Parse_Controllers(DIDDocument *document, json_t *json)
             return -1;
         }
 
-        controllerdoc = DID_Resolve(&controller, true);
+        controllerdoc = DID_Resolve(&controller, NULL, true);
         if (!controllerdoc)
             return -1;
 
@@ -1150,7 +1150,7 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
     if (isdeactived)
         return isdeactived;
 
-    resolvedoc = DID_Resolve(&document->did, true);
+    resolvedoc = DID_Resolve(&document->did, NULL, true);
     if (!resolvedoc)
         return false;
 
@@ -1875,7 +1875,7 @@ int DIDDocumentBuilder_AuthorizationDid(DIDDocumentBuilder *builder, DIDURL *key
         return -1;
     }
 
-    doc = DID_Resolve(controller, false);
+    doc = DID_Resolve(controller, NULL, false);
     if (!doc)
         return -1;
 
@@ -1976,7 +1976,7 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
         }
     }
 
-    controllerdoc = DID_Resolve(controller, true);
+    controllerdoc = DID_Resolve(controller, NULL, true);
     if (!controllerdoc)
         return -1;
 

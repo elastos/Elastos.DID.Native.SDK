@@ -257,14 +257,19 @@ DIDHistory *DID_ResolveHistory(DID *did)
     return DIDBackend_ResolveHistory(did);
 }
 
-DIDDocument *DID_Resolve(DID *did, bool force)
+DIDDocument *DID_Resolve(DID *did, const char *txid, bool force)
 {
     if (!did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    return DIDBackend_Resolve(did, force);
+    if (txid && !force) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Get specificed transaction must by force mode.");
+        return NULL;
+    }
+
+    return DIDBackend_Resolve(did, txid, force);
 }
 
 DIDMetaData *DID_GetMetaData(DID *did)

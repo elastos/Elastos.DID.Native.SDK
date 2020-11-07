@@ -54,7 +54,7 @@ static int header_toJson(JsonGenerator *gen, DIDRequest *req)
     if (!strcmp(req->header.op, operation[RequestType_Update]))
         CHECK(JsonGenerator_WriteStringField(gen, "previousTxid", req->header.prevtxid));
 
-    if (req->header.multisig_m > 1)
+    if (req->header.multisig_n > 1)
         CHECK(JsonGenerator_WriteStringField(gen, "multisig",
                 set_multisig(multisig, sizeof(multisig), req->header.multisig_m, req->header.multisig_n)));
 
@@ -126,29 +126,21 @@ const char *DIDRequest_ToJson(DIDRequest *req)
     return JsonGenerator_Finish(gen);
 }
 
-static int didrequest_addproof(DIDRequest *request, char *signature, DIDURL *signkey)
+ssize_t DIDRequest_GetDigest(DIDRequest *request, uint8_t *digest, size_t size)
 {
-    size_t size;
-    RequestProof *rp;
+    char buffer[128] = {0}, *multisig;
 
     assert(request);
-    assert(signature);
-    assert(signkey);
+    assert(digest);
+    assert(size >= SHA256_BYTES);
 
-    size = request->proofs.size;
-    rp = request->proofs.proofs;
-    if (!request->proofs.proofs)
-        request->proofs.proofs = (RequestProof*)calloc(1, sizeof(RequestProof));
-    else
-        request->proofs.proofs = realloc(rp, (request->proofs.size + 1) * sizeof(RequestProof));
-
-    if (!request->proofs.proofs)
-        return -1;
-
-    strcpy(request->proofs.proofs[size].signature, signature);
-    DIDURL_Copy(&request->proofs.proofs[size].verificationMethod, signkey);
-    request->proofs.size++;
-    return 0;
+    multisig = set_multisig(buffer, sizeof(buffer), request->header.multisig_m, request->header.multisig_n);
+    return sha256_digest(digest,  5,
+            (unsigned char*)request->header.spec, strlen(request->header.spec),
+            (unsigned char*)request->header.op, strlen(request->header.op),
+            (unsigned char*)request->header.prevtxid, strlen(request->header.prevtxid),
+            (unsigned char*)multisig, strlen(multisig),
+            (unsigned char*)request->payload, strlen(request->payload));
 }
 
 const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL *signkey,
@@ -223,7 +215,7 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL 
     strcpy(req.header.op, (char*)op);
     strcpy(req.header.prevtxid, (char*)prevtxid);
     req.payload = payload;
-    if(didrequest_addproof(&req, signature, signkey) < 0)
+    if(DIDRequest_AddProof(&req, signature, signkey, time(NULL)) < 0)
         return NULL;
 
     requestJson = DIDRequest_ToJson(&req);
@@ -231,41 +223,42 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL 
     return requestJson;
 }
 
-int DIDRequest_Verify(DIDRequest *request)
+int DIDRequest_AddProof(DIDRequest *request, char *signature, DIDURL *signkey, time_t created)
 {
     int i;
-    char buffer[128], *b;
-    DIDDocument *doc;
-    DIDURL *keyid;
+    size_t size;
+    RequestProof *rp;
 
     assert(request);
+    assert(signature);
+    assert(signkey);
 
-    if (!request->doc)
-        return 0;
-
-    b = set_multisig(buffer, sizeof(buffer), request->header.multisig_m, request->header.multisig_n);
-
-    //todo: if(request->doc) is for deacativated without doc.
-    for (i = 0; i < request->proofs.size; i++) {
-        keyid = &request->proofs.proofs[i].verificationMethod;
-        if (DIDDocument_GetPublicKey(request->doc, keyid))
-            doc = request->doc;
-        else
-            doc = DID_Resolve(&keyid->did, true);
-
-        if (DIDDocument_Verify(doc, &request->proofs.proofs[i].verificationMethod,
-                (char*)request->proofs.proofs[i].signature, 5,
-                request->header.spec, strlen(request->header.spec),
-                request->header.op, strlen(request->header.op),
-                request->header.prevtxid, strlen(request->header.prevtxid),
-                b, strlen(b),
-                request->payload, strlen(request->payload)) < 0)
+    size = request->proofs.size;
+    rp = request->proofs.proofs;
+    for (i = 0; i < size && rp; i++) {
+        RequestProof *p = &rp[i];
+        if (DIDURL_Equals(&p->verificationMethod, signkey) || !strcmp(p->signature, signature)) {
+            DIDError_Set(DIDERR_INVALID_KEY, "The signkey already exist.");
             return -1;
+        }
     }
+
+    if (!rp)
+        request->proofs.proofs = (RequestProof*)calloc(1, sizeof(RequestProof));
+    else
+        request->proofs.proofs = realloc(rp, (request->proofs.size + 1) * sizeof(RequestProof));
+
+    if (!request->proofs.proofs)
+        return -1;
+
+    strcpy(request->proofs.proofs[size].signature, signature);
+    DIDURL_Copy(&request->proofs.proofs[size].verificationMethod, signkey);
+    request->proofs.proofs[size].created = created;
+    request->proofs.size++;
     return 0;
 }
 
-static int proof_fromjson(DIDRequest *request, json_t *json)
+static int Parser_Proof(DIDRequest *request, json_t *json)
 {
     size_t size = 1, i;
     json_t *item, *field;
@@ -326,7 +319,7 @@ static int proof_fromjson(DIDRequest *request, json_t *json)
     return 0;
 }
 
-static int header_fromjson(DIDRequest *request, json_t *json)
+static int Parser_Header(DIDRequest *request, json_t *json)
 {
     json_t *item;
     const char *op;
@@ -391,7 +384,7 @@ static int header_fromjson(DIDRequest *request, json_t *json)
         }
 
         get_multisig(json_string_value(item), &request->header.multisig_m, &request->header.multisig_n);
-        if (request->header.multisig_n > request->header.multisig_m) {
+        if (request->header.multisig_m > request->header.multisig_n) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Wrong multisig.");
             return -1;
         }
@@ -400,60 +393,37 @@ static int header_fromjson(DIDRequest *request, json_t *json)
     return 0;
 }
 
-DIDDocument *DIDRequest_FromJson_Internal(DIDRequest *request, json_t *json)
+static int Parser_Payload(DIDRequest *request, json_t *json)
 {
-    json_t *item, *field = NULL;
-    char *docJson;
     const char *payload;
+    char *docJson, buffer[128] = {0};
     DID *subject;
     size_t len;
-    int m = 0, n = 0;
 
     assert(request);
     assert(json);
 
-    memset(request, 0, sizeof(DIDRequest));
-    item = json_object_get(json, "header");
-    if (!item) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing header.");
-        return NULL;
-    }
-    if (!json_is_object(item)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid header.");
-        return NULL;
-    }
-
-    if (header_fromjson(request, item) < 0)
-        return NULL;
-
-    item = json_object_get(json, "payload");
-    if (!item) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing payload.");
-        return NULL;
-    }
-    if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
-        return NULL;
-    }
-    payload = json_string_value(item);
+    payload = json_string_value(json);
     if (!payload) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "No payload.");
-        return NULL;
+        return -1;
     }
+
     request->payload = strdup(payload);
     if (!request->payload) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Record payload failed.");
-        return NULL;
+        return -1;
     }
 
+    //not deactivated
     if (strcmp(request->header.op, operation[RequestType_Deactivate])) {
         len = strlen(request->payload) + 1;
         docJson = (char*)malloc(len);
         len = base64_url_decode((uint8_t *)docJson, request->payload);
         if (len <= 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode the payload failed");
-            free(docJson);
-            goto errorExit;
+            free((void*)docJson);
+            return -1;
         }
         docJson[len] = 0;
 
@@ -462,13 +432,14 @@ DIDDocument *DIDRequest_FromJson_Internal(DIDRequest *request, json_t *json)
         free(docJson);
         if (!request->doc) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Deserialize transaction payload from json failed.");
-            goto errorExit;
+            return -1;
         }
 
-        if (request->doc->controllers.size > 1 &&
-                request->header.multisig_m != request->doc->controllers.size) {
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "The multisig does not equal to the count of controllers.");
-            goto errorExit;
+        if (request->doc->controllers.size > 1) {
+            if (request->doc->controllers.size != request->header.multisig_n) {
+                DIDError_Set(DIDERR_RESOLVE_ERROR, "Deserialize transaction payload from json failed.");
+                return -1;
+            }
         }
 
         if (request->doc->controllers.size == 1) {
@@ -478,16 +449,64 @@ DIDDocument *DIDRequest_FromJson_Internal(DIDRequest *request, json_t *json)
 
         strcpy(request->did.idstring, request->doc->did.idstring);
         DIDMetaData_SetTxid(&request->doc->metadata, request->header.prevtxid);
+        DIDMetaData_SetMultisig(&request->doc->metadata,
+                set_multisig(buffer, sizeof(buffer), request->header.multisig_m, request->header.multisig_m));
     } else {
         subject = DID_FromString(request->payload);
         if (!subject)
-            goto errorExit;
+            return -1;
 
         strcpy(request->did.idstring, subject->idstring);
         request->doc = NULL;
         DID_Destroy(subject);
     }
 
+    return 0;
+}
+
+DIDRequest *DIDRequest_FromJson_Internal(json_t *json)
+{
+    json_t *item, *field = NULL;
+    char *docJson;
+    DID *subject;
+    size_t len;
+    DIDRequest *request;
+
+    assert(json);
+
+    request = (DIDRequest*)calloc(1, sizeof(DIDRequest));
+    if (!request) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for DIDRequest failed.");
+        return NULL;
+    }
+
+    //parse header
+    item = json_object_get(json, "header");
+    if (!item) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing header.");
+        goto errorExit;
+    }
+    if (!json_is_object(item)) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid header.");
+        goto errorExit;
+    }
+    if (Parser_Header(request, item) < 0)
+        goto errorExit;
+
+    //parse payload
+    item = json_object_get(json, "payload");
+    if (!item) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing payload.");
+        goto errorExit;
+    }
+    if (!json_is_string(item)) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
+        goto errorExit;
+    }
+    if (Parser_Payload(request, item) < 0)
+        goto errorExit;
+
+    //parse proof
     item = json_object_get(json, "proof");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing proof.");
@@ -497,35 +516,26 @@ DIDDocument *DIDRequest_FromJson_Internal(DIDRequest *request, json_t *json)
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid proof.");
         goto errorExit;
     }
-
-    if (proof_fromjson(request, item) < 0)
+    if (Parser_Proof(request, item) < 0)
         goto errorExit;
 
-    if (request->doc->controllers.size > 1 && request->header.multisig_n != request->proofs.size) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "The multisig does not equal to the count of signers.");
-        goto errorExit;
-    }
-
-    if (DIDRequest_Verify(request) < 0) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Verify payload failed.");
-        goto errorExit;
-    }
-
-    return request->doc;
+    return request;
 
 errorExit:
     DIDRequest_Destroy(request);
     return NULL;
 }
 
-DIDDocument *DIDRequest_FromJson(DIDRequest *request, const char *json)
+DIDRequest *DIDRequest_FromJson(const char *json)
 {
-    DIDDocument *doc;
+    DIDRequest *request;
     json_t *root;
     json_error_t error;
 
-    assert(request);
-    assert(json);
+    if (!json || !*json) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
 
     root = json_loads(json, JSON_COMPACT, &error);
     if (!root) {
@@ -533,91 +543,187 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, const char *json)
         return NULL;
     }
 
-    doc = DIDRequest_FromJson_Internal(request, root);
+    request = DIDRequest_FromJson_Internal(root);
     json_decref(root);
-    return doc;
+    return request;
 }
 
-bool DIDRequest_CheckWithPrevious(DIDRequest *request, DIDDocument *resolve_doc)
+int DIDRequest_GetMultisig(DIDRequest *request, int *multisig_m, int *multisig_n)
 {
-    DIDDocument *doc, *_doc;
-    const char *txid;
+    if (!request || !multisig_m || !multisig_n) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    *multisig_m = request->header.multisig_m;
+    *multisig_n = request->header.multisig_n;
+    return 0;
+}
+
+const char *DIDRequest_GetPayload(DIDRequest *request)
+{
+    if (!request) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    return request->payload;
+}
+
+const char *DIDRequest_GetVersion(DIDRequest *request)
+{
+    if (!request) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    return request->header.spec;
+}
+
+const char *DIDRequest_GetOperation(DIDRequest *request)
+{
+    if (!request) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    return request->header.op;
+}
+
+ssize_t DIDRequest_GetProofCount(DIDRequest *request)
+{
+    if (!request) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return request->proofs.size;
+}
+
+int DIDRequest_GetProof(DIDRequest *request, int index, DIDURL **keyid,
+        time_t *created, const char *signature, size_t size)
+{
+    RequestProof *proof;
+
+    if (!request || index < 0 || !keyid || !created || !signature) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    if (request->proofs.size == 0 || !request->proofs.proofs) {
+        DIDError_Set(DIDERR_MALFORMED_REQUEST, "There is no proof in DIDRequest.");
+        return -1;
+    }
+
+    if (request->proofs.size <= index) {
+        DIDError_Set(DIDERR_MALFORMED_REQUEST, "The index is larger than the total count of proof.");
+        return -1;
+    }
+
+    proof = &request->proofs.proofs[index];
+    if (size <= strlen(proof->signature)) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "The buffer to store signature is too small.");
+        return -1;
+    }
+
+    DIDURL_Copy(*keyid, &proof->verificationMethod);
+    *created = proof->created;
+    strcpy((char*)signature, proof->signature);
+    return 0;
+}
+
+static bool DIDRequest_CheckSignature(DIDRequest *request, DIDDocument *document)
+{
+    char buffer[128] = {0}, *multisig;
     int i;
 
     assert(request);
+    assert(document);
 
-    doc = request->doc;
-    if (!doc && strcmp(request->header.op, operation[2])) {
-        DIDError_Set(DIDERR_INVALID_REQUEST, "DID Request misses document.");
+    if (request->doc && !DIDDocument_IsValid(request->doc))
         return false;
-    }
 
-    if (!DID_Equals(&request->did, &doc->did)) {
-        DIDError_Set(DIDERR_INVALID_REQUEST, "DID Request owner and document is mismatch.");
-        return false;
-    }
-
-    if (!resolve_doc && strcmp(request->header.op, operation[0])) {
-        DIDError_Set(DIDERR_INVALID_REQUEST, "DID Request's type is wrong.");
-        return false;
-    }
-
-    if (resolve_doc) {
-        txid = DIDMetaData_GetTxid(&resolve_doc->metadata);
-        //create operation
-        if (!strcmp(request->header.op, operation[0]) && (txid || *txid)) {
-            DIDError_Set(DIDERR_INVALID_REQUEST, "DID Request's is disabled, not 'create' operation.");
-            return false;
-        }
-
-        //update operation
-        if (!strcmp(request->header.op, operation[1])) {
-            if (!txid || !*txid) {
-                DIDError_Set(DIDERR_INVALID_REQUEST, "DID Request's is disabled, not 'update' operation.");
-                return false;
-            }
-            if (strcmp(txid, request->header.prevtxid)) {
-                DIDError_Set(DIDERR_INVALID_REQUEST, "DID Request's is disabled, the newest transaction is on the chain.");
-                return false;
-            }
-        }
-
-        if (strcmp(request->header.op, operation[2]) && !request->doc) {
-            DIDError_Set(DIDERR_INVALID_REQUEST, "DID Request's dosen't contains document.");
-            return false;
-        }
-    }
-
-    if (request->header.multisig_m != doc->controllers.size) {
-        DIDError_Set(DIDERR_INVALID_REQUEST, "The multisig does not match the count of controllers.");
-        return false;
-    }
+    multisig = set_multisig(buffer, sizeof(buffer), request->header.multisig_m, request->header.multisig_n);
 
     for (i = 0; i < request->proofs.size; i++) {
         DIDURL *keyid = &request->proofs.proofs[i].verificationMethod;
-        if (!strcmp(request->header.op, operation[0]) && !Is_DefaultKey(doc, keyid))
+        if (!Is_DefaultKey(document, keyid))
             return false;
 
-        if (strcmp(request->header.op, operation[0]) && !Is_Controller_DefaultKey(resolve_doc, keyid))
+        if (DIDDocument_Verify(document, keyid,
+                (char*)request->proofs.proofs[i].signature, 5,
+                request->header.spec, strlen(request->header.spec),
+                request->header.op, strlen(request->header.op),
+                request->header.prevtxid, strlen(request->header.prevtxid),
+                multisig, strlen(multisig),
+                request->payload, strlen(request->payload)) < 0)
             return false;
-    }
-
-    if (DIDRequest_Verify(request) < 0) {
-        DIDError_Set(DIDERR_INVALID_REQUEST, "DID request is not genuine.");
-        return false;
     }
 
     return true;
 }
 
-bool DIDRequest_IsValid(DIDRequest *request)
+bool DIDRequest_IsValid(DIDRequest *request, bool isqualified)
 {
-    DIDDocument *doc;
+    DIDDocument *resolve_doc = NULL, *doc;
+    const char *multisig;
+    int m, n;
 
-    assert(request);
+    if (!request) {
+        DIDError_Set(DIDERR_MALFORMED_REQUEST, "No idrequest.");
+        return false;
+    }
 
-    doc = DID_Resolve(&request->did, true);
-    return DIDRequest_CheckWithPrevious(request, doc);
+    resolve_doc = DID_Resolve(&request->did, NULL, true);
+    if (!resolve_doc || !*request->header.prevtxid) {  //create transaction-----!*request->header.prevtxid
+        doc = request->doc;
+        if (isqualified && (request->header.multisig_m > request->proofs.size)) {
+            DIDError_Set(DIDERR_MALFORMED_REQUEST, "The count of proof is wrong.");
+            goto errorExit;
+        }
+    } else {
+        if (!strcmp(request->header.prevtxid, DIDMetaData_GetTxid(&request->doc->metadata))) {
+            doc = resolve_doc;
+        } else {
+            doc = DID_Resolve(&request->did, request->header.prevtxid, true);
+            if (!doc) {
+                DIDDocument_Destroy(resolve_doc);
+                return false;
+            }
+        }
+
+        multisig = DIDMetaData_GetMultisig(&resolve_doc->metadata);
+        get_multisig(multisig, &m, &n);
+        if (isqualified && m > request->proofs.size)
+            goto errorExit;
+    }
+
+    return DIDRequest_CheckSignature(request, doc);
+
+errorExit:
+    DIDDocument_Destroy(resolve_doc);
+    return false;
+}
+
+bool DIDRequest_IsQualified(DIDRequest *request)
+{
+    DIDDocument *resolve_doc;
+    const char *multisig;
+    int m, n;
+
+    if (!request)
+        return false;
+
+    resolve_doc = DID_Resolve(&request->did, NULL, true);
+    if (!resolve_doc || !*request->header.prevtxid) {  //create transaction-----!*request->header.prevtxid
+        DIDDocument_Destroy(resolve_doc);
+        return request->header.multisig_m == request->proofs.size ? true : false;
+    }
+
+    multisig = DIDMetaData_GetMultisig(&resolve_doc->metadata);
+    get_multisig(multisig, &m, &n);
+    DIDDocument_Destroy(resolve_doc);
+    return request->proofs.size >= m ? true : false;
 }
 
 void DIDRequest_Destroy(DIDRequest *request)
@@ -636,19 +742,28 @@ void DIDRequest_Destroy(DIDRequest *request)
 
     if (request->proofs.proofs) {
         free((void*)request->proofs.proofs);
+        request->proofs.size = 0;
         request->proofs.proofs = NULL;
     }
+
+    free((void*)request);
 }
 
 void DIDRequest_Free(DIDRequest *request)
 {
-    if (request && request->payload) {
+    if (!request)
+        return;
+
+    if (request->payload) {
         free((void*)request->payload);
         request->payload = NULL;
     }
 
     if (request->proofs.proofs) {
         free((void*)request->proofs.proofs);
+        request->proofs.size = 0;
         request->proofs.proofs = NULL;
     }
+
+    free(request);
 }
