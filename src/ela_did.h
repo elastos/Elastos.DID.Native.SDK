@@ -1007,18 +1007,16 @@ DID_API ssize_t DIDHistory_GetTransactionCount(DIDHistory *history);
 
 /**
  * \~English
- * Get DID Document from 'index' transaction.
+ * Get transactions.
  *
  * @param
  *      history                       [in] The handle to DIDHistory.
  * @param
- *      index                         [in] The index of transaction.
+ *      infos                         [out] The buffer to store DID transactions.
  * @return
- *      If no error occurs, return the handle to DID Document.
- *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      If no error occurs, return 0. Otherwise, return -1.
  */
-DID_API DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int index);
+DID_API ssize_t DIDHistory_GetTransactions(DIDHistory *history, DIDTransactionInfo **infos, size_t size);
 
 /**
  * \~English
@@ -1032,34 +1030,7 @@ DID_API DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int inde
  *      If no error occurs, return transaction.
  *      Otherwise, return NULL.
  */
-DID_API const char *DIDHistory_GetTransactionIdByIndex(DIDHistory *history, int index);
-
-/**
- * \~English
- * Get published time from 'index' transaction.
- *
- * @param
- *      history                       [in] The handle to DIDHistory.
- * @param
- *      index                         [in] The index of transaction.
- * @return
-*      If no error occurs, return published time. Otherwise, return 0.
- */
-DID_API time_t DIDHistory_GetPublishedByIndex(DIDHistory *history, int index);
-
-/**
- * \~English
- * Get operation of 'index' transaction. Operation: 'created', 'update' and 'deactivated'.
- *
- * @param
- *      history                       [in] The handle to DIDHistory.
- * @param
- *      index                         [in] The index of transaction.
- * @return
- *       If no error occurs, return operation string.
- *       Otherwise, return -1.
- */
-DID_API const char *DIDHistory_GetOperationByIndex(DIDHistory *history, int index);
+DID_API DIDTransactionInfo *DIDHistory_GetTransaction(DIDHistory *history, int index);
 
 /**
  * \~English
@@ -1369,6 +1340,19 @@ DID_API int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *c
 
 /**
  * \~English
+ * Remove controller for DIDDocument.
+ *
+ * @param
+ *      builder               [in] A handle to DIDDocument Builder.
+ * @param
+ *      controller            [in] The controller for DIDDocument.
+ * @return
+ *      0 on success, -1 if an error occurred.
+ */
+DID_API int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *controller);
+
+/**
+ * \~English
  * Add one credential to credential array.
  *
  * @param
@@ -1401,6 +1385,9 @@ DID_API int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder,
  *      expires              [in] The time to credential be expired.
  *                               Support expires == 0, api add document expires time.
  * @param
+ *      signkey              [in] The key to sign.
+ *                                eg, if signkey is NULL, it uses the default key.
+ * @param
  *      storepass            [in] Password for DIDStores.
  * @return
  *      If no error occurs, return 0.
@@ -1408,7 +1395,7 @@ DID_API int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder,
  */
 DID_API int DIDDocumentBuilder_AddSelfClaimedCredential(DIDDocumentBuilder *builder,
         DIDURL *credid, const char **types, size_t typesize,
-        Property *properties, int propsize, time_t expires, const char *storepass);
+        Property *properties, int propsize, time_t expires, DIDURL *signkey, const char *storepass);
 /**
  * \~English
  * Remove specified credential from credential array.
@@ -3667,7 +3654,7 @@ DID_API ssize_t DIDRequest_GetProofCount(DIDRequest *request);
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */
-DID_API int DIDRequest_GetProof(DIDRequest *request, int index, DIDURL **keyid,
+DID_API int DIDRequest_GetProof(DIDRequest *request, int index, DIDURL *keyid,
         time_t *created, const char *signature, size_t size);
 
 /**
@@ -3682,6 +3669,17 @@ DID_API int DIDRequest_GetProof(DIDRequest *request, int index, DIDURL **keyid,
  *      If DIDRequest is valid, return true. Otherwise, return false.
  */
 DID_API bool DIDRequest_IsValid(DIDRequest *request, bool isqualified);
+
+/**
+ * \~English
+ * Get DIDDocument from DIDRequest.
+ *
+ * @param
+ *      request              [in] A handle to DID Request.
+ * @return
+ *      If no error occurs, return the handle to DIDDocument. Otherwise, return NULL.
+ */
+DID_API DIDDocument *DIDRequest_GetDIDDocument(DIDRequest *request);
 
 /**
  * \~English
@@ -3709,7 +3707,7 @@ DID_API bool DIDRequest_IsQualified(DIDRequest *request);
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DIDTransactionInfo *DIDTransactionInfo_FromJson(const char *json);
+DID_API DIDTransactionInfo *DIDTransactionInfo_FromJson(const char *json);
 
 /**
  * \~English
@@ -3718,7 +3716,7 @@ DIDTransactionInfo *DIDTransactionInfo_FromJson(const char *json);
  * @param
  *      txinfo               [in] A handle to DIDTransactionInfo.
  */
-void DIDTransactionInfo_Destroy(DIDTransactionInfo *txinfo);
+DID_API void DIDTransactionInfo_Destroy(DIDTransactionInfo *txinfo);
 
 /**
  * \~English
@@ -3730,7 +3728,7 @@ void DIDTransactionInfo_Destroy(DIDTransactionInfo *txinfo);
  *      If no error occurs, return json context. Otherwise, return NULL.
  *      Notice that user need to free the returned value that it's memory.
  */
-const char *DIDTransactionInfo_ToJson(DIDTransactionInfo *txinfo);
+DID_API const char *DIDTransactionInfo_ToJson(DIDTransactionInfo *txinfo);
 
 /**
  * \~English
@@ -3741,7 +3739,7 @@ const char *DIDTransactionInfo_ToJson(DIDTransactionInfo *txinfo);
  * @return
  *      If no error occurs, return the handle to DIDRequest. Otherwise, return NULL.
  */
-DIDRequest *DIDTransactionInfo_GetRequest(DIDTransactionInfo *txinfo);
+DID_API DIDRequest *DIDTransactionInfo_GetRequest(DIDTransactionInfo *txinfo);
 
 /**
  * \~English
@@ -3752,7 +3750,7 @@ DIDRequest *DIDTransactionInfo_GetRequest(DIDTransactionInfo *txinfo);
  * @return
  *      If no error occurs, return transaction id string. Otherwise, return NULL.
  */
-const char *DIDTransactionInfo_GetTransactionId(DIDTransactionInfo *txinfo);
+DID_API const char *DIDTransactionInfo_GetTransactionId(DIDTransactionInfo *txinfo);
 
 /**
  * \~English
@@ -3763,7 +3761,7 @@ const char *DIDTransactionInfo_GetTransactionId(DIDTransactionInfo *txinfo);
  * @return
  *      If no error occurs, return the time stamp. Otherwise, return 0.
  */
-time_t DIDTransactionInfo_GetTimeStamp(DIDTransactionInfo *txinfo);
+DID_API time_t DIDTransactionInfo_GetTimeStamp(DIDTransactionInfo *txinfo);
 
 /**
  * \~English
@@ -3774,7 +3772,7 @@ time_t DIDTransactionInfo_GetTimeStamp(DIDTransactionInfo *txinfo);
  * @return
  *      If no error occurs, return the handle of DID. Otherwise, return NULL.
  */
-DID *DIDTransactionInfo_GetOwner(DIDTransactionInfo *txinfo);
+DID_API DID *DIDTransactionInfo_GetOwner(DIDTransactionInfo *txinfo);
 
 /******************************************************************************
  * DIDBackend

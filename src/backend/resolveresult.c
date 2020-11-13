@@ -237,7 +237,10 @@ DIDHistory *ResolveResult_ToDIDHistory(ResolveResult *result)
         return NULL;
     }
 
-    memcpy(history, result, sizeof(DIDHistory));
+    DID_Copy(&history->did, &result->did);
+    history->status = result->status;
+    history->txinfos.size = result->txinfos.size;
+    history->txinfos.infos = result->txinfos.infos;
     return history;
 }
 

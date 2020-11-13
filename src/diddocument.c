@@ -1502,7 +1502,7 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, DID *controlle
         _doc = doc;
     } else {
         if (doc->controllers.size <= 0 || !doc->controllers.docs) {
-            DIDError_Set(DIDERR_INVALID_ARGS, "DIDDocument has no controller.");
+            DIDError_Set(DIDERR_INVALID_ARGS, "DIDDocument has no this controller.");
             return NULL;
         }
 
@@ -1964,6 +1964,11 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
     }
 
     document = builder->document;
+    if (document->controllers.size == 0) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Only customized did supports adding controller.");
+        return -1;
+    }
+
     if (DID_Equals(DIDDocument_GetSubject(document), controller)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "DIDDocument does not controlled by itself.");
         return -1;
@@ -1984,7 +1989,7 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
         docs = (DIDDocument**)calloc(1, sizeof(DIDDocument*));
     else
         docs = (DIDDocument**)realloc(document->controllers.docs,
-                            (document->controllers.size + 1) * sizeof(DIDDocument*));
+                (document->controllers.size + 1) * sizeof(DIDDocument*));
 
     if (!docs) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for controllers failed.");
@@ -1996,6 +2001,45 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
     document->controllers.docs = docs;
 
     return 0;
+}
+
+int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *controller)
+{
+    DIDDocument *document, *controller_doc;
+    size_t size;
+    int i;
+
+    if (!builder || !builder->document || !controller) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    document = builder->document;
+    size = DIDDocument_GetControllerCount(document);
+    for (i = 0; i < size; i++) {
+        controller_doc = document->controllers.docs[i];
+        if (!DID_Equals(controller, &controller_doc->did))
+            continue;
+
+        if (size == 1) {
+            DIDError_Set(DIDERR_UNSUPPOTED, "Don't remove this last controller.");
+            return -1;
+        }
+
+        DIDDocument_Destroy(controller_doc);
+
+        if (i != size - 1)
+            memmove(document->controllers.docs + i,
+                    document->controllers.docs + i + 1,
+                    sizeof(DIDDocument*) * (size - i - 1));
+
+        document->controllers.docs[size - 1] = NULL;
+        document->controllers.size--;
+        return 0;
+    }
+
+    DIDError_Set(DIDERR_NOT_EXISTS, "No this controller in document.");
+    return -1;
 }
 
 int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder, Credential *credential)
@@ -2043,7 +2087,8 @@ int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder, Credential *cr
 
 int DIDDocumentBuilder_AddSelfClaimedCredential(DIDDocumentBuilder *builder,
         DIDURL *credid, const char **types, size_t typesize,
-        Property *properties, int propsize, time_t expires, const char *storepass)
+        Property *properties, int propsize, time_t expires,
+        DIDURL *signkey, const char *storepass)
 {
     DIDDocument *document;
     Credential *cred;
@@ -2063,8 +2108,18 @@ int DIDDocumentBuilder_AddSelfClaimedCredential(DIDDocumentBuilder *builder,
         return -1;
     }
 
-    issuer = Issuer_Create(&document->did, DIDDocument_GetDefaultPublicKey(document),
-            document->metadata.base.store);
+    if (!signkey && document->controllers.size > 1) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Must specific the key to sign the credential owned by multi-controller did.");
+        return -1;
+    }
+
+    if (!signkey) {
+        signkey = DIDDocument_GetDefaultPublicKey(document);
+        if (!signkey)
+            return -1;
+    }
+
+    issuer = Issuer_Create(&document->did, signkey, document->metadata.base.store);
     if (!issuer)
         return -1;
 
@@ -3019,7 +3074,6 @@ time_t DIDDocument_GetExpires(DIDDocument *document)
 int DIDDocument_Sign(DIDDocument *document, DIDURL *keyid, const char *storepass,
         char *sig, int count, ...)
 {
-
     uint8_t digest[SHA256_BYTES];
     va_list inputs;
     ssize_t size;

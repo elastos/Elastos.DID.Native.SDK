@@ -77,12 +77,17 @@ void DIDRequest_Free(DIDRequest *request);
 
 ssize_t DIDRequest_GetDigest(DIDRequest *request, uint8_t *digest, size_t size);
 
+const char *DIDRequest_SignRequest(DIDRequest *request, DIDDocument *document,
+        DIDURL *signkey, const char *storepass);
+
 const char* DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
         DIDURL *signkey, const char *storepass);
 
 int DIDRequest_AddProof(DIDRequest *request, char *signature, DIDURL *signkey, time_t created);
 
 int DIDRequest_ToJson_Internal(JsonGenerator *gen, DIDRequest *req);
+
+bool DIDRequest_ExistSignKey(DIDRequest *request, DIDURL *signkey);
 
 #ifdef __cplusplus
 }

@@ -341,7 +341,7 @@ DIDDocument *DIDBackend_Resolve(DID *did, const char *txid, bool force)
 
 DIDHistory *DIDBackend_ResolveHistory(DID *did)
 {
-    ResolveResult result;
+    DIDHistory *history;
 
     if (!did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -353,19 +353,24 @@ DIDHistory *DIDBackend_ResolveHistory(DID *did)
         return NULL;
     }
 
-    memset(&result, 0, sizeof(ResolveResult));
-    if (resolve_internal(&result, did, NULL, true, true) == -1) {
-        ResolveResult_Destroy(&result);
+    history = (DIDHistory*)calloc(1, sizeof(DIDHistory));
+    if (!history) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for did history failed.");
         return NULL;
     }
 
-    if (ResolveResult_GetStatus(&result) == DIDStatus_NotFound) {
-        ResolveResult_Destroy(&result);
+    if (resolve_internal((ResolveResult*)history, did, NULL, true, true) == -1) {
+        DIDHistory_Destroy(history);
+        return NULL;
+    }
+
+    if (ResolveResult_GetStatus(history) == DIDStatus_NotFound) {
+        DIDHistory_Destroy(history);
         DIDError_Set(DIDERR_NOT_EXISTS, "DID not exists.");
         return NULL;
     }
 
-    return ResolveResult_ToDIDHistory(&result);
+    return history;
 }
 
 ssize_t DIDBackend_ResolvePayload(DID *did, const char* txid, DIDDocument **docs, int count, bool force)
