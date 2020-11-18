@@ -40,7 +40,7 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
     DIDTransactionInfo *txinfo = NULL;
     json_t *item, *field;
     int i, size = 0;
-    char buffer[128];
+    char buffer[32];
 
     assert(result);
     assert(json);
@@ -123,7 +123,7 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
                 DIDMetaData_SetSignature(&doc->metadata, doc->proof.signatureValue);
                 DIDMetaData_SetDeactivated(&doc->metadata, result->status);
                 DIDMetaData_SetMultisig(&doc->metadata,
-                       set_multisig(buffer, sizeof(buffer), txinfo->request->header.multisig_m, txinfo->request->header.multisig_n));
+                       format_multisig(buffer, sizeof(buffer), txinfo->request->header.multisig_m, txinfo->request->header.multisig_n));
                 memcpy(&doc->did.metadata, &doc->metadata, sizeof(DIDMetaData));
             }
             result->txinfos.size++;
@@ -143,6 +143,15 @@ void ResolveResult_Destroy(ResolveResult *result)
         DIDTransactionInfo_Destroy(result->txinfos.infos[i]);
 
     free(result->txinfos.infos);
+    memset(result, 0, sizeof(ResolveResult));
+}
+
+void ResolveResult_Free(ResolveResult *result)
+{
+    if (!result || !result->txinfos.infos)
+        return;
+
+    free((void*)result->txinfos.infos);
     memset(result, 0, sizeof(ResolveResult));
 }
 
@@ -244,18 +253,26 @@ DIDHistory *ResolveResult_ToDIDHistory(ResolveResult *result)
     return history;
 }
 
-int ResolveResult_GetTransactions(ResolveResult *result, DIDTransactionInfo **infos, size_t size)
+size_t ResolveResult_GetTransactions(ResolveResult *result, DIDTransactionInfo **infos, size_t size)
 {
+    int i;
+
     assert(result);
     assert(infos);
     assert(size > 0);
 
     memset(infos, 0, size * sizeof(DIDTransactionInfo*));
     if (result->txinfos.infos && result->txinfos.size > 0) {
-        if (size <= result->txinfos.size)
+        if (size < result->txinfos.size) {
             memcpy(infos, result->txinfos.infos, size * sizeof(DIDTransactionInfo*));
-        else
-            memcpy(infos, result->txinfos.infos, result->txinfos.size * sizeof(DIDTransactionInfo*));
+            for (i = size; i < result->txinfos.size; i++)
+                DIDTransactionInfo_Destroy(result->txinfos.infos[i]);
+            result->txinfos.size = size;
+            return size;
+        }
+
+        memcpy(infos, result->txinfos.infos, result->txinfos.size * sizeof(DIDTransactionInfo*));
+        return result->txinfos.size;
     }
 
     return 0;

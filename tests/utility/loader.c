@@ -771,7 +771,7 @@ DIDDocument *TestData_LoadDoc(void)
     if (rc)
         return NULL;
 
-    doc = DID_Resolve(subject, NULL, true);
+    doc = DID_Resolve(subject, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
     DIDDocument_Destroy(doc);
@@ -802,7 +802,7 @@ DIDDocument *TestData_LoadControllerDoc(void)
     if (rc)
         return NULL;
 
-    doc = DID_Resolve(subject, NULL, true);
+    doc = DID_Resolve(subject, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
     DIDDocument_Destroy(doc);
@@ -827,7 +827,7 @@ DIDDocument *TestData_LoadIssuerDoc(void)
     if (rc)
         return NULL;
 
-    doc = DID_Resolve(subject, NULL, true);
+    doc = DID_Resolve(subject, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
     DIDDocument_Destroy(doc);
@@ -850,7 +850,7 @@ DIDDocument *TestData_LoadEmptyCustomizedDoc(void)
     if (!subject)
         return NULL;
 
-    doc = DID_Resolve(subject, NULL, true);
+    doc = DID_Resolve(subject, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
     DIDDocument_Destroy(doc);
@@ -887,7 +887,7 @@ DIDDocument *TestData_LoadCustomizedDoc(void)
     if (rc)
         return NULL;
 
-    doc = DID_Resolve(subject, NULL, true);
+    doc = DID_Resolve(subject, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
     DIDDocument_Destroy(doc);
@@ -920,7 +920,7 @@ DIDDocument *TestData_LoadEmptyMultiCustomizedDoc(void)
     if (!signkey)
         return NULL;
 
-    doc = DID_Resolve(subject, NULL, true);
+    doc = DID_Resolve(subject, true);
     //if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
     if (!doc) {
         const char *idrequest = DIDStore_SignDIDRequest(testdata.store, subject, 1,
@@ -975,7 +975,7 @@ DIDDocument *TestData_LoadMultiCustomizedDoc(void)
     if (!signkey)
         return NULL;
 
-    doc = DID_Resolve(subject, NULL, true);
+    doc = DID_Resolve(subject, true);
     if (!doc) {
         const char *idrequest = DIDStore_SignDIDRequest(testdata.store, subject, 1,
                 signkey, storepass, false);
@@ -987,6 +987,7 @@ DIDDocument *TestData_LoadMultiCustomizedDoc(void)
         if (!bsuccessed)
             return NULL;
     }
+    DIDDocument_Destroy(doc);
 
     return testdata.multiCustomizedDoc;
 }

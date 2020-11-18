@@ -110,6 +110,14 @@ bool Is_Self_DefaultKey(DIDDocument *document, DIDURL *keyid);
 
 bool Is_DefaultKey(DIDDocument *document, DIDURL *keyid);
 
+bool Is_Customized_DID(DIDDocument *document);
+
+bool Is_Multisig_DID(DIDDocument *document);
+
+int DIDDocument_Set_Multisig(DIDDocument *document, DIDDocument *resolve_doc, int multisig);
+
+int DIDDocument_Updata_Metadata(DIDDocument *document, DIDDocument *resolve_doc, bool force);
+
 #ifdef __cplusplus
 }
 #endif

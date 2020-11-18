@@ -273,7 +273,7 @@ ssize_t Credential_GetTypes(Credential *cred, const char **types, size_t size)
 {
     size_t actual_size;
 
-    if (!cred || !types || size <= 0) {
+    if (!cred || !types || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -318,7 +318,7 @@ time_t Credential_GetExpirationDate(Credential *cred)
         return 0;
     }
 
-    doc = DID_Resolve(&cred->id.did, NULL, false);
+    doc = DID_Resolve(&cred->id.did, false);
     if (!doc)
         return 0;
 
@@ -330,7 +330,7 @@ time_t Credential_GetExpirationDate(Credential *cred)
     if (cred->expirationDate != 0)
         expire = MIN(expire, cred->expirationDate);
 
-    doc = DID_Resolve(&cred->issuer, NULL, false);
+    doc = DID_Resolve(&cred->issuer, false);
     if (!doc)
         return 0;
 
@@ -796,7 +796,7 @@ int Credential_Verify(Credential *cred)
         return -1;
     }
 
-    doc = DID_Resolve(&cred->issuer, NULL, false);
+    doc = DID_Resolve(&cred->issuer, false);
     if (!doc)
         return -1;
 
@@ -845,7 +845,7 @@ bool Credential_IsGenuine(Credential *cred)
         return false;
     }
 
-    doc = DID_Resolve(&cred->issuer, NULL, false);
+    doc = DID_Resolve(&cred->issuer, false);
     if (!doc)
         return false;
 
@@ -874,7 +874,7 @@ bool Credential_IsValid(Credential *cred)
         return false;
     }
 
-    doc = DID_Resolve(&cred->subject.id, NULL, false);
+    doc = DID_Resolve(&cred->subject.id, false);
     if (!doc)
         return false;
 
@@ -885,7 +885,7 @@ bool Credential_IsValid(Credential *cred)
         return false;
 
     if (!Credential_IsSelfProclaimed(cred)) {
-        doc = DID_Resolve(&cred->issuer, NULL, false);
+        doc = DID_Resolve(&cred->issuer, false);
         if (!doc)
             return false;
 

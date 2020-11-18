@@ -464,7 +464,7 @@ int set_file_lastmodified(const char *path, time_t lastmodified)
     return utime(path, &new_times);
 }
 
-char *set_multisig(char *buffer, size_t size, int m, int n)
+char *format_multisig(char *buffer, size_t size, int m, int n)
 {
     assert(buffer);
     assert(size > 3);
@@ -477,7 +477,7 @@ char *set_multisig(char *buffer, size_t size, int m, int n)
     return buffer;
 }
 
-void get_multisig(const char *buffer, int *m, int *n)
+void parse_multisig(const char *buffer, int *m, int *n)
 {
     assert(m && n);
 
@@ -486,10 +486,3 @@ void get_multisig(const char *buffer, int *m, int *n)
         *n = 0;
     }
 }
-
-
-
-
-
-
-

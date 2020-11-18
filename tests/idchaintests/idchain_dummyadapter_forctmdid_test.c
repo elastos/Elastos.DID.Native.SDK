@@ -47,12 +47,12 @@ static void test_publish_ctmdid_withonecontroller(void)
 
     CU_ASSERT_TRUE_FATAL(DIDStore_PublishDID(store, storepass, &customizedid, NULL, true));
 
-    resolve_doc = DID_Resolve(&customizedid, NULL, true);
+    resolve_doc = DID_Resolve(&customizedid, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
     rc = DIDStore_StoreDID(store, resolve_doc);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
     DIDDocument_Destroy(resolve_doc);
+    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
 
     customized_doc = DIDStore_LoadDID(store, &customizedid);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
@@ -119,8 +119,6 @@ static void test_publish_ctmdid_withonecontroller(void)
 
     rc = DIDRequest_GetMultisig(request, &multisig_m, &multisig_n);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    CU_ASSERT_EQUAL(1, multisig_m);
-    CU_ASSERT_EQUAL(1, multisig_n);
 
     CU_ASSERT_STRING_EQUAL("update", DIDRequest_GetOperation(request));
     CU_ASSERT_EQUAL_FATAL(1, DIDRequest_GetProofCount(request));
@@ -135,7 +133,7 @@ static void test_publish_ctmdid_withonecontroller(void)
     resolve_doc = DIDRequest_GetDIDDocument(request);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
-    resolve_doc1 = DID_Resolve(&customizedid, NULL, true);
+    resolve_doc1 = DID_Resolve(&customizedid, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
     Credential *cred = DIDDocument_GetCredential(resolve_doc, credid);
@@ -202,7 +200,7 @@ static void test_publish_ctmdid_with_multicontroller(void)
     //check: reuse the same key to sign id request, failed.
     idrequest1 = DIDStore_CounterSignDIDRequest(store, idrequest, signkey1, storepass);
     CU_ASSERT_PTR_NULL(idrequest1);
-    CU_ASSERT_STRING_EQUAL("The sign key already signed this transaction.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("Already signed by the controller.", DIDError_GetMessage());
 
     idrequest1 = DIDStore_CounterSignDIDRequest(store, idrequest, signkey2, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(idrequest1);
@@ -357,7 +355,7 @@ static void test_publish_ctmdid_with_multicontroller(void)
     resolve_doc = DIDRequest_GetDIDDocument(request);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
-    resolve_doc1 = DID_Resolve(&customizedid, NULL, true);
+    resolve_doc1 = DID_Resolve(&customizedid, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
     Credential *cred = DIDDocument_GetCredential(resolve_doc, credid);
@@ -508,7 +506,7 @@ static void test_publish_ctmdid_with_multicontroller_after_removecontroller(void
 
     customized_doc = DIDDocumentBuilder_Seal(builder, &controller2, storepass);
     CU_ASSERT_PTR_NULL(customized_doc);
-    CU_ASSERT_STRING_EQUAL("DIDDocument does not support this controller.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("Does not a controller of the DIDDocument.", DIDError_GetMessage());
 
     customized_doc = DIDDocumentBuilder_Seal(builder, &controller3, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
@@ -583,7 +581,7 @@ static void test_publish_ctmdid_with_multicontroller_after_removecontroller(void
     resolve_doc = DIDRequest_GetDIDDocument(request);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
-    resolve_doc1 = DID_Resolve(&customizedid, NULL, true);
+    resolve_doc1 = DID_Resolve(&customizedid, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
     Credential *cred = DIDDocument_GetCredential(resolve_doc, credid);
@@ -642,7 +640,7 @@ static void test_publish_ctmdid_with_onecontroller_after_addcontroller(void)
     free((void*)idrequest);
 
     //resolve
-    resolve_doc = DID_Resolve(&customizedid, NULL, true);
+    resolve_doc = DID_Resolve(&customizedid, true);
     CU_ASSERT_PTR_NOT_NULL(resolve_doc);
     CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_StoreDID(store, resolve_doc));
     DIDDocument_Destroy(resolve_doc);
@@ -696,8 +694,6 @@ static void test_publish_ctmdid_with_onecontroller_after_addcontroller(void)
 
     rc = DIDRequest_GetMultisig(request, &multisig_m, &multisig_n);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    CU_ASSERT_EQUAL(1, multisig_m);
-    CU_ASSERT_EQUAL(1, multisig_n);
 
     CU_ASSERT_STRING_EQUAL("create", DIDRequest_GetOperation(request));
     CU_ASSERT_EQUAL_FATAL(1, DIDRequest_GetProofCount(request));
@@ -727,7 +723,7 @@ static void test_publish_ctmdid_with_onecontroller_after_addcontroller(void)
     resolve_doc = DIDRequest_GetDIDDocument(request);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
-    resolve_doc1 = DID_Resolve(&customizedid, NULL, true);
+    resolve_doc1 = DID_Resolve(&customizedid, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
     const char *data1 = DIDDocument_ToJson(customized_doc, true);
@@ -756,6 +752,7 @@ static void test_publish_ctmdid_merge_request(void)
     DIDURL *keyid, *signkey1, *signkey2, *signkey3;
     DIDDocumentBuilder *builder;
     int rc, multisig_m, multisig_n;
+    bool successed;
 
     DID *controllers[3] = {0};
     controllers[0] = &controller1;
@@ -774,7 +771,6 @@ static void test_publish_ctmdid_merge_request(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
     DID_Copy(&customizedid, &customized_doc->did);
-    //DIDDocument_Destroy(customized_doc);
 
     //3:3
     const char *idrequest = DIDStore_SignDIDRequest(store, &customizedid, 3, signkey1, storepass, false);
@@ -789,8 +785,10 @@ static void test_publish_ctmdid_merge_request(void)
 
     idrequest = DIDDtore_MergeMultisigDIDRequest(2, idrequest1, idrequest2);
     CU_ASSERT_PTR_NOT_NULL_FATAL(idrequest);
+    free((void*)idrequest1);
+    free((void*)idrequest2);
 
-    CU_ASSERT_TRUE_FATAL(DIDStore_PublishIdRequest(store, idrequest));
+    CU_ASSERT_TRUE(DIDStore_PublishIdRequest(store, idrequest));
     free((void*)idrequest);
 
     //resolve
@@ -829,7 +827,7 @@ static void test_publish_ctmdid_merge_request(void)
     resolve_doc = DIDRequest_GetDIDDocument(request);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
-    resolve_doc1 = DID_Resolve(&customizedid, NULL, true);
+    resolve_doc1 = DID_Resolve(&customizedid, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
     const char *data1 = DIDDocument_ToJson(customized_doc, true);

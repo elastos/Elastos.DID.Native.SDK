@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
         goto cleanup;
     }
 
-    doc = DID_Resolve(did, NULL, true);
+    doc = DID_Resolve(did, true);
     DID_Destroy(did);
     if (!doc) {
         fprintf(stderr, "Resolve [%s] failed. Error: %s\n", idstring, DIDError_GetMessage());

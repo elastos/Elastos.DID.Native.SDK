@@ -39,6 +39,8 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all);
 
 void ResolveResult_Destroy(ResolveResult *result);
 
+void ResolveResult_Free(ResolveResult *result);
+
 const char *ResolveResult_ToJson(ResolveResult *result);
 
 DID *ResolveResult_GetDID(ResolveResult *result);
@@ -47,7 +49,7 @@ DIDStatus ResolveResult_GetStatus(ResolveResult *result);
 
 ssize_t ResolveResult_GetTransactionCount(ResolveResult *result);
 
-int ResolveResult_GetTransactions(ResolveResult *result, DIDTransactionInfo **infos, size_t size);
+size_t ResolveResult_GetTransactions(ResolveResult *result, DIDTransactionInfo **infos, size_t size);
 
 DIDTransactionInfo *ResolveResult_GetTransaction(ResolveResult *result, int index);
 

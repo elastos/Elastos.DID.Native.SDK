@@ -66,7 +66,7 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
     }
 
     if (!doc) {
-        doc = DID_Resolve(issuer, NULL, false);
+        doc = DID_Resolve(issuer, false);
         isresolved = true;
     }
 

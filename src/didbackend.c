@@ -278,7 +278,6 @@ static int resolve_from_backend(ResolveResult *result, DID *did, const char *txi
 
     if (ResolveResult_FromJson(result, item, all) == -1)
         goto errorExit;
-
     if (ResolveResult_GetStatus(result) != DIDStatus_NotFound && !all && ResolveCache_Store(result, did) == -1)
         goto errorExit;
 
@@ -312,7 +311,6 @@ DIDDocument *DIDBackend_Resolve(DID *did, const char *txid, bool force)
 {
     DIDDocument *doc = NULL;
     DIDDocument *docs[1] = {0};
-    ResolveResult result;
     size_t i;
 
     if (!did) {
@@ -332,7 +330,6 @@ DIDDocument *DIDBackend_Resolve(DID *did, const char *txid, bool force)
         return NULL;
     }
 
-    memset(&result, 0, sizeof(ResolveResult));
     if (DIDBackend_ResolvePayload(did, txid, docs, 1, force) < 0)
         return NULL;
 
@@ -393,19 +390,18 @@ ssize_t DIDBackend_ResolvePayload(DID *did, const char* txid, DIDDocument **docs
     if (size < 0)
         return -1;
 
-    for (i = 0; i < count; i++) {
+    for (i = 0; i < size; i++) {
         docs[i] = infos[i]->request->doc;
         DIDTransactionInfo_Free(infos[i]);
     }
 
-    return count;
+    return size;
 }
 
 ssize_t DIDBackend_ResolveDIDTransactions(DID *did, const char *txid, DIDTransactionInfo **infos, int count, bool force)
 {
-    DIDDocument *doc = NULL;
     ResolveResult result;
-    size_t i;
+    size_t size;
 
     assert(did);
     assert(infos);
@@ -423,7 +419,9 @@ ssize_t DIDBackend_ResolveDIDTransactions(DID *did, const char *txid, DIDTransac
         return -1;
     }
 
-    return ResolveResult_GetTransactions(&result, infos, count);
+    size = ResolveResult_GetTransactions(&result, infos, count);
+    ResolveResult_Free(&result);
+    return size;
 }
 
 void DIDBackend_SetTTL(long _ttl)

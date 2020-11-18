@@ -144,6 +144,8 @@ static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *p
     return true;
 
 errorExit:
+    if (info)
+        DIDTransactionInfo_Destroy(info);
     if (root)
         json_decref(root);
 
@@ -251,10 +253,9 @@ const char* DummyAdapter_Resolve(DIDResolver *resolver, const char *did, const c
 static void DummyAdapter_Reset(DummyAdapter *adapter)
 {
     int i;
-    for (i = 0; i < num; i++) {
+    for (i = 0; i < num; i++)
         DIDTransactionInfo_Destroy(infos[i]);
-        free(infos[i]);
-    }
+
     memset(infos, 0, sizeof(infos));
     num = 0;
 }
@@ -270,10 +271,8 @@ DummyAdapter *DummyAdapter_Create(void)
 void DummyAdapter_Destroy(void)
 {
     int i;
-    for (i = 0; i < num; i++) {
+    for (i = 0; i < num; i++)
         DIDTransactionInfo_Destroy(infos[i]);
-        free(infos[i]);
-    }
 
     memset(infos, 0, sizeof(infos));
     num = 0;

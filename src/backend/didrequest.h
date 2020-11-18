@@ -73,7 +73,7 @@ typedef enum DIDRequest_Type
 
 DIDRequest *DIDRequest_FromJson_Internal(json_t *json);
 
-void DIDRequest_Free(DIDRequest *request);
+void DIDRequest_Free(DIDRequest *request, bool all);
 
 ssize_t DIDRequest_GetDigest(DIDRequest *request, uint8_t *digest, size_t size);
 

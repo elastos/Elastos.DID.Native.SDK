@@ -114,7 +114,7 @@ DIDTransactionInfo *DIDTransactionInfo_FromJson(const char *json)
 
 void DIDTransactionInfo_Destroy(DIDTransactionInfo *txinfo)
 {
-    if (!txinfo) {
+    if (txinfo) {
         DIDRequest_Destroy(txinfo->request);
         free((void*)txinfo);
     }
@@ -123,7 +123,7 @@ void DIDTransactionInfo_Destroy(DIDTransactionInfo *txinfo)
 void DIDTransactionInfo_Free(DIDTransactionInfo *txinfo)
 {
     if (txinfo) {
-        DIDRequest_Free(txinfo->request);
+        DIDRequest_Free(txinfo->request, true);
         free((void*)txinfo);
     }
 }

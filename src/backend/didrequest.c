@@ -43,7 +43,7 @@ static const char* operation[] = {"create", "update", "deactivate"};
 
 static int header_toJson(JsonGenerator *gen, DIDRequest *req)
 {
-    char multisig[128] = {0};
+    char multisig[32] = {0};
 
     assert(gen);
     assert(req);
@@ -56,7 +56,7 @@ static int header_toJson(JsonGenerator *gen, DIDRequest *req)
 
     if (req->header.multisig_n > 1)
         CHECK(JsonGenerator_WriteStringField(gen, "multisig",
-                set_multisig(multisig, sizeof(multisig), req->header.multisig_m, req->header.multisig_n)));
+                format_multisig(multisig, sizeof(multisig), req->header.multisig_m, req->header.multisig_n)));
 
     CHECK(JsonGenerator_WriteEndObject(gen));
     return 0;
@@ -128,13 +128,13 @@ const char *DIDRequest_ToJson(DIDRequest *req)
 
 ssize_t DIDRequest_GetDigest(DIDRequest *request, uint8_t *digest, size_t size)
 {
-    char buffer[128] = {0}, *multisig;
+    char buffer[32] = {0}, *multisig;
 
     assert(request);
     assert(digest);
     assert(size >= SHA256_BYTES);
 
-    multisig = set_multisig(buffer, sizeof(buffer), request->header.multisig_m, request->header.multisig_n);
+    multisig = format_multisig(buffer, sizeof(buffer), request->header.multisig_m, request->header.multisig_n);
     return sha256_digest(digest,  5,
             (unsigned char*)request->header.spec, strlen(request->header.spec),
             (unsigned char*)request->header.op, strlen(request->header.op),
@@ -177,7 +177,7 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL 
     const char *payload, *op, *requestJson, *prevtxid, *data, *multisig;
     size_t len;
     int rc;
-    char signature[SIGNATURE_BYTES * 2 + 16], idstring[ELA_MAX_DID_LEN], buffer[128] = {0};
+    char signature[SIGNATURE_BYTES * 2 + 16], idstring[ELA_MAX_DID_LEN], buffer[32] = {0};
 
     assert(type >= RequestType_Create && type <= RequestType_Deactivate);
     assert(document);
@@ -222,7 +222,7 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL 
     if (!multisig)
         multisig = "";
 
-    get_multisig(multisig, &req.header.multisig_m, &req.header.multisig_n);
+    parse_multisig(multisig, &req.header.multisig_m, &req.header.multisig_n);
 
     if (!DIDDocument_GetPublicKey(document, signkey)) {
         doc = DIDStore_LoadDID(document->metadata.base.store, &signkey->did);
@@ -231,10 +231,11 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL 
     }
 
     requestJson = DIDRequest_SignRequest(&req, doc, signkey, storepass);
-    free((void*)payload);
+    if (doc != document)
+        DIDDocument_Destroy(doc);
+    DIDRequest_Free(&req, false);
     return requestJson;
 }
-
 
 bool DIDRequest_ExistSignKey(DIDRequest *request, DIDURL *signkey)
 {
@@ -248,8 +249,7 @@ bool DIDRequest_ExistSignKey(DIDRequest *request, DIDURL *signkey)
     size = request->proofs.size;
     rp = request->proofs.proofs;
     for (i = 0; i < size && rp; i++) {
-        RequestProof *p = &rp[i];
-        if (DIDURL_Equals(&p->verificationMethod, signkey))
+        if (DIDURL_Equals(&rp[i].verificationMethod, signkey))
             return true;
     }
 
@@ -416,7 +416,7 @@ static int Parser_Header(DIDRequest *request, json_t *json)
             return -1;
         }
 
-        get_multisig(json_string_value(item), &request->header.multisig_m, &request->header.multisig_n);
+        parse_multisig(json_string_value(item), &request->header.multisig_m, &request->header.multisig_n);
         if (request->header.multisig_m > request->header.multisig_n) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Wrong multisig.");
             return -1;
@@ -429,7 +429,7 @@ static int Parser_Header(DIDRequest *request, json_t *json)
 static int Parser_Payload(DIDRequest *request, json_t *json)
 {
     const char *payload;
-    char *docJson, buffer[128] = {0};
+    char *docJson, buffer[32] = {0};
     DID *subject;
     size_t len;
 
@@ -461,7 +461,6 @@ static int Parser_Payload(DIDRequest *request, json_t *json)
         docJson[len] = 0;
 
         request->doc = DIDDocument_FromJson(docJson);
-
         free(docJson);
         if (!request->doc) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Deserialize transaction payload from json failed.");
@@ -475,15 +474,10 @@ static int Parser_Payload(DIDRequest *request, json_t *json)
             }
         }
 
-        if (request->doc->controllers.size == 1) {
-            request->header.multisig_m = 1;
-            request->header.multisig_n = 1;
-        }
-
         strcpy(request->did.idstring, request->doc->did.idstring);
         DIDMetaData_SetTxid(&request->doc->metadata, request->header.prevtxid);
         DIDMetaData_SetMultisig(&request->doc->metadata,
-                set_multisig(buffer, sizeof(buffer), request->header.multisig_m, request->header.multisig_m));
+                format_multisig(buffer, sizeof(buffer), request->header.multisig_m, request->header.multisig_m));
     } else {
         subject = DID_FromString(request->payload);
         if (!subject)
@@ -677,7 +671,7 @@ DIDDocument *DIDRequest_GetDIDDocument(DIDRequest *request)
 
 static bool DIDRequest_CheckSignature(DIDRequest *request, DIDDocument *document)
 {
-    char buffer[128] = {0}, *multisig;
+    char buffer[32] = {0}, *multisig;
     int i;
 
     assert(request);
@@ -686,7 +680,7 @@ static bool DIDRequest_CheckSignature(DIDRequest *request, DIDDocument *document
     if (request->doc && !DIDDocument_IsValid(request->doc))
         return false;
 
-    multisig = set_multisig(buffer, sizeof(buffer), request->header.multisig_m, request->header.multisig_n);
+    multisig = format_multisig(buffer, sizeof(buffer), request->header.multisig_m, request->header.multisig_n);
 
     for (i = 0; i < request->proofs.size; i++) {
         DIDURL *keyid = &request->proofs.proofs[i].verificationMethod;
@@ -711,13 +705,24 @@ bool DIDRequest_IsValid(DIDRequest *request, bool isqualified)
     DIDDocument *resolve_doc = NULL, *doc;
     const char *multisig;
     int m, n;
+    bool bchecked = false;
 
     if (!request) {
         DIDError_Set(DIDERR_MALFORMED_REQUEST, "No idrequest.");
         return false;
     }
 
-    resolve_doc = DID_Resolve(&request->did, NULL, true);
+    if (!strcmp(request->header.op, "create") && *request->header.prevtxid) {
+        DIDError_Set(DIDERR_MALFORMED_REQUEST, "'create' request does not have previous transaction id.");
+        return false;
+    }
+
+    if (!strcmp(request->header.op, "update") && !*request->header.prevtxid) {
+        DIDError_Set(DIDERR_MALFORMED_REQUEST, "'update' request must have previous transaction id.");
+        return false;
+    }
+
+    resolve_doc = DID_Resolve(&request->did, true);
     if (!resolve_doc || !*request->header.prevtxid) {  //create transaction-----!*request->header.prevtxid
         doc = request->doc;
         if (isqualified && (request->header.multisig_m > request->proofs.size)) {
@@ -728,26 +733,24 @@ bool DIDRequest_IsValid(DIDRequest *request, bool isqualified)
         if (!strcmp(request->header.prevtxid, DIDMetaData_GetTxid(&request->doc->metadata))) {
             doc = resolve_doc;
         } else {
-            doc = DID_Resolve(&request->did, request->header.prevtxid, true);
-            if (!doc) {
-                DIDDocument_Destroy(resolve_doc);
-                return false;
-            }
+            doc = DID_ResolveByTransactionId(&request->did, request->header.prevtxid);
+            if (!doc)
+                goto errorExit;
         }
 
         multisig = DIDMetaData_GetMultisig(&resolve_doc->metadata);
-        get_multisig(multisig, &m, &n);
+        parse_multisig(multisig, &m, &n);
         if (isqualified && m > request->proofs.size) {
             DIDError_Set(DIDERR_MALFORMED_REQUEST, "The count of signer is less than mulitsig.");
             goto errorExit;
         }
     }
 
-    return DIDRequest_CheckSignature(request, doc);
+    bchecked = DIDRequest_CheckSignature(request, doc);
 
 errorExit:
     DIDDocument_Destroy(resolve_doc);
-    return false;
+    return bchecked;
 }
 
 bool DIDRequest_IsQualified(DIDRequest *request)
@@ -759,21 +762,22 @@ bool DIDRequest_IsQualified(DIDRequest *request)
     if (!request)
         return false;
 
-    resolve_doc = DID_Resolve(&request->did, NULL, true);
+    resolve_doc = DID_Resolve(&request->did, true);
     if (!resolve_doc || !*request->header.prevtxid) {  //create transaction-----!*request->header.prevtxid
         DIDDocument_Destroy(resolve_doc);
         return request->header.multisig_m == request->proofs.size ? true : false;
     }
 
     DIDDocument_Destroy(resolve_doc);
-    resolve_doc = DID_Resolve(&request->did, request->header.prevtxid, true);
+    resolve_doc = DID_ResolveByTransactionId(&request->did, request->header.prevtxid);
     if (!resolve_doc) {
         DIDError_Set(DIDERR_MALFORMED_REQUEST, "The DID Request does not match with the chain copy.");
         return false;
     }
 
     multisig = DIDMetaData_GetMultisig(&resolve_doc->metadata);
-    get_multisig(multisig, &m, &n);
+    parse_multisig(multisig, &m, &n);
+    DIDDocument_Destroy(resolve_doc);
     return request->proofs.size >= m ? true : false;
 }
 
@@ -800,7 +804,7 @@ void DIDRequest_Destroy(DIDRequest *request)
     free((void*)request);
 }
 
-void DIDRequest_Free(DIDRequest *request)
+void DIDRequest_Free(DIDRequest *request, bool all)
 {
     if (!request)
         return;
@@ -816,5 +820,6 @@ void DIDRequest_Free(DIDRequest *request)
         request->proofs.proofs = NULL;
     }
 
-    free(request);
+    if (all)
+       free(request);
 }

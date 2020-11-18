@@ -526,7 +526,22 @@ DID_API void DID_Destroy(DID *did);
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API DIDDocument *DID_Resolve(DID *did, const char *txid, bool force);
+DID_API DIDDocument *DID_Resolve(DID *did, bool force);
+
+/**
+ * \~English
+ * Get the DID Document from chain by specific transaction id.
+ *
+ * @param
+ *      did                      [in] The handle of DID.
+ * @param
+ *      txid                     [in] The specific transaction id about DID.
+ * @return
+ *      If no error occurs, return the handle to DID Document.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API DIDDocument *DID_ResolveByTransactionId(DID *did, const char *txid);
 
 /**
  * \~English
@@ -1027,8 +1042,8 @@ DID_API ssize_t DIDHistory_GetTransactions(DIDHistory *history, DIDTransactionIn
  * @param
  *      index                         [in] The index of transaction.
  * @return
- *      If no error occurs, return transaction.
- *      Otherwise, return NULL.
+ *      If no error occurs, return transaction. Otherwise, return NULL.
+ *      Don't free the returned value.
  */
 DID_API DIDTransactionInfo *DIDHistory_GetTransaction(DIDHistory *history, int index);
 

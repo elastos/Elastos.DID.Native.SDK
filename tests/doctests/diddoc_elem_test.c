@@ -1159,7 +1159,7 @@ static void test_diddoc_add_controller(void)
     builder = DIDDocument_Edit(doc);
     CU_ASSERT_PTR_NOT_NULL(builder);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, &controllerdoc->did));
-    CU_ASSERT_STRING_EQUAL("Only customized did supports adding controller.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("Unsupported add controller into normal DID.", DIDError_GetMessage());
 
     sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
