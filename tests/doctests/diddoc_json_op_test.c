@@ -45,21 +45,27 @@ static void test_diddoc_json_operateion(void)
     CU_ASSERT_TRUE(DIDDocument_IsValid(doc));
 
     data = DIDDocument_ToJson(compactdoc, true);
+    CU_ASSERT_PTR_NOT_NULL(data);
     CU_ASSERT_STRING_EQUAL(TestData_LoadDocNormJson(), data);
     free((void*)data);
     data = DIDDocument_ToJson(normalizedoc, true);
+    CU_ASSERT_PTR_NOT_NULL(data);
     CU_ASSERT_STRING_EQUAL(TestData_LoadDocNormJson(), data);
     free((void*)data);
     data = DIDDocument_ToJson(doc, true);
+    CU_ASSERT_PTR_NOT_NULL(data);
     CU_ASSERT_STRING_EQUAL(TestData_LoadDocNormJson(), data);
     free((void*)data);
     data = DIDDocument_ToJson(compactdoc, false);
+    CU_ASSERT_PTR_NOT_NULL(data);
     CU_ASSERT_STRING_EQUAL(TestData_LoadDocCompJson(), data);
     free((void*)data);
     data = DIDDocument_ToJson(normalizedoc, false);
+    CU_ASSERT_PTR_NOT_NULL(data);
     CU_ASSERT_STRING_EQUAL(TestData_LoadDocCompJson(), data);
     free((void*)data);
     data = DIDDocument_ToJson(doc, false);
+    CU_ASSERT_PTR_NOT_NULL(data);
     CU_ASSERT_STRING_EQUAL(TestData_LoadDocCompJson(), data);
     free((void*)data);
 

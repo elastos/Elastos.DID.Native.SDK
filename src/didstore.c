@@ -55,6 +55,7 @@
 #include "didmeta.h"
 #include "credmeta.h"
 #include "resolvercache.h"
+#include "didrequest.h"
 
 #define MAX_PUBKEY_BASE58            128
 
@@ -1158,7 +1159,7 @@ void DIDStore_Close(DIDStore *didstore)
 int DIDStore_ExportMnemonic(DIDStore *store, const char *storepass,
         char *mnemonic, size_t size)
 {
-    if (!store || !storepass || !*storepass || !mnemonic || size <= 0) {
+    if (!store || !storepass || !*storepass || !mnemonic || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -1755,7 +1756,7 @@ int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass, DID *did,
 {
     char base64[MAX_PRIVATEKEY_BASE64];
 
-    if (!store || !storepass || !*storepass || !did || !id || !privatekey || size <= 0) {
+    if (!store || !storepass || !*storepass || !did || !id || !privatekey || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -2210,7 +2211,7 @@ DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass, const char 
 }
 
 DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
-        const char *customizeddid, DID **controllers, size_t size, DID *controller)
+        const char *customizeddid, DID *controller, DID **controllers, size_t size)
 {
     DIDDocument *controller_doc;
     DIDDocument *doc;
@@ -2219,7 +2220,7 @@ DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
     bool iscontain;
 
     if (!store || !storepass || !*storepass || !customizeddid || !*customizeddid ||
-            !controllers|| size <= 0) {
+            !controllers|| size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
@@ -2229,12 +2230,13 @@ DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
         return NULL;
     }
 
-    if (!controller)
+    if (!controller) {
         controller = controllers[0];
-
-    if (!Contains_DID(controllers, size, controller)) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Controller must be in the controller array.");
-        return NULL;
+    } else {
+        if (!Contains_DID(controllers, size, controller)) {
+            DIDError_Set(DIDERR_INVALID_ARGS, "Controller must be in the controller array.");
+            return NULL;
+        }
     }
 
     controller_doc = DID_Resolve(controller, false);
@@ -2481,6 +2483,273 @@ int DIDStore_Sign(DIDStore *store, const char *storepass, DID *did,
     return 0;
 }
 
+//If DID is customized did, did store and first controller store must be in the same store.
+const char *DIDStore_SignDIDRequest(DIDStore *store, DID *did, int multisig,
+        DIDURL *signkey, const char *storepass, bool force)
+{
+    DIDDocument *doc, *resolve_doc = NULL, *_doc;
+    const char *reqstring = NULL;
+    ssize_t type = 0;
+
+    if (!store || !did || multisig < 0 || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    doc = DIDStore_LoadDID(store, did);
+    if (!doc)
+        return NULL;
+
+    if (!Is_Customized_DID(doc) && multisig != 0) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Normal DID does not support multisig.");
+        goto errorExit;
+    }
+
+    if (!DIDDocument_IsGenuine(doc)) {
+        DIDError_Set(DIDERR_NOT_GENUINE, "Did document is not genuine.");
+        goto errorExit;
+    }
+
+    if (DIDDocument_IsDeactivated(doc)) {
+        DIDError_Set(DIDERR_DID_DEACTIVATED, "Did is already deactivated.");
+        goto errorExit;
+    }
+
+    if (!force && DIDDocument_IsExpires(doc)) {
+        DIDError_Set(DIDERR_EXPIRED, "Did already expired, use force mode to publish anyway.");
+        goto errorExit;
+    }
+
+    if (!signkey) {
+        signkey = DIDDocument_GetDefaultPublicKey(doc);
+        if (!signkey)
+            goto errorExit;
+    }
+
+    resolve_doc = DID_Resolve(did, true);
+    if (DIDDocument_Set_Multisig(doc, resolve_doc, multisig) < 0)
+        goto errorExit;
+
+    if (!resolve_doc) {
+        _doc = doc;
+    } else {
+        type = 1;
+        if (DIDDocument_Updata_Metadata(doc, resolve_doc, force) < 0)
+            goto errorExit;
+
+        if (!Is_Customized_DID(doc))
+            _doc = doc;
+        else
+            _doc = resolve_doc;
+    }
+
+    if (!Is_DefaultKey(_doc, signkey))
+       goto errorExit;
+
+    reqstring = DIDRequest_Sign((int)type, doc, signkey, storepass);
+
+errorExit:
+    DIDDocument_Destroy(doc);
+    DIDDocument_Destroy(resolve_doc);
+    return reqstring;
+}
+
+static int get_type(const char *type)
+{
+    assert(type);
+    assert(*type);
+
+    if (!strcmp(type, "create"))
+        return 0;
+    if (!strcmp(type, "update"))
+        return 1;
+    else
+        return 2;
+}
+
+const char *DIDStore_CounterSignDIDRequest(DIDStore *store, const char *idrequest,
+       DIDURL *signkey, const char *storepass)
+{
+    DIDRequest *request = NULL;
+    DIDDocument *doc = NULL, *resolve_doc = NULL;
+    const char *data, *reqstring = NULL;
+
+    if (!store || !idrequest || !*idrequest || !signkey || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    request = DIDRequest_FromJson(idrequest);
+    if (!request) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Payload is not didrequest format.");
+        goto errorExit;
+    }
+
+    if (!DIDRequest_IsValid(request, false))
+        goto errorExit;
+
+    if (DIDRequest_IsQualified(request)){
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "The id request reach the count of proof, no need to more signature.");
+        goto errorExit;
+    }
+
+    if (DIDRequest_ExistSignKey(request, signkey)) {
+        DIDError_Set(DIDERR_INVALID_KEY, "Already signed by the controller.");
+        goto errorExit;
+    }
+
+    if (!strcmp(request->header.op, "create") || !Is_Customized_DID(request->doc)) {
+        doc = request->doc;
+    } else {
+        doc = DID_Resolve(&request->did, true);
+        if (!doc)
+            goto errorExit;
+    }
+
+    if (!Is_DefaultKey(doc, signkey)) {
+        DIDError_Set(DIDERR_INVALID_KEY, "The key is not valid key.");
+        goto errorExit;
+    }
+
+    DIDMetaData_SetStore(&doc->metadata, store);
+
+    reqstring = DIDRequest_SignRequest(request, doc, signkey, storepass);
+
+errorExit:
+    if (doc != request->doc)
+        DIDDocument_Destroy(doc);
+
+    DIDRequest_Destroy(request);
+    return reqstring;
+}
+
+static const char *merge_two_idrequest(const char *idrequest1, const char *idrequest2)
+{
+    DIDRequest *req1 = NULL, *req2 = NULL;
+    const char *idrequest = NULL;
+    uint8_t digest1[SHA256_BYTES], digest2[SHA256_BYTES];
+    DIDURL *verificationMethod1, *verificationMethod2;
+    bool same = false;
+    int i, j;
+
+    assert(idrequest1 && *idrequest1);
+    assert(idrequest2 && *idrequest2);
+
+    req1 = DIDRequest_FromJson(idrequest1);
+    if (!req1)
+        return NULL;
+
+    if (!DIDRequest_IsValid(req1, false))
+        goto errorExit;
+
+    if (DIDRequest_IsQualified(req1)) {
+       idrequest = strdup(idrequest1);
+       goto errorExit;
+    }
+
+    req2 = DIDRequest_FromJson(idrequest2);
+    if (!req2)
+        goto errorExit;
+
+    if (!DIDRequest_IsValid(req2, false))
+        goto errorExit;
+
+    if (DIDRequest_IsQualified(req2)) {
+       idrequest = strdup(idrequest2);
+       goto errorExit;
+    }
+
+    memset(digest1, 0, sizeof(digest1));
+    if (DIDRequest_GetDigest(req1, digest1, sizeof(digest1)) < 0) {
+        DIDError_Set(DIDERR_MALFORMED_REQUEST, "Get digest from didquest1 failed.");
+        goto errorExit;
+    }
+
+    memset(digest2, 0, sizeof(digest2));
+    if (DIDRequest_GetDigest(req2, digest2, sizeof(digest2)) < 0) {
+        DIDError_Set(DIDERR_MALFORMED_REQUEST, "Get digest from didquest2 failed.");
+        goto errorExit;
+    }
+
+    if (memcmp(digest1, digest2, sizeof(digest1))) {
+        DIDError_Set(DIDERR_MALFORMED_REQUEST, "Two idreqests have different context(digest) except proof.");
+        goto errorExit;
+    }
+
+    for (i = 0; i < req2->proofs.size && req1->proofs.size < req1->header.multisig_m; i++)
+        DIDRequest_AddProof(req1, req2->proofs.proofs[i].signature,
+                &req2->proofs.proofs[i].verificationMethod, req2->proofs.proofs[i].created);
+
+    idrequest = DIDRequest_ToJson(req1);
+
+errorExit:
+    DIDRequest_Destroy(req1);
+    DIDRequest_Destroy(req2);
+    return idrequest;
+}
+
+const char *DIDDtore_MergeMultisigDIDRequest(int count, ...)
+{
+    va_list list;
+    const char **idrequests, *merged_request, *idrequest = NULL, *request;
+    DIDDocument *doc;
+    int i;
+
+    if (count <= 0) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    idrequests = (const char **)calloc(count, sizeof(const char*));
+    if (!idrequests) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for string array failed.");
+        return NULL;
+    }
+
+    va_start(list, count);
+    for (i = 0; i < count; i++) {
+        request = va_arg(list, const char *);
+        if (!request)
+            return NULL;
+
+        idrequests[i] = strdup(request);
+    }
+    va_end(list);
+
+
+    idrequest = strdup(idrequests[0]);
+    for (i = 1; i < count; i++) {
+        merged_request = merge_two_idrequest(idrequest, idrequests[i]);
+        free((void*)idrequest);
+        if (!merged_request)
+            goto pointexit;
+
+        idrequest = merged_request;
+    }
+
+pointexit:
+    if (idrequest == idrequests[0])
+        idrequest = strdup(idrequests[0]);
+
+    for (i = 0; i < count; i++)
+        free((void*)idrequests[i]);
+
+    free((void*)idrequests);
+    return idrequest;
+}
+
+bool DIDStore_PublishIdRequest(DIDStore *store, const char *idrequest)
+{
+    bool bsuccessed;
+
+    if (!store || !idrequest || !*idrequest) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    return DIDBackend_PublishDID(&store->backend, idrequest);
+}
+
 bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
         DIDURL *signkey, bool force)
 {
@@ -2536,12 +2805,6 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
         last_txid = DIDMetaData_GetTxid(&resolve_doc->metadata);
 
         if (!force) {
-            resolve_signature = DIDDocument_GetProofSignature(resolve_doc);
-            if (!resolve_signature || !*resolve_signature) {
-                DIDError_Set(DIDERR_DIDSTORE_ERROR, "Missing document signature on chain.");
-                goto errorExit;
-            }
-
             local_signature = DIDMetaData_GetSignature(&doc->metadata);
             local_prevsignature = DIDMetaData_GetPrevSignature(&doc->metadata);
             if ((!local_signature || !*local_signature) && (!local_prevsignature || !*local_prevsignature)) {

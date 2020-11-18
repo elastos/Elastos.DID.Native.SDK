@@ -879,7 +879,7 @@ static void test_diddoc_add_selfclaimed_credential(void)
     props[1].value = "S653258Z07";
 
     rc = DIDDocumentBuilder_AddSelfClaimedCredential(builder, credid,
-            types, 2, props, 2, DIDDocument_GetExpires(doc), storepass);
+            types, 2, props, 2, DIDDocument_GetExpires(doc), NULL, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
@@ -1145,6 +1145,31 @@ static void test_diddoc_remove_service(void)
     DIDDocument_Destroy(sealeddoc);
 }
 
+static void test_diddoc_add_controller(void)
+{
+    DIDDocument *sealeddoc, *controllerdoc;
+    DIDDocumentBuilder *builder;
+    int rc;
+
+    controllerdoc = TestData_LoadControllerDoc();
+    CU_ASSERT_PTR_NOT_NULL(controllerdoc);
+
+    CU_ASSERT_EQUAL(0, DIDDocument_GetControllerCount(doc));
+
+    builder = DIDDocument_Edit(doc);
+    CU_ASSERT_PTR_NOT_NULL(builder);
+    CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, &controllerdoc->did));
+    CU_ASSERT_STRING_EQUAL("Unsupported add controller into normal DID.", DIDError_GetMessage());
+
+    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    CU_ASSERT_PTR_NOT_NULL(sealeddoc);
+    DIDDocumentBuilder_Destroy(builder);
+
+    CU_ASSERT_EQUAL(0, DIDDocument_GetControllerCount(sealeddoc));
+
+    DIDDocument_Destroy(sealeddoc);
+}
+
 static int diddoc_elem_test_suite_init(void)
 {
     int rc;
@@ -1197,6 +1222,7 @@ static CU_TestInfo cases[] = {
     { "test_diddoc_get_service",                   test_diddoc_get_service               },
     { "test_diddoc_add_service",                   test_diddoc_add_service               },
     { "test_diddoc_remove_service",                test_diddoc_remove_service            },
+    { "test_diddoc_add_controller",                test_diddoc_add_controller            },
     { NULL,                                        NULL                                  }
 };
 

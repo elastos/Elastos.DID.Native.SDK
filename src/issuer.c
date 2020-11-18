@@ -199,7 +199,7 @@ Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *credid,
     json_t *root;
     int i;
 
-    if (!issuer ||!owner || !credid || !types || typesize <= 0||
+    if (!issuer ||!owner || !credid || !types || typesize == 0||
             !subject || size <= 0 || expires <= 0 || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -231,7 +231,7 @@ Credential *Issuer_CreateCredentialByString(Issuer *issuer, DID *owner,
     json_t *root;
     json_error_t error;
 
-    if (!issuer ||!owner || !credid || !types || typesize <= 0||
+    if (!issuer ||!owner || !credid || !types || typesize == 0||
             !subject || !*subject || expires <= 0 || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;

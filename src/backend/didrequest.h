@@ -36,12 +36,22 @@ extern "C" {
 #define  MAX_SPEC_LEN             32
 #define  MAX_OP_LEN               32
 #define  MAX_REQ_SIG_LEN          128
+#define  MAX_DOC_TYPE             64
 
-typedef struct DIDRequest {
+typedef struct RequestProof {
+    char type[MAX_DOC_TYPE];
+    time_t created;
+    DIDURL verificationMethod;
+    char signature[MAX_REQ_SIG_LEN];
+} RequestProof;
+
+struct DIDRequest {
     struct {
         char spec[MAX_SPEC_LEN];
         char op[MAX_OP_LEN];
         char prevtxid[ELA_MAX_TXID_LEN];
+        int multisig_m;
+        int multisig_n;
     } header;
 
     const char *payload;
@@ -49,10 +59,10 @@ typedef struct DIDRequest {
     DID did;
 
     struct {
-        DIDURL verificationMethod;
-        char signature[MAX_REQ_SIG_LEN];
-    } proof;
-} DIDRequest;
+        size_t size;
+        RequestProof *proofs;
+    } proofs;
+};
 
 typedef enum DIDRequest_Type
 {
@@ -61,20 +71,23 @@ typedef enum DIDRequest_Type
    RequestType_Deactivate
 } DIDRequest_Type;
 
-DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json);
+DIDRequest *DIDRequest_FromJson_Internal(json_t *json);
 
-void DIDRequest_Destroy(DIDRequest *request);
+void DIDRequest_Free(DIDRequest *request, bool all);
 
-void DIDRequest_Free(DIDRequest *request);
+ssize_t DIDRequest_GetDigest(DIDRequest *request, uint8_t *digest, size_t size);
+
+const char *DIDRequest_SignRequest(DIDRequest *request, DIDDocument *document,
+        DIDURL *signkey, const char *storepass);
 
 const char* DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
         DIDURL *signkey, const char *storepass);
 
-int DIDRequest_Verify(DIDRequest *request);
-
-DIDDocument *DIDRequest_GetDocument(DIDRequest *request);
+int DIDRequest_AddProof(DIDRequest *request, char *signature, DIDURL *signkey, time_t created);
 
 int DIDRequest_ToJson_Internal(JsonGenerator *gen, DIDRequest *req);
+
+bool DIDRequest_ExistSignKey(DIDRequest *request, DIDURL *signkey);
 
 #ifdef __cplusplus
 }

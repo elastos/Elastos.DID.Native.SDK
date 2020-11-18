@@ -56,7 +56,7 @@ static void test_new_customizedid_with_onecontroller(void)
     DID *controllers[1] = {0};
     controllers[0] = controller;
 
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, controllers, 1, NULL);
+    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, NULL, controllers, 1);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     DIDDocument_Destroy(customized_doc);
 
@@ -92,8 +92,6 @@ static void test_new_customizedid_with_onecontroller(void)
     bEquals = DIDURL_Equals(creater, DIDDocument_GetDefaultPublicKey(controller_doc));
     CU_ASSERT_TRUE(bEquals);
 
-    CU_ASSERT_EQUAL(DIDDocument_GetExpires(customized_doc), DIDDocument_GetExpires(controller_doc));
-
     //update
     rc = DIDStore_PublishDID(store, storepass, subject, NULL, false);
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
@@ -119,7 +117,7 @@ static void test_new_customizedid_with_multicontrollers(void)
 {
     DIDDocument *controller1_doc, *controller2_doc, *customized_doc, *resolve_doc;
     DID *controller1, *controller2, *_controller, *subject;
-    bool bEquals;
+    bool bEquals, bsuccessed;
     int rc;
 
     DIDStore *store = TestData_SetupStore(true);
@@ -146,22 +144,41 @@ static void test_new_customizedid_with_multicontrollers(void)
     controllers[0] = controller1;
     controllers[1] = controller2;
 
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, controllers, 2, NULL);
+    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, NULL, controllers, 2);
     CU_ASSERT_PTR_NULL(customized_doc);
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, controllers, 2, controller1);
+    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, controller1, controllers, 2);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     DIDDocument_Destroy(customized_doc);
 
     subject = DID_New(customizedid);
     CU_ASSERT_PTR_NOT_NULL_FATAL(subject);
-    //CU_ASSERT_TRUE_FATAL(DIDStore_PublishDID(store, storepass, subject, NULL, true));
 
-    //customized_doc = DID_Resolve(subject, true);
-    //CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
+    DIDURL *signkey1 = DIDDocument_GetDefaultPublicKey(controller1_doc);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(signkey1);
 
-    //rc = DIDStore_StoreDID(store, customized_doc);
-    //CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
-    //DIDDocument_Destroy(customized_doc);
+    const char *idrequest1 = DIDStore_SignDIDRequest(store, subject, 2, signkey1, storepass, false);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(idrequest1);
+
+    DIDURL *signkey2 = DIDDocument_GetDefaultPublicKey(controller2_doc);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(signkey2);
+
+    const char *idrequest2 = DIDStore_CounterSignDIDRequest(store, idrequest1, signkey2, storepass);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(idrequest2);
+
+    bsuccessed = DIDStore_PublishIdRequest(store, idrequest2);
+    free((void*)idrequest1);
+    free((void*)idrequest2);
+    CU_ASSERT_TRUE_FATAL(bsuccessed);
+
+    customized_doc = DID_Resolve(subject, true);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
+
+    bsuccessed = DIDDocument_IsValid(customized_doc);
+    CU_ASSERT_TRUE_FATAL(bsuccessed);
+
+    rc = DIDStore_StoreDID(store, customized_doc);
+    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    DIDDocument_Destroy(customized_doc);
 
     customized_doc = DIDStore_LoadDID(store, subject);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
@@ -186,11 +203,22 @@ static void test_new_customizedid_with_multicontrollers(void)
     CU_ASSERT_TRUE(DIDURL_Equals(creater, DIDDocument_GetDefaultPublicKey(controller1_doc)));
 
     //update
-    /*rc = DIDStore_PublishDID(store, storepass, subject, NULL, false);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    idrequest1 = DIDStore_SignDIDRequest(store, subject, 2, signkey1, storepass, false);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(idrequest1);
+
+    idrequest2 = DIDStore_CounterSignDIDRequest(store, idrequest1, signkey2, storepass);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(idrequest2);
+
+    bsuccessed = DIDStore_PublishIdRequest(store, idrequest2);
+    free((void*)idrequest1);
+    free((void*)idrequest2);
+    CU_ASSERT_TRUE_FATAL(bsuccessed);
 
     resolve_doc = DID_Resolve(subject, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
+
+    bsuccessed = DIDDocument_IsValid(resolve_doc);
+    CU_ASSERT_TRUE_FATAL(bsuccessed);
 
     const char *data1 = DIDDocument_ToJson(customized_doc, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(data1);
@@ -200,7 +228,8 @@ static void test_new_customizedid_with_multicontrollers(void)
 
     free((void*)data1);
     free((void*)data2);
-    DIDDocument_Destroy(resolve_doc);*/
+    DIDDocument_Destroy(resolve_doc);
+
     DIDDocument_Destroy(customized_doc);
     DIDDocument_Destroy(controller1_doc);
     DIDDocument_Destroy(controller2_doc);
@@ -211,7 +240,7 @@ static void test_new_customizedid_with_multicontrollers2(void)
 {
     DIDDocument *controller1_doc, *controller2_doc, *customized_doc, *resolve_doc;
     DID *controller1, *controller2, *_controller, *subject;
-    bool bEquals;
+    bool bEquals, bsuccessed;
     int rc;
 
     DIDStore *store = TestData_SetupStore(true);
@@ -238,22 +267,41 @@ static void test_new_customizedid_with_multicontrollers2(void)
     controllers[0] = controller1;
     controllers[1] = controller2;
 
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, controllers, 2, NULL);
+    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, NULL, controllers, 2);
     CU_ASSERT_PTR_NULL(customized_doc);
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, controllers, 2, controller1);
+    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, controller1, controllers, 2);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     DIDDocument_Destroy(customized_doc);
 
     subject = DID_New(customizedid);
     CU_ASSERT_PTR_NOT_NULL_FATAL(subject);
-    //CU_ASSERT_TRUE_FATAL(DIDStore_PublishDID(store, storepass, subject, NULL, true));
 
-    //customized_doc = DID_Resolve(subject, true);
-    //CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
+    DIDURL *signkey1 = DIDDocument_GetDefaultPublicKey(controller1_doc);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(signkey1);
 
-    //rc = DIDStore_StoreDID(store, customized_doc);
-    //CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
-    //DIDDocument_Destroy(customized_doc);
+    const char *idrequest1 = DIDStore_SignDIDRequest(store, subject, 2, signkey1, storepass, false);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(idrequest1);
+
+    DIDURL *signkey2 = DIDDocument_GetDefaultPublicKey(controller2_doc);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(signkey2);
+
+    const char *idrequest2 = DIDStore_CounterSignDIDRequest(store, idrequest1, signkey2, storepass);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(idrequest2);
+
+    bsuccessed = DIDStore_PublishIdRequest(store, idrequest2);
+    free((void*)idrequest1);
+    free((void*)idrequest2);
+    CU_ASSERT_TRUE_FATAL(bsuccessed);
+
+    customized_doc = DID_Resolve(subject, true);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
+
+    bsuccessed = DIDDocument_IsValid(customized_doc);
+    CU_ASSERT_TRUE_FATAL(bsuccessed);
+
+    rc = DIDStore_StoreDID(store, customized_doc);
+    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    DIDDocument_Destroy(customized_doc);
 
     customized_doc = DIDStore_LoadDID(store, subject);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
@@ -278,11 +326,22 @@ static void test_new_customizedid_with_multicontrollers2(void)
     CU_ASSERT_TRUE(DIDURL_Equals(creater, DIDDocument_GetDefaultPublicKey(controller1_doc)));
 
     //update
-    /*rc = DIDStore_PublishDID(store, storepass, subject, NULL, false);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    idrequest1 = DIDStore_SignDIDRequest(store, subject, 2, signkey1, storepass, false);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(idrequest1);
+
+    idrequest2 = DIDStore_CounterSignDIDRequest(store, idrequest1, signkey2, storepass);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(idrequest2);
+
+    bsuccessed = DIDStore_PublishIdRequest(store, idrequest2);
+    free((void*)idrequest1);
+    free((void*)idrequest2);
+    CU_ASSERT_TRUE_FATAL(bsuccessed);
 
     resolve_doc = DID_Resolve(subject, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
+
+    bsuccessed = DIDDocument_IsValid(resolve_doc);
+    CU_ASSERT_TRUE_FATAL(bsuccessed);
 
     const char *data1 = DIDDocument_ToJson(customized_doc, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(data1);
@@ -292,7 +351,8 @@ static void test_new_customizedid_with_multicontrollers2(void)
 
     free((void*)data1);
     free((void*)data2);
-    DIDDocument_Destroy(resolve_doc);*/
+    DIDDocument_Destroy(resolve_doc);
+
     DIDDocument_Destroy(customized_doc);
     DIDDocument_Destroy(controller1_doc);
     DIDDocument_Destroy(controller2_doc);
@@ -326,9 +386,9 @@ static void test_new_customizedid_with_existcontrollers(void)
     dids[0] = controller1;
     dids[1] = controller2;
 
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, dids, 2, NULL);
+    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, NULL, dids, 2);
     CU_ASSERT_PTR_NULL(customized_doc);
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, dids, 2, controller1);
+    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, controller1, dids, 2);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
 
@@ -347,6 +407,7 @@ static void test_new_customizedid_with_existcontrollers(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(creater);
     CU_ASSERT_TRUE(DIDURL_Equals(creater, DIDDocument_GetDefaultPublicKey(controller1_doc)));
 
+    DIDDocument_Destroy(customized_doc);
     TestData_Free();
 }
 
@@ -379,9 +440,9 @@ static void test_new_customizedid_with_existcontrollers2(void)
     dids[0] = controller1;
     dids[1] = controller2;
 
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, dids, 2, NULL);
+    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, NULL, dids, 2);
     CU_ASSERT_PTR_NULL(customized_doc);
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, dids, 2, controller1);
+    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, controller1, dids, 2);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
 
@@ -430,6 +491,11 @@ static void test_new_customizedid_with_existcontrollers2(void)
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
     DIDDocumentBuilder_Destroy(builder);
 
+    CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customized_doc, id1));
+    CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customized_doc, id2));
+    DIDURL_Destroy(id1);
+    DIDURL_Destroy(id2);
+
     creater = DIDDocument_GetProofCreater(customized_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(creater);
     CU_ASSERT_TRUE(DIDURL_Equals(creater, DIDDocument_GetDefaultPublicKey(controller2_doc)));
@@ -437,6 +503,7 @@ static void test_new_customizedid_with_existcontrollers2(void)
     //Don't remove
     //printf("customized_doc:\n%s\n", DIDDocument_ToString(customized_doc, false));
 
+    DIDDocument_Destroy(customized_doc);
     TestData_Free();
 }
 

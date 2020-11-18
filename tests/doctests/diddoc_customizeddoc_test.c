@@ -2109,6 +2109,116 @@ static void test_remove_authorization_key_with_multicid(void)
     TestData_Free();
 }
 
+static void test_add_controller_with_multicid(void)
+{
+    DIDDocument *sealeddoc, *controllerdoc, *controllerdoc1;
+    DIDDocumentBuilder *builder;
+    DID customized_did, controller, controller1;
+    ssize_t size;
+    int rc;
+
+    DIDStore *store = TestData_SetupStore(true);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(store);
+
+    DIDDocument *customized_doc = TestData_LoadMultiCustomizedDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
+    CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
+
+    DID_Copy(&customized_did, &customized_doc->did);
+
+    controllerdoc = TestData_LoadIssuerDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc);
+    DID_Copy(&controller, &controllerdoc->did);
+
+    controllerdoc1 = TestData_LoadDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc1);
+    DID_Copy(&controller1, &controllerdoc1->did);
+
+    DID *controllers[3] = {0};
+    size = DIDDocument_GetControllers(customized_doc, controllers, 3);
+    CU_ASSERT_EQUAL(2, size);
+    CU_ASSERT_PTR_NULL_FATAL(contains_DID(controllers, 2, &controller));
+    CU_ASSERT_PTR_NOT_NULL_FATAL(contains_DID(controllers, 2, &controller1));
+
+    builder = DIDDocument_Edit(customized_doc);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
+
+    CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, &controller1));
+    CU_ASSERT_STRING_EQUAL("The controller already exists in the document.", DIDError_GetMessage());
+
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, &controller));
+
+    sealeddoc = DIDDocumentBuilder_Seal(builder, &controller1, storepass);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(sealeddoc);
+    DIDDocumentBuilder_Destroy(builder);
+
+    CU_ASSERT_EQUAL_FATAL(3, DIDDocument_GetControllerCount(sealeddoc));
+
+    memset(controllers, 0, sizeof(controllers));
+    size = DIDDocument_GetControllers(sealeddoc, controllers, 3);
+    CU_ASSERT_EQUAL(3, size);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(contains_DID(controllers, 3, &controller));
+
+    DIDDocument_Destroy(sealeddoc);
+
+    TestData_Free();
+}
+
+static void test_remove_controller_with_multicid(void)
+{
+    DIDDocument *sealeddoc, *controllerdoc1, *controllerdoc2;
+    DIDDocumentBuilder *builder;
+    DID customized_did, controller2, controller1;
+    ssize_t size;
+    int rc;
+
+    DIDStore *store = TestData_SetupStore(true);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(store);
+
+    DIDDocument *customized_doc = TestData_LoadMultiCustomizedDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
+    CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
+
+    DID_Copy(&customized_did, &customized_doc->did);
+
+    controllerdoc1 = TestData_LoadDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc1);
+    DID_Copy(&controller1, &controllerdoc1->did);
+
+    controllerdoc2 = TestData_LoadControllerDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc1);
+    DID_Copy(&controller2, &controllerdoc2->did);
+
+    DID *controllers[2] = {0};
+    size = DIDDocument_GetControllers(customized_doc, controllers, 2);
+    CU_ASSERT_EQUAL(2, size);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(contains_DID(controllers, 2, &controller1));
+    CU_ASSERT_PTR_NOT_NULL_FATAL(contains_DID(controllers, 2, &controller2));
+
+    builder = DIDDocument_Edit(customized_doc);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
+
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, &controller1));
+
+    sealeddoc = DIDDocumentBuilder_Seal(builder, &controller1, storepass);
+    CU_ASSERT_PTR_NULL_FATAL(sealeddoc);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, &controller2, storepass);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(sealeddoc);
+    DIDDocumentBuilder_Destroy(builder);
+
+    CU_ASSERT_EQUAL_FATAL(1, DIDDocument_GetControllerCount(sealeddoc));
+
+    memset(controllers, 0, sizeof(controllers));
+    size = DIDDocument_GetControllers(sealeddoc, controllers, 2);
+    CU_ASSERT_EQUAL(1, size);
+    CU_ASSERT_PTR_NULL_FATAL(contains_DID(controllers, 1, &controller1));
+    CU_ASSERT_PTR_NOT_NULL_FATAL(contains_DID(controllers, 1, &controller2));
+
+    DIDDocument_Destroy(sealeddoc);
+
+    TestData_Free();
+}
+
 static int diddoc_customizeddoc_test_suite_init(void)
 {
     return  0;
@@ -2141,7 +2251,9 @@ static CU_TestInfo cases[] = {
     { "test_get_authorization_key_with_multicid",    test_get_authorization_key_with_multicid },
     { "test_add_authorization_key_with_multicid",    test_add_authorization_key_with_multicid },
     { "test_remove_authorization_key_with_multicid", test_remove_authorization_key_with_multicid},
-    { NULL,                                          NULL                                    }
+    { "test_add_controller_with_multicid",           test_add_controller_with_multicid        },
+    { "test_remove_controller_with_multicid",        test_remove_controller_with_multicid     },
+    { NULL,                                          NULL                                     }
 };
 
 static CU_SuiteInfo suite[] = {

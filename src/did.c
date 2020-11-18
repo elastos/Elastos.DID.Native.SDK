@@ -264,7 +264,17 @@ DIDDocument *DID_Resolve(DID *did, bool force)
         return NULL;
     }
 
-    return DIDBackend_Resolve(did, force);
+    return DIDBackend_Resolve(did, NULL, force);
+}
+
+DIDDocument *DID_ResolveByTransactionId(DID *did, const char *txid)
+{
+    if (!did || !txid || !*txid) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    return DIDBackend_Resolve(did, txid, true);
 }
 
 DIDMetaData *DID_GetMetaData(DID *did)

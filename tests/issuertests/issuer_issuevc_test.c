@@ -338,7 +338,9 @@ static void test_issuer_issuerbystring_with_ctrl_chars(void)
     provalue = Credential_GetProperties(vc);
     CU_ASSERT_PTR_NOT_NULL(provalue);
     CU_ASSERT_EQUAL(strlen(propdata), strlen(provalue));
+    free((void*)provalue);
     Credential_Destroy(vc);
+    Issuer_Destroy(issuer);
 }
 
 static void test_cidissuer_issue_kycvc(void)
@@ -854,6 +856,7 @@ static void test_multicidissuer_issue_selfvc(void)
 
     issuer = Issuer_Create(subject, signkey, store);
     CU_ASSERT_PTR_NOT_NULL(issuer);
+    DIDURL_Destroy(signkey);
 
     credid = DIDURL_NewByDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
@@ -928,6 +931,7 @@ static void test_multicidissuer_issue_selfvc2(void)
 
     issuer = Issuer_Create(subject, signkey, store);
     CU_ASSERT_PTR_NOT_NULL(issuer);
+    DIDURL_Destroy(signkey);
 
     credid = DIDURL_NewByDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);

@@ -24,6 +24,7 @@
 #define __DIDBACKEND_H__
 
 #include "ela_did.h"
+#include "backend/didrequest.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,18 +34,24 @@ typedef struct DIDBackend {
     DIDAdapter *adapter;
 } DIDBackend;
 
+bool DIDBackend_PublishDID(DIDBackend *backend, const char *payload);
+
+DIDDocument *DIDBackend_Resolve(DID *did, const char *txid, bool force);
+
+DIDHistory *DIDBackend_ResolveHistory(DID *did);
+
+ssize_t DIDBackend_ResolvePayload(DID *did, const char *txid, DIDDocument **docs, int count, bool force);
+
+ssize_t DIDBackend_ResolveDIDTransactions(DID *did, const char *txid, DIDTransactionInfo **infos, int count, bool force);
+
 bool DIDBackend_Create(DIDBackend *backend, DIDDocument *document,
         DIDURL *signkey, const char *storepass);
 
-bool DIDBackend_Update(DIDBackend *backend, DIDDocument *document,
-        DIDURL *signkey, const char *storepass);
+bool DIDBackend_Update(DIDBackend *backend, DIDDocument *document, DIDURL *signkey,
+        const char *storepass);
 
-bool DIDBackend_Deactivate(DIDBackend *backend, DID *did,
-        DIDURL *signkey, const char *storepass);
-
-DIDDocument *DIDBackend_Resolve(DID *did, bool force);
-
-DIDHistory *DIDBackend_ResolveHistory(DID *did);
+bool DIDBackend_Deactivate(DIDBackend *backend, DID *did, DIDURL *signkey,
+        const char *storepass);
 
 #ifdef __cplusplus
 }

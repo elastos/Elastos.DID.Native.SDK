@@ -32,11 +32,15 @@
 #include "JsonGenerator.h"
 #include "resolveresult.h"
 #include "didhistory.h"
+#include "didrequest.h"
+#include "didtransactioninfo.h"
 
 int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
 {
+    DIDTransactionInfo *txinfo = NULL;
     json_t *item, *field;
     int i, size = 0;
+    char buffer[32];
 
     assert(result);
     assert(json);
@@ -89,7 +93,7 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
             }
         }
 
-        result->txinfos.infos = (DIDTransactionInfo *)calloc(size, sizeof(DIDTransactionInfo));
+        result->txinfos.infos = (DIDTransactionInfo **)calloc(size, sizeof(DIDTransactionInfo*));
         if (!result->txinfos.infos) {
             DIDError_Set(DIDERR_OUT_OF_MEMORY, "Create transaction info failed.");
             return -1;
@@ -106,18 +110,20 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
                 return -1;
             }
 
-            DIDTransactionInfo *txinfo = &result->txinfos.infos[i];
-            if (DIDTransactionInfo_FromJson(txinfo, field) == -1) {
+            result->txinfos.infos[i] = DIDTransactionInfo_FromJson_Internal(field);
+            if (!result->txinfos.infos[i])
                 return -1;
-            }
 
-            DIDDocument *doc = txinfo->request.doc;
+            txinfo = result->txinfos.infos[i];
+            DIDDocument *doc = txinfo->request->doc;
             if (doc) {
                 DIDMetaData_SetPublished(&doc->metadata, txinfo->timestamp);
                 DIDMetaData_SetLastModified(&doc->metadata, txinfo->timestamp);
                 DIDMetaData_SetTxid(&doc->metadata, txinfo->txid);
                 DIDMetaData_SetSignature(&doc->metadata, doc->proof.signatureValue);
                 DIDMetaData_SetDeactivated(&doc->metadata, result->status);
+                DIDMetaData_SetMultisig(&doc->metadata,
+                       format_multisig(buffer, sizeof(buffer), txinfo->request->header.multisig_m, txinfo->request->header.multisig_n));
                 memcpy(&doc->did.metadata, &doc->metadata, sizeof(DIDMetaData));
             }
             result->txinfos.size++;
@@ -134,7 +140,7 @@ void ResolveResult_Destroy(ResolveResult *result)
         return;
 
     for (i = 0; i < result->txinfos.size; i++)
-        DIDTransactionInfo_Destroy(&result->txinfos.infos[i]);
+        DIDTransactionInfo_Destroy(result->txinfos.infos[i]);
 
     free(result->txinfos.infos);
     memset(result, 0, sizeof(ResolveResult));
@@ -142,15 +148,11 @@ void ResolveResult_Destroy(ResolveResult *result)
 
 void ResolveResult_Free(ResolveResult *result)
 {
-    size_t i;
-
     if (!result || !result->txinfos.infos)
         return;
 
-    for (i = 0; i < result->txinfos.size; i++)
-        DIDTransactionInfo_Free(&result->txinfos.infos[i]);
-
-    free(result->txinfos.infos);
+    free((void*)result->txinfos.infos);
+    memset(result, 0, sizeof(ResolveResult));
 }
 
 static int resolveresult_tojson_internal(JsonGenerator *gen, ResolveResult *result)
@@ -171,7 +173,7 @@ static int resolveresult_tojson_internal(JsonGenerator *gen, ResolveResult *resu
         CHECK(JsonGenerator_WriteStartArray(gen));
         for (i = 0; i < result->txinfos.size; i++)
             //todo: check
-            CHECK(DIDTransactionInfo_ToJson_Internal(gen, &result->txinfos.infos[i]));
+            CHECK(DIDTransactionInfo_ToJson_Internal(gen, result->txinfos.infos[i]));
         CHECK(JsonGenerator_WriteEndArray(gen));
     }
     CHECK(JsonGenerator_WriteEndObject(gen));
@@ -217,12 +219,12 @@ ssize_t ResolveResult_GetTransactionCount(ResolveResult *result)
     return result->txinfos.size;
 }
 
-DIDTransactionInfo *ResolveResult_GetTransactionInfo(ResolveResult *result, int index)
+DIDTransactionInfo *ResolveResult_GetTransaction(ResolveResult *result, int index)
 {
     assert(result);
     assert(index >= 0);
 
-    return &result->txinfos.infos[index];
+    return result->txinfos.infos[index];
 }
 
 DIDHistory *ResolveResult_ToDIDHistory(ResolveResult *result)
@@ -244,6 +246,37 @@ DIDHistory *ResolveResult_ToDIDHistory(ResolveResult *result)
         return NULL;
     }
 
-    memcpy(history, result, sizeof(DIDHistory));
+    DID_Copy(&history->did, &result->did);
+    history->status = result->status;
+    history->txinfos.size = result->txinfos.size;
+    history->txinfos.infos = result->txinfos.infos;
     return history;
 }
+
+size_t ResolveResult_GetTransactions(ResolveResult *result, DIDTransactionInfo **infos, size_t size)
+{
+    int i;
+
+    assert(result);
+    assert(infos);
+    assert(size > 0);
+
+    memset(infos, 0, size * sizeof(DIDTransactionInfo*));
+    if (result->txinfos.infos && result->txinfos.size > 0) {
+        if (size < result->txinfos.size) {
+            memcpy(infos, result->txinfos.infos, size * sizeof(DIDTransactionInfo*));
+            for (i = size; i < result->txinfos.size; i++)
+                DIDTransactionInfo_Destroy(result->txinfos.infos[i]);
+            result->txinfos.size = size;
+            return size;
+        }
+
+        memcpy(infos, result->txinfos.infos, result->txinfos.size * sizeof(DIDTransactionInfo*));
+        return result->txinfos.size;
+    }
+
+    return 0;
+}
+
+
+

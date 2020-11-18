@@ -830,8 +830,8 @@ DIDDocument *TestData_LoadIssuerDoc(void)
     doc = DID_Resolve(subject, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
-
     DIDDocument_Destroy(doc);
+
     return testdata.issuerdoc;
 }
 
@@ -900,6 +900,8 @@ DIDDocument *TestData_LoadEmptyMultiCustomizedDoc(void)
     DIDDocument *doc, *controller_doc;
     DID *subject;
     DIDURL *signkey;
+    int rc;
+    bool bsuccessed;
 
     TestData_LoadIssuerDoc();
     TestData_LoadControllerDoc();
@@ -919,8 +921,18 @@ DIDDocument *TestData_LoadEmptyMultiCustomizedDoc(void)
         return NULL;
 
     doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
-        return NULL;
+    //if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+    if (!doc) {
+        const char *idrequest = DIDStore_SignDIDRequest(testdata.store, subject, 1,
+                signkey, storepass, false);
+        if (!idrequest)
+            return NULL;
+
+        bsuccessed = DIDStore_PublishIdRequest(testdata.store, idrequest);
+        free((void*)idrequest);
+        if (!bsuccessed)
+            return NULL;
+    }
     DIDDocument_Destroy(doc);
 
     return testdata.emptyMultiCustomizedDoc;
@@ -932,6 +944,7 @@ DIDDocument *TestData_LoadMultiCustomizedDoc(void)
     DID *subject;
     DIDURL *signkey, *id;
     int rc;
+    bool bsuccessed;
 
     TestData_LoadIssuerDoc();
     TestData_LoadControllerDoc();
@@ -963,8 +976,17 @@ DIDDocument *TestData_LoadMultiCustomizedDoc(void)
         return NULL;
 
     doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
-        return NULL;
+    if (!doc) {
+        const char *idrequest = DIDStore_SignDIDRequest(testdata.store, subject, 1,
+                signkey, storepass, false);
+        if (!idrequest)
+            return NULL;
+
+        bsuccessed = DIDStore_PublishIdRequest(testdata.store, idrequest);
+        free((void*)idrequest);
+        if (!bsuccessed)
+            return NULL;
+    }
     DIDDocument_Destroy(doc);
 
     return testdata.multiCustomizedDoc;

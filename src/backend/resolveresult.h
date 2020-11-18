@@ -49,7 +49,9 @@ DIDStatus ResolveResult_GetStatus(ResolveResult *result);
 
 ssize_t ResolveResult_GetTransactionCount(ResolveResult *result);
 
-DIDTransactionInfo *ResolveResult_GetTransactionInfo(ResolveResult *result, int index);
+size_t ResolveResult_GetTransactions(ResolveResult *result, DIDTransactionInfo **infos, size_t size);
+
+DIDTransactionInfo *ResolveResult_GetTransaction(ResolveResult *result, int index);
 
 DIDHistory *ResolveResult_ToDIDHistory(ResolveResult *result);
 

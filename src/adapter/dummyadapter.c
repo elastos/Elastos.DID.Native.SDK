@@ -38,7 +38,7 @@ static int get_txid(char *txid)
     return 0;
 }
 
-static DIDTransactionInfo *get_lasttransaction(DID *did)
+static DIDTransactionInfo *get_lasttransaction(DID *did, const char *txid)
 {
     DIDTransactionInfo *info;
     int i;
@@ -47,8 +47,11 @@ static DIDTransactionInfo *get_lasttransaction(DID *did)
 
     for (i = num - 1; i >= 0; i--) {
         info = infos[i];
-        if (DID_Equals(did, DIDTransactionInfo_GetOwner(info)))
+        if (DID_Equals(did, DIDTransactionInfo_GetOwner(info)) &&
+                (!txid || (txid && !strcmp(txid, info->txid)))) {
             return info;
+        }
+
     }
     return NULL;
 }
@@ -91,37 +94,37 @@ static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *p
         return false;
     }
 
-    doc = DIDRequest_FromJson(&info->request, root);
-    if (strcmp(info->request.header.op, "deactivate")) {
-        if (!doc || !DIDDocument_IsValid(doc))
-        goto errorExit;
+    info->request = DIDRequest_FromJson_Internal(root);
+    if (strcmp(info->request->header.op, "deactivate")) {
+        if (!info->request || !DIDRequest_IsValid(info->request, true))
+           goto errorExit;
     }
 
-    lastinfo = get_lasttransaction(&info->request.did);
-    if (!strcmp(info->request.header.op, "create")) {
+    lastinfo = get_lasttransaction(&info->request->did, NULL);
+    if (!strcmp(info->request->header.op, "create")) {
         if (lastinfo) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID already exist.");
             goto errorExit;
         }
-    } else if (!strcmp(info->request.header.op, "update")) {
+    } else if (!strcmp(info->request->header.op, "update")) {
         if (!lastinfo) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID not exist.");
             goto errorExit;
         }
-        if (!strcmp(lastinfo->request.header.op, "deactivate")) {
+        if (!strcmp(lastinfo->request->header.op, "deactivate")) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID already deactivate.");
             goto errorExit;
         }
-        if (strcmp(info->request.header.prevtxid, lastinfo->txid)) {
+        if (strcmp(info->request->header.prevtxid, lastinfo->txid)) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "Previous transaction id missmatch.");
             goto errorExit;
         }
-    } else if (!strcmp(info->request.header.op, "deactivate")) {
+    } else if (!strcmp(info->request->header.op, "deactivate")) {
         if (!lastinfo) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID not exist.");
             goto errorExit;
         }
-        if (!strcmp(lastinfo->request.header.op, "deactivate")) {
+        if (!strcmp(lastinfo->request->header.op, "deactivate")) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID already dactivated.");
             goto errorExit;
         }
@@ -149,7 +152,7 @@ errorExit:
     return false;
 }
 
-static int result_tojson(JsonGenerator *gen, DID *did, bool all)
+static int result_tojson(JsonGenerator *gen, DID *did, const char *txid, bool all)
 {
     DIDTransactionInfo *info;
     char idstring[ELA_MAX_DID_LEN];
@@ -161,14 +164,14 @@ static int result_tojson(JsonGenerator *gen, DID *did, bool all)
     CHECK(JsonGenerator_WriteStringField(gen, "did",
             DID_ToString(did, idstring, sizeof(idstring))));
 
-    info = get_lasttransaction(did);
+    info = get_lasttransaction(did, txid);
     if (!info)
         return -1;
 
-    if (!strcmp(info->request.header.op, "deactivate")) {
+    if (!strcmp(info->request->header.op, "deactivate")) {
         status = 2;
     } else {
-        if (DIDDocument_IsExpires(info->request.doc))
+        if (DIDDocument_IsExpires(info->request->doc))
             status = 1;
         else
             status = 0;
@@ -192,7 +195,7 @@ static int result_tojson(JsonGenerator *gen, DID *did, bool all)
                 CHECK(DIDTransactionInfo_ToJson_Internal(gen, info));
         }
     } else {
-        info = get_lasttransaction(did);
+        info = get_lasttransaction(did, txid);
         CHECK(DIDTransactionInfo_ToJson_Internal(gen, info));
     }
     CHECK(JsonGenerator_WriteEndArray(gen));
@@ -200,7 +203,7 @@ static int result_tojson(JsonGenerator *gen, DID *did, bool all)
     return 0;
 }
 
-static int resolve_tojson(JsonGenerator *gen, DID *did, bool all)
+static int resolve_tojson(JsonGenerator *gen, DID *did, const char *txid, bool all)
 {
     assert(gen);
     assert(did);
@@ -208,12 +211,12 @@ static int resolve_tojson(JsonGenerator *gen, DID *did, bool all)
     CHECK(JsonGenerator_WriteStartObject(gen));
     CHECK(JsonGenerator_WriteStringField(gen, "jsonrpc", "2.0"));
     CHECK(JsonGenerator_WriteFieldName(gen, "result"));
-    CHECK(result_tojson(gen, did, all));
+    CHECK(result_tojson(gen, did, txid, all));
     CHECK(JsonGenerator_WriteEndObject(gen));
     return 0;
 }
 
-const char* DummyAdapter_Resolve(DIDResolver *resolver, const char *did, int all)
+const char* DummyAdapter_Resolve(DIDResolver *resolver, const char *did, const char *txid, int all)
 {
     JsonGenerator g, *gen;
     DID *_did;
@@ -237,7 +240,7 @@ const char* DummyAdapter_Resolve(DIDResolver *resolver, const char *did, int all
     if (!gen)
         return NULL;
 
-    rc = resolve_tojson(gen, _did, all);
+    rc = resolve_tojson(gen, _did, txid, all);
     DID_Destroy(_did);
     if (rc < 0) {
         JsonGenerator_Destroy(gen);
@@ -250,10 +253,9 @@ const char* DummyAdapter_Resolve(DIDResolver *resolver, const char *did, int all
 static void DummyAdapter_Reset(DummyAdapter *adapter)
 {
     int i;
-    for (i = 0; i < num; i++) {
+    for (i = 0; i < num; i++)
         DIDTransactionInfo_Destroy(infos[i]);
-        free(infos[i]);
-    }
+
     memset(infos, 0, sizeof(infos));
     num = 0;
 }
@@ -269,10 +271,8 @@ DummyAdapter *DummyAdapter_Create(void)
 void DummyAdapter_Destroy(void)
 {
     int i;
-    for (i = 0; i < num; i++) {
+    for (i = 0; i < num; i++)
         DIDTransactionInfo_Destroy(infos[i]);
-        free(infos[i]);
-    }
 
     memset(infos, 0, sizeof(infos));
     num = 0;

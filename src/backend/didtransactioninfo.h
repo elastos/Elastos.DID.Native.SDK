@@ -26,36 +26,24 @@
 #include <jansson.h>
 
 #include "ela_did.h"
-#include "didrequest.h"
+#include "JsonGenerator.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct DIDTransactionInfo {
+struct DIDTransactionInfo {
     char txid[ELA_MAX_TXID_LEN];
     time_t timestamp;
 
-    DIDRequest request;
-} DIDTransactionInfo;
-
-int DIDTransactionInfo_FromJson(DIDTransactionInfo *txinfo, json_t *json);
-
-void DIDTransactionInfo_Destroy(DIDTransactionInfo *txinfo);
+    DIDRequest *request;
+};
 
 void DIDTransactionInfo_Free(DIDTransactionInfo *txinfo);
 
 int DIDTransactionInfo_ToJson_Internal(JsonGenerator *gen, DIDTransactionInfo *info);
 
-const char *DIDTransactionInfo_ToJson(DIDTransactionInfo *txinfo);
-
-DIDRequest *DIDTransactionInfo_GetRequest(DIDTransactionInfo *txinfo);
-
-const char *DIDTransactionInfo_GetTransactionId(DIDTransactionInfo *txinfo);
-
-time_t DIDTransactionInfo_GetTimeStamp(DIDTransactionInfo *txinfo);
-
-DID *DIDTransactionInfo_GetOwner(DIDTransactionInfo *txinfo);
+DIDTransactionInfo *DIDTransactionInfo_FromJson_Internal(json_t *json);
 
 #ifdef __cplusplus
 }

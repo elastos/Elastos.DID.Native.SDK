@@ -28,6 +28,8 @@
 #include "diderror.h"
 #include "diddocument.h"
 #include "didhistory.h"
+#include "didtransactioninfo.h"
+#include "didrequest.h"
 
 void DIDHistory_Destroy(DIDHistory *history)
 {
@@ -39,7 +41,7 @@ void DIDHistory_Destroy(DIDHistory *history)
         assert(history->txinfos.size > 0);
 
         for (i = 0; i < history->txinfos.size; i++)
-            DIDTransactionInfo_Destroy(&history->txinfos.infos[i]);
+            DIDTransactionInfo_Destroy(history->txinfos.infos[i]);
         free(history->txinfos.infos);
     }
     free(history);
@@ -75,80 +77,32 @@ ssize_t DIDHistory_GetTransactionCount(DIDHistory *history)
     return history->txinfos.size;
 }
 
-DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int index)
+ssize_t DIDHistory_GetTransactions(DIDHistory *history, DIDTransactionInfo **infos, size_t size)
 {
-    DIDDocument *doc;
+    ssize_t count;
 
-    if (!history) {
+    if (!history || !infos || size == 0) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    count = history->txinfos.size <= size ? history->txinfos.size : size;
+    memcpy(infos, history->txinfos.infos, count);
+    return count;
+}
+
+DIDTransactionInfo *DIDHistory_GetTransaction(DIDHistory *history, int index)
+{
+    if (!history || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    if (!history->txinfos.infos) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "No transaction in history.");
+    if (index >= history->txinfos.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "The index is larger than the total count.");
         return NULL;
     }
 
-    if ((size_t)index >= history->txinfos.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in history.");
-        return NULL;
-    }
-
-    doc = (DIDDocument*)calloc(1, sizeof(DIDDocument));
-    if (!doc) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for document failed.");
-        return NULL;
-    }
-
-    if (DIDDocument_Copy(doc, history->txinfos.infos[index].request.doc) < 0) {
-        DIDDocument_Destroy(doc);
-        return NULL;
-    }
-
-    return doc;
+    return history->txinfos.infos[index];
 }
 
-const char *DIDHistory_GetTransactionIdByIndex(DIDHistory *history, int index)
-{
-    if (!history) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (!history->txinfos.infos || (size_t)index >= history->txinfos.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in history.");
-        return NULL;
-    }
-
-    return history->txinfos.infos[index].txid;
-}
-
-time_t DIDHistory_GetPublishedByIndex(DIDHistory *history, int index)
-{
-    if (!history) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return 0;
-    }
-
-    if (!history->txinfos.infos || (size_t)index >= history->txinfos.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in history.");
-        return 0;
-    }
-
-    return history->txinfos.infos[index].timestamp;
-}
-
-const char *DIDHistory_GetOperationByIndex(DIDHistory *history, int index)
-{
-    if (!history) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (!history->txinfos.infos || (size_t)index >= history->txinfos.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in history.");
-        return NULL;
-    }
-
-    return history->txinfos.infos[index].request.header.op;
-}
