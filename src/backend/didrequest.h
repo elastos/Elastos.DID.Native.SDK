@@ -28,6 +28,7 @@
 #include "ela_did.h"
 #include "JsonGenerator.h"
 #include "did.h"
+#include "common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,14 +36,12 @@ extern "C" {
 
 #define  MAX_SPEC_LEN             32
 #define  MAX_OP_LEN               32
-#define  MAX_REQ_SIG_LEN          128
-#define  MAX_DOC_TYPE             64
 
 typedef struct RequestProof {
-    char type[MAX_DOC_TYPE];
+    char type[MAX_TYPE_LEN];
     time_t created;
     DIDURL verificationMethod;
-    char signature[MAX_REQ_SIG_LEN];
+    char signature[MAX_SIGN_LEN];
 } RequestProof;
 
 struct DIDRequest {
@@ -88,6 +87,8 @@ int DIDRequest_AddProof(DIDRequest *request, char *signature, DIDURL *signkey, t
 int DIDRequest_ToJson_Internal(JsonGenerator *gen, DIDRequest *req);
 
 bool DIDRequest_ExistSignKey(DIDRequest *request, DIDURL *signkey);
+
+const char *DIDRequest_Merge(DIDRequest **requests, size_t size);
 
 #ifdef __cplusplus
 }

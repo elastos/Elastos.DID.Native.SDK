@@ -44,7 +44,7 @@ bool dir_exist(const char* path);
 
 void delete_file(const char *path);
 
-char *load_file(const char *file);
+char *load_path(const char *file);
 
 int store_file(const char *path, const char *string);
 

@@ -129,7 +129,7 @@ char *get_path(char *path, const char *file)
     return path;
 }
 
-char *load_file(const char *file)
+char *load_path(const char *file)
 {
     char *readstring = NULL;
     size_t reclen, bufferlen;
@@ -194,7 +194,7 @@ static char *load_testdata_file(const char *file)
     if (!path)
         return NULL;
 
-    return load_file(path);
+    return load_path(path);
 }
 
 static const char *getpassword(const char *walletDir, const char *walletId)
@@ -227,7 +227,7 @@ char *get_file_path(char *path, size_t size, int count, ...)
     return path;
 }
 
-static int list_dir(const char *path, const char *pattern,
+static int list_directory(const char *path, const char *pattern,
         int (*callback)(const char *name, void *context), void *context)
 {
     char full_pattern[PATH_MAX];
@@ -273,7 +273,7 @@ static int list_dir(const char *path, const char *pattern,
     return 0;
 }
 
-static int test_path(const char *path)
+static int test_paths(const char *path)
 {
     struct stat s;
 
@@ -318,13 +318,13 @@ void delete_file(const char *path)
     if (!path)
         return;
 
-    rc = test_path(path);
+    rc = test_paths(path);
     if (rc < 0)
         return;
     else if (rc == S_IFDIR) {
-        list_dir(path, ".*", delete_file_helper, (void *)path);
+        list_directory(path, ".*", delete_file_helper, (void *)path);
 
-        if (list_dir(path, "*", delete_file_helper, (void *)path) == 0)
+        if (list_directory(path, "*", delete_file_helper, (void *)path) == 0)
             rmdir(path);
     } else
         remove(path);
@@ -401,12 +401,12 @@ static DIDDocument *store_document(const char *file, const char *alias)
 
 bool file_exist(const char *path)
 {
-    return test_path(path) == S_IFREG;
+    return test_paths(path) == S_IFREG;
 }
 
 bool dir_exist(const char* path)
 {
-    return test_path(path) == S_IFDIR;
+    return test_paths(path) == S_IFDIR;
 }
 
 static int import_privatekey(DIDURL *id, const char *storepass, const char *file)

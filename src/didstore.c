@@ -2137,7 +2137,7 @@ int DIDStore_InitPrivateIdentityFromRootKey(DIDStore *store, const char *storepa
     //check if DIDStore has existed private identity
     if (get_file(path, 0, 3, store->root, PRIVATE_DIR, HDKEY_FILE) == 0) {
         if (DIDStore_ContainsPrivateIdentity(store) && !force) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Private identity is already exist.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Private identity already exist.");
             return -1;
         }
     }
@@ -2554,19 +2554,6 @@ errorExit:
     return reqstring;
 }
 
-static int get_type(const char *type)
-{
-    assert(type);
-    assert(*type);
-
-    if (!strcmp(type, "create"))
-        return 0;
-    if (!strcmp(type, "update"))
-        return 1;
-    else
-        return 2;
-}
-
 const char *DIDStore_CounterSignDIDRequest(DIDStore *store, const char *idrequest,
        DIDURL *signkey, const char *storepass)
 {
@@ -2623,119 +2610,71 @@ errorExit:
     return reqstring;
 }
 
-static const char *merge_two_idrequest(const char *idrequest1, const char *idrequest2)
-{
-    DIDRequest *req1 = NULL, *req2 = NULL;
-    const char *idrequest = NULL;
-    uint8_t digest1[SHA256_BYTES], digest2[SHA256_BYTES];
-    DIDURL *verificationMethod1, *verificationMethod2;
-    bool same = false;
-    int i, j;
-
-    assert(idrequest1 && *idrequest1);
-    assert(idrequest2 && *idrequest2);
-
-    req1 = DIDRequest_FromJson(idrequest1);
-    if (!req1)
-        return NULL;
-
-    if (!DIDRequest_IsValid(req1, false))
-        goto errorExit;
-
-    if (DIDRequest_IsQualified(req1)) {
-       idrequest = strdup(idrequest1);
-       goto errorExit;
-    }
-
-    req2 = DIDRequest_FromJson(idrequest2);
-    if (!req2)
-        goto errorExit;
-
-    if (!DIDRequest_IsValid(req2, false))
-        goto errorExit;
-
-    if (DIDRequest_IsQualified(req2)) {
-       idrequest = strdup(idrequest2);
-       goto errorExit;
-    }
-
-    memset(digest1, 0, sizeof(digest1));
-    if (DIDRequest_GetDigest(req1, digest1, sizeof(digest1)) < 0) {
-        DIDError_Set(DIDERR_MALFORMED_REQUEST, "Get digest from didquest1 failed.");
-        goto errorExit;
-    }
-
-    memset(digest2, 0, sizeof(digest2));
-    if (DIDRequest_GetDigest(req2, digest2, sizeof(digest2)) < 0) {
-        DIDError_Set(DIDERR_MALFORMED_REQUEST, "Get digest from didquest2 failed.");
-        goto errorExit;
-    }
-
-    if (memcmp(digest1, digest2, sizeof(digest1))) {
-        DIDError_Set(DIDERR_MALFORMED_REQUEST, "Two idreqests have different context(digest) except proof.");
-        goto errorExit;
-    }
-
-    for (i = 0; i < req2->proofs.size && req1->proofs.size < req1->header.multisig_m; i++)
-        DIDRequest_AddProof(req1, req2->proofs.proofs[i].signature,
-                &req2->proofs.proofs[i].verificationMethod, req2->proofs.proofs[i].created);
-
-    idrequest = DIDRequest_ToJson(req1);
-
-errorExit:
-    DIDRequest_Destroy(req1);
-    DIDRequest_Destroy(req2);
-    return idrequest;
-}
-
 const char *DIDDtore_MergeMultisigDIDRequest(int count, ...)
 {
     va_list list;
-    const char **idrequests, *merged_request, *idrequest = NULL, *request;
-    DIDDocument *doc;
-    int i;
+    const char *idrequest = NULL, *merged_idrequest = NULL;
+    DIDRequest *request = NULL, **requests;
+    uint8_t digest[SHA256_BYTES], digest1[SHA256_BYTES];
+    int i, actual_count = 0;
 
     if (count <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    idrequests = (const char **)calloc(count, sizeof(const char*));
-    if (!idrequests) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for string array failed.");
+    requests = (DIDRequest**)alloca(count * sizeof(DIDRequest*));
+    if (!requests) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for DID Request array failed.");
         return NULL;
     }
 
     va_start(list, count);
     for (i = 0; i < count; i++) {
-        request = va_arg(list, const char *);
-        if (!request)
-            return NULL;
+        idrequest = va_arg(list, const char *);
+        if (!idrequest)
+            continue;
 
-        idrequests[i] = strdup(request);
+        request = DIDRequest_FromJson(idrequest);
+        if (!request)
+            continue;
+
+        if (!DIDRequest_IsValid(request, false)) {
+            DIDRequest_Destroy(request);
+            continue;
+        }
+
+        if (DIDRequest_GetDigest(request, digest1, sizeof(digest1)) < 0) {
+            DIDRequest_Destroy(request);
+            DIDError_Set(DIDERR_MALFORMED_REQUEST, "Get digest from did request failed.");
+            continue;
+        }
+
+        if (actual_count == 0)
+            memcpy(digest, digest1, sizeof(digest));
+
+        if (actual_count > 0 && memcmp(digest, digest1, sizeof(digest))) {
+            DIDRequest_Destroy(request);
+            continue;
+        }
+
+        if (DIDRequest_IsQualified(request)) {
+            DIDRequest_Destroy(request);
+            merged_idrequest = strdup(idrequest);
+            goto pointexit;
+        }
+
+        requests[actual_count++] = request;
     }
     va_end(list);
 
-
-    idrequest = strdup(idrequests[0]);
-    for (i = 1; i < count; i++) {
-        merged_request = merge_two_idrequest(idrequest, idrequests[i]);
-        free((void*)idrequest);
-        if (!merged_request)
-            goto pointexit;
-
-        idrequest = merged_request;
-    }
+    merged_idrequest = DIDRequest_Merge(requests, actual_count);
 
 pointexit:
-    if (idrequest == idrequests[0])
-        idrequest = strdup(idrequests[0]);
+    for (i = 0; i < actual_count; i++)
+        DIDRequest_Destroy(requests[i]);
 
-    for (i = 0; i < count; i++)
-        free((void*)idrequests[i]);
-
-    free((void*)idrequests);
-    return idrequest;
+    return merged_idrequest;
 }
 
 bool DIDStore_PublishIdRequest(DIDStore *store, const char *idrequest)
@@ -2778,7 +2717,7 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
     }
 
     if (!force && DIDDocument_IsExpires(doc)) {
-        DIDError_Set(DIDERR_EXPIRED, "Did already expired, use force mode to publish anyway.");
+        DIDError_Set(DIDERR_EXPIRED, "Did is already expired, use force mode to publish anyway.");
         goto errorExit;
     }
 
@@ -2793,7 +2732,7 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
         successed = DIDBackend_Create(&store->backend, doc, signkey, storepass);
     } else {
         if (DIDDocument_IsDeactivated(resolve_doc)) {
-            DIDError_Set(DIDERR_EXPIRED, "Did already deactivated.");
+            DIDError_Set(DIDERR_EXPIRED, "Did is already deactivated.");
             goto errorExit;
         }
 

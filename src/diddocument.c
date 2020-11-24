@@ -578,7 +578,7 @@ static int Parse_Proof(DIDDocument *document, json_t *json)
 
     item = json_object_get(json, "type");
     if (item) {
-        if ((json_is_string(item) && strlen(json_string_value(item)) + 1 > MAX_DOC_TYPE) ||
+        if ((json_is_string(item) && strlen(json_string_value(item)) + 1 > MAX_TYPE_LEN) ||
                 !json_is_string(item)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid proof type.");
             return -1;
@@ -623,7 +623,7 @@ static int Parse_Proof(DIDDocument *document, json_t *json)
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid signature.");
         return -1;
     }
-    if (strlen(json_string_value(item)) + 1 > MAX_DOC_SIGN) {
+    if (strlen(json_string_value(item)) + 1 > MAX_SIGN_LEN) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Document signature is too long.");
         return -1;
     }
@@ -741,12 +741,12 @@ bool Is_Controller_DefaultKey(DIDDocument *document, DIDURL *keyid)
 
     controller_doc = Contains_Controller(document->controllers.docs, document->controllers.size, &keyid->did);
     if (!controller_doc) {
-        DIDError_Set(DIDERR_INVALID_KEY, "The key does not owned to the controllers of this did.");
+        DIDError_Set(DIDERR_INVALID_KEY, "The key is not owned by DID.");
         return false;
     }
 
     if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(controller_doc), keyid)) {
-        DIDError_Set(DIDERR_INVALID_KEY, "The key is not the default key for controller.");
+        DIDError_Set(DIDERR_INVALID_KEY, "The key is not the controller's default key.");
         return false;
     }
 
@@ -759,7 +759,7 @@ bool Is_Self_DefaultKey(DIDDocument *document, DIDURL *keyid)
     assert(keyid);
 
     if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(document), keyid)) {
-        DIDError_Set(DIDERR_INVALID_KEY, "The key is not the default key for self document.");
+        DIDError_Set(DIDERR_INVALID_KEY, "The key is not the own default key.");
         return false;
     }
 
@@ -770,12 +770,13 @@ bool Is_DefaultKey(DIDDocument *document, DIDURL *keyid)
 {
     assert(document);
     assert(keyid);
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
 
     if (Is_Self_DefaultKey(document, keyid))
         return true;
 
-    if (document->controllers.size > 0 && document->controllers.docs &&
-            Is_Controller_DefaultKey(document, keyid))
+    if (document->controllers.size > 0 && Is_Controller_DefaultKey(document, keyid))
         return true;
 
     DIDError_Set(DIDERR_INVALID_KEY, "The key is not the default key.");
@@ -808,20 +809,21 @@ bool Is_Mulitisig_DID(DIDDocument *document)
 bool controllers_check(DIDDocument *document)
 {
     assert(document);
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
 
-    if (!Is_Customized_DID(document) && (document->controllers.size > 0 ||
-            document->controllers.docs)) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Normal DID does not have controller.");
+    if (!Is_Customized_DID(document) && document->controllers.size > 0) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Normal DID should not have controller.");
         return false;
     }
 
     if (Is_Customized_DID(document)) {
-        if (document->controllers.size == 0 || !document->controllers.docs) {
+        if (document->controllers.size == 0) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Customized DID must have one controller at least.");
             return false;
         }
         if (Contains_Controller(document->controllers.docs, document->controllers.size, &document->did)) {
-            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Customized DID can't have self DID as controller.");
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Customized DID should be not the own controller.");
             return false;
         }
     }
@@ -1242,12 +1244,15 @@ bool DIDDocument_IsGenuine(DIDDocument *document)
     const char *data;
     int i, rc = -1;
 
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for(i = 0; i < document->controllers.size; i++) {
             if (!DIDDocument_IsGenuine(document->controllers.docs[i]))
                 return false;
@@ -1552,17 +1557,19 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, DID *controlle
     }
 
     doc = builder->document;
+    assert((doc->controllers.size > 0 && doc->controllers.docs) ||
+            (doc->controllers.size == 0 && !doc->controllers.docs));
     if (!controller) {
         _doc = doc;
     } else {
-        if (doc->controllers.size <= 0 || !doc->controllers.docs) {
-            DIDError_Set(DIDERR_INVALID_ARGS, "DIDDocument doesn't set controllers.");
+        if (doc->controllers.size == 0) {
+            DIDError_Set(DIDERR_INVALID_ARGS, "Normal DID does not support specifying the controller to seal.");
             return NULL;
         }
 
         _doc = Contains_Controller(doc->controllers.docs, doc->controllers.size, controller);
         if (!_doc) {
-            DIDError_Set(DIDERR_INVALID_ARGS, "Does not a controller of the DIDDocument.");
+            DIDError_Set(DIDERR_INVALID_ARGS, "The controller sepcified is not a controller of DIDDocument.");
             return NULL;
         }
     }
@@ -1657,7 +1664,7 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
         pk = document->publickeys.pks[i];
         if (DIDURL_Equals(&pk->id, keyid) ||
                !strcmp(pk->publicKeyBase58, key)) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key is already exist");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key already exist");
             return -1;
         }
     }
@@ -1741,12 +1748,12 @@ int DIDDocumentBuilder_AddAuthenticationKey(DIDDocumentBuilder *builder,
     pk = DIDDocument_GetPublicKey(document, keyid);
     if (pk) {
         if (key && strcmp(pk->publicKeyBase58, key)) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key is already exist.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key already exist.");
             return -1;
         }
 
         if (pk->authenticationKey || pk->authorizationKey) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key is already authentication key or authorization key.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key already authentication key or authorization key.");
             return -1;
         }
 
@@ -1872,7 +1879,7 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
     pk = DIDDocument_GetPublicKey(document, keyid);
     if (pk) {
         if (key && strcmp(pk->publicKeyBase58, key)) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key is already exist.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key already exist.");
             return -1;
         }
         if (controller &&!DID_Equals(controller, &pk->controller)) {
@@ -2120,7 +2127,7 @@ int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder, Credential *cr
     for (i = 0; i < document->credentials.size; i++) {
         temp_cred = document->credentials.credentials[i];
         if (DIDURL_Equals(&temp_cred->id, &credential->id)) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Credential is already exist.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Credential already exist.");
             return -1;
         }
     }
@@ -2159,12 +2166,12 @@ int DIDDocumentBuilder_AddSelfClaimedCredential(DIDDocumentBuilder *builder,
 
     document = builder->document;
     if (!DID_Equals(&document->did, &credid->did)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Credential is already exist.");
+        DIDError_Set(DIDERR_UNSUPPOTED, "Credential already exist.");
         return -1;
     }
 
     if (!signkey && document->controllers.size > 1) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Must specific the key to sign the credential owned by multi-controller did.");
+        DIDError_Set(DIDERR_UNSUPPOTED, "Must specify the key to sign the credential owned by multi-controller did.");
         return -1;
     }
 
@@ -2248,7 +2255,7 @@ int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder, DIDURL *serviceid
         return -1;
     }
 
-    if (strlen(type) >= MAX_DOC_TYPE) {
+    if (strlen(type) >= MAX_TYPE_LEN) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Type argument is too long.");
         return -1;
     }
@@ -2266,7 +2273,7 @@ int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder, DIDURL *serviceid
     for (i = 0; i < document->services.size; i++) {
         service = document->services.services[i];
         if (DIDURL_Equals(&service->id, serviceid)) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "This service is already exist.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "This service already exist.");
             return -1;
         }
     }
@@ -2574,6 +2581,9 @@ ssize_t DIDDocument_GetPublicKeys(DIDDocument *document, PublicKey **pks,
     DIDDocument *doc;
     int i;
 
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
     if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -2589,7 +2599,7 @@ ssize_t DIDDocument_GetPublicKeys(DIDDocument *document, PublicKey **pks,
     if (actual_size > 0 && document->publickeys.pks)
         memcpy(pks, document->publickeys.pks, sizeof(PublicKey*) * actual_size);
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             if (doc) {
@@ -2608,6 +2618,9 @@ ssize_t DIDDocument_SelectPublicKeys(DIDDocument *document, const char *type,
 {
     DIDDocument *doc;
     size_t actual_size = 0, total_size, i;
+
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
 
     if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2644,7 +2657,7 @@ ssize_t DIDDocument_SelectPublicKeys(DIDDocument *document, const char *type,
         pks[actual_size++] = pk;
     }
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             total_size = DIDDocument_SelectPublicKeys(doc, type, keyid, pks + actual_size, size - actual_size);
@@ -2663,6 +2676,9 @@ DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
     uint8_t binkey[PUBLICKEY_BYTES];
     PublicKey *pk;
     size_t i;
+
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2701,13 +2717,16 @@ ssize_t DIDDocument_GetAuthenticationCount(DIDDocument *document)
     size_t size, i, pk_size;
     DIDDocument *doc;
 
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     size = get_self_authentication_count(document);
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             pk_size = get_self_authentication_count(doc);
@@ -2724,6 +2743,9 @@ ssize_t DIDDocument_GetAuthenticationKeys(DIDDocument *document, PublicKey **pks
 {
     size_t actual_size = 0, i, j, pk_size;
     DIDDocument *doc;
+
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
 
     if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2745,7 +2767,7 @@ ssize_t DIDDocument_GetAuthenticationKeys(DIDDocument *document, PublicKey **pks
         }
     }
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             pk_size = DIDDocument_GetAuthenticationKeys(doc, pks + actual_size,
@@ -2791,6 +2813,9 @@ ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
     PublicKey *pk;
     DIDDocument *doc;
 
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
     if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -2822,7 +2847,7 @@ ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
         pks[actual_size++] = pk;
     }
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             pk_size = DIDDocument_SelectAuthenticationKeys(doc, type, keyid,
@@ -2842,13 +2867,16 @@ ssize_t DIDDocument_GetAuthorizationCount(DIDDocument *document)
     size_t size, pk_size;
     int i;
 
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     size = get_self_authorization_count(document);
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             pk_size = get_self_authorization_count(doc);
@@ -2865,6 +2893,9 @@ ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
 {
     size_t actual_size = 0, i, j, pk_size;
     DIDDocument *doc;
+
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
 
     if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2886,7 +2917,7 @@ ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
         }
     }
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             pk_size = DIDDocument_GetAuthorizationKeys(doc, pks + actual_size,
@@ -2927,6 +2958,9 @@ ssize_t DIDDocument_SelectAuthorizationKeys(DIDDocument *document,
     PublicKey *pk;
     DIDDocument *doc;
 
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
     if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -2958,7 +2992,7 @@ ssize_t DIDDocument_SelectAuthorizationKeys(DIDDocument *document,
         pks[actual_size++] = pk;
     }
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             pk_size = DIDDocument_SelectAuthorizationKeys(doc, type, keyid,

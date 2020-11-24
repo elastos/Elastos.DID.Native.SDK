@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-#define MAX_DOC_SIGN                    128
+#define MAX_SIGN_LEN                    128
 
 struct DIDMetaData {
     MetaData base;

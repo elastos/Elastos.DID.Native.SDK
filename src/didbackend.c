@@ -111,7 +111,7 @@ bool DIDBackend_PublishDID(DIDBackend *backend, const char *payload)
 
     request = DIDRequest_FromJson(payload);
     if (!request) {
-        DIDError_Set(DIDERR_INVALID_BACKEND, "Payload is invalid.");
+        DIDError_Set(DIDERR_INVALID_BACKEND, "Payload should be the valid DID Request.");
         return false;
     }
 
@@ -363,7 +363,7 @@ DIDHistory *DIDBackend_ResolveHistory(DID *did)
 
     if (ResolveResult_GetStatus(history) == DIDStatus_NotFound) {
         DIDHistory_Destroy(history);
-        DIDError_Set(DIDERR_NOT_EXISTS, "DID not exists.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "DID does not exist.");
         return NULL;
     }
 

@@ -28,6 +28,7 @@
 #include "ela_did.h"
 #include "did.h"
 #include "didmeta.h"
+#include "common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,14 +36,12 @@ extern "C" {
 
 #define MAX_PUBLICKEY_BASE58            64
 #define MAX_ENDPOINT                    256
-#define MAX_DOC_TYPE                    64
-#define MAX_DOC_SIGN                    128
 
 typedef struct DocumentProof {
-    char type[MAX_DOC_TYPE];
+    char type[MAX_TYPE_LEN];
     time_t created;
     DIDURL creater;
-    char signatureValue[MAX_DOC_SIGN];
+    char signatureValue[MAX_SIGN_LEN];
 } DocumentProof;
 
 struct DIDDocument {
@@ -76,7 +75,7 @@ struct DIDDocument {
 
 struct PublicKey {
     DIDURL id;
-    char type[MAX_DOC_TYPE];
+    char type[MAX_TYPE_LEN];
     DID controller;
     char publicKeyBase58[MAX_PUBLICKEY_BASE58];
     bool authenticationKey;
@@ -85,7 +84,7 @@ struct PublicKey {
 
 struct Service {
     DIDURL id;
-    char type[MAX_DOC_TYPE];
+    char type[MAX_TYPE_LEN];
     char endpoint[MAX_ENDPOINT];
 };
 

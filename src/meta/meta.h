@@ -27,12 +27,11 @@
 
 #include "ela_did.h"
 #include "JsonGenerator.h"
+#include "common.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define MAX_DOC_SIGN                    128
 
 typedef struct MetaData {
     json_t *data;

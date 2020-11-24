@@ -14,6 +14,7 @@
 #include "did.h"
 #include "didmeta.h"
 #include "diddocument.h"
+#include "backend/didrequest.h"
 
 #define MAX_PUBLICKEY_BASE58      64
 #define MAX_DOC_SIGN              128
@@ -25,6 +26,19 @@ static DIDDocument *controller3_doc;
 static DID controller1;  //issuer doc
 static DID controller2;  //controller doc
 static DID controller3;  //doc
+
+static bool contains_signer(DIDRequest *request, DIDURL *signkey)
+{
+    assert(request);
+    assert(signkey);
+
+    for (int i = 0; i < request->proofs.size; i++) {
+        if (DIDURL_Equals(&request->proofs.proofs[i].verificationMethod, signkey))
+            return true;
+    }
+
+    return false;
+}
 
 static void test_publish_ctmdid_withonecontroller(void)
 {
@@ -506,7 +520,7 @@ static void test_publish_ctmdid_with_multicontroller_after_removecontroller(void
 
     customized_doc = DIDDocumentBuilder_Seal(builder, &controller2, storepass);
     CU_ASSERT_PTR_NULL(customized_doc);
-    CU_ASSERT_STRING_EQUAL("Does not a controller of the DIDDocument.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("The controller sepcified is not a controller of DIDDocument.", DIDError_GetMessage());
 
     customized_doc = DIDDocumentBuilder_Seal(builder, &controller3, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
@@ -751,6 +765,7 @@ static void test_publish_ctmdid_merge_request(void)
     DID customizedid;
     DIDURL *keyid, *signkey1, *signkey2, *signkey3;
     DIDDocumentBuilder *builder;
+    DIDRequest *request;
     int rc, multisig_m, multisig_n;
     bool successed;
 
@@ -788,6 +803,13 @@ static void test_publish_ctmdid_merge_request(void)
     free((void*)idrequest1);
     free((void*)idrequest2);
 
+    request = DIDRequest_FromJson(idrequest);
+    CU_ASSERT_PTR_NOT_NULL(request);
+    CU_ASSERT_TRUE(contains_signer(request, signkey1));
+    CU_ASSERT_TRUE(contains_signer(request, signkey2));
+    CU_ASSERT_TRUE(contains_signer(request, signkey3));
+    DIDRequest_Destroy(request);
+
     CU_ASSERT_TRUE(DIDStore_PublishIdRequest(store, idrequest));
     free((void*)idrequest);
 
@@ -799,7 +821,7 @@ static void test_publish_ctmdid_merge_request(void)
     DIDTransactionInfo *info = DIDHistory_GetTransaction(history, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(info);
 
-    DIDRequest *request = DIDTransactionInfo_GetRequest(info);
+    request = DIDTransactionInfo_GetRequest(info);
     CU_ASSERT_PTR_NOT_NULL_FATAL(request);
 
     rc = DIDRequest_GetMultisig(request, &multisig_m, &multisig_n);

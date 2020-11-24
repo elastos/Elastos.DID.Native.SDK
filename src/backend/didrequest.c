@@ -341,7 +341,7 @@ static int Parser_Proof(DIDRequest *request, json_t *json)
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing signature.");
             return -1;
         }
-        if (!json_is_string(field) || strlen(json_string_value(field)) >= MAX_REQ_SIG_LEN) {
+        if (!json_is_string(field) || strlen(json_string_value(field)) >= MAX_SIGN_LEN) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signature.");
             return -1;
         }
@@ -822,4 +822,87 @@ void DIDRequest_Free(DIDRequest *request, bool all)
 
     if (all)
        free(request);
+}
+
+static int proofs_func(const void *a, const void *b)
+{
+    char _stringa[ELA_MAX_DID_LEN], _stringb[ELA_MAX_DID_LEN];
+    char *stringa, *stringb;
+
+    RequestProof *proofa = *(RequestProof**)a;
+    RequestProof *proofb = *(RequestProof**)b;
+
+    return (int)(proofa->created - proofb->created);
+}
+
+static bool proof_isexist(RequestProof **proofs, size_t size, RequestProof *proof)
+{
+    int i;
+
+    assert(proofs);
+    assert(proof);
+
+    for (i = 0; i < size; i++) {
+        if (DIDURL_Equals(&proofs[i]->verificationMethod, &proof->verificationMethod)) {
+            if (proofs[i]->created > proof->created)
+                proofs[i] = proof;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+const char *DIDRequest_Merge(DIDRequest **requests, size_t size)
+{
+    RequestProof **proofs, *proof;
+    size_t proof_size = 0, actual_size = 0;
+    DIDRequest merged_request, *request;
+    const char *idrequest = NULL;
+    int i, j;
+
+    assert(requests);
+    assert(size > 0);
+
+    for (i = 0; i < size; i++)
+        proof_size += requests[i]->proofs.size;
+    assert(proof_size > 0);
+
+    proofs = (RequestProof**)alloca(proof_size * sizeof(RequestProof*));
+    if (!proofs) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for RequestProof array failed.");
+        return NULL;
+    }
+
+    for (i = 0; i < size; i++) {
+        request = requests[i];
+        for(j = 0; j < request->proofs.size; j++) {
+            proof = &request->proofs.proofs[j];
+            if (!proof_isexist(proofs, actual_size, proof))
+                proofs[actual_size++] = proof;
+        }
+    }
+
+    qsort(proofs, actual_size, sizeof(RequestProof*), proofs_func);
+
+    memset(&merged_request, 0, sizeof(merged_request));
+    strcpy(merged_request.header.spec, requests[0]->header.spec);
+    strcpy(merged_request.header.op, requests[0]->header.op);
+    strcpy(merged_request.header.prevtxid, requests[0]->header.prevtxid);
+    merged_request.doc = requests[0]->doc;
+    merged_request.header.multisig_m = requests[0]->header.multisig_m;
+    merged_request.header.multisig_n = requests[0]->header.multisig_n;
+    merged_request.payload = strdup(requests[0]->payload);
+
+    for (i = 0; i < merged_request.header.multisig_m; i++)
+        DIDRequest_AddProof(&merged_request, proofs[i]->signature, &proofs[i]->verificationMethod, proofs[i]->created);
+
+    if (!DIDRequest_IsValid(&merged_request, true))
+        goto errorExit;
+
+    idrequest = DIDRequest_ToJson(&merged_request);
+
+errorExit:
+    DIDRequest_Free(&merged_request, false);
+    return idrequest;
 }
