@@ -111,6 +111,34 @@ typedef enum {
 
 /**
  * \~English
+ * Indicate the credential status on the chain.
+ */
+typedef enum
+{
+    /**
+     * \~English
+     * Credential is valid on chain.
+     */
+    CredentialStatus_Valid = 0,
+    /**
+     * \~English
+     * Credential is revoked on chain.
+     */
+    CredentialStatus_Revoke = 1,
+    /**
+     * \~English
+     * Credential is not on the chain.
+     */
+    CredentialStatus_NotFound = 2,
+    /**
+     * \~English
+     * Credential is not on the chain.
+     */
+    CredentialStatus_Error = -1
+} CredentialStatus;
+
+/**
+ * \~English
  * The value of the credential Subject property is defined as
  * a set of objects that contain one or more properties that are
  * each related to a subject of the credential.
@@ -280,27 +308,37 @@ typedef DIDDocument* DIDStore_MergeCallback(DIDDocument *chaincopy, DIDDocument 
  *      If no error occurs, return the handle to DIDDocument. Otherwise, return NULL.
  */
 typedef DIDDocument* DIDLocalResovleHandle(DID *did);
+
 /**
  * \~English
  * DIDAdapter is support method to create did transaction.
  */
 struct DIDAdapter {
-/**
- * \~English
- * User need to implement 'createIdTransaction' function.
- * An application-defined function that create id transaction to chain.
- * @param
- *      adapter              [in] A handle to DIDAdapter.
- * @param
- *      payload              [in] The content of id transaction to publish.
- * @param
- *      memo                 [in] Memo string.
- * @return
- *      If no error occurs, return true. Otherwise, return false.
- */
-    bool (*createIdTransaction) (DIDAdapter *adapter,
-            const char *payload, const char *memo);
+    /**
+     * \~English
+     * The function that create id transaction to chain.
+     * @param
+     *      payload              [in] The content of id transaction to publish.
+     * @param
+     *      memo                 [in] Memo string.
+     * @return
+     *      If no error occurs, return true. Otherwise, return false.
+     */
+    bool (*CreateIdRequest) (DIDAdapter *adapter, const char *payload, const char *memo);
+
+    /**
+     * \~English
+     * The function that create credential transaction to chain.
+     * @param
+     *      payload              [in] The content of id transaction to publish.
+     * @param
+     *      memo                 [in] Memo string.
+     * @return
+     *      If no error occurs, return true. Otherwise, return false.
+     */
+    bool (*CreateCredentialRequest) (DIDAdapter *adapter, const char *payload, const char *memo);
 };
+
 /**
  * \~English
  * DIDResolver is support method to resolve did document from chain.
@@ -309,10 +347,7 @@ struct DIDAdapter {
 struct DIDResolver {
     /**
      * \~English
-     * User need to implement 'createIdTransaction' function.
-     * An application-defined function that resolve data from chain.
-     * @param
-     *      resolver             [in] A handle to DIDResolver.
+     * The function that resolve id data from chain.
      * @param
      *      did                  [in] Specified DID.
      * @param
@@ -322,7 +357,21 @@ struct DIDResolver {
      *      If no error occurs, return transaction id.
      *      Otherwise, return NULL.
      */
-    const char* (*resolve) (DIDResolver *resolver, const char *did, int all);
+    const char* (*ResolveDID) (DIDResolver* resolver, const char *did, int all);
+
+    /**
+     * \~English
+     * The function that resolve credential data from chain.
+     * @param
+     *      id                  [in] Specified DID.
+     * @param
+     *      all                  [in] Resolve all transaction data or the lastest one.
+     *                           all = 1: all transaction; all = 0: only the lastest transaction.
+     * @return
+     *      If no error occurs, return transaction id.
+     *      Otherwise, return NULL.
+     */
+    const char* (*ResolveCredential) (DIDResolver *resolver, const char *id, int all);
 };
 
 /******************************************************************************
@@ -2399,9 +2448,55 @@ DID_API bool Credential_IsValid(Credential *cred);
  * @param
  *      cred                     [in] The handle to Credential.
  * @return
-*      0 on success, -1 if an error occurred.
+ *      0 on success, -1 if an error occurred.
  */
 DID_API int Credential_SaveMetaData(Credential *cred);
+
+/**
+ * \~English
+ * Get the lastest credential from the chain.
+ *
+ * @param
+ *      id                     [in] The id of credential to resolve.
+ * @param
+ *      status                 [out] The status of credential.
+ *                             If the returned value is NULL, 'status' can tell you which status is this credential.
+ *                             status can refer to 'CredentialStatus'.
+ * @param
+ *      force                  [in] Indicate if load document from cache or not.
+ *                               force = true, document gets only from chain.
+ *                               force = false, document can get from cache,
+ *                               if no document is in the cache, resolve it from chain.
+ * @return
+ *      If no error occurs, return the handle to Credential.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API Credential *Credential_Resolve(DIDURL *id, CredentialStatus *status, bool force);
+
+/**
+ * \~English
+ * Indicate the credential is on the chain or not.
+ *
+ * @param
+ *      id                     [in] The id of credential to resolve.
+ * @return
+ *      If the returned value is true, the credential is valid on the chain.
+ *      Otherwise, the credential is not on the chain or revoked.
+ */
+DID_API bool Credential_IsDeclear(DIDURL *id);
+
+/**
+ * \~English
+ * Indicate the credential is revoked or not.
+ *
+ * @param
+ *      id                     [in] The id of credential to resolve.
+ * @return
+ *      If the returned value is true, the credential is revoked on the chain.
+ *      Otherwise, the credential is not revoked.
+ */
+DID_API bool Credential_IsRevoke(DIDURL *id);
 
 /**
  * \~English
@@ -2539,11 +2634,24 @@ DID_API DIDURL *Issuer_GetSignKey(Issuer *issuer);
  * @param
  *      root                 [in] The path of DIDStore's root.
  * @param
- *      adapter              [in] The handle to DIDAdapter.
+ *      adapter              [in] The handle to publish did context to chain.
  * @return
- *      0 on success, -1 if an error occurred.
+ *      If no error occurs, return the handle to DID Store. Otherwise, return NULL.
  */
-DID_API DIDStore* DIDStore_Open(const char *root, DIDAdapter *adapter);
+DID_API DIDStore* DIDStore_Open(const char *root);
+
+/**
+ * \~English
+ * Initialize DIDAdapter to DIDStore.
+ *
+ * @param
+ *      store                 [in] The path of DIDStore's root.
+ * @param
+ *      adapter              [in] The handle to publish did context to chain.
+ * @return
+ *      If no error occurs, return 0. Otherwise, return -1.
+ */
+DID_API int DIDStore_InitDIDAdapter(DIDStore *store, DIDAdapter *adapter);
 
 /**
  * \~English
@@ -2977,6 +3085,43 @@ DID_API void DIDStore_DeletePrivateKey(DIDStore *store, DID *did, DIDURL *keyid)
  */
 DID_API bool DIDStore_PublishDID(DIDStore *store, const char *storepass,
         DID *did, DIDURL *signkey, bool force);
+
+/**
+ * \~English
+ * Declear a credential to chain.
+ *
+ * @param
+ *      store                    [in] The handle to DID Store.
+ * @param
+ *      storepass                [in] Pass word to sign.
+ * @param
+ *      credid                   [in] The handle to credential.
+ * @param
+ *      signkey                  [in] The public key to sign.
+ * @return
+ *      true on success, false if an error occurred(for example: the credential is valid or revoked on the chain).
+ *      Caller should free the returned value.
+ */
+DID_API bool DIDStore_DeclearCredential(DIDStore *store, const char *storepass, DIDURL *credid,
+        DIDURL *signkey);
+
+/**
+ * \~English
+ * Revoke credential to chain.
+ *
+ * @param
+ *      store                    [in] The handle to DID Store.
+ * @param
+ *      storepass                [in] Pass word to sign.
+ * @param
+ *      credid                   [in] The handle to credential.
+ * @param
+ *      signkey                  [in] The public key to sign.
+ * @return
+ *      true on success, false if an error occurred. Caller should free the returned value.
+ */
+DID_API bool DIDStore_RevokeCredential(DIDStore *store, const char *storepass, DIDURL *credid,
+        DIDURL *signkey);
 
 /**
  * \~English
@@ -3569,15 +3714,19 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
 #endif
 /**
  * \~English
- * JWT error.
+ * Export DID error.
  */
 #define DIDERR_MALFORMED_EXPORTDID                  0x8D000018
+/**
+ * \~English
+ * DID is expired.
+ */
+#define DIDERR_CREDENTIAL_REVOKED                   0x8D000019
 /**
  * \~English
  * Unknown error.
  */
 #define DIDERR_UNKNOWN                              0x8D0000FF
-
 /**
  * \~English
  * Get the last error code.

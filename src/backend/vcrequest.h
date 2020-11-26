@@ -20,52 +20,63 @@
  * SOFTWARE.
  */
 
-#ifndef __CREDMETA_H__
-#define __CREDMETA_H__
+#ifndef __VCREQUEST_H__
+#define __VCREQUEST_H__
 
 #include <jansson.h>
 
+#include "ela_did.h"
 #include "JsonGenerator.h"
-#include "meta.h"
+#include "did.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct CredentialMetaData {
-    MetaData base;
-};
+#define  MAX_SPEC_LEN             32
+#define  MAX_OP_LEN               32
+#define  MAX_REQ_SIG_LEN          128
 
-int CredentialMetaData_ToJson_Internal(CredentialMetaData *metadata, JsonGenerator *gen);
+typedef struct CredentialRequest {
+    struct {
+        char spec[MAX_SPEC_LEN];
+        char op[MAX_OP_LEN];
+    } header;
 
-const char *CredentialMetaData_ToJson(CredentialMetaData *metadata);
+    const char *payload;
+    //todo: remove it
+    Credential *vc;
+    DIDURL id;
 
-int CredentialMetaData_FromJson_Internal(CredentialMetaData *metadata, json_t *json);
+    struct {
+        DIDURL verificationMethod;
+        char signature[MAX_REQ_SIG_LEN];
+    } proof;
+} CredentialRequest;
 
-int CredentialMetaData_FromJson(CredentialMetaData *metadata, const char *data);
+typedef enum CredentialRequest_Type
+{
+   RequestType_Declear,
+   RequestType_Revoke
+} CredentialRequest_Type;
 
-void CredentialMetaData_Free(CredentialMetaData *metadata);
+const char *CredentialRequest_Sign(CredentialRequest_Type type, DIDURL *credid,
+        Credential *credential, DIDURL *signkey, DIDDocument *document, const char *storepass);
 
-int CredentialMetaData_Merge(CredentialMetaData *tometa, CredentialMetaData *frommeta);
+const char *CredentialRequest_ToJson(CredentialRequest *request);
 
-int CredentialMetaData_Copy(CredentialMetaData *tometa, CredentialMetaData *frommeta);
+Credential *CredentialRequest_FromJson(CredentialRequest *request, json_t *json);
 
-void CredentialMetaData_SetStore(CredentialMetaData *metadata, DIDStore *store);
+void CredentialRequest_Destroy(CredentialRequest *request);
 
-DIDStore *CredentialMetaData_GetStore(CredentialMetaData *metadata);
+void CredentialRequest_Free(CredentialRequest *request);
 
-int CredentialMetaData_SetRevoke(CredentialMetaData *metadata, bool revoke);
+int CredentialRequest_Verify(CredentialRequest *request);
 
-bool CredentialMetaData_GetRevoke(CredentialMetaData *metadata);
-
-bool CredentialMetaData_AttachedStore(CredentialMetaData *metadata);
-
-int CredentialMetaData_SetLastModified(CredentialMetaData *metadata, time_t time);
-
-time_t CredentialMetaData_GetLastModified(CredentialMetaData *metadata);
+int CredentialRequest_ToJson_Internal(JsonGenerator *gen, CredentialRequest *request);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //__CREDMETA_H__
+#endif //__VCREQUEST_H__

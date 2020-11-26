@@ -573,10 +573,15 @@ int main(int argc, char *argv[])
     printf("DID store home directory at '%s'\n", datadir);
 
 
-    adapter.createIdTransaction = create_id_transaction;
-    store = DIDStore_Open(datadir, &adapter);
+    adapter.CreateIdRequest = create_id_transaction;
+    store = DIDStore_Open(datadir);
     if (!store) {
         printf("Error: open DID store at '%s' failed.\n", datadir );
+        return -1;
+    }
+
+    if (DIDStore_InitDIDAdapter(store, &adapter) < 0) {
+        printf("Error: Initialize adapter failed.\n");
         return -1;
     }
 

@@ -119,7 +119,7 @@ static void test_idchain_restore(void)
 
     path = get_store_path(_path, "DIDStore");
     delete_file(path);
-    store = DIDStore_Open(path, NULL);
+    store = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
@@ -185,7 +185,7 @@ static void test_sync_with_localmodification1(void)
 
     path = get_store_path(_path, "DIDStore");
     delete_file(path);
-    store = DIDStore_Open(path, NULL);
+    store = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
@@ -281,7 +281,7 @@ static void test_sync_with_localmodification2(void)
 
     path = get_store_path(_path, "DIDStore");
     delete_file(path);
-    store = DIDStore_Open(path, NULL);
+    store = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");

@@ -1075,7 +1075,7 @@ static int store_credential(DIDStore *store, Credential *credential)
 }
 
 /////////////////////////////////////////////////////////////////////////
-DIDStore* DIDStore_Open(const char *root, DIDAdapter *adapter)
+DIDStore* DIDStore_Open(const char *root)
 {
     char path[PATH_MAX];
     DIDStore *didstore;
@@ -1096,7 +1096,6 @@ DIDStore* DIDStore_Open(const char *root, DIDAdapter *adapter)
     }
 
     strcpy(didstore->root, root);
-    didstore->backend.adapter = adapter;
 
     if (get_dir(path, 0, 1, root) == 0 && !check_store(didstore))
         return didstore;
@@ -1107,6 +1106,22 @@ DIDStore* DIDStore_Open(const char *root, DIDAdapter *adapter)
     DIDError_Set(DIDERR_DIDSTORE_ERROR, "Open DIDStore failed.");
     free(didstore);
     return NULL;
+}
+
+int DIDStore_InitDIDAdapter(DIDStore *store, DIDAdapter *adapter)
+{
+    if (!store) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "No DIDStore for DIDAdapter.");
+        return -1;
+    }
+
+    if (adapter && adapter->CreateIdRequest)
+        store->backend.adapter.CreateIdRequest = adapter->CreateIdRequest;
+
+    if (adapter && adapter->CreateCredentialRequest)
+        store->backend.adapter.CreateCredentialRequest = adapter->CreateCredentialRequest;
+
+    return 0;
 }
 
 void DIDStore_Close(DIDStore *didstore)
@@ -2470,7 +2485,7 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
     if (!successed)
         goto errorExit;
 
-    ResolveCache_Invalid(did);
+    ResolveCache_InvalidDID(did);
     //Meta stores the resolved txid and local signature.
     DIDMetaData_SetSignature(&doc->metadata, DIDDocument_GetProofSignature(doc));
     if (resolve_signature)
@@ -2531,8 +2546,134 @@ bool DIDStore_DeactivateDID(DIDStore *store, const char *storepass,
     successed = DIDBackend_Deactivate(&store->backend, &doc->did, signkey, storepass);
     DIDDocument_Destroy(doc);
     if (successed)
-        ResolveCache_Invalid(did);
+        ResolveCache_InvalidDID(did);
 
+    return successed;
+}
+
+bool DIDStore_DeclearCredential(DIDStore *store, const char *storepass, DIDURL *credid,
+        DIDURL *signkey)
+{
+    const char *last_txid, *local_signature, *local_prevsignature, *resolve_signature = NULL;
+    DIDDocument *doc = NULL;
+    Credential *vc = NULL;
+    int rc = -1, status = -1;
+    bool successed = false;
+
+    if (!store || !storepass || !*storepass || !credid) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    vc = Credential_Resolve(credid, &status, true);
+    if (vc) {
+        Credential_Destroy(vc);
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "The credential already exist.");
+        return false;
+    } else {
+        if (status == CredentialStatus_Revoke) {
+            DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "The credential is already revoked.");
+            return false;
+        }
+        if (status == CredentialStatus_Error) {
+            DIDError_Set(DIDError_GetCode(), DIDError_GetMessage());
+            return false;
+        }
+    }
+
+    vc = DIDStore_LoadCredential(store, &credid->did, credid);
+    if (!vc)
+        return false;
+
+    if (!Credential_IsValid(vc))
+        goto errorExit;
+
+    doc = DIDStore_LoadDID(store, &credid->did);
+    if (!doc) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "There is no document of owner in DIDStore.");
+        goto errorExit;
+    }
+
+    if (!signkey) {
+        signkey = DIDDocument_GetDefaultPublicKey(doc);
+        if (!signkey) {
+            DIDError_Set(DIDERR_INVALID_KEY, "Please give the specificed sign key.");
+            goto errorExit;
+        }
+    } else {
+        if(!DIDDocument_IsAuthenticationKey(doc, signkey)) {
+            DIDError_Set(DIDERR_INVALID_KEY, "Please give the authentication key.");
+            goto errorExit;
+        }
+    }
+
+    successed = DIDBackend_Declear(&store->backend, vc, signkey, doc, storepass);
+
+errorExit:
+    DIDDocument_Destroy(doc);
+    Credential_Destroy(vc);
+    return successed;
+}
+
+bool DIDStore_RevokeCredential(DIDStore *store, const char *storepass, DIDURL *credid,
+        DIDURL *signkey)
+{
+    const char *last_txid, *local_signature, *local_prevsignature, *resolve_signature = NULL;
+    DIDDocument *doc = NULL;
+    Credential *vc = NULL;
+    int rc = -1, status = -1;
+    bool successed = false;
+
+    if (!store || !storepass || !*storepass || !credid) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    vc = DIDStore_LoadCredential(store, &credid->did, credid);
+    if (vc) {
+        successed = CredentialMetaData_GetRevoke(&vc->metadata);
+        Credential_Destroy(vc);
+        if (successed)
+            return true;
+    }
+
+    vc = Credential_Resolve(credid, &status, true);
+    if (!vc) {
+        if (status == CredentialStatus_Revoke) {
+            DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "The credential is already revoked.");
+            return false;
+        }
+        if (status == CredentialStatus_Error) {
+            DIDError_Set(DIDError_GetCode(), DIDError_GetMessage());
+            return false;
+        }
+    } else {
+        Credential_Destroy(vc);
+    }
+
+    doc = DIDStore_LoadDID(store, &credid->did);
+    if (!doc) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "There is no document of owner in DIDStore.");
+        goto errorExit;
+    }
+
+    if (!signkey) {
+        signkey = DIDDocument_GetDefaultPublicKey(doc);
+        if (!signkey) {
+            DIDError_Set(DIDERR_INVALID_KEY, "Please give the specificed sign key.");
+            goto errorExit;
+        }
+    } else {
+        if(!DIDDocument_IsAuthenticationKey(doc, signkey)) {
+            DIDError_Set(DIDERR_INVALID_KEY, "Please give the authentication key.");
+            goto errorExit;
+        }
+    }
+
+    successed = DIDBackend_Revoke(&store->backend, credid, signkey, doc, storepass);
+
+errorExit:
+    DIDDocument_Destroy(doc);
     return successed;
 }
 

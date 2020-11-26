@@ -28,12 +28,23 @@
 #include "ela_did.h"
 #include "didhistory.h"
 #include "didtransactioninfo.h"
+#include "vctransactioninfo.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct DIDHistory   ResolveResult;
+typedef struct DIDHistory  ResolveResult;
+
+typedef struct VcResolveResult {
+    DIDURL id;
+    CredentialStatus status;
+
+    struct {
+        size_t size;
+        CredentialTransaction infos[2];
+    } txinfos;
+} VcResolveResult;
 
 int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all);
 
@@ -52,6 +63,22 @@ ssize_t ResolveResult_GetTransactionCount(ResolveResult *result);
 DIDTransactionInfo *ResolveResult_GetTransactionInfo(ResolveResult *result, int index);
 
 DIDHistory *ResolveResult_ToDIDHistory(ResolveResult *result);
+
+//------------------------------------------------------------
+
+int VcResolveResult_FromJson(VcResolveResult *result, json_t *json, bool all);
+
+void VcResolveResult_Destroy(VcResolveResult *result);
+
+void VcResolveResult_Free(VcResolveResult *result);
+
+const char *VcResolveResult_ToJson(VcResolveResult *result);
+
+CredentialStatus VcResolveResult_GetStatus(VcResolveResult *result);
+
+ssize_t VcResolveResult_GetTransactionCount(VcResolveResult *result);
+
+CredentialTransaction *VcResolveResult_GetTransactionInfo(VcResolveResult *result, int index);
 
 #ifdef __cplusplus
 }

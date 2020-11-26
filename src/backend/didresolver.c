@@ -30,6 +30,7 @@
 #include "didresolver.h"
 
 #define DID_RESOLVE_REQUEST "{\"method\":\"resolvedid\",\"params\":{\"did\":\"%s\",\"all\":%s}}"
+#define VC_RESOLVE_REQUEST "{\"method\":\"resolvecredential\",\"params\":{\"id\":\"%s\",\"all\":%s}}"
 
 typedef struct HttpResponseBody {
     size_t used;
@@ -104,35 +105,22 @@ static size_t HttpRequestBodyReadCallback(void *dest, size_t size,
     return 0;
 }
 
-// Caller need free the pointer
-static const char *DefaultResolver_Resolve(DIDResolver *resolver, const char *did, int all)
+static const char *default_resolve(DefaultResolver *resolver, char *resolve_request)
 {
-    DefaultResolver *_resolver = (DefaultResolver *)resolver;
-
     HttpRequestBody request;
     HttpResponseBody response;
     char buffer[256];
     const char *forAll;
 
-    if (!resolver || !*_resolver->url || !did) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    // TODO: max did length
-    if (strlen(did) > 64) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments: too long did string.");
-        return NULL;
-    }
-
-    forAll = !all ? "false" : "true";
+    assert(resolver);
+    assert(resolve_request);
 
     request.used = 0;
-    request.sz = sprintf(buffer, DID_RESOLVE_REQUEST, did, forAll);
-    request.data = buffer;
+    request.sz = strlen(resolve_request);
+    request.data = resolve_request;
 
     CURL *curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_URL, _resolver->url);
+    curl_easy_setopt(curl, CURLOPT_URL, resolver->url);
 
     curl_easy_setopt(curl, CURLOPT_POST, 1L);
     curl_easy_setopt(curl, CURLOPT_READFUNCTION, HttpRequestBodyReadCallback);
@@ -154,7 +142,7 @@ static const char *DefaultResolver_Resolve(DIDResolver *resolver, const char *di
     curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
     if (rc != CURLE_OK) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve [%s] error, status: %d, message: %s", did, rc, curl_easy_strerror(rc));
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "curl error, status: %d, message: %s", rc, curl_easy_strerror(rc));
         if (response.data)
             free(response.data);
 
@@ -163,6 +151,59 @@ static const char *DefaultResolver_Resolve(DIDResolver *resolver, const char *di
 
     ((char *)response.data)[response.used] = 0;
     return (const char *)response.data;
+}
+
+// Caller need free the pointer
+static const char *DefaultResolver_Resolve(DIDResolver *resolver, const char *did, int all)
+{
+    DefaultResolver *_resolver = (DefaultResolver *)resolver;
+
+    char buffer[256];
+    const char *forAll;
+
+    if (!resolver || !*_resolver->url || !did) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    // TODO: max did length
+    if (strlen(did) > 128) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments: too long did string.");
+        return NULL;
+    }
+
+    forAll = !all ? "false" : "true";
+
+    if (sprintf(buffer, DID_RESOLVE_REQUEST, did, forAll) == -1)
+        return NULL;
+
+    return default_resolve(_resolver, buffer);
+}
+
+static const char *DefaultResolver_ResolveCredential(DIDResolver *resolver, const char *id, int all)
+{
+    DefaultResolver *_resolver = (DefaultResolver *)resolver;
+
+    char buffer[256];
+    const char *forAll;
+
+    if (!resolver || !*_resolver->url || !id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    // TODO: max did length
+    if (strlen(id) > 128) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments: too long did string.");
+        return NULL;
+    }
+
+    forAll = !all ? "false" : "true";
+
+    if (sprintf(buffer, VC_RESOLVE_REQUEST, id, forAll) == -1)
+        return NULL;
+
+    return default_resolve(_resolver, buffer);
 }
 
 DIDResolver *DefaultResolver_Create(const char *url)
@@ -180,7 +221,8 @@ DIDResolver *DefaultResolver_Create(const char *url)
     }
 
     memcpy((char*)resolver->url, url, strlen(url) + 1);
-    resolver->base.resolve = DefaultResolver_Resolve;
+    resolver->base.ResolveDID = DefaultResolver_Resolve;
+    resolver->base.ResolveCredential = DefaultResolver_ResolveCredential;
     return (DIDResolver *)resolver;
 }
 

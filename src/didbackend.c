@@ -112,7 +112,7 @@ bool DIDBackend_Create(DIDBackend *backend, DIDDocument *document,
     assert(signkey);
     assert(storepass && *storepass);
 
-    if (!backend->adapter) {
+    if (!backend->adapter.CreateIdRequest) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not adapter to create transaction.\
                 Please reopen didstore to add adapter.");
         return false;
@@ -127,7 +127,7 @@ bool DIDBackend_Create(DIDBackend *backend, DIDDocument *document,
     if (!reqstring)
         return false;
 
-   successed = backend->adapter->createIdTransaction(backend->adapter, reqstring, "");
+   successed = backend->adapter.CreateIdRequest(&backend->adapter, reqstring, "");
     free((void*)reqstring);
     if (!successed)
         DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction(create) failed.");
@@ -146,7 +146,7 @@ bool DIDBackend_Update(DIDBackend *backend, DIDDocument *document, DIDURL *signk
     assert(signkey);
     assert(storepass && *storepass);
 
-    if (!backend->adapter) {
+    if (!backend->adapter.CreateIdRequest) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not adapter to create transaction.\
                 Please reopen didstore to add adapter.");
         return false;
@@ -161,7 +161,7 @@ bool DIDBackend_Update(DIDBackend *backend, DIDDocument *document, DIDURL *signk
     if (!reqstring)
         return false;
 
-    successed = backend->adapter->createIdTransaction(backend->adapter, reqstring, "");
+    successed = backend->adapter.CreateIdRequest(&backend->adapter, reqstring, "");
     free((void*)reqstring);
     if (!successed)
         DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction(update) failed.");
@@ -181,7 +181,7 @@ bool DIDBackend_Deactivate(DIDBackend *backend, DID *did, DIDURL *signkey,
     assert(signkey);
     assert(storepass && *storepass);
 
-    if (!backend->adapter) {
+    if (!backend->adapter.CreateIdRequest) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not adapter to create transaction.\
                 Please reopen didstore to add adapter.");
         return false;
@@ -201,7 +201,7 @@ bool DIDBackend_Deactivate(DIDBackend *backend, DID *did, DIDURL *signkey,
     if (!reqstring)
         return false;
 
-    successed = backend->adapter->createIdTransaction(backend->adapter, reqstring, "");
+    successed = backend->adapter.CreateIdRequest(&backend->adapter, reqstring, "");
     free((void*)reqstring);
     if (!successed)
         DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction(deactivated) failed.");
@@ -220,7 +220,7 @@ static int resolve_from_backend(ResolveResult *result, DID *did, bool all)
     assert(result);
     assert(did);
 
-    data = resolverInstance->resolve(resolverInstance,
+    data = resolverInstance->ResolveDID(resolverInstance,
             DID_ToString(did, _idstring, sizeof(_idstring)), all);
     if (!data) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve did %s failed.", did->idstring);
@@ -253,7 +253,67 @@ static int resolve_from_backend(ResolveResult *result, DID *did, bool all)
     if (ResolveResult_FromJson(result, item, all) == -1)
         goto errorExit;
 
-    if (ResolveResult_GetStatus(result) != DIDStatus_NotFound && !all && ResolveCache_Store(result, did) == -1)
+    if (ResolveResult_GetStatus(result) != DIDStatus_NotFound && !all && ResolveCache_StoreDID(result, did) == -1)
+        goto errorExit;
+
+    rc = 0;
+
+errorExit:
+    if (root)
+        json_decref(root);
+    if (data)
+        free((void*)data);
+    return rc;
+}
+
+static int vcresolve_from_backend(VcResolveResult *result, DIDURL *id, bool all)
+{
+    const char *data = NULL;
+    json_t *root = NULL, *item, *field;
+    json_error_t error;
+    char _idstring[ELA_MAX_DID_LEN], *idstring;
+    int code = -1, rc = -1;
+
+    assert(result);
+    assert(id);
+
+    idstring = DIDURL_ToString(id, _idstring, sizeof(_idstring), false);
+    if (!idstring)
+        return rc;
+
+    data = resolverInstance->ResolveCredential(resolverInstance, idstring, all);
+    if (!data) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve data %s from chain failed.", idstring);
+        return rc;
+    }
+
+    root = json_loads(data, JSON_COMPACT, &error);
+    if (!root) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Deserialize resolved data failed, error: %s.", error.text);
+        goto errorExit;
+    }
+
+    item = json_object_get(root, "result");
+    if (!item || !json_is_object(item)) {
+        item = json_object_get(root, "error");
+        if (!item || !json_is_null(item)) {
+            DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing or invalid error field.");
+        } else {
+            field = json_object_get(item, "code");
+            if (field && json_is_integer(field)) {
+                code = json_integer_value(field);
+                field = json_object_get(item, "message");
+                if (field && json_is_string(field))
+                    DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve did error(%d): %s", code, json_string_value(field));
+            }
+        }
+        goto errorExit;
+    }
+
+    if (VcResolveResult_FromJson(result, item, all) == -1)
+        goto errorExit;
+
+    if (VcResolveResult_GetStatus(result) != CredentialStatus_NotFound && !all && ResolveCache_StoreCredential(result, id) == -1)
         goto errorExit;
 
     rc = 0;
@@ -272,7 +332,7 @@ static int resolve_internal(ResolveResult *result, DID *did, bool all, bool forc
     assert(did);
     assert(!all || (all && force));
 
-    if (!force && ResolverCache_Load(result, did, ttl) == 0)
+    if (!force && ResolverCache_LoadDID(result, did, ttl) == 0)
         return 0;
 
     if (resolve_from_backend(result, did, all) < 0)
@@ -281,7 +341,22 @@ static int resolve_internal(ResolveResult *result, DID *did, bool all, bool forc
     return 0;
 }
 
-DIDDocument *DIDBackend_Resolve(DID *did, bool force)
+static int vcresolve_internal(VcResolveResult *result, DIDURL *id, bool all, bool force)
+{
+    assert(result);
+    assert(id);
+    assert(!all || (all && force));
+
+    if (!force && ResolverCache_LoadCredential(result, id, ttl) == 0)
+        return 0;
+
+    if (vcresolve_from_backend(result, id, all) < 0)
+        return -1;
+
+    return 0;
+}
+
+DIDDocument *DIDBackend_ResolveDID(DID *did, bool force)
 {
     DIDDocument *doc = NULL;
     ResolveResult result;
@@ -299,7 +374,7 @@ DIDDocument *DIDBackend_Resolve(DID *did, bool force)
             return doc;
     }
 
-    if (!resolverInstance || !resolverInstance->resolve) {
+    if (!resolverInstance || !resolverInstance->ResolveDID) {
         DIDError_Set(DIDERR_INVALID_BACKEND, "DID resolver not initialized.");
         return NULL;
     }
@@ -330,7 +405,7 @@ DIDDocument *DIDBackend_Resolve(DID *did, bool force)
     return doc;
 }
 
-DIDHistory *DIDBackend_ResolveHistory(DID *did)
+DIDHistory *DIDBackend_ResolveDIDHistory(DID *did)
 {
     ResolveResult result;
 
@@ -339,7 +414,7 @@ DIDHistory *DIDBackend_ResolveHistory(DID *did)
         return NULL;
     }
 
-    if (!resolverInstance || !resolverInstance->resolve) {
+    if (!resolverInstance || !resolverInstance->ResolveDID) {
         DIDError_Set(DIDERR_INVALID_BACKEND, "DID resolver not initialized.");
         return NULL;
     }
@@ -369,3 +444,120 @@ void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle)
     gLocalResolveHandle = handle;
 }
 
+//*****Credential
+bool DIDBackend_Declear(DIDBackend *backend, Credential *vc, DIDURL *signkey,
+        DIDDocument *document, const char *storepass)
+{
+    const char *reqstring;
+    bool successed;
+
+    assert(backend);
+    assert(vc);
+    assert(signkey);
+    assert(document);
+    assert(storepass && *storepass);
+
+    if (!backend->adapter.CreateCredentialRequest) {
+        DIDError_Set(DIDERR_INVALID_BACKEND, "No adapter to create credential transaction.\
+                Please init adapter to add the method to create credential transaction.");
+        return false;
+    }
+
+    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
+        return false;
+    }
+
+    reqstring = CredentialRequest_Sign(RequestType_Declear, NULL, vc, signkey, document, storepass);
+    if (!reqstring)
+        return false;
+
+    successed = backend->adapter.CreateCredentialRequest(&backend->adapter, reqstring, "");
+    free((void*)reqstring);
+    if (!successed)
+        DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction(deactivated) failed.");
+
+    return successed;
+}
+
+bool DIDBackend_Revoke(DIDBackend *backend, DIDURL *credid, DIDURL *signkey, DIDDocument *document,
+        const char *storepass)
+{
+    const char *reqstring;
+    bool successed;
+
+    assert(backend);
+    assert(credid);
+    assert(signkey);
+    assert(document);
+    assert(storepass && *storepass);
+
+    if (!backend->adapter.CreateCredentialRequest) {
+        DIDError_Set(DIDERR_INVALID_BACKEND, "No adapter to create credential transaction.\
+                Please init adapter to add the method to create credential transaction.");
+        return false;
+    }
+
+    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
+        return false;
+    }
+
+    reqstring = CredentialRequest_Sign(RequestType_Revoke, credid, NULL, signkey, document, storepass);
+    if (!reqstring)
+        return false;
+
+    successed = backend->adapter.CreateCredentialRequest(&backend->adapter, reqstring, "");
+    free((void*)reqstring);
+    if (!successed)
+        DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction(deactivated) failed.");
+
+    return successed;
+}
+
+Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force)
+{
+    Credential *credential = NULL;
+    VcResolveResult result;
+    size_t i;
+
+    if (!id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    if (!resolverInstance || !resolverInstance->ResolveCredential) {
+        DIDError_Set(DIDERR_INVALID_BACKEND, "DID resolver not initialized.");
+        return NULL;
+    }
+
+    memset(&result, 0, sizeof(VcResolveResult));
+    if (vcresolve_internal(&result, id, false, force) == -1) {
+        *status = CredentialStatus_Error;
+        VcResolveResult_Destroy(&result);
+        return NULL;
+    }
+
+    if (VcResolveResult_GetStatus(&result) == CredentialStatus_NotFound) {
+        *status = CredentialStatus_NotFound;
+        VcResolveResult_Destroy(&result);
+        DIDError_Set(DIDERR_NOT_EXISTS, "Credential does not exist.");
+        return NULL;
+    } else if (VcResolveResult_GetStatus(&result) == CredentialStatus_Revoke) {
+        *status = CredentialStatus_Revoke;
+        VcResolveResult_Destroy(&result);
+        DIDError_Set(DIDERR_DID_DEACTIVATED, "Credential is revoke.");
+        return NULL;
+    } else {
+        credential = result.txinfos.infos[0].request.vc;
+        VcResolveResult_Free(&result);
+        if (!credential) {
+            *status = CredentialStatus_Error;
+            DIDError_Set(DIDERR_RESOLVE_ERROR, "Malformed resolver response.");
+        } else {
+            *status = CredentialStatus_Valid;
+        }
+    }
+
+    return credential;
+}

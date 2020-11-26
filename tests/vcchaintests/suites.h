@@ -20,42 +20,12 @@
  * SOFTWARE.
  */
 
-#ifndef __DIDBACKEND_H__
-#define __DIDBACKEND_H__
+#ifndef __VCCHAIN_TEST_SUITES_H__
+#define __VCCHAIN_TEST_SUITES_H__
 
-#include "ela_did.h"
+DECL_TESTSUITE(vcchain_dummyadapter_test);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define DEFINE_VCCHAIN_TESTSUITES \
+    DEFINE_TESTSUITE(vcchain_dummyadapter_test)
 
-typedef struct DIDBackend {
-    DIDAdapter adapter;
-} DIDBackend;
-
-bool DIDBackend_Create(DIDBackend *backend, DIDDocument *document,
-        DIDURL *signkey, const char *storepass);
-
-bool DIDBackend_Update(DIDBackend *backend, DIDDocument *document,
-        DIDURL *signkey, const char *storepass);
-
-bool DIDBackend_Deactivate(DIDBackend *backend, DID *did,
-        DIDURL *signkey, const char *storepass);
-
-DIDDocument *DIDBackend_ResolveDID(DID *did, bool force);
-
-DIDHistory *DIDBackend_ResolveDIDHistory(DID *did);
-
-bool DIDBackend_Declear(DIDBackend *backend, Credential *vc, DIDURL *signkey,
-        DIDDocument *document, const char *storepass);
-
-bool DIDBackend_Revoke(DIDBackend *backend, DIDURL *credid, DIDURL *signkey,
-        DIDDocument *document,  const char *storepass);
-
-Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif //__DIDBACKEND_H__
+#endif /* __VCCHAIN_TEST_SUITES_H__ */

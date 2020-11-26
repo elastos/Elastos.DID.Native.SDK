@@ -42,6 +42,11 @@ static bool TestDIDAdaptor_CreateIdTransaction(DIDAdapter *_adapter, const char 
     return SpvDidAdapter_CreateIdTransaction(adapter->impl, payload, memo, password);
 }
 
+static bool TestDIDAdaptor_CreateCredentialTransaction(DIDAdapter *_adapter, const char *payload, const char *memo)
+{
+    return false;
+}
+
 DIDAdapter *TestDIDAdapter_Create(const char *walletDir, const char *walletId,
         const char *network, GetPasswordCallback *callback)
 {
@@ -55,7 +60,8 @@ DIDAdapter *TestDIDAdapter_Create(const char *walletDir, const char *walletId,
     if (!adapter)
         return NULL;
 
-    adapter->base.createIdTransaction = TestDIDAdaptor_CreateIdTransaction;
+    adapter->base.CreateIdRequest = TestDIDAdaptor_CreateIdTransaction;
+    adapter->base.CreateCredentialRequest = TestDIDAdaptor_CreateCredentialTransaction;
 
     adapter->impl = SpvDidAdapter_Create(walletDir, walletId, network);
     if (!adapter->impl) {

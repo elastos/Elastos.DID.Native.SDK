@@ -952,3 +952,62 @@ int Credential_Copy(Credential *dest, Credential *src)
     return 0;
 }
 
+Credential *Credential_Resolve(DIDURL *id, CredentialStatus *status, bool force)
+{
+    if (!id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    return DIDBackend_ResolveCredential(id, status, force);
+}
+
+bool Credential_IsDeclear(DIDURL *id)
+{
+    Credential *credential;
+    int status;
+
+    if (!id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    credential = Credential_Resolve(id, &status, false);
+    if (!credential) {
+        if (status == CredentialStatus_Revoke)
+            DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "The credential is revoked.");
+        if (status == CredentialStatus_NotFound)
+            DIDError_Set(DIDERR_NOT_EXISTS, "The credential is not on the chain.");
+        if (status == CredentialStatus_Error)
+            DIDError_Set(DIDError_GetCode(), DIDError_GetMessage());
+        return false;
+    }
+
+    Credential_Destroy(credential);
+    return true;
+}
+
+bool Credential_IsRevoke(DIDURL *id)
+{
+    Credential *credential;
+    int status;
+
+    if (!id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    credential = Credential_Resolve(id, &status, false);
+    if (credential) {
+        Credential_Destroy(credential);
+    } else {
+        if (status == CredentialStatus_Revoke)
+            return true;
+
+        if (status == CredentialStatus_NotFound)
+            DIDError_Set(DIDERR_NOT_EXISTS, "The credential is not on the chain.");
+        if (status == CredentialStatus_Error)
+            DIDError_Set(DIDError_GetCode(), DIDError_GetMessage());
+    }
+    return false;
+}

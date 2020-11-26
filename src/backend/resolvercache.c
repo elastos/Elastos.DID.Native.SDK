@@ -74,7 +74,7 @@ int ResolverCache_Reset(void)
     return 0;
 }
 
-int ResolverCache_Load(ResolveResult *result, DID *did, long ttl)
+int ResolverCache_LoadDID(ResolveResult *result, DID *did, long ttl)
 {
     char path[PATH_MAX];
     const char *data;
@@ -113,7 +113,7 @@ int ResolverCache_Load(ResolveResult *result, DID *did, long ttl)
     return rc;
 }
 
-int ResolveCache_Store(ResolveResult *result, DID *did)
+int ResolveCache_StoreDID(ResolveResult *result, DID *did)
 {
     char path[PATH_MAX];
     const char *data;
@@ -141,7 +141,7 @@ int ResolveCache_Store(ResolveResult *result, DID *did)
     return rc;
 }
 
-void ResolveCache_Invalid(DID *did)
+void ResolveCache_InvalidDID(DID *did)
 {
     char path[PATH_MAX];
 
@@ -150,4 +150,81 @@ void ResolveCache_Invalid(DID *did)
     if (get_file(path, 0, 2, rootpath, did->idstring) == 0)
         delete_file(path);
 
+}
+
+int ResolverCache_LoadCredential(VcResolveResult *result, DIDURL *id, long ttl)
+{
+    char path[PATH_MAX];
+    const char *data;
+    struct stat s;
+    time_t curtime;
+    json_t *root;
+    json_error_t error;
+    int rc;
+
+    assert(result);
+    assert(id);
+    assert(ttl >= 0);
+
+    if (get_file(path, 0, 3, rootpath, id->did.idstring, id->fragment) == -1)
+        return -1;
+
+    //check the lasted modify time
+    if (stat(path, &s) < 0)
+        return -1;
+
+    time(&curtime);
+    if (curtime - s.st_mtime > ttl)
+        return -1;
+
+    data = load_file(path);
+    if (!data)
+        return -1;
+
+    root = json_loads(data, JSON_COMPACT, &error);
+    free((void*)data);
+    if (!root)
+        return -1;
+
+    rc = VcResolveResult_FromJson(result, root, false);
+    json_decref(root);
+    return rc;
+}
+
+int ResolveCache_StoreCredential(VcResolveResult *result, DIDURL *id)
+{
+    char path[PATH_MAX];
+    const char *data;
+    int rc;
+
+    assert(result);
+    assert(id);
+
+    if (get_file(path, 1, 3, rootpath, id->did.idstring, id->fragment) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create resolver cache entry failed.");
+        return -1;
+    }
+
+    data = VcResolveResult_ToJson(result);
+    if (!data) {
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Serialize the credential resolve result to json failed.");
+        return -1;
+    }
+
+    rc = store_file(path, data);
+    free((void*)data);
+    if (rc < 0)
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store credential resolve result data failed.");
+
+    return rc;
+}
+
+void ResolveCache_InvalidCredential(DIDURL *id)
+{
+    char path[PATH_MAX];
+
+    assert(id);
+
+    if (get_file(path, 0, 3, rootpath, id->did.idstring, id->fragment) == 0)
+        delete_file(path);
 }

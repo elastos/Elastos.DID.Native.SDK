@@ -20,42 +20,47 @@
  * SOFTWARE.
  */
 
-#ifndef __DIDBACKEND_H__
-#define __DIDBACKEND_H__
+#ifndef __VCTRANSACTIONINFO_H__
+#define __VCTRANSACTIONINFO_H__
+
+#include <jansson.h>
 
 #include "ela_did.h"
+#include "vcrequest.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct DIDBackend {
-    DIDAdapter adapter;
-} DIDBackend;
+typedef struct CredentialTransaction {
+    char txid[ELA_MAX_TXID_LEN];
+    time_t timestamp;
 
-bool DIDBackend_Create(DIDBackend *backend, DIDDocument *document,
-        DIDURL *signkey, const char *storepass);
+    CredentialRequest request;
+} CredentialTransaction;
 
-bool DIDBackend_Update(DIDBackend *backend, DIDDocument *document,
-        DIDURL *signkey, const char *storepass);
+int CredentialTransaction_FromJson(CredentialTransaction *txinfo, json_t *json);
 
-bool DIDBackend_Deactivate(DIDBackend *backend, DID *did,
-        DIDURL *signkey, const char *storepass);
+void CredentialTransaction_Destroy(CredentialTransaction *txinfo);
 
-DIDDocument *DIDBackend_ResolveDID(DID *did, bool force);
+void CredentialTransaction_Free(CredentialTransaction *txinfo);
 
-DIDHistory *DIDBackend_ResolveDIDHistory(DID *did);
+int CredentialTransaction_ToJson_Internal(JsonGenerator *gen, CredentialTransaction *info);
 
-bool DIDBackend_Declear(DIDBackend *backend, Credential *vc, DIDURL *signkey,
-        DIDDocument *document, const char *storepass);
+const char *CredentialTransaction_ToJson(CredentialTransaction *txinfo);
 
-bool DIDBackend_Revoke(DIDBackend *backend, DIDURL *credid, DIDURL *signkey,
-        DIDDocument *document,  const char *storepass);
+CredentialRequest *CredentialTransaction_GetRequest(CredentialTransaction *txinfo);
 
-Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force);
+const char *CredentialTransaction_GetTransactionId(CredentialTransaction *txinfo);
+
+time_t CredentialTransaction_GetTimeStamp(CredentialTransaction *txinfo);
+
+DID *CredentialTransaction_GetOwner(CredentialTransaction *txinfo);
+
+DIDURL *CredentialTransaction_GetId(CredentialTransaction *txinfo);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //__DIDBACKEND_H__
+#endif //__VCTRANSACTIONINFO_H__
