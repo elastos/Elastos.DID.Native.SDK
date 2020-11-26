@@ -145,8 +145,10 @@ static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *p
     return true;
 
 errorExit:
-    if (info)
+    if (info) {
         DIDTransactionInfo_Destroy(info);
+        free((void*)info);
+    }
     if (root)
         json_decref(root);
 
@@ -295,7 +297,7 @@ static bool DummyAdapter_CreateVcTransaction(DIDAdapter *_adapter, const char *p
     CredentialTransaction *info = NULL, *lastinfo;
     json_t *root;
     json_error_t error;
-    Credential *vc;
+    Credential *vc = NULL;
 
     assert(_adapter);
     assert(payload);
@@ -354,8 +356,10 @@ static bool DummyAdapter_CreateVcTransaction(DIDAdapter *_adapter, const char *p
     return true;
 
 errorExit:
-    if (info)
+    if (info) {
         CredentialTransaction_Destroy(info);
+        free((void*)info);
+    }
     if (root)
         json_decref(root);
 
