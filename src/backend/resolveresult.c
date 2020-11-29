@@ -325,7 +325,7 @@ int VcResolveResult_FromJson(VcResolveResult *result, json_t *json, bool all)
 
             Credential *vc = txinfo->request.vc;
             if (vc) {
-                revoked = (result->status == CredentialStatus_Revoke) ? true : false;
+                revoked = (result->status == CredentialStatus_Revoked) ? true : false;
                 CredentialMetaData_SetRevoke(&vc->metadata, revoked);
             }
 

@@ -69,7 +69,7 @@ static void test_didstore_export_import_did(void)
 
     DIDStore *store2 = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL(store2);
-    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_InitDIDAdapter(store2, adapter));
+    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_SetDIDAdapter(store2, adapter));
 
     rc = DIDStore_ImportDID(store2, password, file, "1234");
     CU_ASSERT_NOT_EQUAL(rc, -1);
@@ -119,7 +119,7 @@ static void test_didstore_export_import_privateidentity(void)
 
     DIDStore *store2 = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL(store2);
-    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_InitDIDAdapter(store2, adapter));
+    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_SetDIDAdapter(store2, adapter));
 
     rc = DIDStore_ImportPrivateIdentity(store2, password, file, "1234");
     CU_ASSERT_NOT_EQUAL(rc, -1);
@@ -166,7 +166,7 @@ static void test_didstore_export_import_store(void)
 
     DIDStore *store2 = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL(store2);
-    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_InitDIDAdapter(store2, adapter));
+    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_SetDIDAdapter(store2, adapter));
 
     rc = DIDStore_ImportStore(store2, password, file, "1234");
     CU_ASSERT_NOT_EQUAL(rc, -1);

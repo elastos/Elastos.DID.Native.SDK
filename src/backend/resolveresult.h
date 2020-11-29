@@ -27,6 +27,7 @@
 
 #include "ela_did.h"
 #include "didhistory.h"
+#include "credentialhistory.h"
 #include "didtransactioninfo.h"
 #include "vctransactioninfo.h"
 
@@ -35,16 +36,7 @@ extern "C" {
 #endif
 
 typedef struct DIDHistory  ResolveResult;
-
-typedef struct VcResolveResult {
-    DIDURL id;
-    CredentialStatus status;
-
-    struct {
-        size_t size;
-        CredentialTransaction infos[2];
-    } txinfos;
-} VcResolveResult;
+typedef struct CredentialHistory VcResolveResult;
 
 int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all);
 

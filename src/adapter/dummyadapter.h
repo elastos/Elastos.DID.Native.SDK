@@ -10,8 +10,9 @@ extern "C" {
 typedef struct DummyAdapter {
 	DIDAdapter adapter;
 	DIDResolver resolver;
-	void (*resetdid)(struct DummyAdapter *adapter);
-    void (*resetvc)(struct DummyAdapter *adapter);
+	void (*resetdids)(struct DummyAdapter *adapter);
+    void (*resetcredentials)(struct DummyAdapter *adapter);
+    void (*reset)(struct DummyAdapter *adapter);
 } DummyAdapter;
 
 DID_API DummyAdapter *DummyAdapter_Create(void);

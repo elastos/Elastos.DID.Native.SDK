@@ -124,7 +124,7 @@ typedef enum
      * \~English
      * Credential is revoked on chain.
      */
-    CredentialStatus_Revoke = 1,
+    CredentialStatus_Revoked = 1,
     /**
      * \~English
      * Credential is not on the chain.
@@ -1190,7 +1190,7 @@ DID_API bool DIDDocument_IsGenuine(DIDDocument *document);
  * @return
  *      true if document is expired, otherwise false.
 */
-DID_API bool DIDDocument_IsExpires(DIDDocument *document);
+DID_API bool DIDDocument_IsExpired(DIDDocument *document);
 
 /**
  * \~English
@@ -2476,15 +2476,16 @@ DID_API Credential *Credential_Resolve(DIDURL *id, CredentialStatus *status, boo
 
 /**
  * \~English
- * Indicate the credential is on the chain or not.
+ * Indicate the credential was ever decleared in the chain. Whatever the current status of
+ * credetial is.
  *
  * @param
  *      id                     [in] The id of credential to resolve.
  * @return
- *      If the returned value is true, the credential is valid on the chain.
- *      Otherwise, the credential is not on the chain or revoked.
+ *      If the returned value is true, the credential was decleared on the chain.
+ *      Otherwise, the credential is not.
  */
-DID_API bool Credential_IsDeclear(DIDURL *id);
+DID_API bool Credential_WasDecleared(DIDURL *id);
 
 /**
  * \~English
@@ -2496,7 +2497,7 @@ DID_API bool Credential_IsDeclear(DIDURL *id);
  *      If the returned value is true, the credential is revoked on the chain.
  *      Otherwise, the credential is not revoked.
  */
-DID_API bool Credential_IsRevoke(DIDURL *id);
+DID_API bool Credential_IsRevoked(DIDURL *id);
 
 /**
  * \~English
@@ -2633,8 +2634,6 @@ DID_API DIDURL *Issuer_GetSignKey(Issuer *issuer);
  *
  * @param
  *      root                 [in] The path of DIDStore's root.
- * @param
- *      adapter              [in] The handle to publish did context to chain.
  * @return
  *      If no error occurs, return the handle to DID Store. Otherwise, return NULL.
  */
@@ -2642,16 +2641,16 @@ DID_API DIDStore* DIDStore_Open(const char *root);
 
 /**
  * \~English
- * Initialize DIDAdapter to DIDStore.
+ * Set DIDAdapter to DIDStore.
  *
  * @param
  *      store                 [in] The path of DIDStore's root.
  * @param
- *      adapter              [in] The handle to publish did context to chain.
+ *      adapter               [in] The handle to publish did context to chain.
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */
-DID_API int DIDStore_InitDIDAdapter(DIDStore *store, DIDAdapter *adapter);
+DID_API int DIDStore_SetDIDAdapter(DIDStore *store, DIDAdapter *adapter);
 
 /**
  * \~English

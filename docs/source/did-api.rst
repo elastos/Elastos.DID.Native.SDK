@@ -505,10 +505,10 @@ DIDDocument_IsGenuine
 .. doxygenfunction:: DIDDocument_IsGenuine
    :project: DIDAPI
 
-DIDDocument_IsExpires
+DIDDocument_IsExpired
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDDocument_IsExpires
+.. doxygenfunction:: DIDDocument_IsExpired
    :project: DIDAPI
 
 DIDDocument_IsValid
@@ -970,6 +970,24 @@ Credential_SaveMetaData
 .. doxygenfunction:: Credential_SaveMetaData
    :project: DIDAPI
 
+Credential_Resolve
+~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: Credential_Resolve
+   :project: DIDAPI
+
+Credential_WasDecleared
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: Credential_WasDecleared
+   :project: DIDAPI
+
+Credential_IsRevoked
+~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: Credential_IsRevoked
+   :project: DIDAPI
+
 Issuer Functions
 ################
 
@@ -1016,6 +1034,12 @@ DIDStore_Open
 ~~~~~~~~~~~~~~
 
 .. doxygenfunction:: DIDStore_Open
+   :project: DIDAPI
+
+DIDStore_SetDIDAdapter
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_SetDIDAdapter
    :project: DIDAPI
 
 DIDStore_Close
@@ -1156,6 +1180,65 @@ DIDStore_DeactivateDID
 .. doxygenfunction:: DIDStore_DeactivateDID
    :project: DIDAPI
 
+DIDStore_ChangePassword
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_ChangePassword
+   :project: DIDAPI
+
+DIDStore_ExportDID
+~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_ExportDID
+   :project: DIDAPI
+
+DIDStore_ImportDID
+~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_ImportDID
+   :project: DIDAPI
+
+DIDStore_ExportPrivateIdentity
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_ExportPrivateIdentity
+   :project: DIDAPI
+
+DIDStore_ImportPrivateIdentity
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_ImportPrivateIdentity
+   :project: DIDAPI
+
+DIDStore_ExportStore
+~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_ExportStore
+   :project: DIDAPI
+
+DIDStore_ImportStore
+~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_ImportStore
+   :project: DIDAPI
+
+DIDStore_PublishDID
+~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_PublishDID
+   :project: DIDAPI
+
+DIDStore_DeclearCredential
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_DeclearCredential
+   :project: DIDAPI
+
+DIDStore_RevokeCredential
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_RevokeCredential
+   :project: DIDAPI
 
 Mnemonic Functions
 ##################

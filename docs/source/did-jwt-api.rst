@@ -120,7 +120,7 @@ JWSParser_Parse
 ~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: JWSParser_Parse
-   :project:
+   :project: DIDAPI
 
 JWSParser_Destroy
 ~~~~~~~~~~~~~~~~~~~~

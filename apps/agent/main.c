@@ -580,7 +580,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    if (DIDStore_InitDIDAdapter(store, &adapter) < 0) {
+    if (DIDStore_SetDIDAdapter(store, &adapter) < 0) {
         printf("Error: Initialize adapter failed.\n");
         return -1;
     }

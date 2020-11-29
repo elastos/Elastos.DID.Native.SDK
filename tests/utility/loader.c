@@ -471,14 +471,13 @@ static DIDStore *setup_store(bool dummybackend, const char *root)
 
     sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
     if (dummybackend) {
-        dummyadapter->resetdid(dummyadapter);
-        dummyadapter->resetvc(dummyadapter);
+        dummyadapter->reset(dummyadapter);
         testdata.store = DIDStore_Open(root);
-        DIDStore_InitDIDAdapter(testdata.store, &dummyadapter->adapter);
+        DIDStore_SetDIDAdapter(testdata.store, &dummyadapter->adapter);
         DIDBackend_Initialize(&dummyadapter->resolver, cachedir);
     } else {
         testdata.store = DIDStore_Open(root);
-        DIDStore_InitDIDAdapter(testdata.store, adapter);
+        DIDStore_SetDIDAdapter(testdata.store, adapter);
         DIDBackend_InitializeDefault(resolver, cachedir);
     }
     return testdata.store;
@@ -513,7 +512,7 @@ int TestData_InitIdentity(DIDStore *store)
     int rc;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, passphase, language, false);
+    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, passphase, language, true);
     Mnemonic_Free((void*)mnemonic);
 
     return rc;

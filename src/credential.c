@@ -29,13 +29,15 @@
 #include "ela_did.h"
 #include "diderror.h"
 #include "common.h"
+#include "crypto.h"
 #include "JsonGenerator.h"
 #include "JsonHelper.h"
 #include "did.h"
 #include "diddocument.h"
 #include "didstore.h"
 #include "credential.h"
-#include "crypto.h"
+#include "didbackend.h"
+#include "credentialhistory.h"
 
 static const char *PresentationsType = "VerifiablePresentation";
 extern const char *ProofType;
@@ -829,10 +831,8 @@ bool Credential_IsExpired(Credential *cred)
     expires = Credential_GetExpirationDate(cred);
     now = time(NULL);
 
-    if (now > expires) {
-        DIDError_Set(DIDERR_EXPIRED, "Credential is expired.");
+    if (now > expires)
         return true;
-    }
 
     return false;
 }
@@ -962,32 +962,36 @@ Credential *Credential_Resolve(DIDURL *id, CredentialStatus *status, bool force)
     return DIDBackend_ResolveCredential(id, status, force);
 }
 
-bool Credential_IsDeclear(DIDURL *id)
+bool Credential_WasDecleared(DIDURL *id)
 {
     Credential *credential;
-    int status;
+    CredentialHistory *history, _history;
+    bool decleared = false;
+    int i;
 
     if (!id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    credential = Credential_Resolve(id, &status, false);
-    if (!credential) {
-        if (status == CredentialStatus_Revoke)
-            DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "The credential is revoked.");
-        if (status == CredentialStatus_NotFound)
-            DIDError_Set(DIDERR_NOT_EXISTS, "The credential is not on the chain.");
-        if (status == CredentialStatus_Error)
-            DIDError_Set(DIDError_GetCode(), DIDError_GetMessage());
+    memset(&_history, 0, sizeof(_history));
+    history = DIDBackend_ResolveCredentialHistory(&_history, id);
+    if (!history)
         return false;
+
+    for (i = 0; i < history->txinfos.size; i++) {
+        if (!strcmp(history->txinfos.infos[i].request.header.op, "declear")) {
+            decleared = true;
+            break;
+        }
     }
 
-    Credential_Destroy(credential);
-    return true;
+pointexit:
+    CredentialHistory_Destory(history);
+    return decleared;
 }
 
-bool Credential_IsRevoke(DIDURL *id)
+bool Credential_IsRevoked(DIDURL *id)
 {
     Credential *credential;
     int status;
@@ -998,16 +1002,11 @@ bool Credential_IsRevoke(DIDURL *id)
     }
 
     credential = Credential_Resolve(id, &status, false);
-    if (credential) {
-        Credential_Destroy(credential);
-    } else {
-        if (status == CredentialStatus_Revoke)
-            return true;
+    if (!credential && status == CredentialStatus_Revoked)
+        return true;
 
-        if (status == CredentialStatus_NotFound)
-            DIDError_Set(DIDERR_NOT_EXISTS, "The credential is not on the chain.");
-        if (status == CredentialStatus_Error)
-            DIDError_Set(DIDError_GetCode(), DIDError_GetMessage());
-    }
+    if (credential)
+        Credential_Destroy(credential);
+
     return false;
 }

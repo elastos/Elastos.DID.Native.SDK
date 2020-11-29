@@ -141,7 +141,7 @@ int ResolveCache_StoreDID(ResolveResult *result, DID *did)
     return rc;
 }
 
-void ResolveCache_InvalidDID(DID *did)
+void ResolveCache_InvalidateDID(DID *did)
 {
     char path[PATH_MAX];
 
@@ -154,19 +154,25 @@ void ResolveCache_InvalidDID(DID *did)
 
 int ResolverCache_LoadCredential(VcResolveResult *result, DIDURL *id, long ttl)
 {
-    char path[PATH_MAX];
+    char path[PATH_MAX], buffer[ELA_MAX_DIDURL_LEN];
     const char *data;
     struct stat s;
     time_t curtime;
     json_t *root;
     json_error_t error;
-    int rc;
+    int rc, size;
 
     assert(result);
     assert(id);
     assert(ttl >= 0);
 
-    if (get_file(path, 0, 3, rootpath, id->did.idstring, id->fragment) == -1)
+    size = snprintf(buffer, ELA_MAX_DIDURL_LEN, "%s_%s", id->did.idstring, id->fragment);
+    if (size < 0 || size > sizeof(buffer)) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize the name for credential cache failed.");
+        return -1;
+    }
+
+    if (get_file(path, 0, 2, rootpath, buffer) == -1)
         return -1;
 
     //check the lasted modify time
@@ -193,14 +199,20 @@ int ResolverCache_LoadCredential(VcResolveResult *result, DIDURL *id, long ttl)
 
 int ResolveCache_StoreCredential(VcResolveResult *result, DIDURL *id)
 {
-    char path[PATH_MAX];
+    char path[PATH_MAX], buffer[ELA_MAX_DIDURL_LEN];
     const char *data;
-    int rc;
+    int rc, size;
 
     assert(result);
     assert(id);
 
-    if (get_file(path, 1, 3, rootpath, id->did.idstring, id->fragment) == -1) {
+    size = snprintf(buffer, ELA_MAX_DIDURL_LEN, "%s_%s", id->did.idstring, id->fragment);
+    if (size < 0 || size > sizeof(buffer)) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize the name for credential cache failed.");
+        return -1;
+    }
+
+    if (get_file(path, 1, 2, rootpath, buffer) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create resolver cache entry failed.");
         return -1;
     }
@@ -219,7 +231,7 @@ int ResolveCache_StoreCredential(VcResolveResult *result, DIDURL *id)
     return rc;
 }
 
-void ResolveCache_InvalidCredential(DIDURL *id)
+void ResolveCache_InvalidateCredential(DIDURL *id)
 {
     char path[PATH_MAX];
 

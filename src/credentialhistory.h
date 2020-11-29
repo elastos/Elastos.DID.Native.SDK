@@ -20,12 +20,32 @@
  * SOFTWARE.
  */
 
-#ifndef __VCCHAIN_TEST_SUITES_H__
-#define __VCCHAIN_TEST_SUITES_H__
+#ifndef __CREDENTIALHISTORY_H__
+#define __CREDENTIALHISTORY_H__
 
-DECL_TESTSUITE(vcchain_dummyadapter_test);
+#include "ela_did.h"
+#include "vctransactioninfo.h"
 
-#define DEFINE_VCCHAIN_TESTSUITES \
-    DEFINE_TESTSUITE(vcchain_dummyadapter_test)
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#endif /* __VCCHAIN_TEST_SUITES_H__ */
+struct CredentialHistory {
+    DIDURL id;
+    CredentialStatus status;
+
+    struct {
+        size_t size;
+        CredentialTransaction infos[2];
+    } txinfos;
+};
+
+typedef struct CredentialHistory CredentialHistory;
+
+void CredentialHistory_Destory(CredentialHistory *history);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //__CREDENTIALHISTORY_H__

@@ -1108,7 +1108,7 @@ DIDStore* DIDStore_Open(const char *root)
     return NULL;
 }
 
-int DIDStore_InitDIDAdapter(DIDStore *store, DIDAdapter *adapter)
+int DIDStore_SetDIDAdapter(DIDStore *store, DIDAdapter *adapter)
 {
     if (!store) {
         DIDError_Set(DIDERR_INVALID_ARGS, "No DIDStore for DIDAdapter.");
@@ -1955,7 +1955,7 @@ int DIDStore_Synchronize(DIDStore *store, const char *storepass, DIDStore_MergeC
                     continue;
                 }
 
-                if (DIDDocument_IsExpires(chainCopy)) {
+                if (DIDDocument_IsExpired(chainCopy)) {
                     DIDError_Set(DIDERR_EXPIRED, "Did is expired.");
                     DIDDocument_Destroy(chainCopy);
                     blanks = 0;
@@ -2422,7 +2422,7 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
         goto errorExit;
     }
 
-    if (!force && DIDDocument_IsExpires(doc)) {
+    if (!force && DIDDocument_IsExpired(doc)) {
         DIDError_Set(DIDERR_EXPIRED, "Did already expired, use force mode to publish anyway.");
         goto errorExit;
     }
@@ -2432,7 +2432,7 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
 
     resolve_doc = DID_Resolve(did, true);
     if (!resolve_doc) {
-        successed = DIDBackend_Create(&store->backend, doc, signkey, storepass);
+        successed = DIDBackend_CreateDID(&store->backend, doc, signkey, storepass);
     } else {
         if (DIDDocument_IsDeactivated(resolve_doc)) {
             DIDError_Set(DIDERR_EXPIRED, "Did already deactivated.");
@@ -2479,13 +2479,13 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
 
         DIDMetaData_SetTxid(&doc->metadata, last_txid);
         DIDMetaData_SetTxid(&doc->did.metadata, last_txid);
-        successed = DIDBackend_Update(&store->backend, doc, signkey, storepass);
+        successed = DIDBackend_UpdateDID(&store->backend, doc, signkey, storepass);
     }
 
     if (!successed)
         goto errorExit;
 
-    ResolveCache_InvalidDID(did);
+    ResolveCache_InvalidateDID(did);
     //Meta stores the resolved txid and local signature.
     DIDMetaData_SetSignature(&doc->metadata, DIDDocument_GetProofSignature(doc));
     if (resolve_signature)
@@ -2543,10 +2543,10 @@ bool DIDStore_DeactivateDID(DIDStore *store, const char *storepass,
         }
     }
 
-    successed = DIDBackend_Deactivate(&store->backend, &doc->did, signkey, storepass);
+    successed = DIDBackend_DeactivateDID(&store->backend, &doc->did, signkey, storepass);
     DIDDocument_Destroy(doc);
     if (successed)
-        ResolveCache_InvalidDID(did);
+        ResolveCache_InvalidateDID(did);
 
     return successed;
 }
@@ -2554,10 +2554,9 @@ bool DIDStore_DeactivateDID(DIDStore *store, const char *storepass,
 bool DIDStore_DeclearCredential(DIDStore *store, const char *storepass, DIDURL *credid,
         DIDURL *signkey)
 {
-    const char *last_txid, *local_signature, *local_prevsignature, *resolve_signature = NULL;
     DIDDocument *doc = NULL;
     Credential *vc = NULL;
-    int rc = -1, status = -1;
+    int status = -1;
     bool successed = false;
 
     if (!store || !storepass || !*storepass || !credid) {
@@ -2571,7 +2570,7 @@ bool DIDStore_DeclearCredential(DIDStore *store, const char *storepass, DIDURL *
         DIDError_Set(DIDERR_ALREADY_EXISTS, "The credential already exist.");
         return false;
     } else {
-        if (status == CredentialStatus_Revoke) {
+        if (status == CredentialStatus_Revoked) {
             DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "The credential is already revoked.");
             return false;
         }
@@ -2607,7 +2606,7 @@ bool DIDStore_DeclearCredential(DIDStore *store, const char *storepass, DIDURL *
         }
     }
 
-    successed = DIDBackend_Declear(&store->backend, vc, signkey, doc, storepass);
+    successed = DIDBackend_DeclearCredential(&store->backend, vc, signkey, doc, storepass);
 
 errorExit:
     DIDDocument_Destroy(doc);
@@ -2618,10 +2617,9 @@ errorExit:
 bool DIDStore_RevokeCredential(DIDStore *store, const char *storepass, DIDURL *credid,
         DIDURL *signkey)
 {
-    const char *last_txid, *local_signature, *local_prevsignature, *resolve_signature = NULL;
     DIDDocument *doc = NULL;
     Credential *vc = NULL;
-    int rc = -1, status = -1;
+    int status = -1;
     bool successed = false;
 
     if (!store || !storepass || !*storepass || !credid) {
@@ -2639,7 +2637,7 @@ bool DIDStore_RevokeCredential(DIDStore *store, const char *storepass, DIDURL *c
 
     vc = Credential_Resolve(credid, &status, true);
     if (!vc) {
-        if (status == CredentialStatus_Revoke) {
+        if (status == CredentialStatus_Revoked) {
             DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "The credential is already revoked.");
             return false;
         }
@@ -2670,7 +2668,7 @@ bool DIDStore_RevokeCredential(DIDStore *store, const char *storepass, DIDURL *c
         }
     }
 
-    successed = DIDBackend_Revoke(&store->backend, credid, signkey, doc, storepass);
+    successed = DIDBackend_RevokeCredential(&store->backend, credid, signkey, doc, storepass);
 
 errorExit:
     DIDDocument_Destroy(doc);

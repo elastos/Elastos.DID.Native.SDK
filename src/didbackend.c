@@ -37,6 +37,7 @@
 #include "resolvercache.h"
 #include "diderror.h"
 #include "didhistory.h"
+#include "credentialhistory.h"
 
 #define DEFAULT_TTL    (24 * 60 * 60 * 1000)
 
@@ -101,7 +102,7 @@ int DIDBackend_Initialize(DIDResolver *resolver, const char *cachedir)
     return 0;
 }
 
-bool DIDBackend_Create(DIDBackend *backend, DIDDocument *document,
+bool DIDBackend_CreateDID(DIDBackend *backend, DIDDocument *document,
         DIDURL *signkey, const char *storepass)
 {
     const char *reqstring;
@@ -135,7 +136,7 @@ bool DIDBackend_Create(DIDBackend *backend, DIDDocument *document,
     return successed;
 }
 
-bool DIDBackend_Update(DIDBackend *backend, DIDDocument *document, DIDURL *signkey,
+bool DIDBackend_UpdateDID(DIDBackend *backend, DIDDocument *document, DIDURL *signkey,
         const char *storepass)
 {
     const char *reqstring;
@@ -169,7 +170,7 @@ bool DIDBackend_Update(DIDBackend *backend, DIDDocument *document, DIDURL *signk
     return successed;
 }
 
-bool DIDBackend_Deactivate(DIDBackend *backend, DID *did, DIDURL *signkey,
+bool DIDBackend_DeactivateDID(DIDBackend *backend, DID *did, DIDURL *signkey,
         const char *storepass)
 {
     const char *reqstring;
@@ -253,7 +254,7 @@ static int resolve_from_backend(ResolveResult *result, DID *did, bool all)
     if (ResolveResult_FromJson(result, item, all) == -1)
         goto errorExit;
 
-    if (ResolveResult_GetStatus(result) != DIDStatus_NotFound && !all && ResolveCache_StoreDID(result, did) == -1)
+    if (ResolveResult_GetStatus(result) != DIDStatus_NotFound && ResolveCache_StoreDID(result, did) == -1)
         goto errorExit;
 
     rc = 0;
@@ -313,7 +314,7 @@ static int vcresolve_from_backend(VcResolveResult *result, DIDURL *id, bool all)
     if (VcResolveResult_FromJson(result, item, all) == -1)
         goto errorExit;
 
-    if (VcResolveResult_GetStatus(result) != CredentialStatus_NotFound && !all && ResolveCache_StoreCredential(result, id) == -1)
+    if (VcResolveResult_GetStatus(result) != CredentialStatus_NotFound && ResolveCache_StoreCredential(result, id) == -1)
         goto errorExit;
 
     rc = 0;
@@ -445,7 +446,7 @@ void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle)
 }
 
 //*****Credential
-bool DIDBackend_Declear(DIDBackend *backend, Credential *vc, DIDURL *signkey,
+bool DIDBackend_DeclearCredential(DIDBackend *backend, Credential *vc, DIDURL *signkey,
         DIDDocument *document, const char *storepass)
 {
     const char *reqstring;
@@ -480,7 +481,7 @@ bool DIDBackend_Declear(DIDBackend *backend, Credential *vc, DIDURL *signkey,
     return successed;
 }
 
-bool DIDBackend_Revoke(DIDBackend *backend, DIDURL *credid, DIDURL *signkey, DIDDocument *document,
+bool DIDBackend_RevokeCredential(DIDBackend *backend, DIDURL *credid, DIDURL *signkey, DIDDocument *document,
         const char *storepass)
 {
     const char *reqstring;
@@ -519,7 +520,6 @@ Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force)
 {
     Credential *credential = NULL;
     VcResolveResult result;
-    size_t i;
 
     if (!id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -543,8 +543,8 @@ Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force)
         VcResolveResult_Destroy(&result);
         DIDError_Set(DIDERR_NOT_EXISTS, "Credential does not exist.");
         return NULL;
-    } else if (VcResolveResult_GetStatus(&result) == CredentialStatus_Revoke) {
-        *status = CredentialStatus_Revoke;
+    } else if (VcResolveResult_GetStatus(&result) == CredentialStatus_Revoked) {
+        *status = CredentialStatus_Revoked;
         VcResolveResult_Destroy(&result);
         DIDError_Set(DIDERR_DID_DEACTIVATED, "Credential is revoke.");
         return NULL;
@@ -560,4 +560,17 @@ Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force)
     }
 
     return credential;
+}
+
+CredentialHistory *DIDBackend_ResolveCredentialHistory(CredentialHistory *history, DIDURL *id)
+{
+    assert(history);
+    assert(id);
+
+    if (vcresolve_internal((VcResolveResult*)history, id, true, true) == -1) {
+        CredentialHistory_Destory(history);
+        return NULL;
+    }
+
+    return history;
 }

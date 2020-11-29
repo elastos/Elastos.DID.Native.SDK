@@ -996,7 +996,7 @@ bool DIDDocument_IsGenuine(DIDDocument *document)
     return rc == 0 ? true : false;
 }
 
-bool DIDDocument_IsExpires(DIDDocument *document)
+bool DIDDocument_IsExpired(DIDDocument *document)
 {
     time_t curtime;
 
@@ -1006,10 +1006,8 @@ bool DIDDocument_IsExpires(DIDDocument *document)
     }
 
     curtime = time(NULL);
-    if (curtime > document->expires) {
-        DIDError_Set(DIDERR_EXPIRED, "DID Document is expired.");
+    if (curtime > document->expires)
         return true;
-    }
 
     return false;
 }
@@ -1021,7 +1019,7 @@ bool DIDDocument_IsValid(DIDDocument *document)
         return false;
     }
 
-    if (DIDDocument_IsExpires(document)) {
+    if (DIDDocument_IsExpired(document)) {
         DIDError_Set(DIDERR_EXPIRED, "Did is expires.");
         return false;
     }

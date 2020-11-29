@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Elastos Foundation
+ * Copyright (c) 2020 Elastos Foundation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,36 +20,22 @@
  * SOFTWARE.
  */
 
-#ifndef __RESOLVERCACHE_H__
-#define __RESOLVERCACHE_H__
+#include <string.h>
+#include <stdlib.h>
 
 #include "ela_did.h"
-#include "resolveresult.h"
+#include "diderror.h"
+#include "credentialhistory.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+void CredentialHistory_Destory(CredentialHistory *history)
+{
+    size_t i;
 
-int ResolverCache_SetCacheDir(const char *root);
+    if (!history)
+        return;
 
-const char *ResolverCache_GetCacheDir(void);
+    for (i = 0; i < history->txinfos.size; i++)
+        CredentialTransaction_Destroy(&history->txinfos.infos[i]);
 
-int ResolverCache_Reset(void);
-
-int ResolverCache_LoadDID(ResolveResult *result, DID *did, long ttl);
-
-int ResolveCache_StoreDID(ResolveResult *result, DID *did);
-
-void ResolveCache_InvalidateDID(DID *did);
-
-int ResolverCache_LoadCredential(VcResolveResult *result, DIDURL *id, long ttl);
-
-int ResolveCache_StoreCredential(VcResolveResult *result, DIDURL *id);
-
-void ResolveCache_InvalidateCredential(DIDURL *id);
-
-#ifdef __cplusplus
+    memset(history, 0, sizeof(CredentialHistory));
 }
-#endif
-
-#endif //__RESOLVERCACHE_H__

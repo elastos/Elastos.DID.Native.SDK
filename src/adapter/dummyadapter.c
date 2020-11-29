@@ -17,6 +17,7 @@
 #include "crypto.h"
 #include "common.h"
 #include "diderror.h"
+#include "didhistory.h"
 
 #define TXID_LEN            32
 
@@ -55,17 +56,6 @@ static DIDTransactionInfo *get_lasttransaction(DID *did)
             return info;
     }
     return NULL;
-}
-
-static DIDTransactionInfo *get_transaction(DID *did, int index)
-{
-    DIDTransactionInfo *info;
-
-    assert(did);
-    assert(index >= 0 && index < num);
-
-    info = infos[index];
-    return DID_Equals(did, DIDTransactionInfo_GetOwner(info)) ? info : NULL;
 }
 
 static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *payload, const char *memo)
@@ -130,7 +120,7 @@ static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *p
             goto errorExit;
         }
     } else {
-        DIDError_Set(DIDERR_UNSUPPOTED, "No this operation.");
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unknown operation.");
         goto errorExit;
     }
 
@@ -159,7 +149,7 @@ static int result_tojson(JsonGenerator *gen, DID *did, bool all)
 {
     DIDTransactionInfo *info;
     char idstring[ELA_MAX_DID_LEN];
-    int status;
+    int i, status;
 
     assert(gen);
 
@@ -169,22 +159,22 @@ static int result_tojson(JsonGenerator *gen, DID *did, bool all)
 
     info = get_lasttransaction(did);
     if (!info) {
-        status = 3;
+        status = DIDStatus_NotFound;
     } else {
         if (!strcmp(info->request.header.op, "deactivate")) {
-            status = 2;
+            status = DIDStatus_Deactivated;
         } else {
-            if (DIDDocument_IsExpires(info->request.doc))
-                status = 1;
+            if (DIDDocument_IsExpired(info->request.doc))
+                status = DIDStatus_Expired;
             else
-                status = 0;
+                status = DIDStatus_Valid;
         }
     }
 
     CHECK(JsonGenerator_WriteFieldName(gen, "status"));
     CHECK(JsonGenerator_WriteNumber(gen, status));
 
-    if (status == 3) {
+    if (status == DIDStatus_NotFound) {
         CHECK(JsonGenerator_WriteEndObject(gen));
         return 0;
     }
@@ -192,10 +182,9 @@ static int result_tojson(JsonGenerator *gen, DID *did, bool all)
     CHECK(JsonGenerator_WriteFieldName(gen, "transaction"));
     CHECK(JsonGenerator_WriteStartArray(gen));
     if (all) {
-        int i;
         for (i = num - 1; i >= 0; i--) {
-            info = get_transaction(did, i);
-            if (info)
+            info = infos[i];
+            if (info && DID_Equals(did, DIDTransactionInfo_GetOwner(info)))
                 CHECK(DIDTransactionInfo_ToJson_Internal(gen, info));
         }
     } else {
@@ -254,7 +243,7 @@ const char* DummyAdapter_ResolveDID(DIDResolver *resolver, const char *did, int 
     return JsonGenerator_Finish(gen);
 }
 
-static void DummyAdapter_Reset(DummyAdapter *adapter)
+static void DummyAdapter_ResetDIDs(DummyAdapter *adapter)
 {
     int i;
     for (i = 0; i < num; i++) {
@@ -279,17 +268,6 @@ static CredentialTransaction *get_lastvctransaction(DIDURL *id)
             return info;
     }
     return NULL;
-}
-
-static CredentialTransaction *get_vctransaction(DIDURL *id, int index)
-{
-    CredentialTransaction *info;
-
-    assert(id);
-    assert(index >= 0 && index < vcnum);
-
-    info = vcinfos[index];
-    return DIDURL_Equals(id, CredentialTransaction_GetId(info)) ? info : NULL;
 }
 
 static bool DummyAdapter_CreateVcTransaction(DIDAdapter *_adapter, const char *payload, const char *memo)
@@ -341,7 +319,7 @@ static bool DummyAdapter_CreateVcTransaction(DIDAdapter *_adapter, const char *p
             }
         }
     } else {
-        DIDError_Set(DIDERR_UNSUPPOTED, "No this operation.");
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unknown operation.");
         goto errorExit;
     }
 
@@ -370,7 +348,7 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, bool all)
 {
     CredentialTransaction *info;
     char idstring[ELA_MAX_DID_LEN];
-    int status;
+    int i, status;
 
     assert(gen);
 
@@ -380,19 +358,19 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, bool all)
 
     info = get_lastvctransaction(id);
     if (!info) {
-        status = 2;
+        status = CredentialStatus_NotFound;
     } else {
         if (!strcmp(info->request.header.op, "revoke")) {
-            status = 1;
+            status = CredentialStatus_Revoked;
         } else {
-            status = 0;
+            status = CredentialStatus_Valid;
         }
     }
 
     CHECK(JsonGenerator_WriteFieldName(gen, "status"));
     CHECK(JsonGenerator_WriteNumber(gen, status));
 
-    if (status == 2) {
+    if (status == CredentialStatus_NotFound) {
         CHECK(JsonGenerator_WriteEndObject(gen));
         return 0;
     }
@@ -400,10 +378,9 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, bool all)
     CHECK(JsonGenerator_WriteFieldName(gen, "transaction"));
     CHECK(JsonGenerator_WriteStartArray(gen));
     if (all) {
-        int i;
         for (i = vcnum - 1; i >= 0; i--) {
-            info = get_vctransaction(id, i);
-            if (info)
+            info = vcinfos[i];
+            if (info && DIDURL_Equals(id, CredentialTransaction_GetId(info)))
                 CHECK(CredentialTransaction_ToJson_Internal(gen, info));
         }
     } else {
@@ -462,7 +439,7 @@ const char* DummyAdapter_ResolveVc(DIDResolver *resolver, const char *id, int al
     return JsonGenerator_Finish(gen);
 }
 
-static void DummyAdapter_ResetVc(DummyAdapter *adapter)
+static void DummyAdapter_ResetCredentials(DummyAdapter *adapter)
 {
     int i;
     for (i = 0; i < num; i++) {
@@ -473,14 +450,21 @@ static void DummyAdapter_ResetVc(DummyAdapter *adapter)
     vcnum = 0;
 }
 
+static void DummyAdapter_Reset(DummyAdapter *adapter)
+{
+    DummyAdapter_ResetDIDs(adapter);
+    DummyAdapter_ResetCredentials(adapter);
+}
+
 DummyAdapter *DummyAdapter_Create(void)
 {
     adapterInstance.adapter.CreateIdRequest = DummyAdapter_CreateIdTransaction;
     adapterInstance.adapter.CreateCredentialRequest = DummyAdapter_CreateVcTransaction;
     adapterInstance.resolver.ResolveDID = DummyAdapter_ResolveDID;
     adapterInstance.resolver.ResolveCredential = DummyAdapter_ResolveVc;
-    adapterInstance.resetdid = DummyAdapter_Reset;
-    adapterInstance.resetvc = DummyAdapter_ResetVc;
+    adapterInstance.resetdids = DummyAdapter_ResetDIDs;
+    adapterInstance.resetcredentials = DummyAdapter_ResetCredentials;
+    adapterInstance.reset = DummyAdapter_Reset;
     return &adapterInstance;
 }
 

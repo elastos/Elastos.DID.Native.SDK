@@ -109,8 +109,6 @@ static const char *default_resolve(DefaultResolver *resolver, char *resolve_requ
 {
     HttpRequestBody request;
     HttpResponseBody response;
-    char buffer[256];
-    const char *forAll;
 
     assert(resolver);
     assert(resolve_request);
@@ -142,7 +140,7 @@ static const char *default_resolve(DefaultResolver *resolver, char *resolve_requ
     curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
     if (rc != CURLE_OK) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "curl error, status: %d, message: %s", rc, curl_easy_strerror(rc));
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve error, status: %d, message: %s", rc, curl_easy_strerror(rc));
         if (response.data)
             free(response.data);
 
