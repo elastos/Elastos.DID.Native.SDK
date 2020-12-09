@@ -68,8 +68,8 @@ static void test_didstore_bulk_newdid(void)
         gAlias = DIDMetaData_GetAlias(metadata);
         CU_ASSERT_PTR_NOT_NULL(gAlias);
         CU_ASSERT_STRING_EQUAL(alias, gAlias);
-        CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(doc),
-                DIDDocument_GetProofSignature(loaddoc));
+        CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(doc, 0),
+                DIDDocument_GetProofSignature(loaddoc, 0));
 
         bool isEquals = DID_Equals(did, DIDDocument_GetSubject(loaddoc));
         CU_ASSERT_TRUE(isEquals);
@@ -172,14 +172,14 @@ static void test_didstore_op_store_load_did(void)
     loaddoc = DIDStore_LoadDID(store, DIDDocument_GetSubject(issuerdoc));
     isEquals = DID_Equals(DIDDocument_GetSubject(issuerdoc), DIDDocument_GetSubject(loaddoc));
     CU_ASSERT_TRUE(isEquals);
-    CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(issuerdoc), DIDDocument_GetProofSignature(loaddoc));
+    CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(issuerdoc, 0), DIDDocument_GetProofSignature(loaddoc, 0));
     CU_ASSERT_TRUE(DIDDocument_IsValid(loaddoc));
     DIDDocument_Destroy(loaddoc);
 
     loaddoc = DIDStore_LoadDID(store, DIDDocument_GetSubject(doc));
     isEquals = DID_Equals(DIDDocument_GetSubject(doc), DIDDocument_GetSubject(loaddoc));
     CU_ASSERT_TRUE(isEquals);
-    CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(doc), DIDDocument_GetProofSignature(loaddoc));
+    CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(doc, 0), DIDDocument_GetProofSignature(loaddoc, 0));
     CU_ASSERT_TRUE(DIDDocument_IsValid(loaddoc));
     DIDDocument_Destroy(loaddoc);
 

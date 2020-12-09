@@ -338,7 +338,9 @@ static void test_issuer_issuerbystring_with_ctrl_chars(void)
     provalue = Credential_GetProperties(vc);
     CU_ASSERT_PTR_NOT_NULL(provalue);
     CU_ASSERT_EQUAL(strlen(propdata), strlen(provalue));
+    free((void*)provalue);
     Credential_Destroy(vc);
+    Issuer_Destroy(issuer);
 }
 
 static void test_cidissuer_issue_kycvc(void)
@@ -354,7 +356,7 @@ static void test_cidissuer_issue_kycvc(void)
 
     expires = DIDDocument_GetExpires(doc);
 
-    customizeddoc = TestData_LoadCustomizedDoc();
+    customizeddoc = TestData_LoadCtmDoc();
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
 
     subject = DIDDocument_GetSubject(customizeddoc);
@@ -436,7 +438,7 @@ static void test_issuer_issue_cidvc(void)
 
     expires = DIDDocument_GetExpires(issuerdoc);
 
-    customizeddoc = TestData_LoadCustomizedDoc();
+    customizeddoc = TestData_LoadCtmDoc();
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
 
     subject = DIDDocument_GetSubject(customizeddoc);
@@ -516,7 +518,7 @@ static void test_cidissuer_issue_selfvc(void)
     ssize_t size;
     const char* provalue;
 
-    customizeddoc = TestData_LoadCustomizedDoc();
+    customizeddoc = TestData_LoadCtmDoc();
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
     expires = DIDDocument_GetExpires(customizeddoc);
 
@@ -590,7 +592,7 @@ static void test_issuer_issue_multicidvc(void)
 
     expires = DIDDocument_GetExpires(issuerdoc);
 
-    customizeddoc = TestData_LoadMultiCustomizedDoc();
+    customizeddoc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
 
     subject = DIDDocument_GetSubject(customizeddoc);
@@ -672,7 +674,7 @@ static void test_multicidissuer_issue_kycvc(void)
 
     expires = DIDDocument_GetExpires(doc);
 
-    customizeddoc = TestData_LoadMultiCustomizedDoc();
+    customizeddoc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
 
     subject = DIDDocument_GetSubject(customizeddoc);
@@ -758,7 +760,7 @@ static void test_multicidissuer_issue_kycvc2(void)
 
     expires = DIDDocument_GetExpires(doc);
 
-    customizeddoc = TestData_LoadMultiCustomizedDoc();
+    customizeddoc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
 
     subject = DIDDocument_GetSubject(customizeddoc);
@@ -842,7 +844,7 @@ static void test_multicidissuer_issue_selfvc(void)
     ssize_t size;
     const char* provalue;
 
-    customizeddoc = TestData_LoadMultiCustomizedDoc();
+    customizeddoc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
     expires = DIDDocument_GetExpires(customizeddoc);
 
@@ -854,6 +856,7 @@ static void test_multicidissuer_issue_selfvc(void)
 
     issuer = Issuer_Create(subject, signkey, store);
     CU_ASSERT_PTR_NOT_NULL(issuer);
+    DIDURL_Destroy(signkey);
 
     credid = DIDURL_NewByDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
@@ -916,7 +919,7 @@ static void test_multicidissuer_issue_selfvc2(void)
     ssize_t size;
     const char* provalue;
 
-    customizeddoc = TestData_LoadMultiCustomizedDoc();
+    customizeddoc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
     expires = DIDDocument_GetExpires(customizeddoc);
 
@@ -928,6 +931,7 @@ static void test_multicidissuer_issue_selfvc2(void)
 
     issuer = Issuer_Create(subject, signkey, store);
     CU_ASSERT_PTR_NOT_NULL(issuer);
+    DIDURL_Destroy(signkey);
 
     credid = DIDURL_NewByDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);

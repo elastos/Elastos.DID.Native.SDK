@@ -20,27 +20,13 @@
  * SOFTWARE.
  */
 
-#ifndef __DSTORE_TEST_SUITES_H__
-#define __DSTORE_TEST_SUITES_H__
+#ifndef __TICKET_TEST_SUITES_H__
+#define __TICKET_TEST_SUITES_H__
 
-DECL_TESTSUITE(didstore_initial_test);
-DECL_TESTSUITE(didstore_openstore_test);
-DECL_TESTSUITE(didstore_did_op_test);
-DECL_TESTSUITE(didstore_customized_did_test);
-DECL_TESTSUITE(didstore_vc_op_test);
-DECL_TESTSUITE(didstore_change_password_test);
-DECL_TESTSUITE(didstore_export_store_test);
+DECL_TESTSUITE(ticket_test);
 
-#define DEFINE_DSTORE_TESTSUITES \
-    DEFINE_TESTSUITE(didstore_customized_did_test)
+#define DEFINE_TICKET_TESTSUITES \
+    DEFINE_TESTSUITE(ticket_test)
 
+#endif /* __TICKET_TEST_SUITES_H__ */
 
-#endif /* __DSTORE_TEST_SUITES_H__ */
-
-    //DEFINE_TESTSUITE(didstore_change_password_test),
-    //DEFINE_TESTSUITE(didstore_did_op_test),
-    //DEFINE_TESTSUITE(didstore_initial_test),
-
-    //DEFINE_TESTSUITE(didstore_openstore_test),
-    //DEFINE_TESTSUITE(didstore_vc_op_test),
-    //DEFINE_TESTSUITE(didstore_export_store_test)

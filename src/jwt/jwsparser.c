@@ -44,7 +44,7 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
     DIDDocument *doc = NULL;
     DIDURL *keyid;
     PublicKey *key;
-    const char *keybase58;
+    const char *keybase58, *iss;
     uint8_t binkey[PUBLICKEY_BYTES];
     KeySpec _spec, *spec;
     cjose_jwk_t *jwk = NULL;
@@ -55,7 +55,11 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
     assert(jwt->header);
     assert(jwt->claims);
 
-    issuer = DID_FromString(JWT_GetIssuer(jwt));
+    iss = JWT_GetIssuer(jwt);
+    if (!iss)
+        goto errorExit;
+
+    issuer = DID_FromString(iss);
     if (!issuer)
         goto errorExit;
 

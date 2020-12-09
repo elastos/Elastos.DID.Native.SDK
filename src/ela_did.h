@@ -202,28 +202,40 @@ typedef struct DIDHistory              DIDHistory;
  * A DIDDocument Builder to modify DIDDocument elems.
  */
 typedef struct DIDDocumentBuilder      DIDDocumentBuilder;
+/**
+ * \~English
+ * Transfer ticket.
+ *
+ * When customized DID owner(s) transfer the DID ownership to the others,
+ * they need create and sign a transfer ticket, it the DID document is mulisig
+ * document, the ticket should also multi-signed according the DID document.
+ *
+ * The new owner(s) can use this ticket create a transfer transaction, get
+ * the subject DID's ownership..
+ */
+typedef struct TransferTicket          TransferTicket;
 
 /**
  * \~English
  * A issuer is the did to issue credential. Issuer includes issuer's did and
  * issuer's sign key.
  */
-typedef struct Issuer               Issuer;
+typedef struct Issuer                 Issuer;
 /**
  * \~English
  * DIDStore is local store for specified DID.
  */
-typedef struct DIDStore             DIDStore;
+typedef struct DIDStore               DIDStore;
 /**
  * \~English
  * DIDAdapter is support method to create did transaction.
  */
-typedef struct DIDAdapter           DIDAdapter;
+typedef struct DIDAdapter             DIDAdapter;
 /**
  * \~English
  * DIDResolver is support method to resolve did document from chain.
  */
-typedef struct DIDResolver          DIDResolver;
+typedef struct DIDResolver            DIDResolver;
 
 #ifndef DISABLE_JWT
     /**
@@ -991,6 +1003,18 @@ DID_API int DIDHistory_GetStatus(DIDHistory *history);
  */
 DID_API ssize_t DIDHistory_GetTransactionCount(DIDHistory *history);
 
+
+/**
+ * \~English
+ * Get DID transaction count.
+ *
+ * @param
+ *      history                       [in] The handle to DIDHistory.
+ * @return
+*      If no error occurs, return count. Otherwise, return -1.
+ */
+DID_API ssize_t DIDHistory_GetTransactionCount(DIDHistory *history);
+
 /**
  * \~English
  * Get DID Document from 'index' transaction.
@@ -1046,7 +1070,6 @@ DID_API time_t DIDHistory_GetPublishedByIndex(DIDHistory *history, int index);
  *       Otherwise, return -1.
  */
 DID_API const char *DIDHistory_GetOperationByIndex(DIDHistory *history, int index);
-
 /**
  * \~English
  * Destroy DIDHistory.
@@ -1157,6 +1180,17 @@ DID_API bool DIDDocument_IsValid(DIDDocument *document);
 
 /**
  * \~English
+ * Check that document is qualified or not.
+ *
+ * @param
+ *      document             [in] A handle to DID Document.
+ * @return
+ *      true if document is valid, otherwise false.
+*/
+DID_API bool DIDDocument_IsQualified(DIDDocument *document);
+
+/**
+ * \~English
  * Get DID subject to DID Document. The DID Subject is the entity of
  * the DID Document. A DID Document must have exactly one DID subject.
  *
@@ -1174,12 +1208,14 @@ DID_API DID* DIDDocument_GetSubject(DIDDocument *document);
  *
  * @param
  *      document             [in] A handle to DID Document.
+ * @param
+ *      controllerdoc        [in] A handle to controlle's Document.
  * @return
  *      If no error occurs, return a handle to DIDDocumentBuilder.
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document);
+DID_API DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document, DIDDocument *controllerdoc);
 
 /**
  * \~English
@@ -1205,8 +1241,7 @@ DID_API void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder);
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder,
-            DID *controller, const char *storepass);
+DID_API DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *storepass);
 
 /**
  * \~English
@@ -1355,6 +1390,19 @@ DID_API int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *c
 
 /**
  * \~English
+ * Remove controller for DIDDocument.
+ *
+ * @param
+ *      builder               [in] A handle to DIDDocument Builder.
+ * @param
+ *      controller            [in] The controller for DIDDocument.
+ * @return
+ *      0 on success, -1 if an error occurred.
+ */
+DID_API int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *controller);
+
+/**
+ * \~English
  * Add one credential to credential array.
  *
  * @param
@@ -1387,6 +1435,9 @@ DID_API int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder,
  *      expires              [in] The time to credential be expired.
  *                               Support expires == 0, api add document expires time.
  * @param
+ *      signkey              [in] The key to sign.
+ *                                eg, if signkey is NULL, it uses the default key.
+ * @param
  *      storepass            [in] Password for DIDStores.
  * @return
  *      If no error occurs, return 0.
@@ -1394,7 +1445,7 @@ DID_API int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder,
  */
 DID_API int DIDDocumentBuilder_AddSelfClaimedCredential(DIDDocumentBuilder *builder,
         DIDURL *credid, const char **types, size_t typesize,
-        Property *properties, int propsize, time_t expires, const char *storepass);
+        Property *properties, int propsize, time_t expires, DIDURL *signkey, const char *storepass);
 /**
  * \~English
  * Remove specified credential from credential array.
@@ -1454,6 +1505,31 @@ DID_API int DIDDocumentBuilder_RemoveService(DIDDocumentBuilder *builder,
  */
 DID_API int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires);
 
+/**
+ * \~English
+ * Set multisig for customized did.
+ *
+ * @param
+ *      builder             [in] A handle to DIDDocument Builder.
+ * @param
+ *      multisig            [in] The multisig number.
+ * @return
+ *      0 on success, -1 if an error occurred.
+ */
+DID_API int DIDDocumentBuilder_SetMultisig(DIDDocumentBuilder *builder, int multisig);
+
+/**
+ * \~English
+ * Get multisig for customized did.
+ *
+ * @param
+ *      document             [in] A handle to DIDDocument.
+ * @return
+ *      return 0 if DID is normal DID or customized did has one controller;
+ *      return multisig number if customized did has multiple controller;
+ *      return -1 if an error occurred.
+ */
+DID_API int DIDDocument_GetMultisig(DIDDocument *document);
 /**
  * \~English
  * Get the count of controllers. The customized DID Document has controller, so the controller
@@ -1619,7 +1695,6 @@ DID_API PublicKey *DIDDocument_GetAuthenticationKey(DIDDocument *document, DIDUR
  */
 DID_API ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document, const char *type,
         DIDURL *keyid, PublicKey **pks, size_t size);
-
 
 /**
  * \~English
@@ -1956,15 +2031,28 @@ DID_API int DIDDocument_SaveMetaData(DIDDocument *document);
 
 /**
  * \~English
+ * Get the signer count.
+ *
+ * @param
+ *      document                    [in] The handle to DIDDocument.
+ * @return
+ *      Return  on success, -1 if an error occurred.
+ */
+DID_API ssize_t DIDDocument_GetProofCount(DIDDocument *document);
+
+/**
+ * \~English
  * Get the type property of embedded proof.
  *
  * @param
  *      document                 [in] A handle to DID Document.
+ * @param
+ *      index                    [in] Index number.
  * @return
  *      If no error occurs, return type string.
  *      Otherwise, return NULL.
  */
-DID_API const char *DIDDocument_GetProofType(DIDDocument *document);
+DID_API const char *DIDDocument_GetProofType(DIDDocument *document, int index);
 
 /**
  * \~English
@@ -1974,11 +2062,13 @@ DID_API const char *DIDDocument_GetProofType(DIDDocument *document);
  *
  * @param
  *      document                 [in] A handle to DID Document.
+ * @param
+ *      index                    [in] Index number.
  * @return
  *      If no error occurs, return the handle to identifier of public key.
  *      Otherwise, return NULL.
  */
-DID_API DIDURL *DIDDocument_GetProofCreater(DIDDocument *document);
+DID_API DIDURL *DIDDocument_GetProofCreater(DIDDocument *document, int index);
 
 /**
  * \~English
@@ -1986,11 +2076,13 @@ DID_API DIDURL *DIDDocument_GetProofCreater(DIDDocument *document);
  *
  * @param
  *      document                 [in] A handle to DID Document.
+ * @param
+ *      index                    [in] Index number.
  * @return
  *      If no error occurs, return 0.
  *      Otherwise, return time.
  */
-DID_API time_t DIDDocument_GetProofCreatedTime(DIDDocument *document);
+DID_API time_t DIDDocument_GetProofCreatedTime(DIDDocument *document, int index);
 
 /**
  * \~English
@@ -2000,11 +2092,13 @@ DID_API time_t DIDDocument_GetProofCreatedTime(DIDDocument *document);
  *
  * @param
  *      document                 [in] A handle to DID Document.
+ * @param
+ *      index                    [in] Index number.
  * @return
  *      If no error occurs, return signature string.
  *      Otherwise, return NULL.
  */
-DID_API const char *DIDDocument_GetProofSignature(DIDDocument *document);
+DID_API const char *DIDDocument_GetProofSignature(DIDDocument *document, int index);
 
 #ifndef DISABLE_JWT
 /**
@@ -2054,6 +2148,67 @@ DID_API JWSParser *DIDDocument_GetJwsParser(DIDDocument *document);
 
 DID_API const char *DIDDocument_Derive(DIDDocument *document, const char *identifier,
         int securityCode, const char *storepass);
+
+/**
+ * \~English
+ * Get document string by multiple signature.
+ *
+ * @param
+ *      controllerdoc            [in] The handle to controller's document.
+ * @param
+ *      document                 [in] The document string to be signed.
+ * @param
+ *      storepass                [in] The password for DIDStore.
+ * @return
+ *      the handle to new document if no error occurred and user should be destory the returned value.
+ */
+DID_API DIDDocument *DIDDocument_SignDIDDocument(DIDDocument* controllerdoc,
+        const char *document, const char *storepass);
+
+/**
+ * \~English
+ * Merge the several document.
+ *
+ * @param
+ *      count                    [in] The count of idrequest string.
+ * @return
+ *      document string if no error occurred and user should be free the returned value.
+ */
+DID_API const char *DIDDocument_MergeDIDDocuments(int count, ...);
+
+/**
+ * \~English
+ * Controller create transfer ticket by document.
+ *
+ * @param
+ *      controllerdoc           [in] The handle to controller's Document.
+ * @param
+ *      owner                   [in] The owner of transfer ticket.
+ * @param
+ *      to                      [in] The DID who received this ticket.
+ * @param
+ *      storepass               [in] The password for DIDStore.
+ * @return
+ *      document string if no error occurred and user should be free the returned value.
+ */
+DID_API TransferTicket *DIDDocument_CreateTransferTicket(DIDDocument *controllerdoc,
+        DID *owner, DID *to, const char *storepass);
+
+/**
+ * \~English
+ * Realize the mulisig for transfer ticket.
+ *
+ * @param
+ *      controllerdoc           [in] The handle to controller's document.
+ * @param
+ *      ticket                  [in] The handle of transfer ticket.
+ * @param
+ *      storepass               [in] The password for DIDStore.
+ * @return
+ *      document string if no error occurred and user should be free the returned value.
+ */
+DID_API int DIDDocument_SignTransferTicket(DIDDocument *controllerdoc,
+        TransferTicket *ticket, const char *storepass);
 
 /**
  * \~English
@@ -2716,6 +2871,8 @@ DID_API DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass,
  * @param
  *      controller                [in] The controller for customized DID.
  *                                     'customizeddid' supports NULL.
+ * @param
+ *      multisig                  [in] Multisig number.
  * tip: if the count of controllers is one, 'controller' supports NULL. Otherwise,
  * the error occures.
  * @return
@@ -2724,7 +2881,8 @@ DID_API DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass,
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
 DID_API DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
-        const char *customizeddid, DID **controllers, size_t size, DID *controller);
+        const char *customizeddid, DID *controller, DID **controllers, size_t size,
+        int multisig);
 
 /**
  * \~English
@@ -3026,7 +3184,7 @@ DID_API int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass,
  * @param
  *      did                     [in] The handle to DID.
  * @param
- *      keyid                    [in] The identifier of public key.
+ *      keyid                   [in] The identifier of public key.
  */
 DID_API void DIDStore_DeletePrivateKey(DIDStore *store, DID *did, DIDURL *keyid);
 
@@ -3296,7 +3454,6 @@ DID_API Presentation *Presentation_CreateByCredentials(DID *did, DIDURL *signkey
         DIDStore *store, const char *storepass, const char *nonce, const char *realm,
         Credential **creds, size_t count);
 
-
 /**
  * \~English
  * Destroy Presentation.
@@ -3471,6 +3628,150 @@ DID_API bool Presentation_IsGenuine(Presentation *pre);
  */
 DID_API bool Presentation_IsValid(Presentation *pre);
 
+/******************************************************************************
+ * TransferTicket
+ *****************************************************************************/
+/**
+ * \~English
+ * Destroy TransferTicket.
+ *
+ * @param
+ *      ticket                      [in] The handle to TransferTicket.
+ */
+DID_API void TransferTicket_Destroy(TransferTicket *ticket);
+
+/**
+ * \~English
+ * Get json non-formatted context from Transfer Ticket.
+ *
+ * @param
+ *      ticket               [in] A handle to Transfer Ticket.
+ * @return
+ *      If no error occurs, return json context. Otherwise, return NULL.
+ *      Notice that user need to free the returned value that it's memory.
+ */
+DID_API const char *TransferTicket_ToJson(TransferTicket *ticket);
+
+/**
+ * \~English
+ * Get Transfer Ticket from json context.
+ *
+ * @param
+ *      json               [in] Context of did conforming to json informat.
+ * @return
+ *      If no error occurs, return the handle to Transfer Ticket.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API TransferTicket *TransferTicket_FromJson(const char *json);
+
+/**
+ * \~English
+ * Check that transfer ticket is valid or not.
+ *
+ * @param
+ *      document             [in] A handle to Transfer Ticket.
+ * @return
+ *      true if document is valid, otherwise false.
+*/
+DID_API bool TransferTicket_IsValid(TransferTicket *ticket);
+
+/**
+ * \~English
+ * Check that ticket is qualified or not.
+ *
+ * @param
+ *      ticket             [in] A handle to TransferTicket.
+ * @return
+ *      true if document is valid, otherwise false.
+*/
+DID_API bool TransferTicket_IsQualified(TransferTicket *ticket);
+
+/**
+ * \~English
+ * Check that transfer ticket is genuine or not.
+ *
+ * @param
+ *      ticket              [in] A handle to TransferTicket.
+ * @return
+ *      true if document is genuine, otherwise false.
+*/
+DID_API bool TransferTicket_IsGenuine(TransferTicket *ticket);
+
+/**
+ * \~English
+ * Get the transfer ticket's signer count.
+ *
+ * @param
+ *      ticket                    [in] The handle to TransferTicket.
+ * @return
+ *      Return  on success, -1 if an error occurred.
+ */
+DID_API ssize_t TransferTicket_GetProofCount(TransferTicket *ticket);
+
+/**
+ * \~English
+ * Get the type property of embedded proof.
+ *
+ * @param
+ *      ticket                   [in] A handle to TransferTicket.
+ * @param
+ *      index                    [in] Index number.
+ * @return
+ *      If no error occurs, return type string.
+ *      Otherwise, return NULL.
+ */
+DID_API const char *TransferTicket_GetProofType(TransferTicket *ticket, int index);
+
+/**
+ * \~English
+ * Get verification method identifier of TransferTicket.
+ * The verification Method property specifies the public key
+ * that can be used to verify the digital signature.
+ *
+ * @param
+ *      ticket                 [in] A handle to TransferTicket.
+ * @param
+ *      index                    [in] Index number.
+ * @return
+ *      If no error occurs, return the handle to identifier of public key.
+ *      Otherwise, return NULL.
+ */
+DID_API DIDURL *TransferTicket_GetSignKey(TransferTicket *ticket, int index);
+
+/**
+ * \~English
+ * Get time of create TransferTicket proof.
+ *
+ * @param
+ *      ticket                   [in] A handle to TransferTicket.
+ * @param
+ *      index                    [in] Index number.
+ * @return
+ *      If no error occurs, return 0.
+ *      Otherwise, return time.
+ */
+DID_API time_t TransferTicket_GetProofCreatedTime(TransferTicket *ticket, int index);
+
+/**
+ * \~English
+ * Get signature of TransferTicket.
+ * A signature that can be later used to verify the authenticity and
+ * integrity of a linked data ticket.
+ *
+ * @param
+ *      ticket                  [in] A handle to DID Document.
+ * @param
+ *      index                    [in] Index number.
+ * @return
+ *      If no error occurs, return signature string.
+ *      Otherwise, return NULL.
+ */
+DID_API const char *TransferTicket_GetProofSignature(TransferTicket *ticket, int index);
+
+/******************************************************************************
+ * DIDBackend
+ *****************************************************************************/
 /**
  * \~English
  * Initialize DIDBackend to resolve by url.
@@ -3641,14 +3942,19 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
 #endif
 /**
  * \~English
- * JWT error.
+ * Export did error.
  */
 #define DIDERR_MALFORMED_EXPORTDID                  0x8D000018
 /**
  * \~English
- * JWT error.
+ * Controller error.
  */
 #define DIDERR_INVALID_CONTROLLER                   0x8D000019
+/**
+ * \~English
+ * Transfer ticket error.
+ */
+#define DIDERR_MALFORMED_TRANSFERTICKET             0x8D000020
 /**
  * \~English
  * Unknown error.

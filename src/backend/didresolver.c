@@ -191,6 +191,3 @@ void DefaultResolver_Destroy(DIDResolver *resolver)
 
     curl_global_cleanup();
 }
-
-
-

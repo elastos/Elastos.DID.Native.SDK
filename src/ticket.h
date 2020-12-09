@@ -20,27 +20,41 @@
  * SOFTWARE.
  */
 
-#ifndef __DSTORE_TEST_SUITES_H__
-#define __DSTORE_TEST_SUITES_H__
+#ifndef __TICKET_H__
+#define __TICKET_H__
 
-DECL_TESTSUITE(didstore_initial_test);
-DECL_TESTSUITE(didstore_openstore_test);
-DECL_TESTSUITE(didstore_did_op_test);
-DECL_TESTSUITE(didstore_customized_did_test);
-DECL_TESTSUITE(didstore_vc_op_test);
-DECL_TESTSUITE(didstore_change_password_test);
-DECL_TESTSUITE(didstore_export_store_test);
+#include "ela_did.h"
 
-#define DEFINE_DSTORE_TESTSUITES \
-    DEFINE_TESTSUITE(didstore_customized_did_test)
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+typedef struct TicketProof {
+    char type[MAX_TYPE_LEN];
+    time_t created;
+    DIDURL verificationMethod;
+    char signatureValue[MAX_SIGN_LEN];
+} TicketProof;
 
-#endif /* __DSTORE_TEST_SUITES_H__ */
+struct TransferTicket {
+    DID did;
+    DID to;
+    DIDDocument *doc;
+    char txid[ELA_MAX_TXID_LEN];
 
-    //DEFINE_TESTSUITE(didstore_change_password_test),
-    //DEFINE_TESTSUITE(didstore_did_op_test),
-    //DEFINE_TESTSUITE(didstore_initial_test),
+    struct {
+        size_t size;
+        TicketProof *proofs;
+    } proofs;
+};
 
-    //DEFINE_TESTSUITE(didstore_openstore_test),
-    //DEFINE_TESTSUITE(didstore_vc_op_test),
-    //DEFINE_TESTSUITE(didstore_export_store_test)
+TransferTicket *TransferTicket_Construct(DID *owner, DID *to);
+
+int TransferTicket_Seal(TransferTicket *ticket, DIDDocument *controllerdoc,
+        const char *storepass);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //__TICKET_H__

@@ -1,0 +1,91 @@
+{
+    "id": "did:elastos:littlefish",
+    "controller": [
+        "did:elastos:iWFAUYhTa35c1fPe3iCJvihZHx6quumnym",
+        "did:elastos:ijSM3fffVzAtAWM4DSypiFBY2mZSmN7JPv",
+        "did:elastos:ir31cZZbBQUFbp4pNpMQApkAyJ9dno3frB"
+    ],
+    "multisig": "3:3",
+    "publicKey": [
+        {
+            "id": "did:elastos:littlefish#k1",
+            "type": "ECDSAsecp256r1",
+            "controller": "did:elastos:littlefish",
+            "publicKeyBase58": "rzPvSYSSLg4zwZ77xYnfPGPTwM7Hy5iKnmu3zj1UJoDN"
+        },
+        {
+            "id": "did:elastos:littlefish#k2",
+            "type": "ECDSAsecp256r1",
+            "controller": "did:elastos:littlefish",
+            "publicKeyBase58": "bf65n7VBFt13XHuMakygq7xAKBk5euM85jzx6aAU8Sux"
+        },
+        {
+            "id": "did:elastos:littlefish#recovery3",
+            "type": "ECDSAsecp256r1",
+            "controller": "did:elastos:ioHhniNV6T65RMPYgra4fVRvJU3h5t7BHm",
+            "publicKeyBase58": "27rQ653EMiA6w8MtRgxpyVi4HoZT17UgTCL88UfVozjN9"
+        }
+    ],
+    "authentication": [
+        "did:elastos:littlefish#k1",
+        "did:elastos:littlefish#k2"
+    ],
+    "authorization": [
+        "did:elastos:littlefish#recovery3"
+    ],
+    "verifiableCredential": [
+        {
+            "id": "did:elastos:littlefish#vc-1",
+            "type": [
+                "BasicProfileCredential",
+                "SelfProclaimedCredential"
+            ],
+            "issuer": "did:elastos:littlefish",
+            "issuanceDate": "2020-12-09T07:17:11Z",
+            "expirationDate": "2025-12-08T23:17:11Z",
+            "credentialSubject": {
+                "id": "did:elastos:littlefish",
+                "nation": "Singapore",
+                "passport": "S653258Z07"
+            },
+            "proof": {
+                "type": "ECDSAsecp256r1",
+                "verificationMethod": "did:elastos:ir31cZZbBQUFbp4pNpMQApkAyJ9dno3frB#primary",
+                "signature": "3zQHFC_8-9Utz3ziotTXSVa6ZSZ3iDXGGmYm7G997n7zLHNDSHlMVKCg-fjJ_OLicIHcy3rkbu2jOJK7EPT-oA"
+            }
+        }
+    ],
+    "service": [
+        {
+            "id": "did:elastos:littlefish#test-svc-1",
+            "type": "Service.Testing",
+            "serviceEndpoint": "https://www.elastos.org/testing1"
+        },
+        {
+            "id": "did:elastos:littlefish#test-svc-2",
+            "type": "Service.Testing",
+            "serviceEndpoint": "https://www.elastos.org/testing2"
+        }
+    ],
+    "expires": "2025-12-08T23:17:11Z",
+    "proof": [
+        {
+            "type": "ECDSAsecp256r1",
+            "created": "2020-12-09T07:17:11Z",
+            "creator": "did:elastos:ijSM3fffVzAtAWM4DSypiFBY2mZSmN7JPv#primary",
+            "signatureValue": "KuSxqXUAZf3nogCvFuIdhny0uPvK-ui61npDPXgKxNNhnH8rZgTJtxrasqW-6e35_tiFg2__NNwDVjRbTHKVFA"
+        },
+        {
+            "type": "ECDSAsecp256r1",
+            "created": "2020-12-09T07:17:11Z",
+            "creator": "did:elastos:ir31cZZbBQUFbp4pNpMQApkAyJ9dno3frB#primary",
+            "signatureValue": "zpSxLWq4ikAU9a8n8UJSbaK3ZL-177BYh7MsQAHN5DffZOnyEQV1-_OqSkUqxbkIrfKjjcT0SX5Z1dJ-2S-gtg"
+        },
+        {
+            "type": "ECDSAsecp256r1",
+            "created": "2020-12-09T07:17:11Z",
+            "creator": "did:elastos:iWFAUYhTa35c1fPe3iCJvihZHx6quumnym#primary",
+            "signatureValue": "owTyJAe7JS51EbEHVqr8EgZlUPMHHsoZ-89CYVmqxEmzFwFN5wbcNX3lc7CS5aVJ-kLEp1RqPXRIxzYD-xs_sA"
+        }
+    ]
+}

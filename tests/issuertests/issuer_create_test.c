@@ -61,7 +61,7 @@ static void test_issuer_create_with_invalidkey1(void)
     DIDDocument *doc;
     int rc;
 
-    builder = DIDDocument_Edit(issuerdoc);
+    builder = DIDDocument_Edit(issuerdoc, NULL);
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
 
     publickeybase = Generater_Publickey(pkbase, sizeof(pkbase));
@@ -73,7 +73,7 @@ static void test_issuer_create_with_invalidkey1(void)
     rc = DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, publickeybase);
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
 
-    doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    doc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(doc));
     DIDDocumentBuilder_Destroy(builder);
@@ -105,7 +105,7 @@ static void test_issuer_create_by_cid(void)
 {
     Issuer *issuer;
 
-    DIDDocument *customized_doc = TestData_LoadCustomizedDoc();
+    DIDDocument *customized_doc = TestData_LoadCtmDoc();
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
 
     DIDDocument *doc = TestData_LoadDoc();
@@ -147,7 +147,7 @@ static void test_issuer_create_by_multicid(void)
     DID controller1, controller2;
     ssize_t size;
 
-    DIDDocument *customized_doc = TestData_LoadMultiCustomizedDoc();
+    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
 
     DID *controllers[2] = {0};
