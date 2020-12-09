@@ -39,6 +39,9 @@ bool DIDBackend_Create(DIDBackend *backend, DIDDocument *document,
 bool DIDBackend_Update(DIDBackend *backend, DIDDocument *document,
         DIDURL *signkey, const char *storepass);
 
+bool DIDBackend_Transfer(DIDBackend *backend, DIDDocument *document,
+        TransferTicket *ticket, DIDURL *signkey, const char *storepass);
+
 bool DIDBackend_Deactivate(DIDBackend *backend, DID *did,
         DIDURL *signkey, const char *storepass);
 

@@ -463,3 +463,26 @@ int set_file_lastmodified(const char *path, time_t lastmodified)
     new_times.modtime = lastmodified;    /* set mtime to current time */
     return utime(path, &new_times);
 }
+
+char *format_multisig(char *buffer, size_t size, int m, int n)
+{
+    assert(buffer);
+    assert(size > 3);
+
+    if (n > 1)
+        snprintf(buffer, size, "%d:%d", m, n);
+    else
+        memset(buffer, 0, size);
+
+    return buffer;
+}
+
+void parse_multisig(const char *buffer, int *m, int *n)
+{
+    assert(m && n);
+
+    if (sscanf(buffer, "%d:%d", m, n) == EOF) {
+        *m = 0;
+        *n = 0;
+    }
+}

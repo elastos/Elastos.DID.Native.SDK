@@ -1,0 +1,24 @@
+{
+    "id": "did:elastos:littlefish",
+    "controller": [
+        "did:elastos:iWFAUYhTa35c1fPe3iCJvihZHx6quumnym",
+        "did:elastos:ijSM3fffVzAtAWM4DSypiFBY2mZSmN7JPv",
+        "did:elastos:ir31cZZbBQUFbp4pNpMQApkAyJ9dno3frB"
+    ],
+    "multisig": "2:3",
+    "expires": "2025-12-08T23:17:10Z",
+    "proof": [
+        {
+            "type": "ECDSAsecp256r1",
+            "created": "2020-12-09T07:17:10Z",
+            "creator": "did:elastos:iWFAUYhTa35c1fPe3iCJvihZHx6quumnym#primary",
+            "signatureValue": "rwz4uDX2KVPyzYovT1D1FKhRs7FBuWlF2_Hy58uscUJ6WGNH8R8Cl52vfowPGw4FSQI2h_U7W193QBhO9cb2lw"
+        },
+        {
+            "type": "ECDSAsecp256r1",
+            "created": "2020-12-09T07:17:10Z",
+            "creator": "did:elastos:ijSM3fffVzAtAWM4DSypiFBY2mZSmN7JPv#primary",
+            "signatureValue": "9E2QCwpSK0f2UINrnHbRyO5eNhdLEY_ybjH5XEIjPTqe5QG084q9esUQkYOWAu8Tn_dmHijCTL8bK6Iykaj8WQ"
+        }
+    ]
+}

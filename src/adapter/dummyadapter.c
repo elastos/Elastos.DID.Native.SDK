@@ -15,6 +15,7 @@
 #include "crypto.h"
 #include "common.h"
 #include "diderror.h"
+#include "diddocument.h"
 
 #define TXID_LEN            32
 
@@ -63,6 +64,57 @@ static DIDTransactionInfo *get_transaction(DID *did, int index)
     info = infos[index];
     return DID_Equals(did, DIDTransactionInfo_GetOwner(info)) ? info : NULL;
 }
+
+static bool check_ticket(const char* data, DIDDocument *doc)
+{
+    size_t len;
+    char *ticketJson;
+    TransferTicket *ticket;
+
+    assert(data);
+
+    len = strlen(data) + 1;
+    ticketJson = (char*)malloc(len);
+    len = base64_url_decode((uint8_t *)ticketJson, data);
+    if (len <= 0) {
+        free((void*)ticketJson);
+        return false;
+    }
+    ticketJson[len] = 0;
+
+    ticket = TransferTicket_FromJson(ticketJson);
+    free((void*)ticketJson);
+    if (!ticket)
+        return false;
+
+    if (!TransferTicket_IsValid(ticket))
+        return false;
+
+    if (!DIDDocument_GetControllerDocument(doc, &ticket->to))
+        return false;
+
+    return true;
+}
+
+static bool check_controllers(DIDDocument *doc1, DIDDocument *doc2)
+{
+    int i, j;
+    DID *controller;
+
+    assert(doc1);
+    assert(doc2);
+
+    if (doc1->controllers.size != doc2->controllers.size)
+        return false;
+
+    for (i = 0; i < doc2->controllers.size; i++) {
+        controller = &doc2->controllers.docs[i]->did;
+        if (!DIDDocument_GetControllerDocument(doc1, controller))
+            return false;
+    }
+
+    return true;
+ }
 
 static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *payload, const char *memo)
 {
@@ -116,6 +168,29 @@ static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *p
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "Previous transaction id missmatch.");
             goto errorExit;
         }
+        if (Is_CustomizedDID(info->request.doc) &&
+                !check_controllers(info->request.doc, lastinfo->request.doc))
+            goto errorExit;
+    } else if (!strcmp(info->request.header.op, "transfer")) {
+        if (!lastinfo) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID not exist.");
+            goto errorExit;
+        }
+        if (!strcmp(lastinfo->request.header.op, "deactivate")) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID already deactivate.");
+            goto errorExit;
+        }
+        if (strcmp(info->request.header.prevtxid, lastinfo->txid)) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "Previous transaction id missmatch.");
+            goto errorExit;
+        }
+        if (!info->request.header.ticket) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "Transfer operation must attach the ticket.");
+            goto errorExit;
+        }
+        //check ticket
+        if (check_ticket(info->request.header.ticket, info->request.doc))
+            goto errorExit;
     } else if (!strcmp(info->request.header.op, "deactivate")) {
         if (!lastinfo) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID not exist.");
@@ -277,5 +352,3 @@ void DummyAdapter_Destroy(void)
     memset(infos, 0, sizeof(infos));
     num = 0;
 }
-
-

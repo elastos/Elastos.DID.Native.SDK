@@ -44,7 +44,7 @@ bool dir_exist(const char* path);
 
 void delete_file(const char *path);
 
-char *load_file(const char *file);
+char *load_path(const char *file);
 
 int store_file(const char *path, const char *string);
 
@@ -121,16 +121,24 @@ DIDDocument *TestData_LoadDoc(void);
 
 DIDDocument *TestData_LoadIssuerDoc(void);
 
-DIDDocument *TestData_LoadEmptyCustomizedDoc(void);
-
-DIDDocument *TestData_LoadCustomizedDoc(void);
-
+//customized doc with multi-controllers
 DIDDocument *TestData_LoadControllerDoc(void);
 
-//customized doc with multi-controllers
-DIDDocument *TestData_LoadEmptyMultiCustomizedDoc(void);
+DIDDocument *TestData_LoadEmptyCtmDoc(void);
 
-DIDDocument *TestData_LoadMultiCustomizedDoc(void);
+DIDDocument *TestData_LoadCtmDoc(void);
+
+DIDDocument *TestData_LoadEmptyCtmDoc_MultisigOne(void);
+
+DIDDocument *TestData_LoadCtmDoc_MultisigOne(void);
+
+DIDDocument *TestData_LoadEmptyCtmDoc_MultisigTwo(void);
+
+DIDDocument *TestData_LoadCtmDoc_MultisigTwo(void);
+
+DIDDocument *TestData_LoadEmptyCtmDoc_MultisigThree(void);
+
+DIDDocument *TestData_LoadCtmDoc_MultisigThree(void);
 
 const char *TestData_LoadRestoreMnemonic(void);
 

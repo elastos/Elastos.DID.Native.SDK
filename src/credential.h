@@ -29,13 +29,11 @@
 #include "did.h"
 #include "JsonGenerator.h"
 #include "credmeta.h"
+#include "common.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define MAX_CRED_TYPE        64
-#define MAX_CRED_SIGN        128
 
 typedef struct CredentialSubject {
     DID id;
@@ -43,9 +41,9 @@ typedef struct CredentialSubject {
 } CredentialSubject;
 
 typedef struct CredentialProof {
-    char type[MAX_CRED_TYPE];
+    char type[MAX_TYPE_LEN];
     DIDURL verificationMethod;
-    char signatureValue[MAX_CRED_SIGN];
+    char signatureValue[MAX_SIGN_LEN];
 } CredentialProof;
 
 struct Credential {

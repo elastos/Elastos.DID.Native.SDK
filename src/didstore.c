@@ -44,17 +44,19 @@
 
 #include "ela_did.h"
 #include "diderror.h"
-#include "didstore.h"
-#include "common.h"
-#include "credential.h"
-#include "diddocument.h"
 #include "crypto.h"
 #include "HDkey.h"
+#include "common.h"
+#include "didstore.h"
+#include "credential.h"
+#include "diddocument.h"
 #include "didbackend.h"
 #include "credential.h"
 #include "didmeta.h"
 #include "credmeta.h"
 #include "resolvercache.h"
+#include "didrequest.h"
+#include "ticket.h"
 
 #define MAX_PUBKEY_BASE58            128
 
@@ -944,9 +946,10 @@ static int list_credential_helper(const char *path, void *context)
     return rc;
 }
 
-static DIDDocumentBuilder* did_createbuilder(DID *did, DIDStore *store)
+static DIDDocumentBuilder* did_createbuilder(DID *did, DID *controller, DIDStore *store)
 {
     DIDDocumentBuilder *builder;
+    DIDDocument *controller_doc = NULL;
 
     builder = (DIDDocumentBuilder*)calloc(1, sizeof(DIDDocumentBuilder));
     if (!builder) {
@@ -957,19 +960,26 @@ static DIDDocumentBuilder* did_createbuilder(DID *did, DIDStore *store)
     builder->document = (DIDDocument*)calloc(1, sizeof(DIDDocument));
     if (!builder->document) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for document failed.");
-        free(builder);
-        return NULL;
+        goto errorExit;
     }
 
-    if (!DID_Copy(&builder->document->did, did)) {
-        free(builder->document);
-        free(builder);
-        return NULL;
+    if (!DID_Copy(&builder->document->did, did))
+        goto errorExit;
+
+    if (controller) {
+        controller_doc = DIDStore_LoadDID(store, controller);
+        if (!controller_doc)
+            goto errorExit;
+
+        builder->controllerdoc = controller_doc;
     }
 
     DIDDocument_SetStore(builder->document, store);
-
     return builder;
+
+errorExit:
+    DIDDocumentBuilder_Destroy(builder);
+    return NULL;
 }
 
 static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
@@ -988,7 +998,7 @@ static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
     if (Init_DIDURL(&id, did, "primary") == -1)
         return NULL;
 
-    builder = did_createbuilder(did, store);
+    builder = did_createbuilder(did, NULL, store);
     if (!builder)
         return NULL;
 
@@ -1007,7 +1017,7 @@ static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
         return NULL;
     }
 
-    document = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    document = DIDDocumentBuilder_Seal(builder, storepass);
     DIDDocumentBuilder_Destroy(builder);
     if (!document)
         return NULL;
@@ -1019,9 +1029,9 @@ static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
 }
 
 static DIDDocument *create_customized_document(DIDStore *store, const char *storepass,
-        DID *did, DID **controllers, size_t size, DID *controller)
+        DID *did, DID **controllers, size_t size, DID *controller, int multisig)
 {
-    DIDDocument *document;
+    DIDDocument *document, *controller_doc;
     DIDDocumentBuilder *builder;
     int i;
 
@@ -1032,7 +1042,7 @@ static DIDDocument *create_customized_document(DIDStore *store, const char *stor
     assert(size > 0);
     assert(controller);
 
-    builder = did_createbuilder(did, store);
+    builder = did_createbuilder(did, controller, store);
     if (!builder)
         return NULL;
 
@@ -1043,12 +1053,14 @@ static DIDDocument *create_customized_document(DIDStore *store, const char *stor
         }
     }
 
+    builder->document->multisig = multisig;
+
     if (DIDDocumentBuilder_SetExpires(builder, 0) == -1) {
         DIDDocumentBuilder_Destroy(builder);
         return NULL;
     }
 
-    document = DIDDocumentBuilder_Seal(builder, controller, storepass);
+    document = DIDDocumentBuilder_Seal(builder, storepass);
     DIDDocumentBuilder_Destroy(builder);
     if (!document)
         return NULL;
@@ -1158,7 +1170,7 @@ void DIDStore_Close(DIDStore *didstore)
 int DIDStore_ExportMnemonic(DIDStore *store, const char *storepass,
         char *mnemonic, size_t size)
 {
-    if (!store || !storepass || !*storepass || !mnemonic || size <= 0) {
+    if (!store || !storepass || !*storepass || !mnemonic || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -1755,7 +1767,7 @@ int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass, DID *did,
 {
     char base64[MAX_PRIVATEKEY_BASE64];
 
-    if (!store || !storepass || !*storepass || !did || !id || !privatekey || size <= 0) {
+    if (!store || !storepass || !*storepass || !did || !id || !privatekey || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -1992,7 +2004,7 @@ int DIDStore_Synchronize(DIDStore *store, const char *storepass, DIDStore_MergeC
                 if (localCopy) {
                     const char *local_signature = DIDMetaData_GetSignature(&localCopy->metadata);
                     if (!*local_signature ||
-                            strcmp(DIDDocument_GetProofSignature(localCopy), local_signature)) {
+                            strcmp(DIDDocument_GetProofSignature(localCopy, 0), local_signature)) {
                         finalCopy = callback(chainCopy, localCopy);
                         if (!finalCopy || !DID_Equals(DIDDocument_GetSubject(finalCopy), &did)) {
                             DIDError_Set(DIDERR_DIDSTORE_ERROR, "Conflict handle merge the DIDDocument error.");
@@ -2136,7 +2148,7 @@ int DIDStore_InitPrivateIdentityFromRootKey(DIDStore *store, const char *storepa
     //check if DIDStore has existed private identity
     if (get_file(path, 0, 3, store->root, PRIVATE_DIR, HDKEY_FILE) == 0) {
         if (DIDStore_ContainsPrivateIdentity(store) && !force) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Private identity is already exist.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Private identity already exist.");
             return -1;
         }
     }
@@ -2210,7 +2222,8 @@ DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass, const char 
 }
 
 DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
-        const char *customizeddid, DID **controllers, size_t size, DID *controller)
+        const char *customizeddid, DID *controller, DID **controllers, size_t size,
+        int multisig)
 {
     DIDDocument *controller_doc;
     DIDDocument *doc;
@@ -2219,27 +2232,44 @@ DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
     bool iscontain;
 
     if (!store || !storepass || !*storepass || !customizeddid || !*customizeddid ||
-            !controllers|| size <= 0) {
+            !controllers|| size == 0 || multisig < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    if (!controller && size != 1) {
+    if (multisig > size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Multisig is larger than the count of controllers.");
+        return NULL;
+    }
+
+    if (size > 1 && !controller) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Please specified the default controller.");
         return NULL;
     }
 
-    if (!controller)
-        controller = controllers[0];
-
-    if (!Contains_DID(controllers, size, controller)) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Controller must be in the controller array.");
+    if (size > 1 && multisig == 0) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Please specify multisig.");
         return NULL;
+    }
+
+    if (!controller) {
+        controller = controllers[0];
+    } else {
+        if (!Contains_DID(controllers, size, controller)) {
+            DIDError_Set(DIDERR_INVALID_ARGS, "Controller must be in the controller array.");
+            return NULL;
+        }
     }
 
     controller_doc = DID_Resolve(controller, false);
     if (!controller_doc) {
         DIDError_Set(DIDERR_INVALID_ARGS, "No controller's document in chain.");
+        return NULL;
+    }
+
+    if (Is_CustomizedDID(controller_doc)) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "The controller must be normal DID.");
+        DIDDocument_Destroy(controller_doc);
         return NULL;
     }
 
@@ -2257,7 +2287,8 @@ DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
     if (Init_DID(&did, customizeddid) == -1)
         return NULL;
 
-    doc = create_customized_document(store, storepass, &did, controllers, size, controller);
+    doc = create_customized_document(store, storepass, &did, controllers, size,
+            controller, multisig);
     if (!doc)
         return NULL;
 
@@ -2509,13 +2540,16 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
     }
 
     if (!force && DIDDocument_IsExpires(doc)) {
-        DIDError_Set(DIDERR_EXPIRED, "Did already expired, use force mode to publish anyway.");
+        DIDError_Set(DIDERR_EXPIRED, "Did is already expired, use force mode to publish anyway.");
         goto errorExit;
     }
 
     if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(doc);
         if (!signkey)
+            goto errorExit;
+    } else {
+        if (!DIDDocument_IsAuthenticationKey(doc, signkey))
             goto errorExit;
     }
 
@@ -2524,11 +2558,11 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
         successed = DIDBackend_Create(&store->backend, doc, signkey, storepass);
     } else {
         if (DIDDocument_IsDeactivated(resolve_doc)) {
-            DIDError_Set(DIDERR_EXPIRED, "Did already deactivated.");
+            DIDError_Set(DIDERR_EXPIRED, "Did is already deactivated.");
             goto errorExit;
         }
 
-        resolve_signature = resolve_doc->proof.signatureValue;
+        resolve_signature = resolve_doc->proofs.proofs[0].signatureValue;
         if (!resolve_signature || !*resolve_signature) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing resolve signature.");
             goto errorExit;
@@ -2536,12 +2570,6 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
         last_txid = DIDMetaData_GetTxid(&resolve_doc->metadata);
 
         if (!force) {
-            resolve_signature = DIDDocument_GetProofSignature(resolve_doc);
-            if (!resolve_signature || !*resolve_signature) {
-                DIDError_Set(DIDERR_DIDSTORE_ERROR, "Missing document signature on chain.");
-                goto errorExit;
-            }
-
             local_signature = DIDMetaData_GetSignature(&doc->metadata);
             local_prevsignature = DIDMetaData_GetPrevSignature(&doc->metadata);
             if ((!local_signature || !*local_signature) && (!local_prevsignature || !*local_prevsignature)) {
@@ -2576,7 +2604,7 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
 
     ResolveCache_Invalid(did);
     //Meta stores the resolved txid and local signature.
-    DIDMetaData_SetSignature(&doc->metadata, DIDDocument_GetProofSignature(doc));
+    DIDMetaData_SetSignature(&doc->metadata, DIDDocument_GetProofSignature(doc, 0));
     if (resolve_signature)
         DIDMetaData_SetPrevSignature(&doc->metadata, resolve_signature);
     rc = store_didmeta(store, &doc->metadata, &doc->did);
@@ -2586,6 +2614,69 @@ errorExit:
         DIDDocument_Destroy(resolve_doc);
     if (doc)
         DIDDocument_Destroy(doc);
+    return rc == -1 ? false : true;
+}
+
+bool DIDStore_TransferDID(DIDStore *store, const char *storepass, DID *did,
+       TransferTicket *ticket, DIDURL *signkey)
+{
+    DIDDocument *resolve_doc = NULL, *doc = NULL;
+    DocumentProof *proof;
+    int rc = -1, i;
+
+    if (!store || !storepass || !*storepass || !did || !ticket || !signkey) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    resolve_doc = DID_Resolve(did, true);
+    if (!resolve_doc) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport transfering DID which isn't published.");
+        return false;
+    }
+
+    if (!Is_CustomizedDID(resolve_doc)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport transfering normal DID.");
+        goto errorExit;
+    }
+
+    if (!TransferTicket_IsValid(ticket))
+       goto errorExit;
+
+    if (strcmp(ticket->txid, DIDMetaData_GetTxid(&resolve_doc->metadata))) {
+        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Transaction id of ticket mismatches with the chain one.");
+        goto errorExit;
+    }
+
+    doc = DIDStore_LoadDID(store, did);
+    if (!doc)
+        goto errorExit;
+
+    //check ticket "to"
+    for (i = 0; i < doc->proofs.size; i++) {
+        proof = &doc->proofs.proofs[i];
+        if (!DID_Equals(&ticket->to, &proof->creater.did))
+            goto errorExit;
+    }
+
+    if (!DIDDocument_IsAuthenticationKey(doc, signkey))
+        goto errorExit;
+
+    DIDMetaData_SetTxid(&doc->metadata, DIDMetaData_GetTxid(&resolve_doc->metadata));
+    DIDMetaData_SetTxid(&doc->did.metadata, DIDMetaData_GetTxid(&resolve_doc->metadata));
+    if (!DIDBackend_Transfer(&store->backend, doc, ticket, signkey, storepass))
+        goto errorExit;
+
+    ResolveCache_Invalid(did);
+    //Meta stores the resolved txid and local signature.
+    DIDMetaData_SetSignature(&doc->metadata, DIDDocument_GetProofSignature(doc, 0));
+    if (*resolve_doc->proofs.proofs[0].signatureValue)
+        DIDMetaData_SetPrevSignature(&doc->metadata, resolve_doc->proofs.proofs[0].signatureValue);
+    rc = store_didmeta(store, &doc->metadata, &doc->did);
+
+errorExit:
+    DIDDocument_Destroy(resolve_doc);
+    DIDDocument_Destroy(doc);
     return rc == -1 ? false : true;
 }
 

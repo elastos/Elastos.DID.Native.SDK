@@ -159,7 +159,6 @@ int MetaData_SetExtra(MetaData *metadata, const char* key, const char *value)
 
     rc = MetaData_Set(metadata, key, json);
     json_decref(json);
-
     return rc;
 }
 

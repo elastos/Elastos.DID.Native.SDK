@@ -39,6 +39,8 @@ extern "C" {
 #endif
 
 #define DOC_BUFFER_LEN         512
+#define MAX_SIGN_LEN           128
+#define MAX_TYPE_LEN           64
 #define CHECK(func)                    do { if (func < 0) return -1; } while(0)
 #define CHECK_TO_ERROREXIT(func)       do { if (func < 0) goto errorExit;} while(0)
 #define CHECK_TO_MSG(func, code, msg)              do {   \
@@ -91,6 +93,10 @@ int mkdirs(const char *path, mode_t mode);
 time_t get_file_lastmodified(const char *path);
 
 int set_file_lastmodified(const char *path, time_t lastmodified);
+
+char *format_multisig(char *buffer, size_t size, int m, int n);
+
+void parse_multisig(const char *buffer, int *m, int *n);
 
 #ifdef __cplusplus
 }

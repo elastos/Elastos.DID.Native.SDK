@@ -43,7 +43,7 @@ static void test_get_publickey_with_emptycid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *doc = TestData_LoadEmptyCustomizedDoc();
+    DIDDocument *doc = TestData_LoadEmptyCtmDoc();
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -154,7 +154,7 @@ static void test_get_publickey_with_cid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *doc = TestData_LoadCustomizedDoc();
+    DIDDocument *doc = TestData_LoadCtmDoc();
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -280,14 +280,14 @@ static void test_add_publickey_with_cid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *doc = TestData_LoadCustomizedDoc();
+    DIDDocument *doc = TestData_LoadCtmDoc();
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
@@ -305,7 +305,7 @@ static void test_add_publickey_with_cid(void)
     rc = DIDDocumentBuilder_AddPublicKey(builder, id2, did, keybase);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -345,7 +345,7 @@ static void test_remove_publickey_with_cid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *doc = TestData_LoadCustomizedDoc();
+    DIDDocument *doc = TestData_LoadCtmDoc();
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -355,7 +355,7 @@ static void test_remove_publickey_with_cid(void)
     controller = &(doc->controllers.docs[0]->did);
     CU_ASSERT_PTR_NOT_NULL(controller);
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // can not remove the controller's key
@@ -383,7 +383,7 @@ static void test_remove_publickey_with_cid(void)
             DIDDocument_GetDefaultPublicKey(doc), true);
     CU_ASSERT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -427,7 +427,7 @@ static void test_get_authentication_key_with_cid(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
     CU_ASSERT_NOT_EQUAL(TestData_InitIdentity(store), -1);
 
-    DIDDocument *doc = TestData_LoadCustomizedDoc();
+    DIDDocument *doc = TestData_LoadCtmDoc();
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -546,7 +546,7 @@ static void test_add_authentication_key_with_cid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *doc = TestData_LoadEmptyCustomizedDoc();
+    DIDDocument *doc = TestData_LoadEmptyCtmDoc();
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -556,7 +556,7 @@ static void test_add_authentication_key_with_cid(void)
     controller = &(doc->controllers.docs[0]->did);
     CU_ASSERT_PTR_NOT_NULL(controller);
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
@@ -614,7 +614,7 @@ static void test_add_authentication_key_with_cid(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -666,7 +666,7 @@ static void test_remove_authentication_key_with_cid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *doc = TestData_LoadCustomizedDoc();
+    DIDDocument *doc = TestData_LoadCtmDoc();
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -680,7 +680,7 @@ static void test_remove_authentication_key_with_cid(void)
     CU_ASSERT_EQUAL(5, DIDDocument_GetAuthenticationCount(doc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(doc));
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Remove keys
@@ -708,7 +708,7 @@ static void test_remove_authentication_key_with_cid(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -745,7 +745,7 @@ static void test_get_authorization_key_with_cid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *doc = TestData_LoadCustomizedDoc();
+    DIDDocument *doc = TestData_LoadCtmDoc();
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -827,7 +827,7 @@ static void test_add_authorization_key_with_cid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *doc = TestData_LoadCustomizedDoc();
+    DIDDocument *doc = TestData_LoadCtmDoc();
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -837,7 +837,7 @@ static void test_add_authorization_key_with_cid(void)
     _controller = &(doc->controllers.docs[0]->did);
     CU_ASSERT_PTR_NOT_NULL(_controller);
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
@@ -906,7 +906,7 @@ static void test_add_authorization_key_with_cid(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -959,7 +959,7 @@ static void test_remove_authorization_key_with_cid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *doc = TestData_LoadCustomizedDoc();
+    DIDDocument *doc = TestData_LoadCtmDoc();
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -969,7 +969,7 @@ static void test_remove_authorization_key_with_cid(void)
     _controller = &(doc->controllers.docs[0]->did);
     CU_ASSERT_PTR_NOT_NULL(_controller);
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
@@ -997,7 +997,7 @@ static void test_remove_authorization_key_with_cid(void)
     rc = DIDDocumentBuilder_AddAuthorizationKey(builder, id2, &controller, keybase);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1006,7 +1006,7 @@ static void test_remove_authorization_key_with_cid(void)
     CU_ASSERT_EQUAL(5, DIDDocument_GetAuthenticationCount(sealeddoc));
     CU_ASSERT_EQUAL(3, DIDDocument_GetAuthorizationCount(sealeddoc));
 
-    builder = DIDDocument_Edit(sealeddoc);
+    builder = DIDDocument_Edit(sealeddoc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
     DIDDocument_Destroy(sealeddoc);
 
@@ -1029,7 +1029,7 @@ static void test_remove_authorization_key_with_cid(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1060,10 +1060,10 @@ static void test_remove_authorization_key_with_cid(void)
 //--------------------------------------------------------------------------
 static void test_get_publickey_with_empty_multicid(void)
 {
-    PublicKey *pks[7];
+    PublicKey *pks[8] = {0};
     PublicKey *pk;
-    DIDURL *keyid1, *keyid2, *primaryid1, *primaryid2, *keyid;
-    DID *customized_did, *controller, controller1, controller2;
+    DIDURL *keyid1, *keyid2, *keyid, *primaryid1, *primaryid2, *primaryid3;
+    DID *customized_did, *controller, controller1, controller2, controller3;
     ssize_t size;
     int i;
     bool isEquals;
@@ -1071,30 +1071,32 @@ static void test_get_publickey_with_empty_multicid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *customized_doc = TestData_LoadEmptyMultiCustomizedDoc();
+    DIDDocument *customized_doc = TestData_LoadEmptyCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
     customized_did = DIDDocument_GetSubject(customized_doc);
     CU_ASSERT_PTR_NOT_NULL(customized_did);
 
-    CU_ASSERT_EQUAL(2, DIDDocument_GetControllerCount(customized_doc));
-    CU_ASSERT_EQUAL(7, DIDDocument_GetPublicKeyCount(customized_doc));
+    CU_ASSERT_EQUAL(1, DIDDocument_GetMultisig(customized_doc));
+    CU_ASSERT_EQUAL(3, DIDDocument_GetControllerCount(customized_doc));
+    CU_ASSERT_EQUAL(8, DIDDocument_GetPublicKeyCount(customized_doc));
 
-    DID *controllers[2] = {0};
-    size = DIDDocument_GetControllers(customized_doc, controllers, 2);
-    CU_ASSERT_EQUAL(2, size);
+    DID *controllers[3] = {0};
+    size = DIDDocument_GetControllers(customized_doc, controllers, 3);
+    CU_ASSERT_EQUAL(3, size);
     DID_Copy(&controller1, controllers[0]);
     DID_Copy(&controller2, controllers[1]);
+    DID_Copy(&controller3, controllers[2]);
 
     size = DIDDocument_GetPublicKeys(customized_doc, pks, sizeof(pks));
-    CU_ASSERT_EQUAL(7, size);
+    CU_ASSERT_EQUAL(8, size);
 
     for (i = 0; i < size; i++) {
         pk = pks[i];
         keyid = PublicKey_GetId(pk);
 
-        DID *controller = contains_DID(controllers, 2, &keyid->did);
+        DID *controller = contains_DID(controllers, 3, &keyid->did);
         CU_ASSERT_PTR_NOT_NULL(controller);
         CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
 
@@ -1108,7 +1110,7 @@ static void test_get_publickey_with_empty_multicid(void)
         CU_ASSERT_TRUE(!strcmp(keyid->fragment, "primary") ||
                 !strcmp(keyid->fragment, "key2") || !strcmp(keyid->fragment, "key3") ||
                 !strcmp(keyid->fragment, "recovery") || !strcmp(keyid->fragment, "recovery2") ||
-                !strcmp(keyid->fragment, "pk1") || !strcmp(keyid->fragment, "pk2") );
+                !strcmp(keyid->fragment, "pk1"));
     }
 
     //PublicKey getter.
@@ -1126,6 +1128,12 @@ static void test_get_publickey_with_empty_multicid(void)
     pk = DIDDocument_GetPublicKey(customized_doc, primaryid2);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(primaryid2, PublicKey_GetId(pk)));
+
+    primaryid3 = DIDURL_NewByDid(&controller3, "primary");
+    CU_ASSERT_PTR_NOT_NULL(primaryid3);
+    pk = DIDDocument_GetPublicKey(customized_doc, primaryid3);
+    CU_ASSERT_PTR_NOT_NULL(pk);
+    CU_ASSERT_TRUE(DIDURL_Equals(primaryid3, PublicKey_GetId(pk)));
 
     keyid1 = DIDURL_NewByDid(&controller1, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
@@ -1147,25 +1155,25 @@ static void test_get_publickey_with_empty_multicid(void)
     DIDURL_Destroy(keyid);
 
     // Selector
-    size = DIDDocument_SelectPublicKeys(customized_doc, default_type, NULL, pks, 7);
-    CU_ASSERT_EQUAL(7, size);
+    size = DIDDocument_SelectPublicKeys(customized_doc, default_type, NULL, pks, 8);
+    CU_ASSERT_EQUAL(8, size);
 
-    size = DIDDocument_SelectPublicKeys(customized_doc, NULL, primaryid1, pks, 7);
+    size = DIDDocument_SelectPublicKeys(customized_doc, NULL, primaryid1, pks, 8);
     CU_ASSERT_EQUAL(1, size);
     CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), primaryid1));
     DIDURL_Destroy(primaryid1);
 
-    size = DIDDocument_SelectPublicKeys(customized_doc, default_type, primaryid2, pks, 7);
+    size = DIDDocument_SelectPublicKeys(customized_doc, default_type, primaryid2, pks, 8);
     CU_ASSERT_EQUAL(1, size);
     CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), primaryid2));
     DIDURL_Destroy(primaryid2);
 
-    size = DIDDocument_SelectPublicKeys(customized_doc, NULL, keyid1, pks, 7);
+    size = DIDDocument_SelectPublicKeys(customized_doc, NULL, keyid1, pks, 8);
     CU_ASSERT_EQUAL(1, size);
     CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), keyid1));
     DIDURL_Destroy(keyid1);
 
-    size = DIDDocument_SelectPublicKeys(customized_doc, default_type, keyid2, pks, 7);
+    size = DIDDocument_SelectPublicKeys(customized_doc, default_type, keyid2, pks, 8);
     CU_ASSERT_EQUAL(1, size);
     CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), keyid2));
     DIDURL_Destroy(keyid2);
@@ -1186,7 +1194,7 @@ static void test_get_publickey_with_multicid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *customized_doc = TestData_LoadMultiCustomizedDoc();
+    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1308,7 +1316,13 @@ static void test_add_publickey_with_multicid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *customized_doc = TestData_LoadMultiCustomizedDoc();
+    DIDDocument *controllerdoc1 = TestData_LoadDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc1);
+
+    DIDDocument *controllerdoc2 = TestData_LoadControllerDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc2);
+
+    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1321,7 +1335,7 @@ static void test_add_publickey_with_multicid(void)
     DID_Copy(&controller1, controllers[0]);
     DID_Copy(&controller2, controllers[1]);
 
-    builder = DIDDocument_Edit(customized_doc);
+    builder = DIDDocument_Edit(customized_doc, controllerdoc2);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
@@ -1348,7 +1362,7 @@ static void test_add_publickey_with_multicid(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, &controller2, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1389,7 +1403,13 @@ static void test_remove_publickey_with_multicid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *customized_doc = TestData_LoadMultiCustomizedDoc();
+    DIDDocument *controllerdoc1 = TestData_LoadDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc1);
+
+    DIDDocument *controllerdoc2 = TestData_LoadControllerDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc2);
+
+    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1402,7 +1422,7 @@ static void test_remove_publickey_with_multicid(void)
     DID_Copy(&controller1, controllers[0]);
     DID_Copy(&controller2, controllers[1]);
 
-    builder = DIDDocument_Edit(customized_doc);
+    builder = DIDDocument_Edit(customized_doc, controllerdoc1);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // can not remove the controller's key
@@ -1433,7 +1453,7 @@ static void test_remove_publickey_with_multicid(void)
     rc = DIDDocumentBuilder_RemovePublicKey(builder, keyid2, true);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, &controller1, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1481,7 +1501,7 @@ static void test_get_authentication_key_with_multicid(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
     CU_ASSERT_NOT_EQUAL(TestData_InitIdentity(store), -1);
 
-    DIDDocument *customized_doc = TestData_LoadMultiCustomizedDoc();
+    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1592,7 +1612,13 @@ static void test_add_authentication_key_with_multicid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *customized_doc = TestData_LoadEmptyMultiCustomizedDoc();
+    DIDDocument *controllerdoc1 = TestData_LoadDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc1);
+
+    DIDDocument *controllerdoc2 = TestData_LoadControllerDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc2);
+
+    DIDDocument *customized_doc = TestData_LoadEmptyCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1605,7 +1631,7 @@ static void test_add_authentication_key_with_multicid(void)
     DID_Copy(&controller1, controllers[0]);
     DID_Copy(&controller2, controllers[1]);
 
-    builder = DIDDocument_Edit(customized_doc);
+    builder = DIDDocument_Edit(customized_doc, controllerdoc2);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Try to add the controller's key, should fail.
@@ -1654,7 +1680,7 @@ static void test_add_authentication_key_with_multicid(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, &controller2, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1702,7 +1728,13 @@ static void test_remove_authentication_key_with_multicid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *customized_doc = TestData_LoadMultiCustomizedDoc();
+    DIDDocument *controllerdoc1 = TestData_LoadDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc1);
+
+    DIDDocument *controllerdoc2 = TestData_LoadControllerDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc2);
+
+    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1719,7 +1751,7 @@ static void test_remove_authentication_key_with_multicid(void)
     CU_ASSERT_EQUAL(7, DIDDocument_GetAuthenticationCount(customized_doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthorizationCount(customized_doc));
 
-    builder = DIDDocument_Edit(customized_doc);
+    builder = DIDDocument_Edit(customized_doc, controllerdoc2);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Remove keys
@@ -1747,7 +1779,7 @@ static void test_remove_authentication_key_with_multicid(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, &controller2, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1784,7 +1816,7 @@ static void test_get_authorization_key_with_multicid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *customized_doc = TestData_LoadMultiCustomizedDoc();
+    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1877,7 +1909,13 @@ static void test_add_authorization_key_with_multicid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *customized_doc = TestData_LoadMultiCustomizedDoc();
+    DIDDocument *controllerdoc1 = TestData_LoadDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc1);
+
+    DIDDocument *controllerdoc2 = TestData_LoadControllerDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc2);
+
+    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1890,7 +1928,7 @@ static void test_add_authorization_key_with_multicid(void)
     DID_Copy(&controller1, controllers[0]);
     DID_Copy(&controller2, controllers[1]);
 
-    builder = DIDDocument_Edit(customized_doc);
+    builder = DIDDocument_Edit(customized_doc, controllerdoc2);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
@@ -1953,7 +1991,7 @@ static void test_add_authorization_key_with_multicid(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, &controller2, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -2001,7 +2039,13 @@ static void test_remove_authorization_key_with_multicid(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *customized_doc = TestData_LoadMultiCustomizedDoc();
+    DIDDocument *controllerdoc1 = TestData_LoadDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc1);
+
+    DIDDocument *controllerdoc2 = TestData_LoadControllerDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc2);
+
+    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -2014,7 +2058,7 @@ static void test_remove_authorization_key_with_multicid(void)
     DID_Copy(&controller1, controllers[0]);
     DID_Copy(&controller2, controllers[1]);
 
-    builder = DIDDocument_Edit(customized_doc);
+    builder = DIDDocument_Edit(customized_doc, controllerdoc1);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
@@ -2040,7 +2084,7 @@ static void test_remove_authorization_key_with_multicid(void)
     rc = DIDDocumentBuilder_AddAuthorizationKey(builder, keyid2, &controller, keybase);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, &controller1, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -2049,7 +2093,7 @@ static void test_remove_authorization_key_with_multicid(void)
     CU_ASSERT_EQUAL(7, DIDDocument_GetAuthenticationCount(sealeddoc));
     CU_ASSERT_EQUAL(4, DIDDocument_GetAuthorizationCount(sealeddoc));
 
-    builder = DIDDocument_Edit(sealeddoc);
+    builder = DIDDocument_Edit(sealeddoc, controllerdoc1);
     CU_ASSERT_PTR_NOT_NULL(builder);
     DIDDocument_Destroy(sealeddoc);
 
@@ -2077,7 +2121,7 @@ static void test_remove_authorization_key_with_multicid(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, &controller1, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -2103,6 +2147,117 @@ static void test_remove_authorization_key_with_multicid(void)
     CU_ASSERT_EQUAL(11, DIDDocument_GetPublicKeyCount(sealeddoc));
     CU_ASSERT_EQUAL(7, DIDDocument_GetAuthenticationCount(sealeddoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthorizationCount(sealeddoc));
+
+    DIDDocument_Destroy(sealeddoc);
+
+    TestData_Free();
+}
+
+static void test_add_controller_with_multicid(void)
+{
+    DIDDocument *sealeddoc, *controllerdoc;
+    DIDDocumentBuilder *builder;
+    DID customized_did, controller, controller1;
+    ssize_t size;
+    int rc;
+
+    DIDStore *store = TestData_SetupStore(true);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(store);
+
+    DIDDocument *controllerdoc1 = TestData_LoadDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc1);
+    DID_Copy(&controller1, &controllerdoc1->did);
+
+    DIDDocument *controllerdoc2 = TestData_LoadControllerDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc2);
+
+    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
+    CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
+
+    DID_Copy(&customized_did, &customized_doc->did);
+
+    controllerdoc = TestData_LoadIssuerDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc);
+    DID_Copy(&controller, &controllerdoc->did);
+
+    DID *controllers[3] = {0};
+    size = DIDDocument_GetControllers(customized_doc, controllers, 3);
+    CU_ASSERT_EQUAL(2, size);
+    CU_ASSERT_PTR_NULL_FATAL(contains_DID(controllers, 2, &controller));
+    CU_ASSERT_PTR_NOT_NULL_FATAL(contains_DID(controllers, 2, &controller1));
+
+    builder = DIDDocument_Edit(customized_doc, controllerdoc1);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
+
+    CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, &controller1));
+    CU_ASSERT_STRING_EQUAL("The controller already exists in the document.", DIDError_GetMessage());
+
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, &controller));
+
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(sealeddoc);
+    DIDDocumentBuilder_Destroy(builder);
+
+    CU_ASSERT_EQUAL_FATAL(3, DIDDocument_GetControllerCount(sealeddoc));
+
+    memset(controllers, 0, sizeof(controllers));
+    size = DIDDocument_GetControllers(sealeddoc, controllers, 3);
+    CU_ASSERT_EQUAL(3, size);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(contains_DID(controllers, 3, &controller));
+
+    DIDDocument_Destroy(sealeddoc);
+
+    TestData_Free();
+}
+
+static void test_remove_controller_with_multicid(void)
+{
+    DIDDocument *sealeddoc;
+    DIDDocumentBuilder *builder;
+    DID customized_did, controller2, controller1;
+    ssize_t size;
+    int rc;
+
+    DIDStore *store = TestData_SetupStore(true);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(store);
+
+    DIDDocument *controllerdoc1 = TestData_LoadDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc1);
+    DID_Copy(&controller1, &controllerdoc1->did);
+
+    DIDDocument *controllerdoc2 = TestData_LoadControllerDoc();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(controllerdoc2);
+    DID_Copy(&controller2, &controllerdoc2->did);
+
+    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
+    CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
+
+    DID_Copy(&customized_did, &customized_doc->did);
+
+    DID *controllers[2] = {0};
+    size = DIDDocument_GetControllers(customized_doc, controllers, 2);
+    CU_ASSERT_EQUAL(2, size);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(contains_DID(controllers, 2, &controller1));
+    CU_ASSERT_PTR_NOT_NULL_FATAL(contains_DID(controllers, 2, &controller2));
+
+    builder = DIDDocument_Edit(customized_doc, controllerdoc2);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
+
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, &controller1));
+
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(sealeddoc);
+    DIDDocumentBuilder_Destroy(builder);
+
+    CU_ASSERT_EQUAL_FATAL(1, DIDDocument_GetControllerCount(sealeddoc));
+
+    memset(controllers, 0, sizeof(controllers));
+    size = DIDDocument_GetControllers(sealeddoc, controllers, 2);
+    CU_ASSERT_EQUAL(1, size);
+    CU_ASSERT_PTR_NULL_FATAL(contains_DID(controllers, 1, &controller1));
+    CU_ASSERT_PTR_NOT_NULL_FATAL(contains_DID(controllers, 1, &controller2));
 
     DIDDocument_Destroy(sealeddoc);
 
@@ -2141,11 +2296,13 @@ static CU_TestInfo cases[] = {
     { "test_get_authorization_key_with_multicid",    test_get_authorization_key_with_multicid },
     { "test_add_authorization_key_with_multicid",    test_add_authorization_key_with_multicid },
     { "test_remove_authorization_key_with_multicid", test_remove_authorization_key_with_multicid},
-    { NULL,                                          NULL                                    }
+    { "test_add_controller_with_multicid",           test_add_controller_with_multicid        },
+    { "test_remove_controller_with_multicid",        test_remove_controller_with_multicid     },
+    { NULL,                                          NULL                                     }
 };
 
 static CU_SuiteInfo suite[] = {
-    { "diddoc customized doc test", diddoc_customizeddoc_test_suite_init,  diddoc_customizeddoc_test_suite_cleanup,  NULL, NULL, cases },
+    { "customized doc test", diddoc_customizeddoc_test_suite_init,  diddoc_customizeddoc_test_suite_cleanup,  NULL, NULL, cases },
     {  NULL,                       NULL,                         NULL,                            NULL, NULL, NULL  }
 };
 

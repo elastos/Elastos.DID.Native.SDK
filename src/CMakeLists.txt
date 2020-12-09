@@ -71,6 +71,7 @@ set(SRC
     mnemonic.c
     presentation.c
     issuer.c
+    ticket.c
     ${utility-SOURCES}
     ${backend-SOURCES}
     ${meta-SOURCES})
