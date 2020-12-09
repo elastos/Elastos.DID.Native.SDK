@@ -28,6 +28,8 @@
 #include "ela_did.h"
 #include "JsonGenerator.h"
 #include "did.h"
+#include "common.h"
+#include "ticket.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,13 +37,13 @@ extern "C" {
 
 #define  MAX_SPEC_LEN             32
 #define  MAX_OP_LEN               32
-#define  MAX_REQ_SIG_LEN          128
 
 typedef struct DIDRequest {
     struct {
         char spec[MAX_SPEC_LEN];
         char op[MAX_OP_LEN];
         char prevtxid[ELA_MAX_TXID_LEN];
+        const char *ticket;
     } header;
 
     const char *payload;
@@ -50,7 +52,7 @@ typedef struct DIDRequest {
 
     struct {
         DIDURL verificationMethod;
-        char signature[MAX_REQ_SIG_LEN];
+        char signatureValue[MAX_SIGN_LEN];
     } proof;
 } DIDRequest;
 
@@ -58,6 +60,7 @@ typedef enum DIDRequest_Type
 {
    RequestType_Create,
    RequestType_Update,
+   RequestType_Transfer,
    RequestType_Deactivate
 } DIDRequest_Type;
 
@@ -68,7 +71,7 @@ void DIDRequest_Destroy(DIDRequest *request);
 void DIDRequest_Free(DIDRequest *request);
 
 const char* DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
-        DIDURL *signkey, const char *storepass);
+        TransferTicket *ticket, DIDURL *signkey, const char *storepass);
 
 int DIDRequest_Verify(DIDRequest *request);
 

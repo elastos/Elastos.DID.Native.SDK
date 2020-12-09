@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-#define MAX_DOC_SIGN                    128
+#define MAX_SIGN_LEN                    128
 
 struct DIDMetaData {
     MetaData base;
@@ -57,9 +57,13 @@ int DIDMetaData_SetPublished(DIDMetaData *metadata, time_t time);
 
 int DIDMetaData_SetLastModified(DIDMetaData *metadata, time_t time);
 
+int DIDMetaData_SetMultisig(DIDMetaData *metadata, const char *multisig);
+
 time_t DIDMetaData_GetLastModified(DIDMetaData *metadata);
 
 const char *DIDMetaData_GetSignature(DIDMetaData *metadata);
+
+const char *DIDMetaData_GetMultisig(DIDMetaData *metadata);
 
 int DIDMetaData_Merge(DIDMetaData *metadata, DIDMetaData *frommeta);
 

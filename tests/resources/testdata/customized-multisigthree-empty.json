@@ -1,0 +1,30 @@
+{
+    "id": "did:elastos:littlefish",
+    "controller": [
+        "did:elastos:iWFAUYhTa35c1fPe3iCJvihZHx6quumnym",
+        "did:elastos:ijSM3fffVzAtAWM4DSypiFBY2mZSmN7JPv",
+        "did:elastos:ir31cZZbBQUFbp4pNpMQApkAyJ9dno3frB"
+    ],
+    "multisig": "3:3",
+    "expires": "2025-12-08T23:17:10Z",
+    "proof": [
+        {
+            "type": "ECDSAsecp256r1",
+            "created": "2020-12-09T07:17:10Z",
+            "creator": "did:elastos:iWFAUYhTa35c1fPe3iCJvihZHx6quumnym#primary",
+            "signatureValue": "Yoe5ZyLfSzQaRBGpTpCbaKDEIpyscas7ZUIAesJlxdN8oSTUac5M9JO9Ij4jcw53cJfSSb5kj2_hv8tCmYO8Tg"
+        },
+        {
+            "type": "ECDSAsecp256r1",
+            "created": "2020-12-09T07:17:10Z",
+            "creator": "did:elastos:ijSM3fffVzAtAWM4DSypiFBY2mZSmN7JPv#primary",
+            "signatureValue": "BBZZZViHJMIOr-gWtHpKMSpeG3EJOEuQFLt0fHXyDnmzbxjgGBZ0RpGmgiK0BykYoqKx4rWrpZM-uYjyuNa2bw"
+        },
+        {
+            "type": "ECDSAsecp256r1",
+            "created": "2020-12-09T07:17:10Z",
+            "creator": "did:elastos:ir31cZZbBQUFbp4pNpMQApkAyJ9dno3frB#primary",
+            "signatureValue": "t-i2_qzX9R3hAhKIcQ7W3ftlhfZ8sIqgv8Z5QqxUR0UtqL74T6sMSsejCg7KzHhfkeSpMVILGkIo3q8l943UnQ"
+        }
+    ]
+}

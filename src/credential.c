@@ -273,7 +273,7 @@ ssize_t Credential_GetTypes(Credential *cred, const char **types, size_t size)
 {
     size_t actual_size;
 
-    if (!cred || !types || size <= 0) {
+    if (!cred || !types || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }

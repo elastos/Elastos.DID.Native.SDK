@@ -1,0 +1,16 @@
+{
+    "id": "did:elastos:littlefish",
+    "controller": [
+        "did:elastos:iWFAUYhTa35c1fPe3iCJvihZHx6quumnym",
+        "did:elastos:ijSM3fffVzAtAWM4DSypiFBY2mZSmN7JPv",
+        "did:elastos:ir31cZZbBQUFbp4pNpMQApkAyJ9dno3frB"
+    ],
+    "multisig": "1:3",
+    "expires": "2025-12-08T23:17:10Z",
+    "proof": {
+        "type": "ECDSAsecp256r1",
+        "created": "2020-12-09T07:17:10Z",
+        "creator": "did:elastos:iWFAUYhTa35c1fPe3iCJvihZHx6quumnym#primary",
+        "signatureValue": "3arGDJzQOkMTfkH2gFzkjD8VXZLqg9Mced1RG5QFZrTDZmqR8TvYO4qKd73eqJqvop2LsOB4woKhvDMF4cyZbg"
+    }
+}

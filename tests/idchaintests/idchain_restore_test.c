@@ -209,7 +209,7 @@ static void test_sync_with_localmodification1(void)
     DIDDocument *modified_doc = DIDStore_LoadDID(store, modified_did);
     CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
 
-    DIDDocumentBuilder *builder = DIDDocument_Edit(modified_doc);
+    DIDDocumentBuilder *builder = DIDDocument_Edit(modified_doc, NULL);
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
     DIDDocument_Destroy(modified_doc);
 
@@ -220,13 +220,13 @@ static void test_sync_with_localmodification1(void)
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
     DIDURL_Destroy(serviceid);
 
-    modified_doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    modified_doc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
     DIDDocumentBuilder_Destroy(builder);
 
     rc = DIDStore_StoreDID(store, modified_doc);
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
-    strcpy(modified_signature, DIDDocument_GetProofSignature(modified_doc));
+    strcpy(modified_signature, DIDDocument_GetProofSignature(modified_doc, 0));
     DIDDocument_Destroy(modified_doc);
 
     printf("Synchronizing again from IDChain...");
@@ -263,7 +263,7 @@ static void test_sync_with_localmodification1(void)
 
     modified_doc = DIDStore_LoadDID(store, modified_did);
     CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
-    CU_ASSERT_STRING_EQUAL(modified_signature, DIDDocument_GetProofSignature(modified_doc));
+    CU_ASSERT_STRING_EQUAL(modified_signature, DIDDocument_GetProofSignature(modified_doc, 0));
     DIDDocument_Destroy(modified_doc);
 
     DIDStore_Close(store);
@@ -304,9 +304,9 @@ static void test_sync_with_localmodification2(void)
     DID *modified_did = &dids.dids[0];
     DIDDocument *modified_doc = DIDStore_LoadDID(store, modified_did);
     CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
-    strcpy(origin_signature, DIDDocument_GetProofSignature(modified_doc));
+    strcpy(origin_signature, DIDDocument_GetProofSignature(modified_doc, 0));
 
-    DIDDocumentBuilder *builder = DIDDocument_Edit(modified_doc);
+    DIDDocumentBuilder *builder = DIDDocument_Edit(modified_doc, NULL);
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
     DIDDocument_Destroy(modified_doc);
 
@@ -317,7 +317,7 @@ static void test_sync_with_localmodification2(void)
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
     DIDURL_Destroy(serviceid);
 
-    modified_doc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    modified_doc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
     DIDDocumentBuilder_Destroy(builder);
 
@@ -359,7 +359,7 @@ static void test_sync_with_localmodification2(void)
 
     modified_doc = DIDStore_LoadDID(store, modified_did);
     CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
-    CU_ASSERT_STRING_EQUAL(origin_signature, DIDDocument_GetProofSignature(modified_doc));
+    CU_ASSERT_STRING_EQUAL(origin_signature, DIDDocument_GetProofSignature(modified_doc, 0));
     DIDDocument_Destroy(modified_doc);
 
     DIDStore_Close(store);

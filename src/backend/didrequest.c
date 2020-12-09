@@ -39,7 +39,7 @@
 #include "didrequest.h"
 
 static const char *spec = "elastos/did/1.0";
-static const char* operation[] = {"create", "update", "deactivate"};
+static const char* operation[] = {"create", "update", "transfer", "deactivate"};
 
 static int header_toJson(JsonGenerator *gen, DIDRequest *req)
 {
@@ -51,7 +51,8 @@ static int header_toJson(JsonGenerator *gen, DIDRequest *req)
     CHECK(JsonGenerator_WriteStringField(gen, "operation", req->header.op));
     if (!strcmp(req->header.op, operation[RequestType_Update]))
         CHECK(JsonGenerator_WriteStringField(gen, "previousTxid", req->header.prevtxid));
-
+    if (req->header.ticket && *req->header.ticket)
+        CHECK(JsonGenerator_WriteStringField(gen, "ticket", req->header.ticket));
     CHECK(JsonGenerator_WriteEndObject(gen));
     return 0;
 }
@@ -69,7 +70,7 @@ static int proof_toJson(JsonGenerator *gen, DIDRequest *req)
 
     CHECK(JsonGenerator_WriteStartObject(gen));
     CHECK(JsonGenerator_WriteStringField(gen, "verificationMethod", method));
-    CHECK(JsonGenerator_WriteStringField(gen, "signature", req->proof.signature));
+    CHECK(JsonGenerator_WriteStringField(gen, "signature", req->proof.signatureValue));
     CHECK(JsonGenerator_WriteEndObject(gen));
     return 0;
 }
@@ -110,11 +111,11 @@ static const char *DIDRequest_ToJson(DIDRequest *req)
     return JsonGenerator_Finish(gen);
 }
 
-const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL *signkey,
-        const char *storepass)
+const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
+        TransferTicket *ticket, DIDURL *signkey, const char *storepass)
 {
     DIDRequest req;
-    const char *payload, *op, *requestJson, *prevtxid, *data;
+    const char *payload = NULL, *op, *requestJson = NULL, *prevtxid, *data, *ticket_data = "";
     size_t len;
     int rc;
     char signature[SIGNATURE_BYTES * 2 + 16], idstring[ELA_MAX_DID_LEN];
@@ -123,6 +124,18 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL 
     assert(document);
     assert(signkey);
     assert(storepass && *storepass);
+
+    if (type != RequestType_Transfer && ticket) {
+        DIDError_Set(DIDERR_TRANSACTION_ERROR, "Only support transfer operation with transfer ticket.");
+        free((void*)payload);
+        return NULL;
+    }
+
+    if (type == RequestType_Transfer && !ticket) {
+        DIDError_Set(DIDERR_TRANSACTION_ERROR, "Transfer operation must attatch transfer ticket.");
+        free((void*)payload);
+        return NULL;
+    }
 
     if (type == RequestType_Create || type == RequestType_Deactivate) {
         prevtxid = "";
@@ -151,25 +164,41 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document, DIDURL 
         free((void*)data);
     }
 
+    if (ticket) {
+        data = TransferTicket_ToJson(ticket);
+        if (!data)
+            goto pointExit;
+
+        len = strlen(data);
+        ticket_data = (char*)malloc(len * 4 / 3 + 16);
+        base64_url_encode((char*)ticket_data, (const uint8_t *)data, len);
+        free((void*)data);
+    }
+
     op = operation[type];
-    rc = DIDDocument_Sign(document, signkey, storepass, signature, 4,
+    rc = DIDDocument_Sign(document, signkey, storepass, signature, 5,
             (unsigned char*)spec, strlen(spec), (unsigned char*)op, strlen(op),
             (unsigned char *)prevtxid, strlen(prevtxid),
+            (unsigned char*)ticket_data, strlen(ticket_data),
             (unsigned char*)payload, strlen(payload));
-    if (rc < 0) {
-        free((void*)payload);
-        return NULL;
-    }
+    if (rc < 0)
+        goto pointExit;
 
     strcpy(req.header.spec, (char*)spec);
     strcpy(req.header.op, (char*)op);
     strcpy(req.header.prevtxid, (char*)prevtxid);
+    req.header.ticket = ticket_data;
     req.payload = payload;
-    strcpy(req.proof.signature, signature);
+    strcpy(req.proof.signatureValue, signature);
     DIDURL_Copy(&req.proof.verificationMethod, signkey);
 
     requestJson = DIDRequest_ToJson(&req);
-    free((void*)payload);
+
+pointExit:
+    if (payload)
+        free((void*)payload);
+    if (ticket_data && *ticket_data)
+        free((void*)ticket_data);
     return requestJson;
 }
 
@@ -182,17 +211,18 @@ int DIDRequest_Verify(DIDRequest *request)
 
     //todo: if(request->doc) is for deacativated without doc.
     return DIDDocument_Verify(request->doc, &request->proof.verificationMethod,
-                (char*)request->proof.signature, 4,
+                (char*)request->proof.signatureValue, 5,
                 request->header.spec, strlen(request->header.spec),
                 request->header.op, strlen(request->header.op),
                 request->header.prevtxid, strlen(request->header.prevtxid),
+                request->header.ticket, strlen(request->header.ticket),
                 request->payload, strlen(request->payload));
 }
 
 DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json)
 {
     json_t *item, *field = NULL;
-    char *docJson;
+    char *docJson, *ticketJson;
     const char *op, *payload;
     DID *subject;
     size_t len;
@@ -260,24 +290,49 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json)
         *request->header.prevtxid = 0;
     }
 
+    field = json_object_get(item, "ticket");
+    if (!field) {
+        if (!strcmp(request->header.op, "transfer")) {
+            DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing ticket.");
+            return NULL;
+        }
+        request->header.ticket = "";
+    }
+    if (field) {
+        if (strcmp(request->header.op, "transfer")) {
+            DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
+            return NULL;
+        }
+        len = strlen(json_string_value(field)) + 1;
+        ticketJson = (char*)malloc(len);
+        len = base64_url_decode((uint8_t *)ticketJson, json_string_value(field));
+        if (len <= 0) {
+            DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode the ticket failed");
+            free(ticketJson);
+            goto errorExit;
+        }
+        ticketJson[len] = 0;
+        request->header.ticket = ticketJson;
+    }
+
     item = json_object_get(json, "payload");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing payload.");
-        return NULL;
+        goto errorExit;
     }
     if (!json_is_string(item)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
-        return NULL;
+        goto errorExit;
     }
     payload = json_string_value(item);
     if (!payload) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "No payload.");
-        return NULL;
+        goto errorExit;
     }
     request->payload = strdup(payload);
     if (!request->payload) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Record payload failed.");
-        return NULL;
+        goto errorExit;
     }
 
     if (strcmp(request->header.op, operation[RequestType_Deactivate])) {
@@ -341,11 +396,12 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json)
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing signature.");
         goto errorExit;
     }
-    if (!json_is_string(field) || strlen(json_string_value(field)) >= MAX_REQ_SIG_LEN) {
+
+    if (!json_is_string(field) || strlen(json_string_value(field)) >= MAX_SIGN_LEN) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signature.");
         goto errorExit;
     }
-    strcpy(request->proof.signature, json_string_value(field));
+    strcpy(request->proof.signatureValue, json_string_value(field));
 
     if (DIDRequest_Verify(request) < 0) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Verify payload failed.");
@@ -355,16 +411,7 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json)
     return request->doc;
 
 errorExit:
-    if (request->payload) {
-        free((void*)request->payload);
-        request->payload = NULL;
-    }
-
-    if (request->doc) {
-        DIDDocument_Destroy(request->doc);
-        request->doc = NULL;
-    }
-
+    DIDRequest_Destroy(request);
     return NULL;
 }
 
@@ -373,10 +420,16 @@ void DIDRequest_Destroy(DIDRequest *request)
     if (!request)
         return;
 
+    if (request->header.ticket && *request->header.ticket) {
+        free((void*)request->header.ticket);
+        request->header.ticket = NULL;
+    }
+
     if (request->payload) {
         free((void*)request->payload);
         request->payload = NULL;
     }
+
     if (request->doc) {
         DIDDocument_Destroy(request->doc);
         request->doc = NULL;
@@ -385,7 +438,15 @@ void DIDRequest_Destroy(DIDRequest *request)
 
 void DIDRequest_Free(DIDRequest *request)
 {
-    if (request && request->payload) {
+    if (!request)
+        return;
+
+    if (request->header.ticket && *request->header.ticket) {
+        free((void*)request->header.ticket);
+        request->header.ticket = NULL;
+    }
+
+    if (request->payload) {
         free((void*)request->payload);
         request->payload = NULL;
     }

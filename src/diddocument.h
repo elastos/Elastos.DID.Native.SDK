@@ -28,6 +28,7 @@
 #include "ela_did.h"
 #include "did.h"
 #include "didmeta.h"
+#include "common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,14 +36,12 @@ extern "C" {
 
 #define MAX_PUBLICKEY_BASE58            64
 #define MAX_ENDPOINT                    256
-#define MAX_DOC_TYPE                    64
-#define MAX_DOC_SIGN                    128
 
 typedef struct DocumentProof {
-    char type[MAX_DOC_TYPE];
+    char type[MAX_TYPE_LEN];
     time_t created;
     DIDURL creater;
-    char signatureValue[MAX_DOC_SIGN];
+    char signatureValue[MAX_SIGN_LEN];
 } DocumentProof;
 
 struct DIDDocument {
@@ -52,6 +51,8 @@ struct DIDDocument {
         size_t size;
         DIDDocument **docs;
     } controllers;
+
+    int multisig;
 
     struct {
         size_t size;
@@ -68,15 +69,18 @@ struct DIDDocument {
         Service **services;
     } services;
 
-    time_t expires;
-    DocumentProof proof;
+    struct {
+        size_t size;
+        DocumentProof *proofs;
+    } proofs;
 
+    time_t expires;
     DIDMetaData metadata;
 };
 
 struct PublicKey {
     DIDURL id;
-    char type[MAX_DOC_TYPE];
+    char type[MAX_TYPE_LEN];
     DID controller;
     char publicKeyBase58[MAX_PUBLICKEY_BASE58];
     bool authenticationKey;
@@ -85,12 +89,13 @@ struct PublicKey {
 
 struct Service {
     DIDURL id;
-    char type[MAX_DOC_TYPE];
+    char type[MAX_TYPE_LEN];
     char endpoint[MAX_ENDPOINT];
 };
 
 struct DIDDocumentBuilder {
     DIDDocument *document;
+    DIDDocument *controllerdoc;
 };
 
 int DIDDocument_SetStore(DIDDocument *document, DIDStore *store);
@@ -101,6 +106,20 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
 DIDDocument *DIDDocument_FromJson_Internal(json_t *root);
 
 int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc);
+
+DIDDocument *DIDDocument_GetControllerDocument(DIDDocument *doc, DID *controller);
+
+ssize_t DIDDocument_GetDigest(DIDDocument *document, uint8_t *digest, size_t size);
+
+const char *DIDDocument_Merge(DIDDocument **documents, size_t size);
+
+bool DIDDocument_IsValid_Internal(DIDDocument *document, bool isqualified);
+
+bool Is_Controller_DefaultKey(DIDDocument *document, DIDURL *keyid);
+
+bool Is_Self_AuthenticationKey(DIDDocument *document, DIDURL *keyid);
+
+bool Is_CustomizedDID(DIDDocument *document);
 
 #ifdef __cplusplus
 }

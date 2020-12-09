@@ -53,11 +53,17 @@ typedef struct TestData {
 
     DIDDocument *controllerdoc;
 
-    DIDDocument *emptycustomizeddoc;
-    DIDDocument *customizeddoc;
+    DIDDocument *emptyctmdoc;
+    DIDDocument *ctmdoc;
 
-    DIDDocument *emptyMultiCustomizedDoc;
-    DIDDocument *multiCustomizedDoc;
+    DIDDocument *emptyctmdoc_multisigone;
+    DIDDocument *ctmdoc_multisigone;
+
+    DIDDocument *emptyctmdoc_multisigtwo;
+    DIDDocument *ctmdoc_multisigtwo;
+
+    DIDDocument *emptyctmdoc_multisigthree;
+    DIDDocument *ctmdoc_multisigthree;
 
     Credential *profileVc;
     char *profileVcCompactJson;
@@ -129,7 +135,7 @@ char *get_path(char *path, const char *file)
     return path;
 }
 
-char *load_file(const char *file)
+char *load_path(const char *file)
 {
     char *readstring = NULL;
     size_t reclen, bufferlen;
@@ -194,7 +200,7 @@ static char *load_testdata_file(const char *file)
     if (!path)
         return NULL;
 
-    return load_file(path);
+    return load_path(path);
 }
 
 static const char *getpassword(const char *walletDir, const char *walletId)
@@ -227,7 +233,7 @@ char *get_file_path(char *path, size_t size, int count, ...)
     return path;
 }
 
-static int list_dir(const char *path, const char *pattern,
+static int list_directory(const char *path, const char *pattern,
         int (*callback)(const char *name, void *context), void *context)
 {
     char full_pattern[PATH_MAX];
@@ -273,7 +279,7 @@ static int list_dir(const char *path, const char *pattern,
     return 0;
 }
 
-static int test_path(const char *path)
+static int test_paths(const char *path)
 {
     struct stat s;
 
@@ -318,13 +324,13 @@ void delete_file(const char *path)
     if (!path)
         return;
 
-    rc = test_path(path);
+    rc = test_paths(path);
     if (rc < 0)
         return;
     else if (rc == S_IFDIR) {
-        list_dir(path, ".*", delete_file_helper, (void *)path);
+        list_directory(path, ".*", delete_file_helper, (void *)path);
 
-        if (list_dir(path, "*", delete_file_helper, (void *)path) == 0)
+        if (list_directory(path, "*", delete_file_helper, (void *)path) == 0)
             rmdir(path);
     } else
         remove(path);
@@ -401,12 +407,12 @@ static DIDDocument *store_document(const char *file, const char *alias)
 
 bool file_exist(const char *path)
 {
-    return test_path(path) == S_IFREG;
+    return test_paths(path) == S_IFREG;
 }
 
 bool dir_exist(const char* path)
 {
-    return test_path(path) == S_IFDIR;
+    return test_paths(path) == S_IFDIR;
 }
 
 static int import_privatekey(DIDURL *id, const char *storepass, const char *file)
@@ -830,12 +836,12 @@ DIDDocument *TestData_LoadIssuerDoc(void)
     doc = DID_Resolve(subject, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
-
     DIDDocument_Destroy(doc);
+
     return testdata.issuerdoc;
 }
 
-DIDDocument *TestData_LoadEmptyCustomizedDoc(void)
+DIDDocument *TestData_LoadEmptyCtmDoc(void)
 {
     DIDDocument *doc;
     DID *subject;
@@ -843,10 +849,10 @@ DIDDocument *TestData_LoadEmptyCustomizedDoc(void)
     TestData_LoadIssuerDoc();
     TestData_LoadDoc();
 
-    if (!testdata.emptycustomizeddoc)
-        testdata.emptycustomizeddoc = store_document("customized-did-empty.json", "empty customized doc");
+    if (!testdata.emptyctmdoc)
+        testdata.emptyctmdoc = store_document("customized-did-empty.json", "empty customized doc");
 
-    subject = DIDDocument_GetSubject(testdata.emptycustomizeddoc);
+    subject = DIDDocument_GetSubject(testdata.emptyctmdoc);
     if (!subject)
         return NULL;
 
@@ -855,10 +861,10 @@ DIDDocument *TestData_LoadEmptyCustomizedDoc(void)
         return NULL;
     DIDDocument_Destroy(doc);
 
-    return testdata.emptycustomizeddoc;
+    return testdata.emptyctmdoc;
 }
 
-DIDDocument *TestData_LoadCustomizedDoc(void)
+DIDDocument *TestData_LoadCtmDoc(void)
 {
     DIDDocument *doc;
     DID *subject;
@@ -868,10 +874,10 @@ DIDDocument *TestData_LoadCustomizedDoc(void)
     TestData_LoadIssuerDoc();
     TestData_LoadDoc();
 
-    if (!testdata.customizeddoc)
-        testdata.customizeddoc = store_document("customized-did.json", "customized doc");
+    if (!testdata.ctmdoc)
+        testdata.ctmdoc = store_document("customized-did.json", "customized doc");
 
-    subject = DIDDocument_GetSubject(testdata.customizeddoc);
+    subject = DIDDocument_GetSubject(testdata.ctmdoc);
     if (!subject)
         return NULL;
 
@@ -892,10 +898,39 @@ DIDDocument *TestData_LoadCustomizedDoc(void)
         return NULL;
     DIDDocument_Destroy(doc);
 
-    return testdata.customizeddoc;
+    return testdata.ctmdoc;
 }
 
-DIDDocument *TestData_LoadEmptyMultiCustomizedDoc(void)
+static int import_ctmdid_privatekey(DID *did, const char *storepass)
+{
+    DIDURL *id;
+    int rc;
+
+    assert(did);
+
+    id = DIDURL_NewByDid(did, "k1");
+    rc = import_privatekey(id, storepass, "customized.k1.sk");
+    DIDURL_Destroy(id);
+    if (rc)
+        return -1;
+
+    id = DIDURL_NewByDid(did, "k2");
+    rc = import_privatekey(id, storepass, "customized.k2.sk");
+    DIDURL_Destroy(id);
+    if (rc)
+        return -1;
+
+    id = DIDURL_NewByDid(did, "recovery3");
+    rc = import_privatekey(id, storepass, "customized.recovery3.sk");
+    DIDURL_Destroy(id);
+    if (rc)
+        return -1;
+
+    return 0;
+}
+
+//1:3
+DIDDocument *TestData_LoadEmptyCtmDoc_MultisigOne(void)
 {
     DIDDocument *doc, *controller_doc;
     DID *subject;
@@ -907,10 +942,10 @@ DIDDocument *TestData_LoadEmptyMultiCustomizedDoc(void)
     if (!controller_doc)
         return NULL;
 
-    if (!testdata.emptyMultiCustomizedDoc)
-        testdata.emptyMultiCustomizedDoc = store_document("customized-multicontroller-empty.json", "empty multi-controller customized doc");
+    if (!testdata.emptyctmdoc_multisigone)
+        testdata.emptyctmdoc_multisigone = store_document("customized-multisigone-empty.json", "empty ctmdoc_1:3");
 
-    subject = DIDDocument_GetSubject(testdata.emptyMultiCustomizedDoc);
+    subject = DIDDocument_GetSubject(testdata.emptyctmdoc_multisigone);
     if (!subject)
         return NULL;
 
@@ -923,15 +958,15 @@ DIDDocument *TestData_LoadEmptyMultiCustomizedDoc(void)
         return NULL;
     DIDDocument_Destroy(doc);
 
-    return testdata.emptyMultiCustomizedDoc;
+    return testdata.emptyctmdoc_multisigone;
 }
 
-DIDDocument *TestData_LoadMultiCustomizedDoc(void)
+//1:3
+DIDDocument *TestData_LoadCtmDoc_MultisigOne(void)
 {
     DIDDocument *doc, *controller_doc;
     DID *subject;
-    DIDURL *signkey, *id;
-    int rc;
+    DIDURL *signkey;
 
     TestData_LoadIssuerDoc();
     TestData_LoadControllerDoc();
@@ -939,23 +974,14 @@ DIDDocument *TestData_LoadMultiCustomizedDoc(void)
     if (!controller_doc)
         return NULL;
 
-    if (!testdata.multiCustomizedDoc)
-        testdata.multiCustomizedDoc = store_document("customized-multicontroller.json", "multi-controller customized doc");
+    if (!testdata.ctmdoc_multisigone)
+        testdata.ctmdoc_multisigone = store_document("customized-multisigone.json", "ctmdoc_1:3");
 
-    subject = DIDDocument_GetSubject(testdata.multiCustomizedDoc);
+    subject = DIDDocument_GetSubject(testdata.ctmdoc_multisigone);
     if (!subject)
         return NULL;
 
-    id = DIDURL_NewByDid(subject, "k1");
-    rc = import_privatekey(id, storepass, "customized.k1.sk");
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    id = DIDURL_NewByDid(subject, "k2");
-    rc = import_privatekey(id, storepass, "customized.k2.sk");
-    DIDURL_Destroy(id);
-    if (rc)
+    if (import_ctmdid_privatekey(subject, storepass) < 0)
         return NULL;
 
     signkey = DIDDocument_GetDefaultPublicKey(controller_doc);
@@ -967,7 +993,141 @@ DIDDocument *TestData_LoadMultiCustomizedDoc(void)
         return NULL;
     DIDDocument_Destroy(doc);
 
-    return testdata.multiCustomizedDoc;
+    return testdata.ctmdoc_multisigone;
+}
+
+//2:3
+DIDDocument *TestData_LoadEmptyCtmDoc_MultisigTwo(void)
+{
+    DIDDocument *doc, *controller_doc;
+    DID *subject;
+    DIDURL *signkey;
+
+    TestData_LoadIssuerDoc();
+    TestData_LoadControllerDoc();
+    controller_doc = TestData_LoadDoc();
+    if (!controller_doc)
+        return NULL;
+
+    if (!testdata.emptyctmdoc_multisigtwo)
+        testdata.emptyctmdoc_multisigtwo = store_document("customized-multisigtwo-empty.json", "empty ctmdoc_2:3");
+
+    subject = DIDDocument_GetSubject(testdata.emptyctmdoc_multisigtwo);
+    if (!subject)
+        return NULL;
+
+    signkey = DIDDocument_GetDefaultPublicKey(controller_doc);
+    if (!signkey)
+        return NULL;
+
+    doc = DID_Resolve(subject, true);
+    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.emptyctmdoc_multisigtwo;
+}
+
+//2:3
+DIDDocument *TestData_LoadCtmDoc_MultisigTwo(void)
+{
+    DIDDocument *doc, *controller_doc;
+    DID *subject;
+    DIDURL *signkey;
+
+    TestData_LoadIssuerDoc();
+    TestData_LoadControllerDoc();
+    controller_doc = TestData_LoadDoc();
+    if (!controller_doc)
+        return NULL;
+
+    if (!testdata.ctmdoc_multisigtwo)
+        testdata.ctmdoc_multisigtwo = store_document("customized-multisigtwo.json", "ctmdoc_2:3");
+
+    subject = DIDDocument_GetSubject(testdata.ctmdoc_multisigtwo);
+    if (!subject)
+        return NULL;
+
+    if (import_ctmdid_privatekey(subject, storepass) < 0)
+        return NULL;
+
+    signkey = DIDDocument_GetDefaultPublicKey(controller_doc);
+    if (!signkey)
+        return NULL;
+
+    doc = DID_Resolve(subject, true);
+    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.ctmdoc_multisigtwo;
+}
+
+//3:3
+DIDDocument *TestData_LoadEmptyCtmDoc_MultisigThree(void)
+{
+    DIDDocument *doc, *controller_doc;
+    DID *subject;
+    DIDURL *signkey;
+
+    TestData_LoadIssuerDoc();
+    TestData_LoadControllerDoc();
+    controller_doc = TestData_LoadDoc();
+    if (!controller_doc)
+        return NULL;
+
+    if (!testdata.emptyctmdoc_multisigthree)
+        testdata.emptyctmdoc_multisigthree = store_document("customized-multisigthree-empty.json", "empty ctmdoc_3:3");
+
+    subject = DIDDocument_GetSubject(testdata.emptyctmdoc_multisigthree);
+    if (!subject)
+        return NULL;
+
+    signkey = DIDDocument_GetDefaultPublicKey(controller_doc);
+    if (!signkey)
+        return NULL;
+
+    doc = DID_Resolve(subject, true);
+    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.emptyctmdoc_multisigthree;
+}
+
+//3:3
+DIDDocument *TestData_LoadCtmDoc_MultisigThree(void)
+{
+    DIDDocument *doc, *controller_doc;
+    DID *subject;
+    DIDURL *signkey;
+
+    TestData_LoadIssuerDoc();
+    TestData_LoadControllerDoc();
+    controller_doc = TestData_LoadDoc();
+    if (!controller_doc)
+        return NULL;
+
+    if (!testdata.ctmdoc_multisigthree)
+        testdata.ctmdoc_multisigthree = store_document("customized-multisigthree.json", "ctmdoc_3:3");
+
+    subject = DIDDocument_GetSubject(testdata.ctmdoc_multisigthree);
+    if (!subject)
+        return NULL;
+
+    if (import_ctmdid_privatekey(subject, storepass) < 0)
+        return NULL;
+
+    signkey = DIDDocument_GetDefaultPublicKey(controller_doc);
+    if (!signkey)
+        return NULL;
+
+    doc = DID_Resolve(subject, true);
+    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.ctmdoc_multisigthree;
 }
 
 const char *TestData_LoadRestoreMnemonic(void)
@@ -1003,15 +1163,25 @@ void TestData_Free(void)
     if (testdata.controllerdoc)
         DIDDocument_Destroy(testdata.controllerdoc);
 
-    if (testdata.emptycustomizeddoc)
-        DIDDocument_Destroy(testdata.emptycustomizeddoc);
-    if (testdata.customizeddoc)
-        DIDDocument_Destroy(testdata.customizeddoc);
+    if (testdata.emptyctmdoc)
+        DIDDocument_Destroy(testdata.emptyctmdoc);
+    if (testdata.ctmdoc)
+        DIDDocument_Destroy(testdata.ctmdoc);
 
-    if (testdata.emptyMultiCustomizedDoc)
-        DIDDocument_Destroy(testdata.emptyMultiCustomizedDoc);
-    if (testdata.multiCustomizedDoc)
-        DIDDocument_Destroy(testdata.multiCustomizedDoc);
+    if (testdata.emptyctmdoc_multisigone)
+        DIDDocument_Destroy(testdata.emptyctmdoc_multisigone);
+    if (testdata.ctmdoc_multisigone)
+        DIDDocument_Destroy(testdata.ctmdoc_multisigone);
+
+    if (testdata.emptyctmdoc_multisigtwo)
+        DIDDocument_Destroy(testdata.emptyctmdoc_multisigtwo);
+    if (testdata.ctmdoc_multisigtwo)
+        DIDDocument_Destroy(testdata.ctmdoc_multisigtwo);
+
+    if (testdata.emptyctmdoc_multisigthree)
+        DIDDocument_Destroy(testdata.emptyctmdoc_multisigthree);
+    if (testdata.ctmdoc_multisigthree)
+        DIDDocument_Destroy(testdata.ctmdoc_multisigthree);
 
     if (testdata.profileVc)
         Credential_Destroy(testdata.profileVc);

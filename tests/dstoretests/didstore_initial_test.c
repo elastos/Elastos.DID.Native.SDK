@@ -86,7 +86,7 @@ static void test_didstore_newdid(void)
     isEquals = DID_Equals(DIDDocument_GetSubject(doc), DIDDocument_GetSubject(loaddoc));
     CU_ASSERT_TRUE(isEquals);
 
-    rc = strcmp(doc->proof.signatureValue, loaddoc->proof.signatureValue);
+    rc = strcmp(doc->proofs.proofs[0].signatureValue, loaddoc->proofs.proofs[0].signatureValue);
     CU_ASSERT_NOT_EQUAL_FATAL(isEquals, 0);
 
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(loaddoc));

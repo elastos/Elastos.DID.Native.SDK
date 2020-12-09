@@ -123,7 +123,7 @@ bool DIDBackend_Create(DIDBackend *backend, DIDDocument *document,
         return false;
     }
 
-    reqstring = DIDRequest_Sign(RequestType_Create, document, signkey, storepass);
+    reqstring = DIDRequest_Sign(RequestType_Create, document, NULL, signkey, storepass);
     if (!reqstring)
         return false;
 
@@ -157,7 +157,7 @@ bool DIDBackend_Update(DIDBackend *backend, DIDDocument *document, DIDURL *signk
         return false;
     }
 
-    reqstring = DIDRequest_Sign(RequestType_Update, document, signkey, storepass);
+    reqstring = DIDRequest_Sign(RequestType_Update, document, NULL, signkey, storepass);
     if (!reqstring)
         return false;
 
@@ -165,6 +165,41 @@ bool DIDBackend_Update(DIDBackend *backend, DIDDocument *document, DIDURL *signk
     free((void*)reqstring);
     if (!successed)
         DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction(update) failed.");
+
+    return successed;
+}
+
+bool DIDBackend_Transfer(DIDBackend *backend, DIDDocument *document,
+        TransferTicket *ticket, DIDURL *signkey, const char *storepass)
+{
+    const char *reqstring;
+    bool successed;
+
+    assert(backend);
+    assert(document);
+    assert(ticket);
+    assert(signkey);
+    assert(storepass && *storepass);
+
+    if (!backend->adapter) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not adapter to create transaction.\
+                Please reopen didstore to add adapter.");
+        return false;
+    }
+
+    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
+        return false;
+    }
+
+    reqstring = DIDRequest_Sign(RequestType_Transfer, document, ticket, signkey, storepass);
+    if (!reqstring)
+        return false;
+
+   successed = backend->adapter->createIdTransaction(backend->adapter, reqstring, "");
+    free((void*)reqstring);
+    if (!successed)
+        DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction(create) failed.");
 
     return successed;
 }
@@ -196,7 +231,7 @@ bool DIDBackend_Deactivate(DIDBackend *backend, DID *did, DIDURL *signkey,
     if (!document)
         return false;
 
-    reqstring = DIDRequest_Sign(RequestType_Deactivate, document, signkey, storepass);
+    reqstring = DIDRequest_Sign(RequestType_Deactivate, document, NULL, signkey, storepass);
     DIDDocument_Destroy(document);
     if (!reqstring)
         return false;
@@ -368,4 +403,3 @@ void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle)
 {
     gLocalResolveHandle = handle;
 }
-

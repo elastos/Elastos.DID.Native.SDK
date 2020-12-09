@@ -37,6 +37,7 @@
 #include "HDkey.h"
 #include "didmeta.h"
 #include "diderror.h"
+#include "ticket.h"
 
 #ifndef DISABLE_JWT
     #include "ela_jwt.h"
@@ -223,25 +224,62 @@ int ServiceArray_ToJson(JsonGenerator *gen, Service **services, size_t size,
     return 0;
 }
 
-static int proof_toJson(JsonGenerator *gen, DIDDocument *doc, int compact)
+static int Proof_ToJson(JsonGenerator *gen, DocumentProof *proof, DIDDocument *document, int compact)
 {
     char id[ELA_MAX_DIDURL_LEN];
     char _timestring[DOC_BUFFER_LEN];
 
     assert(gen);
     assert(gen->buffer);
-    assert(doc);
+    assert(proof);
+    assert(document);
 
     CHECK(JsonGenerator_WriteStartObject(gen));
     if (!compact)
-        CHECK(JsonGenerator_WriteStringField(gen, "type", doc->proof.type));
+        CHECK(JsonGenerator_WriteStringField(gen, "type", proof->type));
     CHECK(JsonGenerator_WriteStringField(gen, "created",
-            get_time_string(_timestring, sizeof(_timestring), &doc->proof.created)));
-    if (!compact || !DID_Equals(&doc->did, &doc->proof.creater.did))
+            get_time_string(_timestring, sizeof(_timestring), &proof->created)));
+    if (!compact || !DID_Equals(&document->did, &proof->creater.did))
         CHECK(JsonGenerator_WriteStringField(gen, "creator",
-                DIDURL_ToString(&doc->proof.creater, id, sizeof(id), false)));
-    CHECK(JsonGenerator_WriteStringField(gen, "signatureValue", doc->proof.signatureValue));
+                DIDURL_ToString(&proof->creater, id, sizeof(id), false)));
+
+    CHECK(JsonGenerator_WriteStringField(gen, "signatureValue", proof->signatureValue));
     CHECK(JsonGenerator_WriteEndObject(gen));
+    return 0;
+}
+
+static int proofs_func(const void *a, const void *b)
+{
+    DocumentProof *proofa = (DocumentProof*)a;
+    DocumentProof *proofb = (DocumentProof*)b;
+
+    return (int)(proofa->created - proofb->created);
+}
+
+static int ProofArray_ToJson(JsonGenerator *gen, DIDDocument *document, int compact)
+{
+    size_t size;
+    DocumentProof *proofs;
+    int i;
+
+    assert(gen);
+    assert(gen->buffer);
+    assert(document);
+    assert(size > 0);
+
+    size = document->proofs.size;
+    proofs = document->proofs.proofs;
+    if (size > 1)
+        CHECK(JsonGenerator_WriteStartArray(gen));
+
+    qsort(proofs, size, sizeof(DocumentProof), proofs_func);
+
+    for (i = 0; i < size; i++)
+        CHECK(Proof_ToJson(gen, &proofs[i], document, compact));
+
+    if (size > 1)
+        CHECK(JsonGenerator_WriteEndArray(gen));
+
     return 0;
 }
 
@@ -569,66 +607,93 @@ static int Parse_Services(DIDDocument *document, json_t *json)
     return 0;
 }
 
-static int Parse_Proof(DIDDocument *document, json_t *json)
+static int Parse_Proofs(DIDDocument *document, json_t *json)
 {
-    json_t *item;
+    json_t *item, *field;
+    size_t size = 1, i;
+    DocumentProof *proof;
 
     assert(document);
     assert(json);
 
-    item = json_object_get(json, "type");
-    if (item) {
-        if ((json_is_string(item) && strlen(json_string_value(item)) + 1 > MAX_DOC_TYPE) ||
-                !json_is_string(item)) {
-            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid proof type.");
+    if (json_is_array(json))
+        size = json_array_size(json);
+
+    document->proofs.proofs = (DocumentProof*)calloc(size, sizeof(DocumentProof));
+    if (!document->proofs.proofs) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for proofs failed.");
+        return -1;
+    }
+
+    document->proofs.size = 0;
+    for (i = 0; i < size; i++) {
+        if (json_is_object(json))
+            item = json;
+        else
+            item = json_array_get(json, i);
+
+        if (!json_is_object(item)) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid proof format.");
             return -1;
         }
-        strcpy(document->proof.type, json_string_value(item));
-    }
-    else
-        strcpy(document->proof.type, ProofType);
 
-    item = json_object_get(json, "created");
-    if (!item) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing create document time.");
-        return -1;
-    }
-    if (!json_is_string(item) ||
-            parse_time(&document->proof.created, json_string_value(item)) < 0) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid create document time.");
-        return -1;
-    }
+        proof = &document->proofs.proofs[document->proofs.size];
 
-    item = json_object_get(json, "creator");
-    if (item) {
-        if (!json_is_string(item) ||
-                Parse_DIDURL(&document->proof.creater, json_string_value(item), &document->did) == -1) {
-            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid document creater.");
+        field = json_object_get(item, "type");
+        if (field) {
+            if ((json_is_string(field) && strlen(json_string_value(field)) + 1 > MAX_TYPE_LEN) ||
+                    !json_is_string(field)) {
+                DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid proof type.");
+                return -1;
+            }
+            strcpy(proof->type, json_string_value(field));
+        }
+        else
+            strcpy(proof->type, ProofType);
+
+        field = json_object_get(item, "created");
+        if (!field) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing create document time.");
             return -1;
         }
+        if (!json_is_string(field) ||
+                parse_time(&proof->created, json_string_value(field)) < 0) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid create document time.");
+            return -1;
+        }
+
+        field = json_object_get(item, "creator");
+        if (field) {
+            if (!json_is_string(field) ||
+                    Parse_DIDURL(&proof->creater, json_string_value(field), &document->did) == -1) {
+                DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid document creater.");
+                return -1;
+            }
+        }
+
+        if (!field && (!DIDDocument_GetDefaultPublicKey(document) ||
+                !DIDURL_Copy(&proof->creater, DIDDocument_GetDefaultPublicKey(document)))) {
+            DIDError_Set(DIDERR_MALFORMED_DIDURL, "Set document creater failed.");
+            return -1;
+        }
+
+        field = json_object_get(item, "signatureValue");
+        if (!field) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing signature.");
+            return -1;
+        }
+        if (!json_is_string(field)) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid signature.");
+            return -1;
+        }
+        if (strlen(json_string_value(field)) + 1 > MAX_SIGN_LEN) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Document signature is too long.");
+            return -1;
+        }
+        strcpy(proof->signatureValue, json_string_value(field));
+        document->proofs.size++;
     }
 
-    if (!item && (!DIDDocument_GetDefaultPublicKey(document) ||
-            !DIDURL_Copy(&document->proof.creater, DIDDocument_GetDefaultPublicKey(document)))) {
-        DIDError_Set(DIDERR_MALFORMED_DIDURL, "Set document creater failed.");
-        return -1;
-    }
-
-    item = json_object_get(json, "signatureValue");
-    if (!item) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing signature.");
-        return -1;
-    }
-    if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid signature.");
-        return -1;
-    }
-    if (strlen(json_string_value(item)) + 1 > MAX_DOC_SIGN) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Document signature is too long.");
-        return -1;
-    }
-
-    strcpy(document->proof.signatureValue, json_string_value(item));
     return 0;
 }
 
@@ -730,11 +795,94 @@ static size_t get_self_authorization_count(DIDDocument *document)
     return size;
 }
 
+bool Is_Controller_DefaultKey(DIDDocument *document, DIDURL *keyid)
+{
+    DIDDocument *controller_doc;
+
+    assert(document);
+    assert(document->controllers.size > 0 && document->controllers.docs);
+    assert(keyid);
+
+    controller_doc = DIDDocument_GetControllerDocument(document, &keyid->did);
+    if (!controller_doc) {
+        DIDError_Set(DIDERR_INVALID_KEY, "The key is not owned by DID.");
+        return false;
+    }
+
+    if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(controller_doc), keyid)) {
+        DIDError_Set(DIDERR_INVALID_KEY, "The key is not the controller's default key.");
+        return false;
+    }
+
+    return true;
+}
+
+bool Is_Self_AuthenticationKey(DIDDocument *document, DIDURL *keyid)
+{
+    int i;
+    PublicKey *pk;
+
+    assert(document);
+    assert(keyid);
+
+    for (i = 0; i < document->publickeys.size; i++) {
+        pk = document->publickeys.pks[i];
+        if (DIDURL_Equals(keyid, &pk->id) && pk->authenticationKey)
+            return true;
+    }
+
+    return false;
+}
+
+bool Is_CustomizedDID(DIDDocument *document)
+{
+    DIDURL *signkey;
+
+    assert(document);
+
+    signkey = DIDDocument_GetDefaultPublicKey(document);
+    if (signkey && DID_Equals(&signkey->did, &document->did))
+        return false;
+
+    return true;
+}
+
+bool controllers_check(DIDDocument *document)
+{
+    int i;
+
+    assert(document);
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
+    if (!Is_CustomizedDID(document) && document->controllers.size > 0) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Normal DID should not have controller.");
+        return false;
+    }
+
+    if (Is_CustomizedDID(document)) {
+        if (document->controllers.size == 0) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Customized DID must have one controller at least.");
+            return false;
+        }
+
+        for (i = 0; i < document->controllers.size; i++) {
+            if (Is_CustomizedDID(document->controllers.docs[i])) {
+                DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "The controller must be normal DID.");
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 ////////////////////////////////Document/////////////////////////////////////
 DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
 {
     DIDDocument *doc;
     json_t *item;
+    int m, n;
 
     assert(root);
 
@@ -764,6 +912,30 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
         }
         if (Parse_Controllers(doc, item) == -1)
             goto errorExit;
+    }
+
+    //parser multisig
+    item = json_object_get(root, "multisig");
+    if (!item && doc->controllers.size > 1) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing multisig.");
+        goto errorExit;
+    }
+    if (item) {
+        if (!json_is_string(item)) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid multisig, multisig must be string.");
+            goto errorExit;
+        }
+        if (doc->controllers.size <= 1) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid multisig.");
+            goto errorExit;
+        }
+
+        parse_multisig(json_string_value(item), &m, &n);
+        if (n != doc->controllers.size || m > n) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Multisig doesn't match the count of controllers.");
+            goto errorExit;
+        }
+        doc->multisig = m;
     }
 
     //parse publickey
@@ -842,11 +1014,15 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing document proof.");
         goto errorExit;
     }
-    if (!json_is_object(item)) {
+    if (!json_is_object(item) && !json_is_array(item)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid document proof.");
         goto errorExit;
     }
-    if (Parse_Proof(doc, item) == -1)
+    if (Parse_Proofs(doc, item) == -1)
+        goto errorExit;
+
+    //check the document format
+    if (!controllers_check(doc))
         goto errorExit;
 
     return doc;
@@ -882,6 +1058,7 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
         bool compact, bool forsign)
 {
     char id[ELA_MAX_DIDURL_LEN], _timestring[DOC_BUFFER_LEN];
+    char multisig[32] = {0};
 
     assert(gen);
     assert(gen->buffer);
@@ -894,6 +1071,10 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
         CHECK(JsonGenerator_WriteFieldName(gen, "controller"));
         CHECK(ControllerArray_ToJson(gen, doc->controllers.docs, doc->controllers.size));
     }
+    if (doc->controllers.size > 1)
+        CHECK(JsonGenerator_WriteStringField(gen, "multisig",
+                format_multisig(multisig, sizeof(multisig), doc->multisig, doc->controllers.size)));
+
     if (doc->publickeys.size > 0) {
         CHECK(JsonGenerator_WriteFieldName(gen, "publicKey"));
         CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
@@ -928,7 +1109,7 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
             get_time_string(_timestring, sizeof(_timestring), &doc->expires)));
     if (!forsign) {
         CHECK(JsonGenerator_WriteFieldName(gen, "proof"));
-        CHECK(proof_toJson(gen, doc, compact));
+        CHECK(ProofArray_ToJson(gen, doc, compact));
     }
     CHECK(JsonGenerator_WriteEndObject(gen));
 
@@ -1043,44 +1224,74 @@ DIDMetaData *DIDDocument_GetMetaData(DIDDocument *document)
     return &document->metadata;
 }
 
-const char *DIDDocument_GetProofType(DIDDocument *document)
+ssize_t DIDDocument_GetProofCount(DIDDocument *document)
+{
+    if (!document) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return document->proofs.size;
+}
+
+const char *DIDDocument_GetProofType(DIDDocument *document, int index)
 {
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    return document->proof.type;
+    if (index >= document->proofs.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than the count of proofs.");
+        return NULL;
+    }
+
+    return document->proofs.proofs[index].type;
 }
 
-DIDURL *DIDDocument_GetProofCreater(DIDDocument *document)
+DIDURL *DIDDocument_GetProofCreater(DIDDocument *document, int index)
 {
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    return &document->proof.creater;
+    if (index >= document->proofs.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than the count of proofs.");
+        return NULL;
+    }
+
+    return &document->proofs.proofs[index].creater;
 }
 
-time_t DIDDocument_GetProofCreatedTime(DIDDocument *document)
+time_t DIDDocument_GetProofCreatedTime(DIDDocument *document, int index)
 {
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
-    return document->proof.created;
+    if (index >= document->proofs.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than the count of proofs.");
+        return 0;
+    }
+
+    return document->proofs.proofs[index].created;
 }
 
-const char *DIDDocument_GetProofSignature(DIDDocument *document)
+const char *DIDDocument_GetProofSignature(DIDDocument *document, int index)
 {
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    return document->proof.signatureValue;
+    if (index >= document->proofs.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than the count of proofs.");
+        return NULL;
+    }
+
+    return document->proofs.proofs[index].signatureValue;
 }
 
 bool DIDDocument_IsDeactivated(DIDDocument *document)
@@ -1106,7 +1317,7 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
     if (isdeactived)
         goto storeexit;
 
-    //check the controller
+    //todo: check the controller deactivated or not ????
     /*if (document->controllers.size && document->controllers.docs) {
         controller_doc = DID_Resolve(document->controller, true);
         if (!controller_doc) {
@@ -1133,37 +1344,78 @@ storeexit:
     return isdeactived;
 }
 
-bool DIDDocument_IsGenuine(DIDDocument *document)
+static bool DIDDocument_IsGenuine_Internal(DIDDocument *document, bool isqualified)
 {
-    DIDDocument *controller_doc;
+    DIDDocument *proof_doc;
+    DocumentProof *proof;
     const char *data;
-    int i, rc = -1;
+    bool isgenuine = false;
+    int i;
 
-    if (!document) {
+    assert(document);
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
+    if (isqualified && document->multisig > 0 && document->proofs.size != document->multisig) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for(i = 0; i < document->controllers.size; i++) {
             if (!DIDDocument_IsGenuine(document->controllers.docs[i]))
                 return false;
         }
     }
 
-    if (strcmp(document->proof.type, ProofType)) {
-        DIDError_Set(DIDERR_UNKNOWN, "Unsupported public key type.");
-        return false;
-    }
-
     data = diddocument_tojson_forsign(document, false, true);
     if (!data)
         return false;
 
-    rc = DIDDocument_Verify(document, &document->proof.creater, document->proof.signatureValue, 1,
-            data, strlen(data));
+    for (i = 0; i < document->proofs.size; i++) {
+        proof = &document->proofs.proofs[i];
+        assert(proof);
+        if (document->controllers.size == 0) {
+            proof_doc = document;
+        } else {
+            proof_doc = DIDDocument_GetControllerDocument(document, &proof->creater.did);
+            if (!proof_doc) {
+                DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "The signer is not the controller.");
+                goto errorExit;
+            }
+        }
+
+        if (strcmp(proof->type, ProofType)) {
+            DIDError_Set(DIDERR_UNKNOWN, "Unsupported public key type.");
+            goto errorExit;
+        }
+
+        if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(proof_doc), &proof->creater)) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT,
+                    "The sign key is not controller's default key.");
+            goto errorExit;
+        }
+
+        if (DIDDocument_Verify(proof_doc, &proof->creater, proof->signatureValue, 1,
+                data, strlen(data)) < 0)
+            goto errorExit;
+    }
+
+    isgenuine = true;
+
+errorExit:
     free((void*)data);
-    return rc == 0 ? true : false;
+    return isgenuine;
+}
+
+bool DIDDocument_IsGenuine(DIDDocument *document)
+{
+    if (!document) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    return DIDDocument_IsGenuine_Internal(document, true);
 }
 
 bool DIDDocument_IsExpires(DIDDocument *document)
@@ -1184,15 +1436,28 @@ bool DIDDocument_IsExpires(DIDDocument *document)
     return false;
 }
 
-bool DIDDocument_IsValid(DIDDocument *document)
+bool DIDDocument_IsQualified(DIDDocument *document)
 {
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
+    if (document->controllers.size > 1)
+        return document->proofs.size == document->multisig ? true : false;
+    else
+        return document->proofs.size == 1 ? true : false;
+}
+
+bool DIDDocument_IsValid_Internal(DIDDocument *document, bool isqualified)
+{
+    assert(document);
+
+    if (!controllers_check(document))
+        return false;
+
     if (DIDDocument_IsExpires(document)) {
-        DIDError_Set(DIDERR_EXPIRED, "Did is expires.");
+        DIDError_Set(DIDERR_EXPIRED, "Did is expired.");
         return false;
     }
 
@@ -1201,10 +1466,20 @@ bool DIDDocument_IsValid(DIDDocument *document)
         return false;
     }
 
-    if (!DIDDocument_IsGenuine(document))
+    if (!DIDDocument_IsGenuine_Internal(document, isqualified))
         return false;
 
     return true;
+}
+
+bool DIDDocument_IsValid(DIDDocument *document)
+{
+    if (!document) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    return DIDDocument_IsValid_Internal(document, true);
 }
 
 static int publickeys_copy(DIDDocument *doc, PublicKey **pks, size_t size)
@@ -1305,6 +1580,25 @@ static int services_copy(DIDDocument *doc, Service **services, size_t size)
     return 0;
 }
 
+static int proofs_copy(DIDDocument *doc, DocumentProof *proofs, size_t size)
+{
+    size_t i;
+
+    assert(doc);
+    assert(proofs);
+    assert(size >= 0);
+
+    if (size == 0)
+        return 0;
+
+    doc->proofs.proofs = (DocumentProof*)calloc(size, sizeof(DocumentProof));
+    if (!doc->proofs.proofs)
+        return -1;
+
+    memcpy(doc->proofs.proofs, proofs, size * sizeof(DocumentProof));
+    doc->proofs.size = size;
+    return 0;
+}
 
 static int documents_copy(DIDDocument *document, DIDDocument **docs, size_t size)
 {
@@ -1369,17 +1663,36 @@ int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc)
             srcdoc->services.services, srcdoc->services.size) == -1)
         return -1;
 
+    if (srcdoc->proofs.size != 0 && proofs_copy(destdoc,
+            srcdoc->proofs.proofs, srcdoc->proofs.size) == -1)
+        return -1;
+
+    destdoc->multisig = srcdoc->multisig;
     destdoc->expires = srcdoc->expires;
-    memcpy(&destdoc->proof, &srcdoc->proof, sizeof(DocumentProof));
     DIDMetaData_Copy(&destdoc->metadata, &srcdoc->metadata);
     DIDMetaData_SetLastModified(&destdoc->metadata, 0);
     memcpy(&destdoc->did.metadata, &destdoc->metadata, sizeof(DIDMetaData));
     return 0;
 }
 
-DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document)
+DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document, DIDDocument *controllerdoc)
 {
     DIDDocumentBuilder *builder;
+
+    if (!document) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    if (Is_CustomizedDID(document) && !controllerdoc) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Specify the controller to edit customized DID.");
+        return NULL;
+    }
+
+    if (!Is_CustomizedDID(document) && controllerdoc) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Don't specify the controller to edit normal DID.");
+        return NULL;
+    }
 
     builder = (DIDDocumentBuilder*)calloc(1, sizeof(DIDDocumentBuilder));
     if (!builder) {
@@ -1394,11 +1707,14 @@ DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document)
         return NULL;
     }
 
-    if (document && DIDDocument_Copy(builder->document, document) == -1) {
+    if (DIDDocument_Copy(builder->document, document) == -1) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Document copy failed.");
         DIDDocumentBuilder_Destroy(builder);
         return NULL;
     }
+
+    if (controllerdoc)
+        builder->controllerdoc = controllerdoc;
 
     return builder;
 }
@@ -1410,35 +1726,82 @@ void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder)
 
     if (builder->document)
         DIDDocument_Destroy(builder->document);
+    if (builder->controllerdoc)
+        DIDDocument_Destroy(builder->controllerdoc);
 
     free(builder);
 }
 
-static DIDDocument *contais_controller(DIDDocument **docs, size_t size, DID *controller)
+DIDDocument *DIDDocument_GetControllerDocument(DIDDocument *document, DID *controller)
 {
     DIDDocument *doc;
+    size_t size;
     int i;
 
-    assert(docs);
-    assert(size > 0);
+    assert(document);
     assert(controller);
 
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
+    size = document->controllers.size;
+    if (size == 0)
+        return NULL;
+
     for(i = 0; i < size; i++) {
-        if (DID_Equals(&docs[i]->did, controller))
-            return docs[i];
+        doc = document->controllers.docs[i];
+        if (DID_Equals(&doc->did, controller))
+            return doc;
     }
 
     return NULL;
 }
 
-DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, DID *controller,
-        const char *storepass)
+static int document_addproof(DIDDocument *document, char *signature, DIDURL *signkey, time_t created)
 {
-    DIDDocument *doc, *_doc = NULL;
+    int i;
+    size_t size;
+    DocumentProof *dp;
+
+    assert(document);
+    assert(signature);
+    assert(signkey);
+
+    size = document->proofs.size;
+    dp = document->proofs.proofs;
+    for (i = 0; i < size && dp; i++) {
+        DocumentProof *p = &dp[i];
+        if (DIDURL_Equals(&p->creater, signkey) || !strcmp(p->signatureValue, signature)) {
+            DIDError_Set(DIDERR_INVALID_KEY, "The signkey already exist.");
+            return -1;
+        }
+    }
+
+    if (!dp)
+        document->proofs.proofs = (DocumentProof*)calloc(1, sizeof(DocumentProof));
+    else
+        document->proofs.proofs = realloc(dp, (document->proofs.size + 1) * sizeof(DocumentProof));
+
+    if (!document->proofs.proofs) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Remalloc or malloc buffer for proofs failed.");
+        return -1;
+    }
+
+    strcpy(document->proofs.proofs[size].signatureValue, signature);
+    strcpy(document->proofs.proofs[size].type, ProofType);
+    DIDURL_Copy(&document->proofs.proofs[size].creater, signkey);
+    document->proofs.proofs[size].created = created;
+    document->proofs.size++;
+    return 0;
+}
+
+DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *storepass)
+{
+    DIDDocument *doc, *controllerdoc, *signdoc = NULL;
     DIDURL *key;
     const char *data;
     char signature[SIGNATURE_BYTES * 2 + 16];
-    int rc;
+    int rc, i;
 
     if (!builder || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1446,24 +1809,46 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, DID *controlle
     }
 
     doc = builder->document;
-    if (!controller) {
-        _doc = doc;
-    } else {
-        if (doc->controllers.size <= 0 || !doc->controllers.docs) {
-            DIDError_Set(DIDERR_INVALID_ARGS, "DIDDocument has no controller.");
+    controllerdoc = builder->controllerdoc;
+    assert((doc->controllers.size > 0 && doc->controllers.docs) ||
+            (doc->controllers.size == 0 && !doc->controllers.docs));
+
+    if (Is_CustomizedDID(doc)) {
+        if (!controllerdoc) {
+            DIDError_Set(DIDERR_INVALID_CONTROLLER, "Please specify the controller to seal multi-controller DID Document.");
             return NULL;
         }
+        if (doc->controllers.size > 1 && doc->multisig == 0) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Please set multisig first for multi-controller DID.");
+            return NULL;
+        }
+        signdoc = controllerdoc;
+    } else {
+        if (controllerdoc) {
+            DIDError_Set(DIDERR_INVALID_CONTROLLER, "Don't specify the controller to seal normal DID.");
+            return NULL;
+        }
+        signdoc = doc;
+    }
 
-        _doc = contais_controller(doc->controllers.docs, doc->controllers.size, controller);
-        if (!_doc) {
-            DIDError_Set(DIDERR_INVALID_ARGS, "DIDDocument does not support this controller.");
+    if (DIDDocument_IsQualified(doc)) {
+        DIDError_Set(DIDERR_INVALID_CONTROLLER, "The signers are enough.");
+        return NULL;
+    }
+
+    if (!DIDDocument_IsValid_Internal(doc, false))
+        return NULL;
+
+    for (i = 0; i < doc->proofs.size; i++) {
+        if (DID_Equals(&controllerdoc->did, &doc->proofs.proofs[i].creater.did)) {
+            DIDError_Set(DIDERR_INVALID_CONTROLLER, "The controller already signed the DID.");
             return NULL;
         }
     }
 
-    key = DIDDocument_GetDefaultPublicKey(_doc);
+    key = DIDDocument_GetDefaultPublicKey(signdoc);
     if (!key) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "No default key.");
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Signer has no default key.");
         return NULL;
     }
 
@@ -1471,18 +1856,16 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, DID *controlle
     if (!data)
         return NULL;
 
-    rc = DIDDocument_Sign(doc, key, storepass, signature, 1,
-            (unsigned char*)data, strlen(data));
+    rc = DIDDocument_Sign(signdoc, key, storepass, signature, 1, (unsigned char*)data, strlen(data));
     free((void*)data);
     if (rc)
         return NULL;
 
-    strcpy(doc->proof.type, ProofType);
-    time(&doc->proof.created);
-    DIDURL_Copy(&doc->proof.creater, key);
-    strcpy(doc->proof.signatureValue, signature);
+    if (document_addproof(doc, signature, key, time(NULL)) < 0)
+        return NULL;
 
     builder->document = NULL;
+    builder->controllerdoc = NULL;
     return doc;
 }
 
@@ -1515,6 +1898,15 @@ PublicKey *create_publickey(DIDURL *id, DID *controller, const char *publickey,
         pk->authorizationKey = true;
 
     return pk;
+}
+
+static void clean_proofs(DIDDocument *document)
+{
+    assert(document);
+
+    free((void*)document->proofs.proofs);
+    document->proofs.proofs = NULL;
+    document->proofs.size = 0;
 }
 
 int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
@@ -1551,7 +1943,7 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
         pk = document->publickeys.pks[i];
         if (DIDURL_Equals(&pk->id, keyid) ||
                !strcmp(pk->publicKeyBase58, key)) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key is already exist");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key already exist");
             return -1;
         }
     }
@@ -1568,6 +1960,7 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
         return -1;
     }
 
+    clean_proofs(document);
     return 0;
 }
 
@@ -1575,6 +1968,7 @@ int DIDDocumentBuilder_RemovePublicKey(DIDDocumentBuilder *builder, DIDURL *keyi
 {
     DIDDocument* document;
     DIDURL *key;
+    int rc;
 
     if (!builder || !builder->document || !keyid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1595,11 +1989,16 @@ int DIDDocumentBuilder_RemovePublicKey(DIDDocumentBuilder *builder, DIDURL *keyi
     }
 
     if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
-        DIDError_Set(DIDERR_INVALID_KEY, "Can't remove other DID's key!!!!");
+        DIDError_Set(DIDERR_INVALID_KEY, "Can't remove other DID's key or controller's key!!!!");
         return -1;
     }
 
-    return remove_publickey(document, keyid);
+
+    if (remove_publickey(document, keyid) < 0)
+        return -1;
+
+    clean_proofs(document);
+    return 0;
 }
 
 //authentication keys are all did's own key.
@@ -1635,12 +2034,12 @@ int DIDDocumentBuilder_AddAuthenticationKey(DIDDocumentBuilder *builder,
     pk = DIDDocument_GetPublicKey(document, keyid);
     if (pk) {
         if (key && strcmp(pk->publicKeyBase58, key)) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key is already exist.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key already exist.");
             return -1;
         }
 
         if (pk->authenticationKey || pk->authorizationKey) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key is already authentication key or authorization key.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key already authentication key or authorization key.");
             return -1;
         }
 
@@ -1666,6 +2065,7 @@ int DIDDocumentBuilder_AddAuthenticationKey(DIDDocumentBuilder *builder,
         return -1;
     }
 
+    clean_proofs(document);
     return 0;
 }
 
@@ -1699,6 +2099,7 @@ int DIDDocumentBuilder_RemoveAuthenticationKey(DIDDocumentBuilder *builder, DIDU
     }
 
     pk->authenticationKey = false;
+    clean_proofs(document);
     return 0;
 }
 
@@ -1766,7 +2167,7 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
     pk = DIDDocument_GetPublicKey(document, keyid);
     if (pk) {
         if (key && strcmp(pk->publicKeyBase58, key)) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key is already exist.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Public key already exist.");
             return -1;
         }
         if (controller &&!DID_Equals(controller, &pk->controller)) {
@@ -1780,6 +2181,7 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
         }
 
         pk->authorizationKey = true;
+        clean_proofs(document);
         return 0;
     }
 
@@ -1797,6 +2199,7 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
         return -1;
     }
 
+    clean_proofs(document);
     return 0;
 }
 
@@ -1842,7 +2245,11 @@ int DIDDocumentBuilder_AuthorizationDid(DIDDocumentBuilder *builder, DIDURL *key
     rc = DIDDocumentBuilder_AddAuthorizationKey(builder, keyid, controller,
             pk->publicKeyBase58);
     DIDDocument_Destroy(doc);
-    return rc;
+    if (rc < 0)
+        return -1;
+
+    clean_proofs(document);
+    return 0;
 }
 
 int DIDDocumentBuilder_RemoveAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *keyid)
@@ -1873,6 +2280,7 @@ int DIDDocumentBuilder_RemoveAuthorizationKey(DIDDocumentBuilder *builder, DIDUR
         return -1;
 
     pk->authorizationKey = false;
+    clean_proofs(document);
     return 0;
 }
 
@@ -1903,6 +2311,8 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
 {
     DIDDocument **docs;
     DIDDocument *controllerdoc, *document;
+    DID *did;
+    int i;
 
     if (!builder || !builder->document || !controller) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1910,9 +2320,22 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
     }
 
     document = builder->document;
+    //check the normal DID or customized DID
+    if (!Is_CustomizedDID(document)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupported add controller into normal DID.");
+        return -1;
+    }
+
     if (DID_Equals(DIDDocument_GetSubject(document), controller)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "DIDDocument does not controlled by itself.");
         return -1;
+    }
+
+    for (i = 0; i < document->controllers.size && document->controllers.docs; i++) {
+        if (document->controllers.docs[i] && DID_Equals(&document->controllers.docs[i]->did, controller)) {
+            DIDError_Set(DIDERR_UNSUPPOTED, "The controller already exists in the document.");
+            return -1;
+        }
     }
 
     controllerdoc = DID_Resolve(controller, true);
@@ -1923,7 +2346,7 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
         docs = (DIDDocument**)calloc(1, sizeof(DIDDocument*));
     else
         docs = (DIDDocument**)realloc(document->controllers.docs,
-                            (document->controllers.size + 1) * sizeof(DIDDocument*));
+                (document->controllers.size + 1) * sizeof(DIDDocument*));
 
     if (!docs) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for controllers failed.");
@@ -1934,7 +2357,48 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
     docs[document->controllers.size++] = controllerdoc;
     document->controllers.docs = docs;
 
+    clean_proofs(document);
     return 0;
+}
+
+int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *controller)
+{
+    DIDDocument *document, *controller_doc;
+    size_t size;
+    int i;
+
+    if (!builder || !builder->document || !controller) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    document = builder->document;
+    size = DIDDocument_GetControllerCount(document);
+    for (i = 0; i < size; i++) {
+        controller_doc = document->controllers.docs[i];
+        if (!DID_Equals(controller, &controller_doc->did))
+            continue;
+
+        if (size == 1) {
+            DIDError_Set(DIDERR_UNSUPPOTED, "Can't remove the last controller.");
+            return -1;
+        }
+
+        DIDDocument_Destroy(controller_doc);
+
+        if (i != size - 1)
+            memmove(document->controllers.docs + i,
+                    document->controllers.docs + i + 1,
+                    sizeof(DIDDocument*) * (size - i - 1));
+
+        document->controllers.docs[size - 1] = NULL;
+        document->controllers.size--;
+        clean_proofs(document);
+        return 0;
+    }
+
+    DIDError_Set(DIDERR_NOT_EXISTS, "No this controller in document.");
+    return -1;
 }
 
 int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder, Credential *credential)
@@ -1960,7 +2424,7 @@ int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder, Credential *cr
     for (i = 0; i < document->credentials.size; i++) {
         temp_cred = document->credentials.credentials[i];
         if (DIDURL_Equals(&temp_cred->id, &credential->id)) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Credential is already exist.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Credential already exist.");
             return -1;
         }
     }
@@ -1977,12 +2441,14 @@ int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder, Credential *cr
         return -1;
     }
 
+    clean_proofs(document);
     return 0;
 }
 
 int DIDDocumentBuilder_AddSelfClaimedCredential(DIDDocumentBuilder *builder,
         DIDURL *credid, const char **types, size_t typesize,
-        Property *properties, int propsize, time_t expires, const char *storepass)
+        Property *properties, int propsize, time_t expires,
+        DIDURL *signkey, const char *storepass)
 {
     DIDDocument *document;
     Credential *cred;
@@ -1998,12 +2464,22 @@ int DIDDocumentBuilder_AddSelfClaimedCredential(DIDDocumentBuilder *builder,
 
     document = builder->document;
     if (!DID_Equals(&document->did, &credid->did)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Credential is already exist.");
+        DIDError_Set(DIDERR_UNSUPPOTED, "Credential already exist.");
         return -1;
     }
 
-    issuer = Issuer_Create(&document->did, DIDDocument_GetDefaultPublicKey(document),
-            document->metadata.base.store);
+    if (!signkey && document->controllers.size > 1) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Must specify the key to sign the credential owned by multi-controller did.");
+        return -1;
+    }
+
+    if (!signkey) {
+        signkey = DIDDocument_GetDefaultPublicKey(document);
+        if (!signkey)
+            return -1;
+    }
+
+    issuer = Issuer_Create(&document->did, signkey, document->metadata.base.store);
     if (!issuer)
         return -1;
 
@@ -2021,11 +2497,13 @@ int DIDDocumentBuilder_AddSelfClaimedCredential(DIDDocumentBuilder *builder,
     if (!cred)
         return -1;
 
-    rc = diddocument_addcredential(document, cred);
-    if (rc == -1)
+    if (diddocument_addcredential(document, cred) < 0) {
         Credential_Destroy(cred);
+        return -1;
+    }
 
-    return rc;
+    clean_proofs(document);
+    return 0;
 }
 
 int DIDDocumentBuilder_RemoveCredential(DIDDocumentBuilder *builder, DIDURL *credid)
@@ -2056,6 +2534,7 @@ int DIDDocumentBuilder_RemoveCredential(DIDDocumentBuilder *builder, DIDURL *cre
 
         document->credentials.credentials[size - 1] = NULL;
         document->credentials.size--;
+        clean_proofs(document);
         return 0;
     }
 
@@ -2077,7 +2556,7 @@ int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder, DIDURL *serviceid
         return -1;
     }
 
-    if (strlen(type) >= MAX_DOC_TYPE) {
+    if (strlen(type) >= MAX_TYPE_LEN) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Type argument is too long.");
         return -1;
     }
@@ -2095,7 +2574,7 @@ int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder, DIDURL *serviceid
     for (i = 0; i < document->services.size; i++) {
         service = document->services.services[i];
         if (DIDURL_Equals(&service->id, serviceid)) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "This service is already exist.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "This service already exist.");
             return -1;
         }
     }
@@ -2124,7 +2603,7 @@ int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder, DIDURL *serviceid
 
     services[document->services.size++] = service;
     document->services.services = services;
-
+    clean_proofs(document);
     return 0;
 }
 
@@ -2156,6 +2635,7 @@ int DIDDocumentBuilder_RemoveService(DIDDocumentBuilder *builder, DIDURL *servic
 
         document->services.services[size - 1] = NULL;
         document->services.size--;
+        clean_proofs(document);
         return 0;
     }
 
@@ -2187,6 +2667,7 @@ int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires)
 
     if (expires == 0) {
         document->expires = max_expires;
+        clean_proofs(document);
         return 0;
     }
 
@@ -2200,10 +2681,41 @@ int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires)
     }
 
     document->expires = expires;
+    clean_proofs(document);
     return 0;
 }
 
-//////////////////////////PublicKey//////////////////////////////////////////
+int DIDDocumentBuilder_SetMultisig(DIDDocumentBuilder *builder, int multisig)
+{
+    DIDDocument *document;
+
+    if (!builder || multisig <= 0) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    document = builder->document;
+    if (!document) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid document builder.");
+        return -1;
+    }
+
+    if (!Is_CustomizedDID(document)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport setting multisig for normal DID.");
+        return -1;
+    }
+
+    if (multisig > document->controllers.size) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport multisig is larger than the count of controllers.");
+        return -1;
+    }
+
+    document->multisig = multisig;
+    clean_proofs(document);
+    return 0;
+}
+
+//////////////////////////DIDDocument//////////////////////////////////////////
 DID* DIDDocument_GetSubject(DIDDocument *document)
 {
     if (!document) {
@@ -2212,6 +2724,22 @@ DID* DIDDocument_GetSubject(DIDDocument *document)
     }
 
     return &document->did;
+}
+
+int DIDDocument_GetMultisig(DIDDocument *document)
+{
+    if (!document) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    if (!Is_CustomizedDID(document))
+        return 0;
+
+    if (document->controllers.size == 1)
+        return 0;
+
+    return document->multisig;
 }
 
 ssize_t DIDDocument_GetControllerCount(DIDDocument *document)
@@ -2228,7 +2756,7 @@ ssize_t DIDDocument_GetControllers(DIDDocument *document, DID **controllers, siz
 {
     int i;
 
-    if (!document || !controllers || size <= 0) {
+    if (!document || !controllers || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -2292,7 +2820,7 @@ PublicKey *DIDDocument_GetPublicKey(DIDDocument *document, DIDURL *keyid)
             DIDError_Set(DIDERR_NOT_EXISTS, "Document has no controllers.");
             return NULL;
         }
-        doc = contais_controller(document->controllers.docs, document->controllers.size, &keyid->did);
+        doc = DIDDocument_GetControllerDocument(document, &keyid->did);
         if (!doc) {
             DIDError_Set(DIDERR_NOT_EXISTS, "The owner of this key is not the controller of document.");
             return NULL;
@@ -2316,7 +2844,10 @@ ssize_t DIDDocument_GetPublicKeys(DIDDocument *document, PublicKey **pks,
     DIDDocument *doc;
     int i;
 
-    if (!document || !pks || size <= 0) {
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
+    if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -2331,7 +2862,7 @@ ssize_t DIDDocument_GetPublicKeys(DIDDocument *document, PublicKey **pks,
     if (actual_size > 0 && document->publickeys.pks)
         memcpy(pks, document->publickeys.pks, sizeof(PublicKey*) * actual_size);
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             if (doc) {
@@ -2351,7 +2882,10 @@ ssize_t DIDDocument_SelectPublicKeys(DIDDocument *document, const char *type,
     DIDDocument *doc;
     size_t actual_size = 0, total_size, i;
 
-    if (!document || !pks || size <= 0) {
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
+    if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -2386,7 +2920,7 @@ ssize_t DIDDocument_SelectPublicKeys(DIDDocument *document, const char *type,
         pks[actual_size++] = pk;
     }
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             total_size = DIDDocument_SelectPublicKeys(doc, type, keyid, pks + actual_size, size - actual_size);
@@ -2405,6 +2939,9 @@ DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
     uint8_t binkey[PUBLICKEY_BYTES];
     PublicKey *pk;
     size_t i;
+
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2443,13 +2980,16 @@ ssize_t DIDDocument_GetAuthenticationCount(DIDDocument *document)
     size_t size, i, pk_size;
     DIDDocument *doc;
 
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     size = get_self_authentication_count(document);
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             pk_size = get_self_authentication_count(doc);
@@ -2467,7 +3007,10 @@ ssize_t DIDDocument_GetAuthenticationKeys(DIDDocument *document, PublicKey **pks
     size_t actual_size = 0, i, j, pk_size;
     DIDDocument *doc;
 
-    if (!document || !pks || size <= 0) {
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
+    if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -2487,7 +3030,7 @@ ssize_t DIDDocument_GetAuthenticationKeys(DIDDocument *document, PublicKey **pks
         }
     }
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             pk_size = DIDDocument_GetAuthenticationKeys(doc, pks + actual_size,
@@ -2533,7 +3076,10 @@ ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
     PublicKey *pk;
     DIDDocument *doc;
 
-    if (!document || !pks || size <= 0) {
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
+    if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -2564,7 +3110,7 @@ ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
         pks[actual_size++] = pk;
     }
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             pk_size = DIDDocument_SelectAuthenticationKeys(doc, type, keyid,
@@ -2584,13 +3130,16 @@ ssize_t DIDDocument_GetAuthorizationCount(DIDDocument *document)
     size_t size, pk_size;
     int i;
 
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     size = get_self_authorization_count(document);
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             pk_size = get_self_authorization_count(doc);
@@ -2608,7 +3157,10 @@ ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
     size_t actual_size = 0, i, j, pk_size;
     DIDDocument *doc;
 
-    if (!document || !pks || size <= 0) {
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
+    if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -2628,7 +3180,7 @@ ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
         }
     }
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             pk_size = DIDDocument_GetAuthorizationKeys(doc, pks + actual_size,
@@ -2669,7 +3221,10 @@ ssize_t DIDDocument_SelectAuthorizationKeys(DIDDocument *document,
     PublicKey *pk;
     DIDDocument *doc;
 
-    if (!document || !pks || size <= 0) {
+    assert((document->controllers.size > 0 && document->controllers.docs) ||
+            (document->controllers.size == 0 && !document->controllers.docs));
+
+    if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -2700,7 +3255,7 @@ ssize_t DIDDocument_SelectAuthorizationKeys(DIDDocument *document,
         pks[actual_size++] = pk;
     }
 
-    if (document->controllers.size > 0 && document->controllers.docs) {
+    if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             pk_size = DIDDocument_SelectAuthorizationKeys(doc, type, keyid,
@@ -2729,7 +3284,7 @@ ssize_t DIDDocument_GetCredentials(DIDDocument *document, Credential **creds,
 {
     size_t actual_size;
 
-    if (!document || !creds || size <= 0) {
+    if (!document || !creds || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -2781,7 +3336,7 @@ ssize_t DIDDocument_SelectCredentials(DIDDocument *document, const char *type,
     size_t actual_size = 0, total_size, i, j;
     bool flag;
 
-    if (!document || !creds || size <= 0) {
+    if (!document || !creds || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -2851,7 +3406,7 @@ ssize_t DIDDocument_GetServices(DIDDocument *document, Service **services,
 {
     size_t actual_size;
 
-    if (!document || !services || size <= 0) {
+    if (!document || !services || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -2902,7 +3457,7 @@ ssize_t DIDDocument_SelectServices(DIDDocument *document,
 {
     size_t actual_size = 0, total_size, i;
 
-    if (!document || !services || size <= 0) {
+    if (!document || !services || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -2955,10 +3510,24 @@ time_t DIDDocument_GetExpires(DIDDocument *document)
     return document->expires;
 }
 
+ssize_t DIDDocument_GetDigest(DIDDocument *document, uint8_t *digest, size_t size)
+{
+    const char *data;
+
+    assert(document);
+    assert(digest);
+    assert(size >= SHA256_BYTES);
+
+    data = diddocument_tojson_forsign(document, false, true);
+    if (!data)
+        return -1;
+
+    return sha256_digest(digest, 1, (unsigned char*)data, strlen(data));
+}
+
 int DIDDocument_Sign(DIDDocument *document, DIDURL *keyid, const char *storepass,
         char *sig, int count, ...)
 {
-
     uint8_t digest[SHA256_BYTES];
     va_list inputs;
     ssize_t size;
@@ -2986,7 +3555,7 @@ int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
     PublicKey *pk;
     DIDDocument *doc;
 
-    if (!document || !storepass || !*storepass || !sig || !digest || size <= 0) {
+    if (!document || !storepass || !*storepass || !sig || !digest || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -3011,8 +3580,7 @@ int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
             DIDError_Set(DIDERR_MALFORMED_DID, "There are no controller in document.");
             return -1;
         }
-        doc = contais_controller(document->controllers.docs, document->controllers.size,
-               &keyid->did);
+        doc = DIDDocument_GetControllerDocument(document, &keyid->did);
         if (!doc) {
             DIDError_Set(DIDERR_INVALID_KEY, "The sign key does not owned to document.");
             return -1;
@@ -3058,7 +3626,7 @@ int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
     PublicKey *publickey;
     uint8_t binkey[PUBLICKEY_BYTES];
 
-    if (!document || !sig || !digest || size <= 0) {
+    if (!document || !sig || !digest || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
@@ -3091,6 +3659,102 @@ int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
 
     return 0;
 }
+
+static bool proof_isexist(DocumentProof **proofs, size_t size, DocumentProof *proof)
+{
+    int i;
+
+    assert(proofs);
+    assert(proof);
+
+    for (i = 0; i < size; i++) {
+        if (DIDURL_Equals(&proofs[i]->creater, &proof->creater)) {
+            if (proofs[i]->created > proof->created)
+                proofs[i] = proof;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static int diddocument_addproof(DIDDocument *document, char *signature, DIDURL *signkey, time_t created)
+{
+    int i;
+    size_t size;
+    DocumentProof *rp;
+
+    assert(document);
+    assert(signature);
+    assert(signkey);
+
+    size = document->proofs.size;
+    rp = document->proofs.proofs;
+    for (i = 0; i < size && rp; i++) {
+        DocumentProof *p = &rp[i];
+        if (DIDURL_Equals(&p->creater, signkey) || !strcmp(p->signatureValue, signature)) {
+            DIDError_Set(DIDERR_INVALID_KEY, "The signkey already exist.");
+            return -1;
+        }
+    }
+
+    if (!rp)
+        document->proofs.proofs = (DocumentProof*)calloc(1, sizeof(DocumentProof));
+    else
+        document->proofs.proofs = realloc(rp, (document->proofs.size + 1) * sizeof(DocumentProof));
+
+    if (!document->proofs.proofs)
+        return -1;
+
+    strcpy(document->proofs.proofs[size].signatureValue, signature);
+    DIDURL_Copy(&document->proofs.proofs[size].creater, signkey);
+    document->proofs.proofs[size].created = created;
+    document->proofs.size++;
+    return 0;
+}
+
+const char *DIDDocument_Merge(DIDDocument **documents, size_t size)
+{
+    DocumentProof **proofs, *proof;
+    size_t proof_size = 0, actual_size = 0;
+    DIDDocument *merged_document, *document;
+    int i, j;
+
+    assert(documents);
+    assert(size > 0);
+
+    for (i = 0; i < size; i++)
+        proof_size += documents[i]->proofs.size;
+    assert(proof_size > 0);
+
+    proofs = (DocumentProof**)alloca(proof_size * sizeof(DocumentProof*));
+    if (!proofs) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for DocumentProof array failed.");
+        return NULL;
+    }
+
+    for (i = 0; i < size; i++) {
+        document = documents[i];
+        for(j = 0; j < document->proofs.size; j++) {
+            proof = &document->proofs.proofs[j];
+            if (!proof_isexist(proofs, actual_size, proof))
+                proofs[actual_size++] = proof;
+        }
+    }
+
+    qsort(proofs, actual_size, sizeof(DocumentProof*), proofs_func);
+
+    merged_document = documents[0];
+    for (i = 0; i < merged_document->multisig; i++)
+        diddocument_addproof(merged_document, proofs[i]->signatureValue,
+                &proofs[i]->creater, proofs[i]->created);
+
+    if (!DIDDocument_IsValid(merged_document))
+        return NULL;
+
+    return DIDDocument_ToJson(merged_document, true);
+}
+
 
 #ifndef DISABLE_JWT
 JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document)
@@ -3193,6 +3857,135 @@ const char *DIDDocument_Derive(DIDDocument *document, const char *identifier,
    return strdup(extendedkeyBase58);
 }
 
+DIDDocument *DIDDocument_SignDIDDocument(DIDDocument* controllerdoc,
+        const char *document, const char *storepass)
+{
+    DIDDocument *doc;
+    DIDDocumentBuilder *builder;
+
+    if (!controllerdoc || !document || !*document || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    doc = DIDDocument_FromJson(document);
+    if (!doc)
+        return NULL;
+
+    if (DIDDocument_IsQualified(doc)) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "The signers are enough.");
+        return NULL;
+    }
+
+    builder = DIDDocument_Edit(doc, controllerdoc);
+    DIDDocument_Destroy(doc);
+    if (!builder)
+        return NULL;
+
+    doc = DIDDocumentBuilder_Seal(builder, storepass);
+    DIDDocumentBuilder_Destroy(builder);
+    return doc;
+}
+
+const char *DIDDocument_MergeDIDDocuments(int count, ...)
+{
+    va_list list;
+    const char *doc = NULL, *merged_doc = NULL;
+    DIDDocument *document = NULL, **documents;
+    uint8_t digest[SHA256_BYTES], digest1[SHA256_BYTES];
+    int i, actual_count = 0;
+
+    if (count <= 0) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    documents = (DIDDocument**)alloca(count * sizeof(DIDDocument*));
+    if (!documents) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for DID Documents array failed.");
+        return NULL;
+    }
+
+    va_start(list, count);
+    for (i = 0; i < count; i++) {
+        doc = va_arg(list, const char *);
+        if (!doc)
+            continue;
+
+        document = DIDDocument_FromJson(doc);
+        if (!document)
+            continue;
+
+        if (!DIDDocument_IsValid_Internal(document, false)) {
+            DIDDocument_Destroy(document);
+            continue;
+        }
+
+        if (DIDDocument_GetDigest(document, digest1, sizeof(digest1)) < 0) {
+            DIDDocument_Destroy(document);
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Get digest from did document failed.");
+            continue;
+        }
+
+        if (actual_count == 0)
+            memcpy(digest, digest1, sizeof(digest));
+
+        if (actual_count > 0 && memcmp(digest, digest1, sizeof(digest))) {
+            DIDDocument_Destroy(document);
+            continue;
+        }
+
+        if (DIDDocument_IsQualified(document)) {
+            DIDDocument_Destroy(document);
+            merged_doc = strdup(doc);
+            goto pointexit;
+        }
+
+        documents[actual_count++] = document;
+    }
+    va_end(list);
+
+    merged_doc = DIDDocument_Merge(documents, actual_count);
+
+pointexit:
+    for (i = 0; i < actual_count; i++)
+        DIDDocument_Destroy(documents[i]);
+
+    return merged_doc;
+}
+
+TransferTicket *DIDDocument_CreateTransferTicket(DIDDocument *controllerdoc, DID *owner,
+        DID *to, const char *storepass)
+{
+    TransferTicket *ticket;
+
+    if (!controllerdoc || !owner || !to || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    ticket = TransferTicket_Construct(owner, to);
+    if (!ticket)
+        return NULL;
+
+    if (TransferTicket_Seal(ticket, controllerdoc, storepass) < 0) {
+        TransferTicket_Destroy(ticket);
+        return NULL;
+    }
+
+    return ticket;
+}
+
+int DIDDocument_SignTransferTicket(DIDDocument *controllerdoc,
+        TransferTicket *ticket, const char *storepass)
+{
+    if (!controllerdoc || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return TransferTicket_Seal(ticket, controllerdoc, storepass);
+}
 
 DIDURL *PublicKey_GetId(PublicKey *publickey)
 {

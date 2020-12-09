@@ -156,4 +156,3 @@ DID *DIDTransactionInfo_GetOwner(DIDTransactionInfo *txinfo)
 
     return &txinfo->request.did;
 }
-

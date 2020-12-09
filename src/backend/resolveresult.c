@@ -116,7 +116,7 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
                 DIDMetaData_SetPublished(&doc->metadata, txinfo->timestamp);
                 DIDMetaData_SetLastModified(&doc->metadata, txinfo->timestamp);
                 DIDMetaData_SetTxid(&doc->metadata, txinfo->txid);
-                DIDMetaData_SetSignature(&doc->metadata, doc->proof.signatureValue);
+                DIDMetaData_SetSignature(&doc->metadata, doc->proofs.proofs[0].signatureValue);
                 DIDMetaData_SetDeactivated(&doc->metadata, result->status);
                 memcpy(&doc->did.metadata, &doc->metadata, sizeof(DIDMetaData));
             }
@@ -247,3 +247,4 @@ DIDHistory *ResolveResult_ToDIDHistory(ResolveResult *result)
     memcpy(history, result, sizeof(DIDHistory));
     return history;
 }
+

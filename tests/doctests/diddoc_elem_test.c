@@ -121,7 +121,7 @@ static void test_diddoc_add_publickey(void)
     bool isEquals;
     int rc;
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
@@ -139,7 +139,7 @@ static void test_diddoc_add_publickey(void)
     rc = DIDDocumentBuilder_AddPublicKey(builder, id2, did, keybase);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -172,7 +172,7 @@ static void test_diddoc_remove_publickey(void)
     DIDURL *recoveryid, *keyid;
     int rc;
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // recovery used by authorization, should failed.
@@ -199,7 +199,7 @@ static void test_diddoc_remove_publickey(void)
             DIDDocument_GetDefaultPublicKey(doc), true);
     CU_ASSERT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -311,7 +311,7 @@ static void test_diddoc_add_authentication_key(void)
     bool isEquals;
     int rc;
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
@@ -362,7 +362,7 @@ static void test_diddoc_add_authentication_key(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -408,7 +408,7 @@ static void test_diddoc_remove_authentication_key(void)
     const char *keybase;
     int rc;
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
@@ -450,7 +450,7 @@ static void test_diddoc_remove_authentication_key(void)
             DIDDocument_GetDefaultPublicKey(doc));
     CU_ASSERT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -546,7 +546,7 @@ static void test_diddoc_add_authorization_key(void)
     bool isEquals;
     int rc;
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
@@ -615,7 +615,7 @@ static void test_diddoc_add_authorization_key(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -663,7 +663,7 @@ static void test_diddoc_remove_authorization_key(void)
     DID controller;
     int rc;
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
@@ -707,7 +707,7 @@ static void test_diddoc_remove_authorization_key(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -814,7 +814,7 @@ static void test_diddoc_add_credential(void)
     bool isEquals;
     int rc;
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add credentials.
@@ -828,7 +828,7 @@ static void test_diddoc_add_credential(void)
     rc = DIDDocumentBuilder_AddCredential(builder, TestData_LoadTwitterVc());
     CU_ASSERT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -865,7 +865,7 @@ static void test_diddoc_add_selfclaimed_credential(void)
     const char *provalue;
 
     // Add self claim credential.
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     DIDURL *credid = DIDURL_NewByDid(did, "passport");
@@ -879,10 +879,10 @@ static void test_diddoc_add_selfclaimed_credential(void)
     props[1].value = "S653258Z07";
 
     rc = DIDDocumentBuilder_AddSelfClaimedCredential(builder, credid,
-            types, 2, props, 2, DIDDocument_GetExpires(doc), storepass);
+            types, 2, props, 2, DIDDocument_GetExpires(doc), NULL, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -918,7 +918,7 @@ static void test_diddoc_remove_credential(void)
     Credential *vc;
     int rc;
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add credentials.
@@ -944,7 +944,7 @@ static void test_diddoc_remove_credential(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1052,10 +1052,10 @@ static void test_diddoc_add_service(void)
     ssize_t size;
     int rc;
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
-    // Add credentials.
+    // Add services.
     DIDURL *id1 = DIDURL_NewByDid(did, "test-svc-1");
     CU_ASSERT_PTR_NOT_NULL(id1);
     rc = DIDDocumentBuilder_AddService(builder, id1, "Service.Testing",
@@ -1077,7 +1077,7 @@ static void test_diddoc_add_service(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1104,7 +1104,7 @@ static void test_diddoc_remove_service(void)
     DIDDocumentBuilder *builder;
     int rc;
 
-    builder = DIDDocument_Edit(doc);
+    builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // remove services
@@ -1125,7 +1125,7 @@ static void test_diddoc_remove_service(void)
     CU_ASSERT_EQUAL(rc, -1);
     DIDURL_Destroy(id);
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, NULL, storepass);
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
     DIDDocumentBuilder_Destroy(builder);
@@ -1141,6 +1141,31 @@ static void test_diddoc_remove_service(void)
 
     // Check the final count.
     CU_ASSERT_EQUAL(1, DIDDocument_GetServiceCount(sealeddoc));
+
+    DIDDocument_Destroy(sealeddoc);
+}
+
+static void test_diddoc_add_controller(void)
+{
+    DIDDocument *sealeddoc, *controllerdoc;
+    DIDDocumentBuilder *builder;
+    int rc;
+
+    controllerdoc = TestData_LoadControllerDoc();
+    CU_ASSERT_PTR_NOT_NULL(controllerdoc);
+
+    CU_ASSERT_EQUAL(0, DIDDocument_GetControllerCount(doc));
+
+    builder = DIDDocument_Edit(doc, NULL);
+    CU_ASSERT_PTR_NOT_NULL(builder);
+    CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, &controllerdoc->did));
+    CU_ASSERT_STRING_EQUAL("Unsupported add controller into normal DID.", DIDError_GetMessage());
+
+    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
+    CU_ASSERT_PTR_NOT_NULL(sealeddoc);
+    DIDDocumentBuilder_Destroy(builder);
+
+    CU_ASSERT_EQUAL(0, DIDDocument_GetControllerCount(sealeddoc));
 
     DIDDocument_Destroy(sealeddoc);
 }
@@ -1197,6 +1222,7 @@ static CU_TestInfo cases[] = {
     { "test_diddoc_get_service",                   test_diddoc_get_service               },
     { "test_diddoc_add_service",                   test_diddoc_add_service               },
     { "test_diddoc_remove_service",                test_diddoc_remove_service            },
+    { "test_diddoc_add_controller",                test_diddoc_add_controller            },
     { NULL,                                        NULL                                  }
 };
 
