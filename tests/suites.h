@@ -56,17 +56,19 @@ typedef struct TestSuite {
 #include "issuertests/suites.h"
 #include "vptests/suites.h"
 #include "jwttests/suites.h"
+#include "tickettests/suites.h"
 
 TestSuite suites[] = {
-    /*DEFINE_HDKEY_TESTSUITES,
-    DEFINE_DID_TESTSUITES,*/
+    DEFINE_HDKEY_TESTSUITES,
+    DEFINE_DID_TESTSUITES,
     DEFINE_DSTORE_TESTSUITES,
-    /*DEFINE_DOC_TESTSUITES,
+    DEFINE_DOC_TESTSUITES,
     DEFINE_VC_TESTSUITES,
     DEFINE_ISSUER_TESTSUITES,
     DEFINE_VP_TESTSUITES,
     DEFINE_JWT_TESTSUITES,
-    DEFINE_IDCHAIN_TESTSUITES,*/
+    DEFINE_TICKET_TESTSUITES,
+    DEFINE_IDCHAIN_TESTSUITES,
     DEFINE_TESTSUITE_NULL
 };
 

@@ -265,7 +265,6 @@ static int ProofArray_ToJson(JsonGenerator *gen, DIDDocument *document, int comp
     assert(gen);
     assert(gen->buffer);
     assert(document);
-    assert(size > 0);
 
     size = document->proofs.size;
     proofs = document->proofs.proofs;
@@ -709,6 +708,11 @@ static int remove_publickey(DIDDocument *document, DIDURL *keyid)
     size = document->publickeys.size;
     pks = document->publickeys.pks;
 
+    if (!Is_CustomizedDID(document) && size == 1) {
+        DIDError_Set(DIDERR_INVALID_KEY, "Can't remove the last publickey.");
+        return -1;
+    }
+
     for (i = 0; i < size; i++ ) {
         pk = pks[i];
         if (!DIDURL_Equals(&pk->id, keyid))
@@ -719,6 +723,10 @@ static int remove_publickey(DIDDocument *document, DIDURL *keyid)
 
         pks[--document->publickeys.size] = NULL;
         PublicKey_Destroy(pk);
+        if (document->publickeys.size == 0) {
+            free((void*)pks);
+            document->publickeys.pks = NULL;
+        }
         return 0;
     }
 
@@ -795,45 +803,6 @@ static size_t get_self_authorization_count(DIDDocument *document)
     return size;
 }
 
-bool Is_Controller_DefaultKey(DIDDocument *document, DIDURL *keyid)
-{
-    DIDDocument *controller_doc;
-
-    assert(document);
-    assert(document->controllers.size > 0 && document->controllers.docs);
-    assert(keyid);
-
-    controller_doc = DIDDocument_GetControllerDocument(document, &keyid->did);
-    if (!controller_doc) {
-        DIDError_Set(DIDERR_INVALID_KEY, "The key is not owned by DID.");
-        return false;
-    }
-
-    if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(controller_doc), keyid)) {
-        DIDError_Set(DIDERR_INVALID_KEY, "The key is not the controller's default key.");
-        return false;
-    }
-
-    return true;
-}
-
-bool Is_Self_AuthenticationKey(DIDDocument *document, DIDURL *keyid)
-{
-    int i;
-    PublicKey *pk;
-
-    assert(document);
-    assert(keyid);
-
-    for (i = 0; i < document->publickeys.size; i++) {
-        pk = document->publickeys.pks[i];
-        if (DIDURL_Equals(keyid, &pk->id) && pk->authenticationKey)
-            return true;
-    }
-
-    return false;
-}
-
 bool Is_CustomizedDID(DIDDocument *document)
 {
     DIDURL *signkey;
@@ -875,6 +844,29 @@ bool controllers_check(DIDDocument *document)
     }
 
     return true;
+}
+
+static char *format_multisig(char *buffer, size_t size, int m, int n)
+{
+    assert(buffer);
+    assert(size > 3);
+
+    if (n > 1)
+        snprintf(buffer, size, "%d:%d", m, n);
+    else
+        memset(buffer, 0, size);
+
+    return buffer;
+}
+
+static void parse_multisig(const char *buffer, int *m, int *n)
+{
+    assert(m && n);
+
+    if (sscanf(buffer, "%d:%d", m, n) == EOF) {
+        *m = 0;
+        *n = 0;
+    }
 }
 
 ////////////////////////////////Document/////////////////////////////////////
@@ -1173,7 +1165,6 @@ const char *DIDDocument_ToString(DIDDocument *document, bool normalized)
 void DIDDocument_Destroy(DIDDocument *document)
 {
     size_t i;
-    DIDDocument *doc;
 
     if (!document)
         return;
@@ -1191,16 +1182,19 @@ void DIDDocument_Destroy(DIDDocument *document)
         Credential_Destroy(document->credentials.credentials[i]);
 
     if (document->controllers.docs)
-        free(document->controllers.docs);
+        free((void*)document->controllers.docs);
 
     if (document->publickeys.pks)
-        free(document->publickeys.pks);
+        free((void*)document->publickeys.pks);
 
     if (document->services.services)
-        free(document->services.services);
+        free((void*)document->services.services);
 
     if (document->credentials.credentials)
-        free(document->credentials.credentials);
+        free((void*)document->credentials.credentials);
+
+    if (document->proofs.proofs)
+        free((void*)document->proofs.proofs);
 
     DIDMetaData_Free(&document->metadata);
     free(document);
@@ -1296,9 +1290,8 @@ const char *DIDDocument_GetProofSignature(DIDDocument *document, int index)
 
 bool DIDDocument_IsDeactivated(DIDDocument *document)
 {
-    DIDDocument *resolvedoc, *controller_doc;
+    DIDDocument *resolvedoc;
     bool isdeactived;
-    int i;
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1356,8 +1349,8 @@ static bool DIDDocument_IsGenuine_Internal(DIDDocument *document, bool isqualifi
     assert((document->controllers.size > 0 && document->controllers.docs) ||
             (document->controllers.size == 0 && !document->controllers.docs));
 
-    if (isqualified && document->multisig > 0 && document->proofs.size != document->multisig) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+    if (isqualified && !DIDDocument_IsQualified(document)) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "The signers are less than multisig number.");
         return false;
     }
 
@@ -1443,10 +1436,7 @@ bool DIDDocument_IsQualified(DIDDocument *document)
         return false;
     }
 
-    if (document->controllers.size > 1)
-        return document->proofs.size == document->multisig ? true : false;
-    else
-        return document->proofs.size == 1 ? true : false;
+    return document->proofs.size == (document->controllers.size > 1 ? document->multisig : 1) ? true : false;
 }
 
 bool DIDDocument_IsValid_Internal(DIDDocument *document, bool isqualified)
@@ -1582,8 +1572,6 @@ static int services_copy(DIDDocument *doc, Service **services, size_t size)
 
 static int proofs_copy(DIDDocument *doc, DocumentProof *proofs, size_t size)
 {
-    size_t i;
-
     assert(doc);
     assert(proofs);
     assert(size >= 0);
@@ -1684,8 +1672,8 @@ DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document, DIDDocument *control
         return NULL;
     }
 
-    if (Is_CustomizedDID(document) && !controllerdoc) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Specify the controller to edit customized DID.");
+    if (Is_CustomizedDID(document) && document->controllers.size > 1 && !controllerdoc) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Specify the controller to edit multi-controller customized DID.");
         return NULL;
     }
 
@@ -1713,8 +1701,20 @@ DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document, DIDDocument *control
         return NULL;
     }
 
-    if (controllerdoc)
-        builder->controllerdoc = controllerdoc;
+    if (controllerdoc) {
+        builder->controllerdoc = (DIDDocument*)calloc(1, sizeof(DIDDocument));
+        if (!builder->controllerdoc) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for controller document failed.");
+            DIDDocumentBuilder_Destroy(builder);
+            return NULL;
+        }
+
+        if (DIDDocument_Copy(builder->controllerdoc, controllerdoc) == -1) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Controller document copy failed.");
+            DIDDocumentBuilder_Destroy(builder);
+            return NULL;
+        }
+    }
 
     return builder;
 }
@@ -1801,6 +1801,7 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
     DIDURL *key;
     const char *data;
     char signature[SIGNATURE_BYTES * 2 + 16];
+    Credential *cred;
     int rc, i;
 
     if (!builder || !storepass || !*storepass) {
@@ -1813,31 +1814,41 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
     assert((doc->controllers.size > 0 && doc->controllers.docs) ||
             (doc->controllers.size == 0 && !doc->controllers.docs));
 
-    if (Is_CustomizedDID(doc)) {
-        if (!controllerdoc) {
-            DIDError_Set(DIDERR_INVALID_CONTROLLER, "Please specify the controller to seal multi-controller DID Document.");
-            return NULL;
-        }
-        if (doc->controllers.size > 1 && doc->multisig == 0) {
-            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Please set multisig first for multi-controller DID.");
-            return NULL;
-        }
-        signdoc = controllerdoc;
-    } else {
+    //check controller document and multisig
+    if (!Is_CustomizedDID(doc)) {
         if (controllerdoc) {
             DIDError_Set(DIDERR_INVALID_CONTROLLER, "Don't specify the controller to seal normal DID.");
             return NULL;
         }
         signdoc = doc;
+    } else {
+        if (doc->controllers.size > 1 && doc->multisig == 0) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Please set multisig first for multi-controller DID.");
+            return NULL;
+        }
+        if (!controllerdoc) {
+            if (doc->controllers.size > 1) {
+                DIDError_Set(DIDERR_INVALID_CONTROLLER, "Please specify the controller to seal multi-controller DID Document.");
+                return NULL;
+            } else {
+                controllerdoc = doc->controllers.docs[0];
+                DIDMetaData_SetStore(&controllerdoc->metadata, doc->metadata.base.store);
+            }
+        } else {
+            if (!DIDDocument_GetControllerDocument(doc, &controllerdoc->did)) {
+                DIDError_Set(DIDERR_INVALID_CONTROLLER, "The signer is not the controller for document.");
+                return NULL;
+            }
+        }
+
+        signdoc = controllerdoc;
     }
 
+    //check proof
     if (DIDDocument_IsQualified(doc)) {
         DIDError_Set(DIDERR_INVALID_CONTROLLER, "The signers are enough.");
         return NULL;
     }
-
-    if (!DIDDocument_IsValid_Internal(doc, false))
-        return NULL;
 
     for (i = 0; i < doc->proofs.size; i++) {
         if (DID_Equals(&controllerdoc->did, &doc->proofs.proofs[i].creater.did)) {
@@ -1846,11 +1857,26 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
         }
     }
 
+    //get sign key
     key = DIDDocument_GetDefaultPublicKey(signdoc);
     if (!key) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Signer has no default key.");
         return NULL;
     }
+
+    //check credential
+    for (i = 0; i < doc->credentials.size; i++) {
+        cred = doc->credentials.credentials[i];
+        if (!Credential_IsSelfProclaimed(cred) && !Credential_IsValid(cred))
+            return NULL;
+
+        if (Credential_IsSelfProclaimed(cred) && !Credential_IsGenuine_Internal(cred, doc))
+            return NULL;
+    }
+
+    //check and get document data
+    if (!DIDDocument_IsValid_Internal(doc, false))
+        return NULL;
 
     data = diddocument_tojson_forsign(doc, false, true);
     if (!data)
@@ -1865,13 +1891,11 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
         return NULL;
 
     builder->document = NULL;
-    builder->controllerdoc = NULL;
     return doc;
 }
 
-static
-PublicKey *create_publickey(DIDURL *id, DID *controller, const char *publickey,
-    KeyType type)
+static PublicKey *create_publickey(DIDURL *id, DID *controller, const char *publickey,
+        KeyType type)
 {
     PublicKey *pk = NULL;
 
@@ -1904,8 +1928,10 @@ static void clean_proofs(DIDDocument *document)
 {
     assert(document);
 
-    free((void*)document->proofs.proofs);
-    document->proofs.proofs = NULL;
+    if (document->proofs.proofs) {
+        free((void*)document->proofs.proofs);
+        document->proofs.proofs = NULL;
+    }
     document->proofs.size = 0;
 }
 
@@ -1915,7 +1941,7 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
     DIDDocument *document;
     PublicKey *pk;
     uint8_t binkey[PUBLICKEY_BYTES];
-    size_t size, i;
+    size_t i;
 
     if (!builder || !builder->document || !keyid || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1968,7 +1994,6 @@ int DIDDocumentBuilder_RemovePublicKey(DIDDocumentBuilder *builder, DIDURL *keyi
 {
     DIDDocument* document;
     DIDURL *key;
-    int rc;
 
     if (!builder || !builder->document || !keyid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1992,7 +2017,6 @@ int DIDDocumentBuilder_RemovePublicKey(DIDDocumentBuilder *builder, DIDURL *keyi
         DIDError_Set(DIDERR_INVALID_KEY, "Can't remove other DID's key or controller's key!!!!");
         return -1;
     }
-
 
     if (remove_publickey(document, keyid) < 0)
         return -1;
@@ -2148,6 +2172,11 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
     }
 
     document = builder->document;
+    if (Is_CustomizedDID(document)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "The customized did doesn't support authorization key.");
+        return -1;
+    }
+
     if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
         DIDError_Set(DIDERR_INVALID_KEY, "The key id does not owned by this DID.");
         return -1;
@@ -2245,11 +2274,7 @@ int DIDDocumentBuilder_AuthorizationDid(DIDDocumentBuilder *builder, DIDURL *key
     rc = DIDDocumentBuilder_AddAuthorizationKey(builder, keyid, controller,
             pk->publicKeyBase58);
     DIDDocument_Destroy(doc);
-    if (rc < 0)
-        return -1;
-
-    clean_proofs(document);
-    return 0;
+    return rc;
 }
 
 int DIDDocumentBuilder_RemoveAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *keyid)
@@ -2311,7 +2336,6 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
 {
     DIDDocument **docs;
     DIDDocument *controllerdoc, *document;
-    DID *did;
     int i;
 
     if (!builder || !builder->document || !controller) {
@@ -2357,6 +2381,7 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
     docs[document->controllers.size++] = controllerdoc;
     document->controllers.docs = docs;
 
+    document->multisig = 0;
     clean_proofs(document);
     return 0;
 }
@@ -2364,8 +2389,9 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
 int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *controller)
 {
     DIDDocument *document, *controller_doc;
+    Credential *cred;
     size_t size;
-    int i;
+    int i, j;
 
     if (!builder || !builder->document || !controller) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2373,6 +2399,17 @@ int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *contro
     }
 
     document = builder->document;
+    if (!Is_CustomizedDID(document)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Normal DID is no controller.");
+        return -1;
+    }
+
+    assert(builder->controllerdoc);
+    if (DID_Equals(controller, &builder->controllerdoc->did)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Can't remove the controller specified to seal document builder.");
+        return -1;
+    }
+
     size = DIDDocument_GetControllerCount(document);
     for (i = 0; i < size; i++) {
         controller_doc = document->controllers.docs[i];
@@ -2384,6 +2421,17 @@ int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *contro
             return -1;
         }
 
+        //check if credential is signed by controller.
+        for (j = 0; j < document->credentials.size; j++) {
+            cred = document->credentials.credentials[j];
+            if (Credential_IsSelfProclaimed(cred) &&
+                    DID_Equals(controller, &cred->proof.verificationMethod.did)) {
+                DIDError_Set(DIDERR_UNSUPPOTED,
+                        "There are self-proclaimed credentials signed by controller, please remove or renew these credentials at first.");
+                return -1;
+            }
+        }
+
         DIDDocument_Destroy(controller_doc);
 
         if (i != size - 1)
@@ -2393,6 +2441,7 @@ int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *contro
 
         document->controllers.docs[size - 1] = NULL;
         document->controllers.size--;
+        document->multisig = 0;
         clean_proofs(document);
         return 0;
     }
@@ -2445,7 +2494,7 @@ int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder, Credential *cr
     return 0;
 }
 
-int DIDDocumentBuilder_AddSelfClaimedCredential(DIDDocumentBuilder *builder,
+int DIDDocumentBuilder_AddSelfProClaimedCredential(DIDDocumentBuilder *builder,
         DIDURL *credid, const char **types, size_t typesize,
         Property *properties, int propsize, time_t expires,
         DIDURL *signkey, const char *storepass)
@@ -2454,7 +2503,6 @@ int DIDDocumentBuilder_AddSelfClaimedCredential(DIDDocumentBuilder *builder,
     Credential *cred;
     Issuer *issuer;
     const char *defaulttypes[] = {"SelfProclaimedCredential"};
-    int rc;
 
     if (!builder || !builder->document || !credid || !properties || propsize <= 0 ||
             !storepass || !*storepass) {
@@ -2477,6 +2525,11 @@ int DIDDocumentBuilder_AddSelfClaimedCredential(DIDDocumentBuilder *builder,
         signkey = DIDDocument_GetDefaultPublicKey(document);
         if (!signkey)
             return -1;
+    } else {
+        if (!DIDDocument_IsAuthenticationKey(document, signkey)) {
+            DIDError_Set(DIDERR_INVALID_KEY, "The sign key is not authentication key.");
+            return -1;
+        }
     }
 
     issuer = Issuer_Create(&document->did, signkey, document->metadata.base.store);
@@ -2500,6 +2553,98 @@ int DIDDocumentBuilder_AddSelfClaimedCredential(DIDDocumentBuilder *builder,
     if (diddocument_addcredential(document, cred) < 0) {
         Credential_Destroy(cred);
         return -1;
+    }
+
+    clean_proofs(document);
+    return 0;
+}
+
+int DIDDocumentBuilder_RenewSelfProclaimedCredential(DIDDocumentBuilder *builder,
+        DID *controller, DIDURL *signkey, const char *storepass)
+{
+    DIDDocument *document;
+    Credential *cred;
+    Issuer *issuer = NULL;
+    int i, rc = -1;
+
+    if (!builder || !builder->document || !controller || !signkey || !storepass
+            || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    document = builder->document;
+    if (!Is_CustomizedDID(document)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport renew self-proclaimed Credential owned by normal DID.");
+        return -1;
+    }
+
+    for (i = 0; i < document->credentials.size; i++) {
+        cred = document->credentials.credentials[i];
+        assert(cred);
+        if (!Credential_IsSelfProclaimed(cred) ||
+                !DID_Equals(controller, &cred->proof.verificationMethod.did))
+            continue;
+
+        if (!issuer) {
+            issuer = Issuer_Create(&document->did, signkey, document->metadata.base.store);
+            if (!issuer)
+                return -1;
+        }
+
+        cred = Issuer_Generate_Credential(issuer, &document->did, &cred->id,
+                (const char**)cred->type.types, cred->type.size, cred->subject.properties,
+                cred->expirationDate, storepass);
+        if (!cred)
+            goto pointexit;
+
+        Credential_Destroy(document->credentials.credentials[i]);
+        document->credentials.credentials[i] = cred;
+    }
+
+    rc = 0;
+
+pointexit:
+    Issuer_Destroy(issuer);
+    return rc;
+}
+
+int DIDDocumentBuilder_RemoveSelfProclaimedCredential(DIDDocumentBuilder *builder,
+       DID *controller)
+{
+    DIDDocument *document;
+    Credential *cred;
+    int i;
+
+    if (!builder || !builder->document || !controller) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    document = builder->document;
+    if (!Is_CustomizedDID(document)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport renew self-proclaimed Credential owned by normal DID.");
+        return -1;
+    }
+
+    for (i = 0; i < document->credentials.size; i++) {
+        cred = document->credentials.credentials[i];
+        assert(cred);
+        if (Credential_IsSelfProclaimed(cred) &&
+                DID_Equals(controller, &cred->proof.verificationMethod.did)) {
+            Credential_Destroy(cred);
+            if (i != document->credentials.size - 1)
+                memmove(document->credentials.credentials + i,
+                        document->credentials.credentials + i + 1,
+                        sizeof(Credential*) * (document->credentials.size - i - 1));
+
+            document->credentials.credentials[--document->credentials.size] = NULL;
+            i--;
+            if (document->credentials.size == 0) {
+                free((void*)document->credentials.credentials);
+                document->credentials.credentials = NULL;
+            }
+        }
     }
 
     clean_proofs(document);
@@ -2532,8 +2677,12 @@ int DIDDocumentBuilder_RemoveCredential(DIDDocumentBuilder *builder, DIDURL *cre
                     document->credentials.credentials + i + 1,
                     sizeof(Credential*) * (size - i - 1));
 
-        document->credentials.credentials[size - 1] = NULL;
-        document->credentials.size--;
+        document->credentials.credentials[--document->credentials.size] = NULL;
+        if (document->credentials.size == 0) {
+            free((void*)document->credentials.credentials);
+            document->credentials.credentials = NULL;
+        }
+
         clean_proofs(document);
         return 0;
     }
@@ -2621,7 +2770,7 @@ int DIDDocumentBuilder_RemoveService(DIDDocumentBuilder *builder, DIDURL *servic
 
     document = builder->document;
     size = DIDDocument_GetServiceCount(document);
-    for ( i = 0; i < size; i++ ) {
+    for (i = 0; i < size; i++) {
         service = document->services.services[i];
         if (!DIDURL_Equals(&service->id, serviceid))
             continue;
@@ -2633,14 +2782,68 @@ int DIDDocumentBuilder_RemoveService(DIDDocumentBuilder *builder, DIDURL *servic
                     document->services.services + i + 1,
                     sizeof(Service*) * (size - i - 1));
 
-        document->services.services[size - 1] = NULL;
-        document->services.size--;
+        document->services.services[--document->services.size] = NULL;
+        if (document->services.size == 0) {
+            free((void*)document->services.services);
+            document->services.services = NULL;
+        }
+
         clean_proofs(document);
         return 0;
     }
 
     DIDError_Set(DIDERR_NOT_EXISTS, "This service is not exist.");
     return -1;
+}
+
+int DIDDocumentBuilder_RemoveProof(DIDDocumentBuilder *builder, DID *controller)
+{
+    DIDDocument *document;
+    size_t size;
+    int i, index = -1;
+
+    if (!builder || !builder->document) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    document = builder->document;
+    size = document->proofs.size;
+
+    if (Is_CustomizedDID(document)) {
+        if (!controller) {
+            DIDError_Set(DIDERR_INVALID_ARGS, "Must be specified the controller to remove proof of customized did.");
+            return -1;
+        }
+
+        for (i = 0; i < size; i++) {
+            if (DID_Equals(controller, &document->proofs.proofs[i].creater.did))
+                index = i;
+        }
+        if (index == -1) {
+            DIDError_Set(DIDERR_NOT_EXISTS, "No proof signed by this DID.");
+            return -1;
+        }
+    }
+
+    if (!Is_CustomizedDID(document)) {
+        if (controller) {
+            DIDError_Set(DIDERR_INVALID_CONTROLLER, "Unsupport the specified controller to remove proof.");
+            return -1;
+        }
+        index = 0;
+    }
+
+    if (index != size - 1)
+        memmove(&document->proofs.proofs[index], &document->proofs.proofs[index + 1],
+                sizeof(DocumentProof) * (size - index - 1));
+
+    if (--document->proofs.size == 0) {
+        free((void*)document->proofs.proofs);
+        document->proofs.proofs = NULL;
+    }
+
+    return 0;
 }
 
 int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires)
@@ -2772,6 +2975,16 @@ ssize_t DIDDocument_GetControllers(DIDDocument *document, DID **controllers, siz
     return document->controllers.size;
 }
 
+bool DIDDocument_ContainsController(DIDDocument *document, DID *controller)
+{
+    if (!document || !controller) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return !DIDDocument_GetControllerDocument(document, controller) ? false : true;
+}
+
 ssize_t DIDDocument_GetPublicKeyCount(DIDDocument *document)
 {
     size_t count;
@@ -2800,7 +3013,6 @@ PublicKey *DIDDocument_GetPublicKey(DIDDocument *document, DIDURL *keyid)
 {
     PublicKey *pk;
     DIDDocument *doc;
-    size_t size;
     size_t i;
 
     if (!document || !keyid) {
@@ -3004,7 +3216,7 @@ ssize_t DIDDocument_GetAuthenticationCount(DIDDocument *document)
 ssize_t DIDDocument_GetAuthenticationKeys(DIDDocument *document, PublicKey **pks,
         size_t size)
 {
-    size_t actual_size = 0, i, j, pk_size;
+    size_t actual_size = 0, i, pk_size;
     DIDDocument *doc;
 
     assert((document->controllers.size > 0 && document->controllers.docs) ||
@@ -3154,7 +3366,7 @@ ssize_t DIDDocument_GetAuthorizationCount(DIDDocument *document)
 ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
         size_t size)
 {
-    size_t actual_size = 0, i, j, pk_size;
+    size_t actual_size = 0, i, pk_size;
     DIDDocument *doc;
 
     assert((document->controllers.size > 0 && document->controllers.docs) ||
@@ -3755,7 +3967,6 @@ const char *DIDDocument_Merge(DIDDocument **documents, size_t size)
     return DIDDocument_ToJson(merged_document, true);
 }
 
-
 #ifndef DISABLE_JWT
 JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document)
 {
@@ -3873,6 +4084,7 @@ DIDDocument *DIDDocument_SignDIDDocument(DIDDocument* controllerdoc,
         return NULL;
 
     if (DIDDocument_IsQualified(doc)) {
+        DIDDocument_Destroy(doc);
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "The signers are enough.");
         return NULL;
     }
@@ -3979,7 +4191,7 @@ TransferTicket *DIDDocument_CreateTransferTicket(DIDDocument *controllerdoc, DID
 int DIDDocument_SignTransferTicket(DIDDocument *controllerdoc,
         TransferTicket *ticket, const char *storepass)
 {
-    if (!controllerdoc || !storepass || !*storepass) {
+    if (!controllerdoc || !ticket || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }

@@ -835,32 +835,55 @@ bool Credential_IsExpired(Credential *cred)
     return false;
 }
 
+bool Credential_IsGenuine_Internal(Credential *cred, DIDDocument *document)
+{
+    DIDDocument *issuerdoc = NULL;
+    bool bgenuine = false;
+    const char *data;
+    int rc;
+
+    assert(cred);
+
+    if (!document) {
+        issuerdoc = DID_Resolve(&cred->issuer, false);
+    } else {
+        issuerdoc = document;
+    }
+
+    if (!issuerdoc)
+        return false;
+
+    if (!DIDDocument_IsAuthenticationKey(issuerdoc, &cred->proof.verificationMethod))
+        goto errorExit;
+
+    if (strcmp(cred->proof.type, ProofType)) {
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Unknow credential proof type.");
+        goto errorExit;
+    }
+
+    data = Credential_ToJson_ForSign(cred, false, true);
+    if (!data)
+        goto errorExit;
+
+    rc = DIDDocument_Verify(issuerdoc, &cred->proof.verificationMethod,
+            cred->proof.signatureValue, 1, data, strlen(data));
+    free((void *)data);
+
+    bgenuine = (rc == -1 ? false : true);
+errorExit:
+    if (issuerdoc != document)
+        DIDDocument_Destroy(issuerdoc);
+    return bgenuine;
+}
+
 bool Credential_IsGenuine(Credential *cred)
 {
-    DIDDocument *doc;
-    bool authentic;
-
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    doc = DID_Resolve(&cred->issuer, false);
-    if (!doc)
-        return false;
-
-    authentic = DIDDocument_IsAuthenticationKey(doc, &cred->proof.verificationMethod);
-    DIDDocument_Destroy(doc);
-
-    if (!authentic)
-        return false;
-
-    if (strcmp(cred->proof.type, ProofType)) {
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Unknow credential proof type.");
-        return false;
-    }
-
-    return Credential_Verify(cred) == 0;
+    return Credential_IsGenuine_Internal(cred, NULL);
 }
 
 bool Credential_IsValid(Credential *cred)

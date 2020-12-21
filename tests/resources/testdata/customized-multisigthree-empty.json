@@ -6,25 +6,25 @@
         "did:elastos:ir31cZZbBQUFbp4pNpMQApkAyJ9dno3frB"
     ],
     "multisig": "3:3",
-    "expires": "2025-12-08T23:17:10Z",
+    "expires": "2025-12-09T23:13:56Z",
     "proof": [
         {
             "type": "ECDSAsecp256r1",
-            "created": "2020-12-09T07:17:10Z",
+            "created": "2020-12-10T07:13:56Z",
             "creator": "did:elastos:iWFAUYhTa35c1fPe3iCJvihZHx6quumnym#primary",
-            "signatureValue": "Yoe5ZyLfSzQaRBGpTpCbaKDEIpyscas7ZUIAesJlxdN8oSTUac5M9JO9Ij4jcw53cJfSSb5kj2_hv8tCmYO8Tg"
+            "signatureValue": "t3TNBSmiwdnaEE_bo1hMB4Q9dsICOduDPRVFDyGrNk2Mgp5I9yzskdT6kH2NYHfZNJBXNIzPWTfvJGgwgH1nBw"
         },
         {
             "type": "ECDSAsecp256r1",
-            "created": "2020-12-09T07:17:10Z",
+            "created": "2020-12-10T07:13:56Z",
             "creator": "did:elastos:ijSM3fffVzAtAWM4DSypiFBY2mZSmN7JPv#primary",
-            "signatureValue": "BBZZZViHJMIOr-gWtHpKMSpeG3EJOEuQFLt0fHXyDnmzbxjgGBZ0RpGmgiK0BykYoqKx4rWrpZM-uYjyuNa2bw"
+            "signatureValue": "cuBRFwamARmZ-XtOoqOsbvg-T1r3srEVcU_HlUbL4dmPFSNniUuHsAOdwHeokwqPKjlZRNyG3-XFPNQaa3gkKw"
         },
         {
             "type": "ECDSAsecp256r1",
-            "created": "2020-12-09T07:17:10Z",
+            "created": "2020-12-10T07:13:56Z",
             "creator": "did:elastos:ir31cZZbBQUFbp4pNpMQApkAyJ9dno3frB#primary",
-            "signatureValue": "t-i2_qzX9R3hAhKIcQ7W3ftlhfZ8sIqgv8Z5QqxUR0UtqL74T6sMSsejCg7KzHhfkeSpMVILGkIo3q8l943UnQ"
+            "signatureValue": "FESpmUk6WWdGEv5o98ZKSmA2L5jMgLd3_e4fZQdYT7TuH-5ukKg5q4Wm1jcmkYpZuRzd2atK3hN9kaqOtMj7Jw"
         }
     ]
 }

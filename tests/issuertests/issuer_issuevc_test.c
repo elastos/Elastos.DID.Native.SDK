@@ -766,7 +766,7 @@ static void test_multicidissuer_issue_kycvc2(void)
     subject = DIDDocument_GetSubject(customizeddoc);
     CU_ASSERT_PTR_NOT_NULL(subject);
 
-    signkey = DIDURL_NewByDid(subject, "k1");
+    signkey = DIDURL_NewByDid(subject, "k2");
     CU_ASSERT_PTR_NOT_NULL(signkey);
 
     issuer = Issuer_Create(subject, signkey, store);
@@ -793,7 +793,7 @@ static void test_multicidissuer_issue_kycvc2(void)
 
     vc = Issuer_CreateCredential(issuer, issuerid, credid, types, 2,
             props, 6, expires, storepass);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
+    CU_ASSERT_PTR_NOT_NULL(vc);
     CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
     CU_ASSERT_FALSE(Credential_IsExpired(vc));
     CU_ASSERT_TRUE(Credential_IsGenuine(vc));
@@ -926,7 +926,7 @@ static void test_multicidissuer_issue_selfvc2(void)
     subject = DIDDocument_GetSubject(customizeddoc);
     CU_ASSERT_PTR_NOT_NULL(subject);
 
-    signkey = DIDURL_NewByDid(subject, "k1");
+    signkey = DIDURL_NewByDid(subject, "k2");
     CU_ASSERT_PTR_NOT_NULL(signkey);
 
     issuer = Issuer_Create(subject, signkey, store);
@@ -949,7 +949,7 @@ static void test_multicidissuer_issue_selfvc2(void)
 
     vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
             props, 4, expires, storepass);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
+    CU_ASSERT_PTR_NOT_NULL(vc);
     CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
     CU_ASSERT_FALSE(Credential_IsExpired(vc));
     CU_ASSERT_TRUE(Credential_IsGenuine(vc));

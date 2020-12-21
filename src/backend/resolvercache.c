@@ -149,5 +149,4 @@ void ResolveCache_Invalid(DID *did)
 
     if (get_file(path, 0, 2, rootpath, did->idstring) == 0)
         delete_file(path);
-
 }

@@ -257,7 +257,7 @@ static void test_idchain_publishdid_with_credential(void)
     props[0].key = "name";
     props[0].value = "John";
 
-    rc = DIDDocumentBuilder_AddSelfClaimedCredential(builder, credid, types, 2, props, 1, 0, NULL, storepass);
+    rc = DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid, types, 2, props, 1, 0, NULL, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     doc = DIDDocumentBuilder_Seal(builder, storepass);

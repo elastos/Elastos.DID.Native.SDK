@@ -24,6 +24,7 @@
 #define __PRESENTATION_H__
 
 #include "ela_did.h"
+#include "common.h"
 
 #ifdef __cplusplus
 extern "C" {
