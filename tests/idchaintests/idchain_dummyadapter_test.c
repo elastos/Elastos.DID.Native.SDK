@@ -1534,7 +1534,7 @@ static void test_idchain_publishdid_with_credential(void)
     props[0].key = "name";
     props[0].value = "John";
 
-    rc = DIDDocumentBuilder_AddSelfClaimedCredential(builder, credid, types, 2, props, 1, 0, NULL, storepass);
+    rc = DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid, types, 2, props, 1, 0, NULL, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     doc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -1977,7 +1977,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     CU_ASSERT_PTR_NOT_NULL(keyid);
 
     rc = DIDStore_StorePrivateKey(store, storepass, &controller, keyid,
-            HDKey_GetPrivateKey(dkey), sizeof(HDKey_GetPrivateKey(dkey)));
+            HDKey_GetPrivateKey(dkey), PRIVATEKEY_BYTES);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     rc = DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase);

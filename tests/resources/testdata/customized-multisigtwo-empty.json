@@ -6,19 +6,19 @@
         "did:elastos:ir31cZZbBQUFbp4pNpMQApkAyJ9dno3frB"
     ],
     "multisig": "2:3",
-    "expires": "2025-12-08T23:17:10Z",
+    "expires": "2025-12-09T23:13:56Z",
     "proof": [
         {
             "type": "ECDSAsecp256r1",
-            "created": "2020-12-09T07:17:10Z",
+            "created": "2020-12-10T07:13:56Z",
             "creator": "did:elastos:iWFAUYhTa35c1fPe3iCJvihZHx6quumnym#primary",
-            "signatureValue": "rwz4uDX2KVPyzYovT1D1FKhRs7FBuWlF2_Hy58uscUJ6WGNH8R8Cl52vfowPGw4FSQI2h_U7W193QBhO9cb2lw"
+            "signatureValue": "QtaogkiZ7lQLeZC7vanVB9AvedGkCU12T1s6Xk5W-5mXs1kjeXmRt1HYribw46RmqM_ilDNjJ35_p8bfz7FuPg"
         },
         {
             "type": "ECDSAsecp256r1",
-            "created": "2020-12-09T07:17:10Z",
+            "created": "2020-12-10T07:13:56Z",
             "creator": "did:elastos:ijSM3fffVzAtAWM4DSypiFBY2mZSmN7JPv#primary",
-            "signatureValue": "9E2QCwpSK0f2UINrnHbRyO5eNhdLEY_ybjH5XEIjPTqe5QG084q9esUQkYOWAu8Tn_dmHijCTL8bK6Iykaj8WQ"
+            "signatureValue": "zq_RKRpMJpqlg9DgmJRZbbNjQUUJYz3qImNfInxHm71XwC4KOuITwcVclzJfmFMdMiWBn0xfTMnrOGOUw6qEdw"
         }
     ]
 }

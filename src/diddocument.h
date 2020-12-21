@@ -115,10 +115,6 @@ const char *DIDDocument_Merge(DIDDocument **documents, size_t size);
 
 bool DIDDocument_IsValid_Internal(DIDDocument *document, bool isqualified);
 
-bool Is_Controller_DefaultKey(DIDDocument *document, DIDURL *keyid);
-
-bool Is_Self_AuthenticationKey(DIDDocument *document, DIDURL *keyid);
-
 bool Is_CustomizedDID(DIDDocument *document);
 
 #ifdef __cplusplus

@@ -24,13 +24,13 @@
 #define __DOC_TEST_SUITES_H__
 
 DECL_TESTSUITE(diddoc_elem_test);
-DECL_TESTSUITE(diddoc_customizeddoc_test);
+DECL_TESTSUITE(ctmdoc_elem_test);
 DECL_TESTSUITE(diddoc_json_op_test);
 DECL_TESTSUITE(diddoc_sign_test);
 
 #define DEFINE_DOC_TESTSUITES \
     DEFINE_TESTSUITE(diddoc_elem_test), \
-    DEFINE_TESTSUITE(diddoc_customizeddoc_test), \
+    DEFINE_TESTSUITE(ctmdoc_elem_test), \
     DEFINE_TESTSUITE(diddoc_json_op_test), \
     DEFINE_TESTSUITE(diddoc_sign_test)
 

@@ -49,7 +49,8 @@ static int header_toJson(JsonGenerator *gen, DIDRequest *req)
     CHECK(JsonGenerator_WriteStartObject(gen));
     CHECK(JsonGenerator_WriteStringField(gen, "specification", req->header.spec));
     CHECK(JsonGenerator_WriteStringField(gen, "operation", req->header.op));
-    if (!strcmp(req->header.op, operation[RequestType_Update]))
+    if (!strcmp(req->header.op, operation[RequestType_Update]) ||
+           !strcmp(req->header.op, operation[RequestType_Transfer]))
         CHECK(JsonGenerator_WriteStringField(gen, "previousTxid", req->header.prevtxid));
     if (req->header.ticket && *req->header.ticket)
         CHECK(JsonGenerator_WriteStringField(gen, "ticket", req->header.ticket));
@@ -127,13 +128,11 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
 
     if (type != RequestType_Transfer && ticket) {
         DIDError_Set(DIDERR_TRANSACTION_ERROR, "Only support transfer operation with transfer ticket.");
-        free((void*)payload);
         return NULL;
     }
 
     if (type == RequestType_Transfer && !ticket) {
         DIDError_Set(DIDERR_TRANSACTION_ERROR, "Transfer operation must attatch transfer ticket.");
-        free((void*)payload);
         return NULL;
     }
 
@@ -178,7 +177,7 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
     op = operation[type];
     rc = DIDDocument_Sign(document, signkey, storepass, signature, 5,
             (unsigned char*)spec, strlen(spec), (unsigned char*)op, strlen(op),
-            (unsigned char *)prevtxid, strlen(prevtxid),
+            (unsigned char*)prevtxid, strlen(prevtxid),
             (unsigned char*)ticket_data, strlen(ticket_data),
             (unsigned char*)payload, strlen(payload));
     if (rc < 0)
@@ -219,120 +218,108 @@ int DIDRequest_Verify(DIDRequest *request)
                 request->payload, strlen(request->payload));
 }
 
-DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json)
+static int parser_header(DIDRequest *request, json_t *json)
 {
-    json_t *item, *field = NULL;
-    char *docJson, *ticketJson;
-    const char *op, *payload;
+    json_t *item;
+    int type = -1, i;
+
+    assert(request);
+    assert(json);
+
+    item = json_object_get(json, "specification");
+    if (!item) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing specification.");
+        return -1;
+    }
+    if (!json_is_string(item)) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid specification.");
+        return -1;
+    }
+    if (strcmp(json_string_value(item), spec)) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Unknown DID specification. \
+                excepted: %s, actual: %s", spec, json_string_value(item));
+        return -1;
+    }
+    strcpy(request->header.spec, (char *)spec);
+
+    item = json_object_get(json, "operation");
+    if (!item) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing operation.");
+        return -1;
+    }
+    if (!json_is_string(item)) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid operation.");
+        return -1;
+    }
+    for (i = 0; i < 4; i++) {
+        if (!strcmp(json_string_value(item), operation[i])) {
+            type = i;
+            strcpy(request->header.op, json_string_value(item));
+            break;
+        }
+    }
+    if (type == -1) {
+        DIDError_Set(DIDERR_UNKNOWN, "Unknown DID operaton.");
+        return -1;
+    }
+
+    if (type == RequestType_Update || type == RequestType_Transfer) {
+        item = json_object_get(json, "previousTxid");
+        if (!item) {
+            DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing previous transaction id.");
+            return -1;
+        }
+        if (!json_is_string(item)) {
+            DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid previous transaction id.");
+            return -1;
+        }
+        strcpy(request->header.prevtxid, json_string_value(item));
+    } else {
+        *request->header.prevtxid = 0;
+    }
+
+    item = json_object_get(json, "ticket");
+    if (!item) {
+        if (type == RequestType_Transfer) {
+            DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing ticket.");
+            return -1;
+        }
+        request->header.ticket = "";
+    }
+    if (item) {
+        if (type != RequestType_Transfer) {
+            DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid ticket.");
+            return -1;
+        }
+        if (!json_is_string(item)) {
+            DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid ticket.");
+            return -1;
+        }
+        request->header.ticket = strdup(json_string_value(item));
+    }
+
+    return 0;
+}
+
+static int parser_payload(DIDRequest *request, json_t *json)
+{
+    const char *payload;
+    char *docJson;
     DID *subject;
     size_t len;
 
     assert(request);
     assert(json);
 
-    memset(request, 0, sizeof(DIDRequest));
-    item = json_object_get(json, "header");
-    if (!item) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing header.");
-        return NULL;
-    }
-    if (!json_is_object(item)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid header.");
-        return NULL;
-    }
-
-    field = json_object_get(item, "specification");
-    if (!field) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing specification.");
-        return NULL;
-    }
-    if (!json_is_string(field)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid specification.");
-        return NULL;
-    }
-    if (strcmp(json_string_value(field), spec)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Unknown DID specification. \
-                excepted: %s, actual: %s", spec, json_string_value(field));
-        return NULL;
-    }
-    strcpy(request->header.spec, (char *)spec);
-
-    field = json_object_get(item, "operation");
-    if (!field) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing operation.");
-        return NULL;
-    }
-    if (!json_is_string(field)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid operation.");
-        return NULL;
-    }
-    op = json_string_value(field);
-    if (!strcmp(op, operation[RequestType_Create]) || !strcmp(op, operation[RequestType_Update]) ||
-            !strcmp(op, operation[RequestType_Deactivate])) {
-        strcpy(request->header.op, op);
-    } else {
-        DIDError_Set(DIDERR_UNKNOWN, "Unknown DID operaton.");
-        return NULL;
-    }
-
-    if (!strcmp(op, operation[RequestType_Update])) {
-        field = json_object_get(item, "previousTxid");
-        if (!field) {
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing payload.");
-            return NULL;
-        }
-        if (!json_is_string(field)) {
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
-            return NULL;
-        }
-        strcpy(request->header.prevtxid, json_string_value(field));
-    } else {
-        *request->header.prevtxid = 0;
-    }
-
-    field = json_object_get(item, "ticket");
-    if (!field) {
-        if (!strcmp(request->header.op, "transfer")) {
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing ticket.");
-            return NULL;
-        }
-        request->header.ticket = "";
-    }
-    if (field) {
-        if (strcmp(request->header.op, "transfer")) {
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
-            return NULL;
-        }
-        len = strlen(json_string_value(field)) + 1;
-        ticketJson = (char*)malloc(len);
-        len = base64_url_decode((uint8_t *)ticketJson, json_string_value(field));
-        if (len <= 0) {
-            DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode the ticket failed");
-            free(ticketJson);
-            goto errorExit;
-        }
-        ticketJson[len] = 0;
-        request->header.ticket = ticketJson;
-    }
-
-    item = json_object_get(json, "payload");
-    if (!item) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing payload.");
-        goto errorExit;
-    }
-    if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
-        goto errorExit;
-    }
-    payload = json_string_value(item);
+    payload = json_string_value(json);
     if (!payload) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "No payload.");
-        goto errorExit;
+        return -1;
     }
     request->payload = strdup(payload);
     if (!request->payload) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Record payload failed.");
-        goto errorExit;
+        return -1;
     }
 
     if (strcmp(request->header.op, operation[RequestType_Deactivate])) {
@@ -342,29 +329,104 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json)
         if (len <= 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode the payload failed");
             free(docJson);
-            goto errorExit;
+            return -1;
         }
         docJson[len] = 0;
 
         request->doc = DIDDocument_FromJson(docJson);
-
         free(docJson);
         if (!request->doc) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Deserialize transaction payload from json failed.");
-            goto errorExit;
+            return -1;
         }
 
         strcpy(request->did.idstring, request->doc->did.idstring);
     } else {
         subject = DID_FromString(request->payload);
         if (!subject)
-            goto errorExit;
+            return -1;
 
         strcpy(request->did.idstring, subject->idstring);
         request->doc = NULL;
         DID_Destroy(subject);
     }
 
+    return 0;
+}
+
+static int parser_proof(DIDRequest *request, json_t *json)
+{
+    json_t *item;
+
+    assert(request);
+    assert(json);
+
+    item = json_object_get(json, "verificationMethod");
+    if (!item) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing signing key.");
+        return -1;
+    }
+    if (!json_is_string(item)) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid sign key.");
+        return -1;
+    }
+
+    if (Parse_DIDURL(&request->proof.verificationMethod,
+            json_string_value(item), &request->did) < 0) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid sign key.");
+        return -1;
+    }
+
+    item = json_object_get(json, "signature");
+    if (!item) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing signature.");
+        return -1;
+    }
+
+    if (!json_is_string(item) || strlen(json_string_value(item)) >= MAX_SIGN_LEN) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signature.");
+        return -1;
+    }
+    strcpy(request->proof.signatureValue, json_string_value(item));
+
+    return 0;
+}
+
+DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json)
+{
+    json_t *item, *field = NULL;
+
+    assert(request);
+    assert(json);
+
+    memset(request, 0, sizeof(DIDRequest));
+    //parser header
+    item = json_object_get(json, "header");
+    if (!item) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing header.");
+        return NULL;
+    }
+    if (!json_is_object(item)) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid header.");
+        return NULL;
+    }
+    if (parser_header(request, item) < 0)
+        goto errorExit;
+
+    //parser payload
+    item = json_object_get(json, "payload");
+    if (!item) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing payload.");
+        goto errorExit;
+    }
+    if (!json_is_string(item)) {
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
+        goto errorExit;
+    }
+    if (parser_payload(request, item) < 0)
+        goto errorExit;
+
+    //parser proof
     item = json_object_get(json, "proof");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing proof.");
@@ -374,34 +436,8 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json)
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid proof.");
         goto errorExit;
     }
-
-    field = json_object_get(item, "verificationMethod");
-    if (!field) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing signing key.");
+    if (parser_proof(request, item) < 0)
         goto errorExit;
-    }
-    if (!json_is_string(field)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signing key.");
-        goto errorExit;
-    }
-
-    if (Parse_DIDURL(&request->proof.verificationMethod,
-            json_string_value(field), &request->did) < 0) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signing key.");
-        goto errorExit;
-    }
-
-    field = json_object_get(item, "signature");
-    if (!field) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing signature.");
-        goto errorExit;
-    }
-
-    if (!json_is_string(field) || strlen(json_string_value(field)) >= MAX_SIGN_LEN) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signature.");
-        goto errorExit;
-    }
-    strcpy(request->proof.signatureValue, json_string_value(field));
 
     if (DIDRequest_Verify(request) < 0) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Verify payload failed.");

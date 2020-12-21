@@ -896,6 +896,7 @@ DIDDocument *TestData_LoadCtmDoc(void)
     doc = DID_Resolve(subject, true);
     if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
         return NULL;
+
     DIDDocument_Destroy(doc);
 
     return testdata.ctmdoc;
@@ -916,12 +917,6 @@ static int import_ctmdid_privatekey(DID *did, const char *storepass)
 
     id = DIDURL_NewByDid(did, "k2");
     rc = import_privatekey(id, storepass, "customized.k2.sk");
-    DIDURL_Destroy(id);
-    if (rc)
-        return -1;
-
-    id = DIDURL_NewByDid(did, "recovery3");
-    rc = import_privatekey(id, storepass, "customized.recovery3.sk");
     DIDURL_Destroy(id);
     if (rc)
         return -1;

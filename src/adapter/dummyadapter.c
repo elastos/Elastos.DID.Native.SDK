@@ -70,6 +70,7 @@ static bool check_ticket(const char* data, DIDDocument *doc)
     size_t len;
     char *ticketJson;
     TransferTicket *ticket;
+    bool bcheck = false;
 
     assert(data);
 
@@ -87,18 +88,14 @@ static bool check_ticket(const char* data, DIDDocument *doc)
     if (!ticket)
         return false;
 
-    if (!TransferTicket_IsValid(ticket))
-        return false;
-
-    if (!DIDDocument_GetControllerDocument(doc, &ticket->to))
-        return false;
-
-    return true;
+    bcheck = TransferTicket_IsValid(ticket) && DIDDocument_GetControllerDocument(doc, &ticket->to);
+    TransferTicket_Destroy(ticket);
+    return bcheck;
 }
 
-static bool check_controllers(DIDDocument *doc1, DIDDocument *doc2)
+static bool controllers_equals(DIDDocument *doc1, DIDDocument *doc2)
 {
-    int i, j;
+    int i;
     DID *controller;
 
     assert(doc1);
@@ -169,7 +166,7 @@ static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *p
             goto errorExit;
         }
         if (Is_CustomizedDID(info->request.doc) &&
-                !check_controllers(info->request.doc, lastinfo->request.doc))
+                !controllers_equals(info->request.doc, lastinfo->request.doc))
             goto errorExit;
     } else if (!strcmp(info->request.header.op, "transfer")) {
         if (!lastinfo) {
@@ -188,8 +185,12 @@ static bool DummyAdapter_CreateIdTransaction(DIDAdapter *_adapter, const char *p
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "Transfer operation must attach the ticket.");
             goto errorExit;
         }
+        if (controllers_equals(info->request.doc, lastinfo->request.doc)) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "Transfer operation is only for chaning controller.");
+            goto errorExit;
+        }
         //check ticket
-        if (check_ticket(info->request.header.ticket, info->request.doc))
+        if (!check_ticket(info->request.header.ticket, info->request.doc))
             goto errorExit;
     } else if (!strcmp(info->request.header.op, "deactivate")) {
         if (!lastinfo) {
