@@ -58,7 +58,6 @@ static void test_new_customizedid_with_onecontroller(void)
 
     subject = DID_New(customizedid);
     CU_ASSERT_PTR_NOT_NULL_FATAL(subject);
-    DIDDocument_Destroy(customized_doc);
 
     customized_doc = DIDStore_LoadDID(store, subject);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
@@ -162,7 +161,7 @@ static void test_new_customizedid_with_multicontrollers2(void)
 {
     DIDDocument *controller1_doc, *controller2_doc, *customized_doc, *resolve_doc;
     DIDDocumentBuilder *builder;
-    DID *controller1, *controller2, *subject;
+    DID *controller1, *controller2;
     DIDURL *signkey1, *signkey2;
     const char *data;
     int rc;
@@ -200,10 +199,6 @@ static void test_new_customizedid_with_multicontrollers2(void)
     CU_ASSERT_PTR_NULL(customized_doc);
     customized_doc = DIDStore_NewCustomizedDID(store, storepass, customizedid, controller1, controllers, 2, 2);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
-    DIDDocument_Destroy(customized_doc);
-
-    subject = DID_New(customizedid);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(subject);
 
     //counter sign
     data = DIDDocument_ToJson(customized_doc, true);
@@ -271,7 +266,7 @@ static void test_new_customizedid_with_existcontrollers(void)
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized1_doc));
 
     //Don't remove
-    printf("customized1_empty_doc:\n%s\n", DIDDocument_ToString(customized1_doc, true));
+    //printf("customized1_empty_doc:\n%s\n", DIDDocument_ToString(customized1_doc, true));
 
     CU_ASSERT_EQUAL(3, DIDDocument_GetControllerCount(customized1_doc));
 
@@ -304,7 +299,7 @@ static void test_new_customizedid_with_existcontrollers(void)
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized2_doc));
 
     //Don't remove
-    printf("customized2_empty_doc:\n%s\n", DIDDocument_ToString(customized2_doc, true));
+    //printf("customized2_empty_doc:\n%s\n", DIDDocument_ToString(customized2_doc, true));
 
     CU_ASSERT_EQUAL(3, DIDDocument_GetControllerCount(customized2_doc));
 
@@ -349,7 +344,7 @@ static void test_new_customizedid_with_existcontrollers(void)
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized3_doc));
 
     //Don't remove
-    printf("customized3_empty_doc:\n%s\n", DIDDocument_ToString(customized3_doc, true));
+    //printf("customized3_empty_doc:\n%s\n", DIDDocument_ToString(customized3_doc, true));
 
     CU_ASSERT_EQUAL(3, DIDDocument_GetControllerCount(customized3_doc));
 
@@ -385,8 +380,9 @@ static void test_new_customizedid_with_existcontrollers2(void)
     DIDURL *creater1, *creater2, *creater3;
     DIDDocumentBuilder *builder;
     DID *dids[3] = {0}, *controllers[3] = {0}, controller;
-    DIDURL *id1, *id2, *serviceid1, *serviceid2, *credid, *authid;;
+    DIDURL *id1, *id2, *serviceid1, *serviceid2, *credid, *keyid;
     HDKey *hdkey, _hdkey;
+    PublicKey *pk;
     char publickeybase58[MAX_PUBLICKEY_BASE58], privatekeybase58[256];
     char publickeybase58_a[MAX_PUBLICKEY_BASE58];
     char publickeybase58_b[MAX_PUBLICKEY_BASE58];
@@ -437,7 +433,7 @@ static void test_new_customizedid_with_existcontrollers2(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
     DIDDocument_Destroy(customized1_doc);
 
-    //add two authentication keys
+    //add one public key
     id1 = DIDURL_NewByDid(&customized_did, "k1");
     CU_ASSERT_PTR_NOT_NULL(id1);
     hdkey = Generater_KeyPair(&_hdkey);
@@ -446,11 +442,12 @@ static void test_new_customizedid_with_existcontrollers2(void)
     CU_ASSERT_PTR_NOT_NULL(keybase1);
 
     //Don't remove
-    base58_encode(privatekeybase58, sizeof(privatekeybase58), HDKey_GetPrivateKey(hdkey), PRIVATEKEY_BYTES);
-    printf("k1 sk: %s\n", privatekeybase58);
+    //base58_encode(privatekeybase58, sizeof(privatekeybase58), HDKey_GetPrivateKey(hdkey), PRIVATEKEY_BYTES);
+    //printf("k1 sk: %s\n", privatekeybase58);
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id1, keybase1));
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddPublicKey(builder, id1, &customized_did, keybase1));
 
+    //add one authentication key
     memset(&_hdkey, 0, sizeof(HDKey));
     id2 = DIDURL_NewByDid(&customized_did, "k2");
     CU_ASSERT_PTR_NOT_NULL(id2);
@@ -460,28 +457,10 @@ static void test_new_customizedid_with_existcontrollers2(void)
     CU_ASSERT_PTR_NOT_NULL(keybase2);
 
     //Don't remove
-    base58_encode(privatekeybase58, sizeof(privatekeybase58), HDKey_GetPrivateKey(hdkey), PRIVATEKEY_BYTES);
-    printf("k2 sk: %s\n", privatekeybase58);
+    //base58_encode(privatekeybase58, sizeof(privatekeybase58), HDKey_GetPrivateKey(hdkey), PRIVATEKEY_BYTES);
+    //printf("k2 sk: %s\n", privatekeybase58);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id2, keybase2));
-
-    //add one authorization key
-    memset(&_hdkey, 0, sizeof(HDKey));
-    authid = DIDURL_NewByDid(&customized_did, "recovery3");
-    CU_ASSERT_PTR_NOT_NULL(authid);
-    hdkey = Generater_KeyPair(&_hdkey);
-    CU_ASSERT_PTR_NOT_NULL(hdkey);
-    keybase3 = HDKey_GetPublicKeyBase58(hdkey, publickeybase58_b, sizeof(publickeybase58_b));
-    CU_ASSERT_PTR_NOT_NULL(keybase3);
-    const char *idstring = HDKey_GetAddress(hdkey);
-    CU_ASSERT_PTR_NOT_NULL(idstring);
-    strncpy(controller.idstring, idstring, sizeof(controller.idstring));
-
-    //Don't remove
-    base58_encode(privatekeybase58, sizeof(privatekeybase58), HDKey_GetPrivateKey(hdkey), PRIVATEKEY_BYTES);
-    printf("recovery sk: %s\n", privatekeybase58);
-
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthorizationKey(builder, authid, &controller, keybase3));
 
     //add two services
     serviceid1 = DIDURL_NewByDid(&customized_did, "test-svc-1");
@@ -505,7 +484,7 @@ static void test_new_customizedid_with_existcontrollers2(void)
     props[1].key = "passport";
     props[1].value = "S653258Z07";
 
-    rc = DIDDocumentBuilder_AddSelfClaimedCredential(builder, credid,
+    rc = DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid,
             types, 2, props, 2, expires, signkey1, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
@@ -515,9 +494,9 @@ static void test_new_customizedid_with_existcontrollers2(void)
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized1_doc));
 
     //Don't remove
-    printf("customized1_doc:\n%s\n", DIDDocument_ToString(customized1_doc, true));
+    //printf("customized1_doc:\n%s\n", DIDDocument_ToString(customized1_doc, true));
 
-    CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customized1_doc, id1));
+    CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetPublicKey(customized1_doc, id1));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customized1_doc, id2));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetCredential(customized1_doc, credid));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetService(customized1_doc, serviceid1));
@@ -548,10 +527,9 @@ static void test_new_customizedid_with_existcontrollers2(void)
     DIDDocument_Destroy(customized2_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
 
-    //add two authentication keys
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id1, keybase1));
+    //add two keys
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddPublicKey(builder, id1, &customized_did, keybase1));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id2, keybase2));
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthorizationKey(builder, authid, &controller, keybase3));
 
     //add two services
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, serviceid1, "Service.Testing",
@@ -560,7 +538,7 @@ static void test_new_customizedid_with_existcontrollers2(void)
             "https://www.elastos.org/testing2"));
 
     //add one credential
-    rc = DIDDocumentBuilder_AddSelfClaimedCredential(builder, credid,
+    rc = DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid,
             types, 2, props, 2, expires, signkey1, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
@@ -579,9 +557,9 @@ static void test_new_customizedid_with_existcontrollers2(void)
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized2_doc));
 
     //Don't remove
-    printf("customized2_doc:\n%s\n", DIDDocument_ToString(customized2_doc, true));
+    //printf("customized2_doc:\n%s\n", DIDDocument_ToString(customized2_doc, true));
 
-    CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customized2_doc, id1));
+    CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetPublicKey(customized2_doc, id1));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customized2_doc, id2));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetCredential(customized2_doc, credid));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetService(customized2_doc, serviceid1));
@@ -618,9 +596,8 @@ static void test_new_customizedid_with_existcontrollers2(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
 
     //add two authentication keys
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id1, keybase1));
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddPublicKey(builder, id1, &customized_did, keybase1));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id2, keybase2));
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthorizationKey(builder, authid, &controller, keybase3));
 
     //add two services
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, serviceid1, "Service.Testing",
@@ -629,7 +606,7 @@ static void test_new_customizedid_with_existcontrollers2(void)
             "https://www.elastos.org/testing2"));
 
     //add one credential
-    rc = DIDDocumentBuilder_AddSelfClaimedCredential(builder, credid,
+    rc = DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid,
             types, 2, props, 2, expires, signkey3, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
@@ -656,9 +633,9 @@ static void test_new_customizedid_with_existcontrollers2(void)
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized3_doc));
 
     //Don't remove
-    printf("customized3_doc:\n%s\n", DIDDocument_ToString(customized3_doc, true));
+    //printf("customized3_doc:\n%s\n", DIDDocument_ToString(customized3_doc, true));
 
-    CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customized3_doc, id1));
+    CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetPublicKey(customized3_doc, id1));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customized3_doc, id2));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetCredential(customized3_doc, credid));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetService(customized3_doc, serviceid1));
@@ -690,7 +667,6 @@ static void test_new_customizedid_with_existcontrollers2(void)
     DIDURL_Destroy(id2);
     DIDURL_Destroy(serviceid1);
     DIDURL_Destroy(serviceid2);
-    DIDURL_Destroy(authid);
 
     TestData_Free();
 }

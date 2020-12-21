@@ -317,6 +317,7 @@ int MetaData_Merge(MetaData *tometa, MetaData *frommeta)
 {
     json_t *value, *item, *json;
     const char *key;
+    int rc;
 
     assert(tometa && frommeta);
 
@@ -329,10 +330,15 @@ int MetaData_Merge(MetaData *tometa, MetaData *frommeta)
         } else {
             item = json_deep_copy(json);
             if (!item) {
+                DIDError_Set(DIDERR_MALFORMED_META, "Copy '%s' to metadata failed.", key);
+                return -1;
+            }
+            rc = MetaData_Set(tometa, key, item);
+            json_decref(item);
+            if (rc < 0) {
                 DIDError_Set(DIDERR_MALFORMED_META, "Add '%s' to metadata failed.", key);
                 return -1;
             }
-            json_object_set_new(tometa->data, key, item);
         }
     }
 
@@ -365,7 +371,6 @@ int MetaData_Copy(MetaData *dest, MetaData *src)
 void MetaData_SetStore(MetaData *metadata, DIDStore *store)
 {
     assert(metadata);
-    assert(store);
 
     metadata->store = store;
 }

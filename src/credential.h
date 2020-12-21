@@ -78,6 +78,12 @@ int Credential_ToJson_Internal(JsonGenerator *gen, Credential *cred, DID *did,
 
 int Credential_Copy(Credential *tocred, Credential *fromcred);
 
+Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
+        DIDURL *credid, const char **types, size_t typesize, json_t *json,
+        time_t expires, const char *storepass);
+
+bool Credential_IsGenuine_Internal(Credential *cred, DIDDocument *document);
+
 #ifdef __cplusplus
 }
 #endif

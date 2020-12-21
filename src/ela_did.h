@@ -1070,6 +1070,7 @@ DID_API time_t DIDHistory_GetPublishedByIndex(DIDHistory *history, int index);
  *       Otherwise, return -1.
  */
 DID_API const char *DIDHistory_GetOperationByIndex(DIDHistory *history, int index);
+
 /**
  * \~English
  * Destroy DIDHistory.
@@ -1185,7 +1186,7 @@ DID_API bool DIDDocument_IsValid(DIDDocument *document);
  * @param
  *      document             [in] A handle to DID Document.
  * @return
- *      true if document is valid, otherwise false.
+ *      true if document is qualified, otherwise false.
 */
 DID_API bool DIDDocument_IsQualified(DIDDocument *document);
 
@@ -1210,6 +1211,8 @@ DID_API DID* DIDDocument_GetSubject(DIDDocument *document);
  *      document             [in] A handle to DID Document.
  * @param
  *      controllerdoc        [in] A handle to controlle's Document.
+ *                           If DID is normal DID or customiezed DID has only one controller,
+ *                           controllerdoc can be null.
  * @return
  *      If no error occurs, return a handle to DIDDocumentBuilder.
  *      Otherwise, return NULL.
@@ -1390,7 +1393,7 @@ DID_API int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *c
 
 /**
  * \~English
- * Remove controller for DIDDocument.
+ * Remove controller from DIDDocument.
  *
  * @param
  *      builder               [in] A handle to DIDDocument Builder.
@@ -1414,6 +1417,7 @@ DID_API int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID
  */
 DID_API int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder,
         Credential *credential);
+
 /**
  * \~English
  * Directly, add self claimed information(credential).
@@ -1443,9 +1447,44 @@ DID_API int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder,
  *      If no error occurs, return 0.
  *      Otherwise, return -1.
  */
-DID_API int DIDDocumentBuilder_AddSelfClaimedCredential(DIDDocumentBuilder *builder,
+DID_API int DIDDocumentBuilder_AddSelfProClaimedCredential(DIDDocumentBuilder *builder,
         DIDURL *credid, const char **types, size_t typesize,
         Property *properties, int propsize, time_t expires, DIDURL *signkey, const char *storepass);
+
+/**
+ * \~English
+ * Directly, renew self proclaimed credentials signed by controller. Use signkey to sign
+ * the new credential.
+ *
+ * @param
+ *      builder              [in] A handle to DIDDocument Builder.
+ * @param
+ *      controller           [in] The old credential signed by controller.
+ * @param
+ *      signkey              [in] The key to sign.
+ *                                eg, if signkey is NULL, it uses the default key.
+ * @param
+ *      storepass            [in] Password for DIDStores.
+ * @return
+ *      If no error occurs, return 0. Otherwise, return -1.
+ */
+DID_API int DIDDocumentBuilder_RenewSelfProclaimedCredential(DIDDocumentBuilder *builder,
+        DID *controller, DIDURL *signkey, const char *storepass);
+
+/**
+ * \~English
+ * Directly, remove self proclaimed credetial signed by controller.
+ *
+ * @param
+ *      builder              [in] A handle to DIDDocument Builder.
+ * @param
+ *      controller           [in] The old credential signed by controller.
+ * @return
+ *      If no error occurs, return 0. sOtherwise, return -1.
+ */
+DID_API int DIDDocumentBuilder_RemoveSelfProclaimedCredential(DIDDocumentBuilder *builder,
+        DID *controller);
+
 /**
  * \~English
  * Remove specified credential from credential array.
@@ -1491,6 +1530,20 @@ DID_API int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder,
  */
 DID_API int DIDDocumentBuilder_RemoveService(DIDDocumentBuilder *builder,
         DIDURL *serviceid);
+
+/**
+ * \~English
+ * Remove proof signed by controller.
+ *
+ * @param
+ *      builder              [in] A handle to DIDDocument Builder.
+ * @param
+ *      controller           [in] Remove the proof signed by controller.
+ * @return
+ *      0 on success, -1 if an error occurred.
+ */
+DID_API int DIDDocumentBuilder_RemoveProof(DIDDocumentBuilder *builder,
+        DID *controller);
 
 /**
  * \~English
@@ -1557,6 +1610,19 @@ DID_API ssize_t DIDDocument_GetControllerCount(DIDDocument *document);
  */
 DID_API ssize_t DIDDocument_GetControllers(DIDDocument *document,
         DID **controllers, size_t size);
+
+/**
+ * \~English
+ * Indicate that document contains controller or not.
+ *
+ * @param
+ *      document             [in] A handle to DID Document.
+ * @param
+ *      controller           [in] The controller to be removed.
+ * @return
+ *      return true if DID has controller, otherwise return false.
+ */
+DID_API bool DIDDocument_ContainsController(DIDDocument *document, DID *controller);
 
 /**
  * \~English
@@ -2151,7 +2217,7 @@ DID_API const char *DIDDocument_Derive(DIDDocument *document, const char *identi
 
 /**
  * \~English
- * Get document string by multiple signature.
+ * Get document by multiple signature.
  *
  * @param
  *      controllerdoc            [in] The handle to controller's document.
@@ -2189,14 +2255,14 @@ DID_API const char *DIDDocument_MergeDIDDocuments(int count, ...);
  * @param
  *      storepass               [in] The password for DIDStore.
  * @return
- *      document string if no error occurred and user should be free the returned value.
+ *      the handle to ticket if no error occurred and user should be destroy the returned value.
  */
 DID_API TransferTicket *DIDDocument_CreateTransferTicket(DIDDocument *controllerdoc,
         DID *owner, DID *to, const char *storepass);
 
 /**
  * \~English
- * Realize the mulisig for transfer ticket.
+ * Realize multi-signature for transfer ticket.
  *
  * @param
  *      controllerdoc           [in] The handle to controller's document.
@@ -3207,6 +3273,26 @@ DID_API void DIDStore_DeletePrivateKey(DIDStore *store, DID *did, DIDURL *keyid)
  */
 DID_API bool DIDStore_PublishDID(DIDStore *store, const char *storepass,
         DID *did, DIDURL *signkey, bool force);
+
+/**
+ * \~English
+ * Transfer DID if customized DID had add or remove controller.
+ *
+ * @param
+ *      store                    [in] The handle to DID Store.
+ * @param
+ *      storepass                [in] Pass word to sign.
+ * @param
+ *      did                      [in] The handle to DID.
+ * @param
+ *      ticket                   [in] The handle to Transfer ticket.
+ * @param
+ *      signkey                  [in] The public key to sign.
+ * @return
+ *      true on success, false if an error occurred. Caller should free the returned value.
+ */
+DID_API bool DIDStore_TransferDID(DIDStore *store, const char *storepass,
+       DID *did, TransferTicket *ticket, DIDURL *signkey);
 
 /**
  * \~English

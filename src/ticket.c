@@ -65,8 +65,8 @@ static int Proof_ToJson(JsonGenerator *gen, TicketProof *proof)
 
 static int ProofArray_ToJson(JsonGenerator *gen, TransferTicket *ticket)
 {
-    size_t size;
     TicketProof *proofs;
+    size_t size;
     int i;
 
     assert(gen);
@@ -93,7 +93,6 @@ static int ticket_tojson_internal(JsonGenerator *gen, TransferTicket *ticket,
         bool forsign)
 {
     char id[ELA_MAX_DIDURL_LEN];
-    int i;
 
     assert(gen);
     assert(gen->buffer);
@@ -136,13 +135,12 @@ static const char *ticket_tojson_forsign(TransferTicket *ticket, bool forsign)
 TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
 {
     TransferTicket *ticket = NULL;
-    const char *txid, data;
     DIDDocument *document = NULL;
+    const char *txid;
+    bool bvalid;
 
-    if (!owner || !to) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    assert(owner);
+    assert(to);
 
     ticket = (TransferTicket*)calloc(1, sizeof(TransferTicket));
     if (!ticket) {
@@ -153,10 +151,12 @@ TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
     document = DID_Resolve(to, false);
     if (!document) {
         DIDError_Set(DIDERR_NOT_EXISTS, "DID received ticket does not already exist.");
-        return NULL;
+        goto errorExit;
     }
 
-    if (!DIDDocument_IsValid(document))
+    bvalid = DIDDocument_IsValid(document);
+    DIDDocument_Destroy(document);
+    if (!bvalid)
         goto errorExit;
 
     ticket->doc = DID_Resolve(owner, false);
@@ -180,7 +180,6 @@ TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
     return ticket;
 
 errorExit:
-    DIDDocument_Destroy(document);
     TransferTicket_Destroy(ticket);
     return NULL;
 }
@@ -210,8 +209,10 @@ static int ticket_addproof(TransferTicket *ticket, char *signature, DIDURL *sign
     else
         ticket->proofs.proofs = realloc(rp, (ticket->proofs.size + 1) * sizeof(TicketProof));
 
-    if (!ticket->proofs.proofs)
+    if (!ticket->proofs.proofs) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for ticket proofs failed.");
         return -1;
+    }
 
     strcpy(ticket->proofs.proofs[size].signatureValue, signature);
     strcpy(ticket->proofs.proofs[size].type, ProofType);
@@ -282,6 +283,8 @@ void TransferTicket_Destroy(TransferTicket *ticket)
         DIDDocument_Destroy(ticket->doc);
     if (ticket->proofs.proofs)
         free((void*)ticket->proofs.proofs);
+
+    free((void*)ticket);
 }
 
 const char *TransferTicket_ToJson(TransferTicket *ticket)
@@ -289,9 +292,67 @@ const char *TransferTicket_ToJson(TransferTicket *ticket)
     return ticket_tojson_forsign(ticket, false);
 }
 
+static int Parse_Proof(TicketProof *proof, json_t *json)
+{
+    json_t *item;
+
+    assert(proof);
+    assert(json);
+
+    item = json_object_get(json, "type");
+    if (item) {
+        if ((json_is_string(item) && strlen(json_string_value(item)) + 1 > MAX_TYPE_LEN) ||
+                !json_is_string(item)) {
+            DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Invalid proof type.");
+            return -1;
+        }
+        strcpy(proof->type, json_string_value(item));
+    }
+    else
+        strcpy(proof->type, ProofType);
+
+    item = json_object_get(json, "created");
+    if (!item) {
+        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Missing create ticket time.");
+        return -1;
+    }
+    if (!json_is_string(item) ||
+            parse_time(&proof->created, json_string_value(item)) < 0) {
+        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Invalid create ticket time.");
+        return -1;
+    }
+
+    item = json_object_get(json, "verificationMethod");
+    if (!item) {
+        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Missing sign key.");
+        return -1;
+    }
+    if (!json_is_string(item) ||
+            Parse_DIDURL(&proof->verificationMethod, json_string_value(item), NULL) == -1) {
+        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Invalid sign key.");
+        return -1;
+    }
+
+    item = json_object_get(json, "signatureValue");
+    if (!item) {
+        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Missing signature.");
+        return -1;
+    }
+    if (!json_is_string(item)) {
+        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Invalid signature.");
+        return -1;
+    }
+    if (strlen(json_string_value(item)) + 1 > MAX_SIGN_LEN) {
+        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Document signature is too long.");
+        return -1;
+    }
+    strcpy(proof->signatureValue, json_string_value(item));
+    return 0;
+}
+
 static int Parse_Proofs(TransferTicket *ticket, json_t *json)
 {
-    json_t *item, *field;
+    json_t *item;
     size_t size = 1, i;
     TicketProof *proof;
 
@@ -320,55 +381,9 @@ static int Parse_Proofs(TransferTicket *ticket, json_t *json)
         }
 
         proof = &ticket->proofs.proofs[ticket->proofs.size];
+        if (Parse_Proof(proof, item) < 0)
+            return -1;
 
-        field = json_object_get(item, "type");
-        if (field) {
-            if ((json_is_string(field) && strlen(json_string_value(field)) + 1 > MAX_TYPE_LEN) ||
-                    !json_is_string(field)) {
-                DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Invalid proof type.");
-                return -1;
-            }
-            strcpy(proof->type, json_string_value(field));
-        }
-        else
-            strcpy(proof->type, ProofType);
-
-        field = json_object_get(item, "created");
-        if (!field) {
-            DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Missing create ticket time.");
-            return -1;
-        }
-        if (!json_is_string(field) ||
-                parse_time(&proof->created, json_string_value(field)) < 0) {
-            DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Invalid create ticket time.");
-            return -1;
-        }
-
-        field = json_object_get(item, "verificationMethod");
-        if (!field) {
-            DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Missing sign key.");
-            return -1;
-        }
-        if (!json_is_string(field) ||
-                Parse_DIDURL(&proof->verificationMethod, json_string_value(field), &ticket->did) == -1) {
-            DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Invalid sign key.");
-            return -1;
-        }
-
-        field = json_object_get(item, "signatureValue");
-        if (!field) {
-            DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Missing signature.");
-            return -1;
-        }
-        if (!json_is_string(field)) {
-            DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Invalid signature.");
-            return -1;
-        }
-        if (strlen(json_string_value(field)) + 1 > MAX_SIGN_LEN) {
-            DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Document signature is too long.");
-            return -1;
-        }
-        strcpy(proof->signatureValue, json_string_value(field));
         ticket->proofs.size++;
     }
 
@@ -508,16 +523,7 @@ bool TransferTicket_IsQualified(TransferTicket *ticket)
     assert((ticket->proofs.size == 0 && !ticket->proofs.proofs) ||
             (ticket->proofs.size > 0 && ticket->proofs.proofs));
 
-    if (ticket->proofs.size == 0)
-        return false;
-
-    if (ticket->doc->controllers.size == 1 && ticket->proofs.size < 1)
-        return false;
-
-    if (ticket->doc->controllers.size > 1 && ticket->proofs.size < ticket->doc->multisig)
-        return false;
-
-    return true;
+    return ticket->proofs.size == (ticket->doc->controllers.size > 1 ? ticket->doc->multisig : 1) ? true : false;
 }
 
 bool TransferTicket_IsGenuine(TransferTicket *ticket)
@@ -536,15 +542,8 @@ bool TransferTicket_IsGenuine(TransferTicket *ticket)
     if (!DIDDocument_IsGenuine(ticket->doc))
         return false;
 
-    if (ticket->doc->controllers.size <= 1 && ticket->proofs.size != 1) {
-        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET,
-                "The signer count of one-controller DID's ticket is not only one.");
-        return false;
-    }
-
-    if (ticket->doc->controllers.size > 1 && ticket->proofs.size != ticket->doc->multisig) {
-        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET,
-                "The signer count of multi-controller DID's ticket mismatchs with multisig.");
+    if (!TransferTicket_IsQualified(ticket)) {
+        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Ticket is not qualified.");
         return false;
     }
 
@@ -613,7 +612,7 @@ const char *TransferTicket_GetProofType(TransferTicket *ticket, int index)
 
 DIDURL *TransferTicket_GetSignKey(TransferTicket *ticket, int index)
 {
-    if (!ticket || index <= 0) {
+    if (!ticket || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
@@ -655,5 +654,3 @@ const char *TransferTicket_GetProofSignature(TransferTicket *ticket, int index)
 
     return ticket->proofs.proofs[index].signatureValue;
 }
-
-

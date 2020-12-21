@@ -1031,7 +1031,7 @@ static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
 static DIDDocument *create_customized_document(DIDStore *store, const char *storepass,
         DID *did, DID **controllers, size_t size, DID *controller, int multisig)
 {
-    DIDDocument *document, *controller_doc;
+    DIDDocument *document;
     DIDDocumentBuilder *builder;
     int i;
 
@@ -2529,6 +2529,16 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
     if (!doc)
         return false;
 
+    if (Is_CustomizedDID(doc) && doc->controllers.size > 1 && !signkey) {
+        DIDError_Set(DIDERR_INVALID_KEY, "Multi-controller customized DID must have sign key to publish.");
+        goto errorExit;
+    }
+
+    if (!DIDDocument_IsQualified(doc)) {
+        DIDError_Set(DIDERR_NOT_GENUINE, "Did document is not qualified.");
+        goto errorExit;
+    }
+
     if (!DIDDocument_IsGenuine(doc)) {
         DIDError_Set(DIDERR_NOT_GENUINE, "Did document is not genuine.");
         goto errorExit;
@@ -2559,6 +2569,11 @@ bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
     } else {
         if (DIDDocument_IsDeactivated(resolve_doc)) {
             DIDError_Set(DIDERR_EXPIRED, "Did is already deactivated.");
+            goto errorExit;
+        }
+
+        if (Is_CustomizedDID(doc) && doc->controllers.size != resolve_doc->controllers.size) {
+            DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport publishing DID which is changed controller, please transfer it.");
             goto errorExit;
         }
 
@@ -2622,6 +2637,7 @@ bool DIDStore_TransferDID(DIDStore *store, const char *storepass, DID *did,
 {
     DIDDocument *resolve_doc = NULL, *doc = NULL;
     DocumentProof *proof;
+    bool bequals = false;
     int rc = -1, i;
 
     if (!store || !storepass || !*storepass || !did || !ticket || !signkey) {
@@ -2655,8 +2671,15 @@ bool DIDStore_TransferDID(DIDStore *store, const char *storepass, DID *did,
     //check ticket "to"
     for (i = 0; i < doc->proofs.size; i++) {
         proof = &doc->proofs.proofs[i];
-        if (!DID_Equals(&ticket->to, &proof->creater.did))
-            goto errorExit;
+        if (DID_Equals(&ticket->to, &proof->creater.did)) {
+            bequals = true;
+            break;
+        }
+    }
+
+    if (!bequals) {
+        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "The DID to receive ticket is not the document's signer.");
+        goto errorExit;
     }
 
     if (!DIDDocument_IsAuthenticationKey(doc, signkey))

@@ -878,7 +878,7 @@ static void test_diddoc_add_selfclaimed_credential(void)
     props[1].key = "passport";
     props[1].value = "S653258Z07";
 
-    rc = DIDDocumentBuilder_AddSelfClaimedCredential(builder, credid,
+    rc = DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid,
             types, 2, props, 2, DIDDocument_GetExpires(doc), NULL, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
@@ -1147,7 +1147,7 @@ static void test_diddoc_remove_service(void)
 
 static void test_diddoc_add_controller(void)
 {
-    DIDDocument *sealeddoc, *controllerdoc;
+    DIDDocument *controllerdoc;
     DIDDocumentBuilder *builder;
     int rc;
 
@@ -1161,13 +1161,29 @@ static void test_diddoc_add_controller(void)
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, &controllerdoc->did));
     CU_ASSERT_STRING_EQUAL("Unsupported add controller into normal DID.", DIDError_GetMessage());
 
-    sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
-    CU_ASSERT_PTR_NOT_NULL(sealeddoc);
+    CU_ASSERT_PTR_NULL(DIDDocumentBuilder_Seal(builder, storepass));
     DIDDocumentBuilder_Destroy(builder);
+}
 
-    CU_ASSERT_EQUAL(0, DIDDocument_GetControllerCount(sealeddoc));
+static void test_diddoc_remove_proof(void)
+{
+    DIDDocument *document;
+    DIDDocumentBuilder *builder;
+    DIDURL *creater;
 
-    DIDDocument_Destroy(sealeddoc);
+    creater = DIDDocument_GetProofCreater(doc, 0);
+    CU_ASSERT_PTR_NOT_NULL(creater);
+
+    builder = DIDDocument_Edit(doc, NULL);
+    CU_ASSERT_PTR_NOT_NULL(builder);
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveProof(builder, NULL));
+
+    document = DIDDocumentBuilder_Seal(builder, storepass);
+    DIDDocumentBuilder_Destroy(builder);
+    CU_ASSERT_PTR_NOT_NULL(document);
+    CU_ASSERT_TRUE(DIDDocument_IsValid(document));
+    CU_ASSERT_TRUE(DIDURL_Equals(creater, DIDDocument_GetProofCreater(document, 0)));
+    DIDDocument_Destroy(document);
 }
 
 static int diddoc_elem_test_suite_init(void)
@@ -1190,6 +1206,7 @@ static int diddoc_elem_test_suite_init(void)
         return -1;
     }
 
+    TestData_LoadIssuerDoc();
     did = DIDDocument_GetSubject(doc);
     if (!did) {
         TestData_Free();
@@ -1223,6 +1240,7 @@ static CU_TestInfo cases[] = {
     { "test_diddoc_add_service",                   test_diddoc_add_service               },
     { "test_diddoc_remove_service",                test_diddoc_remove_service            },
     { "test_diddoc_add_controller",                test_diddoc_add_controller            },
+    { "test_diddoc_remove_proof",                  test_diddoc_remove_proof              },
     { NULL,                                        NULL                                  }
 };
 

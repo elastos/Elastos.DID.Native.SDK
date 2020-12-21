@@ -112,7 +112,7 @@ DIDURL *Issuer_GetSignKey(Issuer *issuer)
     return &issuer->signkey;
 }
 
-static Credential *issuer_generate_credential(Issuer *issuer, DID *owner,
+Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
         DIDURL *credid, const char **types, size_t typesize, json_t *json,
         time_t expires, const char *storepass)
 {
@@ -145,7 +145,7 @@ static Credential *issuer_generate_credential(Issuer *issuer, DID *owner,
 
     //subject
     strcpy(cred->subject.id.idstring, owner->idstring);
-    cred->subject.properties = json;
+    cred->subject.properties = json_deep_copy(json);
 
     //set type
     cred->type.size = typesize;
@@ -196,6 +196,7 @@ Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *credid,
         const char **types, size_t typesize, Property *subject, int size,
         time_t expires, const char *storepass)
 {
+    Credential *cred;
     json_t *root;
     int i;
 
@@ -220,14 +221,17 @@ Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *credid,
         }
     }
 
-    return issuer_generate_credential(issuer, owner, credid, types, typesize, root,
+    cred = Issuer_Generate_Credential(issuer, owner, credid, types, typesize, root,
             expires, storepass);
+    json_decref(root);
+    return cred;
 }
 
 Credential *Issuer_CreateCredentialByString(Issuer *issuer, DID *owner,
         DIDURL *credid, const char **types, size_t typesize, const char *subject,
         time_t expires, const char *storepass)
 {
+    Credential *cred;
     json_t *root;
     json_error_t error;
 
@@ -243,6 +247,8 @@ Credential *Issuer_CreateCredentialByString(Issuer *issuer, DID *owner,
         return NULL;
     }
 
-    return issuer_generate_credential(issuer, owner, credid, types, typesize, root,
+    cred = Issuer_Generate_Credential(issuer, owner, credid, types, typesize, root,
             expires, storepass);
+    json_decref(root);
+    return cred;
 }
