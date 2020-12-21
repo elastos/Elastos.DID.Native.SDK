@@ -123,7 +123,7 @@ JNI_EXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
     return JNI_VERSION_1_4;
 }
 
-JNI_EXPORT jlong JNICALL Java_org_elastos_did_adapter_SPVAdapter_create(
+JNI_EXPORT jlong JNICALL Java_org_elastos_did_backend_SPVAdapter_create(
         JNIEnv *jenv, jclass jcls, jstring jWalletDir, jstring jWalletId,
         jstring jNetwork)
 {
@@ -168,7 +168,7 @@ JNI_EXPORT jlong JNICALL Java_org_elastos_did_adapter_SPVAdapter_create(
     return result;
 }
 
-JNI_EXPORT void JNICALL Java_org_elastos_did_adapter_SPVAdapter_destroy(
+JNI_EXPORT void JNICALL Java_org_elastos_did_backend_SPVAdapter_destroy(
         JNIEnv *jenv, jclass jcls, jlong jHandle)
 {
     (void)jenv;
@@ -178,7 +178,7 @@ JNI_EXPORT void JNICALL Java_org_elastos_did_adapter_SPVAdapter_destroy(
       SpvDidAdapter_Destroy((SpvDidAdapter *)jHandle);
 }
 
-JNI_EXPORT jboolean JNICALL Java_org_elastos_did_adapter_SPVAdapter_isAvailable(
+JNI_EXPORT jboolean JNICALL Java_org_elastos_did_backend_SPVAdapter_isAvailable(
         JNIEnv *jenv, jclass jcls, jlong jHandle)
 {
     SpvDidAdapter *handle = (SpvDidAdapter *)jHandle;
@@ -196,7 +196,7 @@ JNI_EXPORT jboolean JNICALL Java_org_elastos_did_adapter_SPVAdapter_isAvailable(
     return (jboolean)(result != false);
 }
 
-JNI_EXPORT void JNICALL Java_org_elastos_did_adapter_SPVAdapter_createIdTransaction(
+JNI_EXPORT void JNICALL Java_org_elastos_did_backend_SPVAdapter_createIdTransaction(
         JNIEnv *jenv, jclass jcls, jlong jHandle, jstring jPayload,
         jstring jMemo, jstring jPassword)
 {
