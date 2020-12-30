@@ -37,7 +37,7 @@
 #include "didstore.h"
 #include "credential.h"
 #include "didbackend.h"
-#include "credentialhistory.h"
+#include "credentialbiography.h"
 
 static const char *PresentationsType = "VerifiablePresentation";
 extern const char *ProofType;
@@ -962,51 +962,65 @@ Credential *Credential_Resolve(DIDURL *id, CredentialStatus *status, bool force)
     return DIDBackend_ResolveCredential(id, status, force);
 }
 
+bool Credential_ResolveRevocation(DIDURL *id, DID *issuer)
+{
+    if (!id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    return DIDBackend_ResolveRevocation(id, issuer);
+}
+
+CredentialBiography *Credential_ResolveBiography(DIDURL *id, DID *issuer)
+{
+    if (!id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    return DIDBackend_ResolveCredentialBiography(id, issuer);
+}
 bool Credential_WasDecleared(DIDURL *id)
 {
     Credential *credential;
-    CredentialHistory *history, _history;
-    bool decleared = false;
-    int i;
+    int status = -1;
 
     if (!id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    memset(&_history, 0, sizeof(_history));
-    history = DIDBackend_ResolveCredentialHistory(&_history, id);
-    if (!history)
+    credential = Credential_Resolve(id, &status, true);
+    if (!credential)
         return false;
 
-    for (i = 0; i < history->txinfos.size; i++) {
-        if (!strcmp(history->txinfos.infos[i].request.header.op, "declear")) {
-            decleared = true;
-            break;
-        }
-    }
-
-pointexit:
-    CredentialHistory_Destory(history);
-    return decleared;
+    Credential_Destroy(credential);
+    return true;
 }
 
-bool Credential_IsRevoked(DIDURL *id)
+bool Credential_IsRevoked(Credential *credential)
 {
-    Credential *credential;
-    int status;
-
-    if (!id) {
+    if (!credential) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    credential = Credential_Resolve(id, &status, false);
-    if (!credential && status == CredentialStatus_Revoked)
-        return true;
+    return Credential_ResolveRevocation(Credential_GetId(credential), Credential_GetIssuer(credential)) ||
+            Credential_ResolveRevocation(Credential_GetId(credential), Credential_GetOwner(credential));
+}
 
-    if (credential)
-        Credential_Destroy(credential);
+ssize_t Credential_List(DID *did, DIDURL **buffer, size_t size, int skip, int limit)
+{
+    if (!did || !buffer || size == 0 || skip < 0 || limit <= 0) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
 
-    return false;
+    if (limit > size) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Buffer to put credentials is smaller than 'limit' number.");
+        return -1;
+    }
+
+    return DIDBackend_ListCredentials(did, buffer, size, skip, limit);
 }

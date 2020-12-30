@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
         url = TESTNET;
 
     sprintf(cachedir, "%s%s", getenv("HOME"), "/.cache.did.elastos");
-    if (DIDBackend_InitializeDefault(url, cachedir) < 0) {
+    if (DIDBackend_InitializeDefault(NULL, url, cachedir) < 0) {
         fprintf(stderr, "Initial resolver failed. Error: %s\n", DIDError_GetMessage());
         goto cleanup;
     }

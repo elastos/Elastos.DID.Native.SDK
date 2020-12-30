@@ -59,8 +59,6 @@ int TestData_Init(bool dummy);
 
 void TestData_Deinit(void);
 
-DIDAdapter *TestData_GetAdapter(bool dummybackend);
-
 DIDStore *TestData_SetupStore(bool dummybackend);
 
 DIDStore *TestData_SetupTestStore(bool dummybackend);

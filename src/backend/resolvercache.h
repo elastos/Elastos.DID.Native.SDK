@@ -42,9 +42,9 @@ int ResolveCache_StoreDID(ResolveResult *result, DID *did);
 
 void ResolveCache_InvalidateDID(DID *did);
 
-int ResolverCache_LoadCredential(VcResolveResult *result, DIDURL *id, long ttl);
+CredentialBiography *ResolverCache_LoadCredential(DIDURL *id, long ttl);
 
-int ResolveCache_StoreCredential(VcResolveResult *result, DIDURL *id);
+int ResolveCache_StoreCredential(CredentialBiography *biography, DIDURL *id);
 
 void ResolveCache_InvalidateCredential(DIDURL *id);
 

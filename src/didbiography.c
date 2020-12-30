@@ -27,70 +27,70 @@
 #include "ela_did.h"
 #include "diderror.h"
 #include "diddocument.h"
-#include "didhistory.h"
+#include "didbiography.h"
 
-void DIDHistory_Destroy(DIDHistory *history)
+void DIDBiography_Destroy(DIDBiography *biography)
 {
-    if (!history)
+    if (!biography)
         return;
 
-    if (history->txinfos.infos) {
+    if (biography->txinfos.infos) {
         size_t i;
-        assert(history->txinfos.size > 0);
+        assert(biography->txinfos.size > 0);
 
-        for (i = 0; i < history->txinfos.size; i++)
-            DIDTransactionInfo_Destroy(&history->txinfos.infos[i]);
-        free(history->txinfos.infos);
+        for (i = 0; i < biography->txinfos.size; i++)
+            DIDTransactionInfo_Destroy(&biography->txinfos.infos[i]);
+        free(biography->txinfos.infos);
     }
-    free(history);
+    free(biography);
 }
 
-DID *DIDHistory_GetOwner(DIDHistory *history)
+DID *DIDBiography_GetOwner(DIDBiography *biography)
 {
-    if (!history) {
+    if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    return &history->did;
+    return &biography->did;
 }
 
-int DIDHistory_GetStatus(DIDHistory *history)
+int DIDBiography_GetStatus(DIDBiography *biography)
 {
-    if (!history) {
+    if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    return history->status;
+    return biography->status;
 }
 
-ssize_t DIDHistory_GetTransactionCount(DIDHistory *history)
+ssize_t DIDBiography_GetTransactionCount(DIDBiography *biography)
 {
-    if (!history) {
+    if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    return history->txinfos.size;
+    return biography->txinfos.size;
 }
 
-DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int index)
+DIDDocument *DIDBiography_GetDocumentByIndex(DIDBiography *biography, int index)
 {
     DIDDocument *doc;
 
-    if (!history) {
+    if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    if (!history->txinfos.infos) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "No transaction in history.");
+    if (!biography->txinfos.infos) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "No transaction in biography.");
         return NULL;
     }
 
-    if ((size_t)index >= history->txinfos.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in history.");
+    if ((size_t)index >= biography->txinfos.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in biography.");
         return NULL;
     }
 
@@ -100,7 +100,7 @@ DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int index)
         return NULL;
     }
 
-    if (DIDDocument_Copy(doc, history->txinfos.infos[index].request.doc) < 0) {
+    if (DIDDocument_Copy(doc, biography->txinfos.infos[index].request.doc) < 0) {
         DIDDocument_Destroy(doc);
         return NULL;
     }
@@ -108,47 +108,47 @@ DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int index)
     return doc;
 }
 
-const char *DIDHistory_GetTransactionIdByIndex(DIDHistory *history, int index)
+const char *DIDBiography_GetTransactionIdByIndex(DIDBiography *biography, int index)
 {
-    if (!history) {
+    if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    if (!history->txinfos.infos || (size_t)index >= history->txinfos.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in history.");
+    if (!biography->txinfos.infos || (size_t)index >= biography->txinfos.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in biography.");
         return NULL;
     }
 
-    return history->txinfos.infos[index].txid;
+    return biography->txinfos.infos[index].txid;
 }
 
-time_t DIDHistory_GetPublishedByIndex(DIDHistory *history, int index)
+time_t DIDBiography_GetPublishedByIndex(DIDBiography *biography, int index)
 {
-    if (!history) {
+    if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
-    if (!history->txinfos.infos || (size_t)index >= history->txinfos.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in history.");
+    if (!biography->txinfos.infos || (size_t)index >= biography->txinfos.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in biography.");
         return 0;
     }
 
-    return history->txinfos.infos[index].timestamp;
+    return biography->txinfos.infos[index].timestamp;
 }
 
-const char *DIDHistory_GetOperationByIndex(DIDHistory *history, int index)
+const char *DIDBiography_GetOperationByIndex(DIDBiography *biography, int index)
 {
-    if (!history) {
+    if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    if (!history->txinfos.infos || (size_t)index >= history->txinfos.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in history.");
+    if (!biography->txinfos.infos || (size_t)index >= biography->txinfos.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in biography.");
         return NULL;
     }
 
-    return history->txinfos.infos[index].request.header.op;
+    return biography->txinfos.infos[index].request.header.op;
 }

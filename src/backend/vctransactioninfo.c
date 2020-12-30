@@ -30,6 +30,7 @@
 #include "diddocument.h"
 #include "credential.h"
 #include "vctransactioninfo.h"
+#include "vcrequest.h"
 
 int CredentialTransaction_FromJson(CredentialTransaction *txinfo, json_t *json)
 {

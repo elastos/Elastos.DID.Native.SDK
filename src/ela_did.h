@@ -162,7 +162,7 @@ typedef struct Property {
  * a centralized registration authority.
  * It includes method specific string. (elastos:id:ixxxxxxxxxx).
  */
-typedef struct DID                  DID;
+typedef struct DID                     DID;
 /**
  * \~English
  * DID URL defines by the did-url rule, refers to a URL that begins with a DID
@@ -170,26 +170,26 @@ typedef struct DID                  DID;
  * identifies the resource to be located.
  * DIDURL includes DID and Url fragment by user defined.
  */
-typedef struct DIDURL               DIDURL;
+typedef struct DIDURL                   DIDURL;
 /**
  * \~English
  * Public keys are used for digital signatures, encryption and
  * other cryptographic operations, which are the basis for purposes such as
  * authentication or establishing secure communication with service endpoints.
  */
-typedef struct PublicKey            PublicKey;
+typedef struct PublicKey                PublicKey;
 /**
  * \~English
  * Credential is a set of one or more claims made by the same entity.
  * Credentials might also include an identifier and metadata to
  * describe properties of the credential.
  */
-typedef struct Credential           Credential;
+typedef struct Credential               Credential;
 /**
  * \~English
  * CredentialMetaData stores information about Credential except information in Credential.
  */
-typedef struct CredentialMetaData   CredentialMetaData;
+typedef struct CredentialMetaData       CredentialMetaData;
 /**
  * \~English
  * A Presentation can be targeted to a specific verifier by using a Linked Data
@@ -197,14 +197,14 @@ typedef struct CredentialMetaData   CredentialMetaData;
  * This also helps prevent a verifier from reusing a verifiable presentation as
  * their own.
  */
-typedef struct Presentation         Presentation;
+typedef struct Presentation             Presentation;
 /**
  * \~English
  * A service endpoint may represent any type of service the subject
  * wishes to advertise, including decentralized identity management services
  * for further discovery, authentication, authorization, or interaction.
  */
-typedef struct Service              Service;
+typedef struct Service                  Service;
 /**
  * \~English
  * A DID resolves to a DID Document. This is the concrete serialization of
@@ -214,43 +214,38 @@ typedef struct Service              Service;
  * credential and services. One document must be have only subject,
  * and at least one public key.
  */
-typedef struct DIDDocument          DIDDocument;
+typedef struct DIDDocument              DIDDocument;
 /**
  * \~English
  DIDMetaData is store for other information about DID except DIDDocument information.
  */
-typedef struct DIDMetaData          DIDMetaData;
+typedef struct DIDMetaData              DIDMetaData;
 /**
  * \~English
- DIDHistroy stores all did transactions from chain.
+ DIDBiography stores all did transactions from chain.
  */
-typedef struct DIDHistory           DIDHistory;
+typedef struct DIDBiography             DIDBiography;
+/**
+ * \~English
+ CredentialBiography stores valid transactions from chain, at most has two transaction.
+ */
+typedef struct CredentialBiography      CredentialBiography;
 /**
  * \~English
  * A DIDDocument Builder to modify DIDDocument elems.
  */
-typedef struct DIDDocumentBuilder   DIDDocumentBuilder;
+typedef struct DIDDocumentBuilder       DIDDocumentBuilder;
 /**
  * \~English
  * A issuer is the did to issue credential. Issuer includes issuer's did and
  * issuer's sign key.
  */
-typedef struct Issuer               Issuer;
+typedef struct Issuer                   Issuer;
 /**
  * \~English
  * DIDStore is local store for specified DID.
  */
-typedef struct DIDStore             DIDStore;
-/**
- * \~English
- * DIDAdapter is support method to create did transaction.
- */
-typedef struct DIDAdapter           DIDAdapter;
-/**
- * \~English
- * DIDResolver is support method to resolve did document from chain.
- */
-typedef struct DIDResolver          DIDResolver;
+typedef struct DIDStore                 DIDStore;
 
 #ifndef DISABLE_JWT
     /**
@@ -262,7 +257,7 @@ typedef struct DIDResolver          DIDResolver;
      * \~English
      * JWSBuilder holds the DIDDocument to parse jws.
      */
-    typedef struct JWSParser           JWSParser;
+    typedef struct JWSParser            JWSParser;
 #endif
 
 /**
@@ -311,68 +306,25 @@ typedef DIDDocument* DIDLocalResovleHandle(DID *did);
 
 /**
  * \~English
- * DIDAdapter is support method to create did transaction.
+ * The function that create id transaction to chain（publish did, declear credential or revoke credential).
+ * @param
+ *      payload              [in] The content of id transaction.
+ * @param
+ *      memo                 [in] Memo string.
+ * @return
+ *      If no error occurs, return true. Otherwise, return false.
  */
-struct DIDAdapter {
-    /**
-     * \~English
-     * The function that create id transaction to chain.
-     * @param
-     *      payload              [in] The content of id transaction to publish.
-     * @param
-     *      memo                 [in] Memo string.
-     * @return
-     *      If no error occurs, return true. Otherwise, return false.
-     */
-    bool (*CreateIdRequest) (DIDAdapter *adapter, const char *payload, const char *memo);
-
-    /**
-     * \~English
-     * The function that create credential transaction to chain.
-     * @param
-     *      payload              [in] The content of id transaction to publish.
-     * @param
-     *      memo                 [in] Memo string.
-     * @return
-     *      If no error occurs, return true. Otherwise, return false.
-     */
-    bool (*CreateCredentialRequest) (DIDAdapter *adapter, const char *payload, const char *memo);
-};
-
+typedef bool CreateIdTransaction_Callback(const char *payload, const char *memo);
 /**
  * \~English
- * DIDResolver is support method to resolve did document from chain.
- * User need to implement 'resolve' function.
+ * The function that resolve id data from chain.
+ * @param
+ *      request              [in] The rpc request to resolve.
+ * @return
+ *      If no error occurs, return resolved data.
+ *      Otherwise, return NULL.
  */
-struct DIDResolver {
-    /**
-     * \~English
-     * The function that resolve id data from chain.
-     * @param
-     *      did                  [in] Specified DID.
-     * @param
-     *      all                  [in] Resolve all transaction data or the lastest one.
-     *                           all = 1: all transaction; all = 0: only the lastest transaction.
-     * @return
-     *      If no error occurs, return transaction id.
-     *      Otherwise, return NULL.
-     */
-    const char* (*ResolveDID) (DIDResolver* resolver, const char *did, int all);
-
-    /**
-     * \~English
-     * The function that resolve credential data from chain.
-     * @param
-     *      id                  [in] Specified DID.
-     * @param
-     *      all                  [in] Resolve all transaction data or the lastest one.
-     *                           all = 1: all transaction; all = 0: only the lastest transaction.
-     * @return
-     *      If no error occurs, return transaction id.
-     *      Otherwise, return NULL.
-     */
-    const char* (*ResolveCredential) (DIDResolver *resolver, const char *id, int all);
-};
+typedef const char* Resolve_Callback(const char *request);
 
 /******************************************************************************
  * Log configuration.
@@ -569,11 +521,11 @@ DID_API DIDDocument *DID_Resolve(DID *did, bool force);
  * @param
  *      did                      [in] The handle of DID.
  * @return
- *      when no error occurs, it returns the handle to DIDHistory instance.
+ *      when no error occurs, it returns the handle to DIDBiography instance.
  *      otherwise, it returns NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API DIDHistory *DID_ResolveHistory(DID *did);
+DID_API DIDBiography *DID_ResolveBiography(DID *did);
 
 /**
  * \~English
@@ -1002,49 +954,49 @@ DID_API double CredentialMetaData_GetExtraAsDouble(CredentialMetaData *metadata,
         const char *key);
 
 /******************************************************************************
- * DIDHistory
+ * DIDBiography
  *****************************************************************************/
 
 /**
  * \~English
- * Get owner of DID resolved history.
+ * Get owner of DID resolved biography.
  *
  * @param
- *      history                       [in] The handle to DIDHistory.
+ *      biography                       [in] The handle to DIDBiography.
  * @return
  *      If no error occurs, return the handle to DID. Destroy DID after finishing use.
  *      Otherwise, return NULL.
  */
-DID_API DID *DIDHistory_GetOwner(DIDHistory *history);
+DID_API DID *DIDBiography_GetOwner(DIDBiography *biography);
 
 /**
  * \~English
  * Get DID status of DID.
  *
  * @param
- *      history                       [in] The handle to DIDHistory.
+ *      biography                       [in] The handle to DIDBiography.
  * @return
 *      If no error occurs, return DID status. Otherwise, return -1.
  */
-DID_API int DIDHistory_GetStatus(DIDHistory *history);
+DID_API int DIDBiography_GetStatus(DIDBiography *biography);
 
 /**
  * \~English
  * Get DID transaction count.
  *
  * @param
- *      history                       [in] The handle to DIDHistory.
+ *      biography                       [in] The handle to DIDBiography.
  * @return
 *      If no error occurs, return count. Otherwise, return -1.
  */
-DID_API ssize_t DIDHistory_GetTransactionCount(DIDHistory *history);
+DID_API ssize_t DIDBiography_GetTransactionCount(DIDBiography *biography);
 
 /**
  * \~English
  * Get DID Document from 'index' transaction.
  *
  * @param
- *      history                       [in] The handle to DIDHistory.
+ *      biography                     [in] The handle to DIDBiography.
  * @param
  *      index                         [in] The index of transaction.
  * @return
@@ -1052,57 +1004,183 @@ DID_API ssize_t DIDHistory_GetTransactionCount(DIDHistory *history);
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API DIDDocument *DIDHistory_GetDocumentByIndex(DIDHistory *history, int index);
+DID_API DIDDocument *DIDBiography_GetDocumentByIndex(DIDBiography *biography, int index);
 
 /**
  * \~English
  * Get transaction id from 'index' transaction.
  *
  * @param
- *      history                       [in] The handle to DIDHistory.
+ *      biography                     [in] The handle to DIDBiography.
  * @param
  *      index                         [in] The index of transaction.
  * @return
  *      If no error occurs, return transaction.
  *      Otherwise, return NULL.
  */
-DID_API const char *DIDHistory_GetTransactionIdByIndex(DIDHistory *history, int index);
+DID_API const char *DIDBiography_GetTransactionIdByIndex(DIDBiography *biography, int index);
 
 /**
  * \~English
  * Get published time from 'index' transaction.
  *
  * @param
- *      history                       [in] The handle to DIDHistory.
+ *      biography                     [in] The handle to DIDBiography.
  * @param
  *      index                         [in] The index of transaction.
  * @return
 *      If no error occurs, return published time. Otherwise, return 0.
  */
-DID_API time_t DIDHistory_GetPublishedByIndex(DIDHistory *history, int index);
+DID_API time_t DIDBiography_GetPublishedByIndex(DIDBiography *biography, int index);
 
 /**
  * \~English
  * Get operation of 'index' transaction. Operation: 'created', 'update' and 'deactivated'.
  *
  * @param
- *      history                       [in] The handle to DIDHistory.
+ *      biography                     [in] The handle to DIDBiography.
  * @param
  *      index                         [in] The index of transaction.
  * @return
  *       If no error occurs, return operation string.
  *       Otherwise, return -1.
  */
-DID_API const char *DIDHistory_GetOperationByIndex(DIDHistory *history, int index);
+DID_API const char *DIDBiography_GetOperationByIndex(DIDBiography *biography, int index);
 
 /**
  * \~English
- * Destroy DIDHistory.
+ * Destroy DIDBiography.
  *
  * @param
- *      history               [in] A handle to DIDHistory.
+ *      biography               [in] A handle to DIDBiography.
  */
-DID_API void DIDHistory_Destroy(DIDHistory *history);
+DID_API void DIDBiography_Destroy(DIDBiography *biography);
+
+/******************************************************************************
+ * CredentialBiography
+ *****************************************************************************/
+
+/**
+ * \~English
+ * Get id of credential biography.
+ *
+ * @param
+ *      biography                   [in] The handle to CredentialBiography.
+ * @return
+ *      If no error occurs, return the handle to DIDURL. Destroy the returned value
+ *      after finishing use. Otherwise, return NULL.
+ */
+DID_API DIDURL *CredentialBiography_GetId(CredentialBiography *biography);
+
+/**
+ * \~English
+ * Get owner of credential biography.
+ *
+ * @param
+ *      biography                   [in] The handle to CredentialBiography.
+ * @return
+ *      If no error occurs, return the handle to DID. Destroy the returned value
+ *      after finishing use. Otherwise, return NULL.
+ */
+DID_API DID *CredentialBiography_GetOwner(CredentialBiography *biography);
+
+/**
+ * \~English
+ * Get credential status on chain.
+ *
+ * @param
+ *      biography                   [in] The handle to CredentialBiography.
+ * @return
+*      If no error occurs, return credential status. Otherwise, return -1.
+ */
+DID_API int CredentialBiography_GetStatus(CredentialBiography *biography);
+
+/**
+ * \~English
+ * Get Credential transaction count.
+ *
+ * @param
+ *      biography                    [in] The handle to CredentialBiography.
+ * @return
+*      If no error occurs, return count. Otherwise, return -1.
+ */
+DID_API ssize_t CredentialBiography_GetTransactionCount(CredentialBiography *biography);
+
+/**
+ * \~English
+ * Get Credential from 'index' transaction.
+ *
+ * @param
+ *      biography                     [in] The handle to CredentialBiography.
+ * @param
+ *      index                         [in] The index of transaction.
+ * @return
+ *      If no error occurs, return the handle to Credential. Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API Credential *CredentialBiography_GetCredentialByIndex(CredentialBiography *biography, int index);
+
+/**
+ * \~English
+ * Get transaction id from 'index' transaction.
+ *
+ * @param
+ *      biography                     [in] The handle to CredentialBiography.
+ * @param
+ *      index                         [in] The index of transaction.
+ * @return
+ *      If no error occurs, return transaction id string. Otherwise, return NULL.
+ */
+DID_API const char *CredentialBiography_GetTransactionIdByIndex(CredentialBiography *biography, int index);
+
+/**
+ * \~English
+ * Get published time from 'index' transaction.
+ *
+ * @param
+ *      biography                     [in] The handle to CredentialBiography.
+ * @param
+ *      index                         [in] The index of transaction.
+ * @return
+*      If no error occurs, return published time. Otherwise, return 0.
+ */
+DID_API time_t CredentialBiography_GetPublishedByIndex(CredentialBiography *biography, int index);
+
+/**
+ * \~English
+ * Get operation of 'index' transaction. Operation: 'declear' and 'revoke'.
+ *
+ * @param
+ *      biography                     [in] The handle to CredentialBiography.
+ * @param
+ *      index                         [in] The index of transaction.
+ * @return
+ *       If no error occurs, return operation string.
+ *       Otherwise, return NULL.
+ */
+DID_API const char *CredentialBiography_GetOperationByIndex(CredentialBiography *biography, int index);
+
+/**
+ * \~English
+ * Get signkey of 'index' transaction.
+ *
+ * @param
+ *      biography                     [in] The handle to CredentialBiography.
+ * @param
+ *      index                         [in] The index of transaction.
+ * @return
+ *       If no error occurs, return the handle to DIDURL. Otherwise, return NULL.
+ */
+DID_API DIDURL *CredentialBiography_GetTransactionSignkeyByIndex(CredentialBiography *biography, int index);
+
+/**
+ * \~English
+ * Destroy CredentialBiography.
+ *
+ * @param
+ *      biography               [in] A handle to CredentialBiography.
+ */
+DID_API void CredentialBiography_Destroy(CredentialBiography *biography);
 
 /******************************************************************************
  * DIDDocument
@@ -2476,6 +2554,33 @@ DID_API Credential *Credential_Resolve(DIDURL *id, CredentialStatus *status, boo
 
 /**
  * \~English
+ * Check if the credential is revoked by the specified DID.
+ *
+ * @param
+ *      id                     [in] The id of credential to resolve.
+ * @param
+ *      did                    [in] The handle to DID.
+ * @return
+ *      If the credential is revoked by did, return true. Otherwise, return false.
+ */
+DID_API bool Credential_ResolveRevocation(DIDURL *id, DID *did);
+
+/**
+ * \~English
+ * Resolve all Credential transactions.
+ *
+ * @param
+ *      id                     [in] The id of credential to resolve.
+ * @param
+ *      issuer                 [in] The handle to DID.
+ * @return
+ *      If the credential has valid transactions, return the handle to CredentialBiography.
+ *      Otherwise, return NULL.
+ */
+DID_API CredentialBiography *Credential_ResolveBiography(DIDURL *id, DID *issuer);
+
+/**
+ * \~English
  * Indicate the credential was ever decleared in the chain. Whatever the current status of
  * credetial is.
  *
@@ -2492,12 +2597,32 @@ DID_API bool Credential_WasDecleared(DIDURL *id);
  * Indicate the credential is revoked or not.
  *
  * @param
- *      id                     [in] The id of credential to resolve.
+ *      credential             [in] The handle of credential.
  * @return
  *      If the returned value is true, the credential is revoked on the chain.
  *      Otherwise, the credential is not revoked.
  */
-DID_API bool Credential_IsRevoked(DIDURL *id);
+DID_API bool Credential_IsRevoked(Credential *credential);
+
+/**
+ * \~English
+ * Get credentials owned by did.
+ *
+ * @param
+ *      did                      [in] The handle of DID.
+ * @param
+ *      buffer                   [out] The buffer to store credentials' id.
+ * @param
+ *      size                     [in] The size of buffer.
+ * @param
+ *      skip                     [in] The index of beginning credential.
+ * @param
+ *      limit                    [in] The size of credentials to listed.
+ * @return
+ *      If no error occurs, return the size of credentials. Remember: destory every 'DIDURL'
+ *      object in buffer. Otherwise, return -1.
+ */
+DID_API ssize_t Credential_List(DID *did, DIDURL **buffer, size_t size, int skip, int limit);
 
 /**
  * \~English
@@ -2638,19 +2763,6 @@ DID_API DIDURL *Issuer_GetSignKey(Issuer *issuer);
  *      If no error occurs, return the handle to DID Store. Otherwise, return NULL.
  */
 DID_API DIDStore* DIDStore_Open(const char *root);
-
-/**
- * \~English
- * Set DIDAdapter to DIDStore.
- *
- * @param
- *      store                 [in] The path of DIDStore's root.
- * @param
- *      adapter               [in] The handle to publish did context to chain.
- * @return
- *      If no error occurs, return 0. Otherwise, return -1.
- */
-DID_API int DIDStore_SetDIDAdapter(DIDStore *store, DIDAdapter *adapter);
 
 /**
  * \~English
@@ -3545,29 +3657,35 @@ DID_API bool Presentation_IsValid(Presentation *pre);
 
 /**
  * \~English
- * Initialize DIDBackend to resolve by url.
+ * Initialize DIDBackend by url.
  *
  * @param
- *      url              [in] The URL string.
+ *      createtransaction  [in] The method to create id transaction.
  * @param
- *      cachedir         [in] The directory for cache.
+ *      url                [in] The URL string.
+ * @param
+ *      cachedir           [in] The directory for cache.
  * @return
  *      0 on success, -1 if an error occurred.
  */
-DID_API int DIDBackend_InitializeDefault(const char *url, const char *cachedir);
+DID_API int DIDBackend_InitializeDefault(CreateIdTransaction_Callback *createtransaction,
+        const char *url, const char *cachedir);
 
 /**
  * \~English
- * Initialize DIDBackend to resolve by DIDResolver.
+ * Initialize DIDBackend.
  *
  * @param
- *      resolver          [in] The handle to DIDResolver.
+ *      createtransaction  [in] The method to create id transaction.
+ * @param
+ *      resolve           [in] The method to resolve.
  * @param
  *      cachedir          [in] The directory for cache.
  * @return
  *      0 on success, -1 if an error occurred.
  */
-DID_API int DIDBackend_Initialize(DIDResolver *resolver, const char *cachedir);
+DID_API int DIDBackend_Initialize(CreateIdTransaction_Callback *createtransaction,
+        Resolve_Callback *resolve, const char *cachedir);
 
 /**
  * \~English

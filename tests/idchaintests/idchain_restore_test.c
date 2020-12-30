@@ -123,7 +123,7 @@ static void test_idchain_restore(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
-    DIDBackend_InitializeDefault(resolver, cachedir);
+    DIDBackend_InitializeDefault(NULL, resolver, cachedir);
 
     rc = DIDStore_InitPrivateIdentity(store, storepass, TestData_LoadRestoreMnemonic(),
         "secret", language, true);
@@ -189,7 +189,7 @@ static void test_sync_with_localmodification1(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
-    DIDBackend_InitializeDefault(resolver, cachedir);
+    DIDBackend_InitializeDefault(NULL, resolver, cachedir);
 
     rc = DIDStore_InitPrivateIdentity(store, storepass, TestData_LoadRestoreMnemonic(),
         "secret", language, true);
@@ -285,7 +285,7 @@ static void test_sync_with_localmodification2(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
-    DIDBackend_InitializeDefault(resolver, cachedir);
+    DIDBackend_InitializeDefault(NULL, resolver, cachedir);
 
     rc = DIDStore_InitPrivateIdentity(store, storepass, TestData_LoadRestoreMnemonic(),
         "secret", language, true);

@@ -9,28 +9,23 @@
 #include "spvadapter.h"
 #include "didtest_adapter.h"
 
-typedef struct TestDIDAdaptor {
-    DIDAdapter base;
-    SpvDidAdapter *impl;
-    GetPasswordCallback *passwordCallback;
-    char *walletDir;
-    char *walletId;
-} TestDIDAdaptor;
+static SpvDidAdapter *gSpvAdapter;
+static GetPasswordCallback *gPasswordCallback;
+static char *gWalletDir;
+static char *gWalletId;
 
-static bool TestDIDAdaptor_CreateIdTransaction(DIDAdapter *_adapter, const char *payload, const char *memo)
+bool TestDIDAdapter_CreateIdTransaction(const char *payload, const char *memo)
 {
-    TestDIDAdaptor *adapter = (TestDIDAdaptor*)_adapter;
     const char *password;
 
-    if (!adapter || !payload)
-        return NULL;
+    if (!payload)
+        return false;
 
-    password = adapter->passwordCallback((const char *)adapter->walletDir,
-            (const char *)adapter->walletId);
+    password = gPasswordCallback((const char *)gWalletDir, (const char *)gWalletId);
 
     printf("Waiting for wallet available");
     while (true) {
-        if (SpvDidAdapter_IsAvailable(adapter->impl)) {
+        if (SpvDidAdapter_IsAvailable(gSpvAdapter)) {
             printf(" OK\n");
             break;
         } else {
@@ -39,58 +34,41 @@ static bool TestDIDAdaptor_CreateIdTransaction(DIDAdapter *_adapter, const char 
         }
     }
 
-    return SpvDidAdapter_CreateIdTransaction(adapter->impl, payload, memo, password);
+    return SpvDidAdapter_CreateIdTransaction(gSpvAdapter, payload, memo, password);
 }
 
-static bool TestDIDAdaptor_CreateCredentialTransaction(DIDAdapter *_adapter, const char *payload, const char *memo)
-{
-    return false;
-}
-
-DIDAdapter *TestDIDAdapter_Create(const char *walletDir, const char *walletId,
+int TestDIDAdapter_Init(const char *walletDir, const char *walletId,
         const char *network, GetPasswordCallback *callback)
 {
-    TestDIDAdaptor *adapter;
     const char *password;
 
     if (!walletDir || !walletId || !callback)
-        return NULL;
+        return -1;
 
-    adapter = (TestDIDAdaptor*)calloc(1, sizeof(TestDIDAdaptor));
-    if (!adapter)
-        return NULL;
+    gSpvAdapter = SpvDidAdapter_Create(walletDir, walletId, network);
+    if (!gSpvAdapter)
+        return -1;
 
-    adapter->base.CreateIdRequest = TestDIDAdaptor_CreateIdTransaction;
-    adapter->base.CreateCredentialRequest = TestDIDAdaptor_CreateCredentialTransaction;
-
-    adapter->impl = SpvDidAdapter_Create(walletDir, walletId, network);
-    if (!adapter->impl) {
-        free(adapter);
-        return NULL;
-    }
-
-    adapter->passwordCallback = callback;
-    adapter->walletDir = strdup(walletDir);
-    adapter->walletId = strdup(walletId);
-
-    return (DIDAdapter*)adapter;
+    gPasswordCallback = callback;
+    gWalletDir = strdup(walletDir);
+    gWalletId = strdup(walletId);
+    return 0;
 }
 
-void TestDIDAdapter_Destroy(DIDAdapter *_adapter)
+void TestDIDAdapter_Cleanup(void)
 {
-    TestDIDAdaptor *adapter = (TestDIDAdaptor*)_adapter;
+    gSpvAdapter = NULL;
+    gPasswordCallback = NULL;
 
-    if (!adapter)
-        return;
+    if (gWalletDir) {
+        free((void*)gWalletDir);
+        gWalletDir = NULL;
+    }
 
-    if (adapter->impl)
-        SpvDidAdapter_Destroy(adapter->impl);
-
-    free(adapter->walletDir);
-    free(adapter->walletId);
-
-    free(adapter);
-    adapter = NULL;
+    if (gWalletId) {
+        free((void*)gWalletId);
+        gWalletId = NULL;
+    }
 }
 
 

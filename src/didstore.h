@@ -42,7 +42,6 @@ extern "C" {
 
 struct DIDStore {
     char root[PATH_MAX];
-    DIDBackend backend;
 };
 
 int DIDStore_StoreDIDMetaData(DIDStore *store, DIDMetaData *meta, DID *did);

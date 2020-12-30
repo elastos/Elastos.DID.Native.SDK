@@ -248,14 +248,14 @@ void DID_Destroy(DID *did)
     }
 }
 
-DIDHistory *DID_ResolveHistory(DID *did)
+DIDBiography *DID_ResolveBiography(DID *did)
 {
     if (!did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    return DIDBackend_ResolveDIDHistory(did);
+    return DIDBackend_ResolveDIDBiography(did);
 }
 
 DIDDocument *DID_Resolve(DID *did, bool force)

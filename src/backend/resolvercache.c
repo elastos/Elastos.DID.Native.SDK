@@ -31,6 +31,7 @@
 #include "common.h"
 #include "did.h"
 #include "resolvercache.h"
+#include "credentialbiography.h"
 
 static char rootpath[PATH_MAX] = {0};
 
@@ -152,58 +153,58 @@ void ResolveCache_InvalidateDID(DID *did)
 
 }
 
-int ResolverCache_LoadCredential(VcResolveResult *result, DIDURL *id, long ttl)
+CredentialBiography *ResolverCache_LoadCredential(DIDURL *id, long ttl)
 {
+    CredentialBiography *biography;
     char path[PATH_MAX], buffer[ELA_MAX_DIDURL_LEN];
     const char *data;
     struct stat s;
     time_t curtime;
     json_t *root;
     json_error_t error;
-    int rc, size;
+    int size;
 
-    assert(result);
     assert(id);
     assert(ttl >= 0);
 
     size = snprintf(buffer, ELA_MAX_DIDURL_LEN, "%s_%s", id->did.idstring, id->fragment);
     if (size < 0 || size > sizeof(buffer)) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize the name for credential cache failed.");
-        return -1;
+        return NULL;
     }
 
     if (get_file(path, 0, 2, rootpath, buffer) == -1)
-        return -1;
+        return NULL;
 
     //check the lasted modify time
     if (stat(path, &s) < 0)
-        return -1;
+        return NULL;
 
     time(&curtime);
     if (curtime - s.st_mtime > ttl)
-        return -1;
+        return NULL;
 
     data = load_file(path);
     if (!data)
-        return -1;
+        return NULL;
 
     root = json_loads(data, JSON_COMPACT, &error);
     free((void*)data);
     if (!root)
-        return -1;
+        return NULL;
 
-    rc = VcResolveResult_FromJson(result, root, false);
+    biography = CredentialBiography_FromJson(root);
     json_decref(root);
-    return rc;
+    return biography;
 }
 
-int ResolveCache_StoreCredential(VcResolveResult *result, DIDURL *id)
+int ResolveCache_StoreCredential(CredentialBiography *biography, DIDURL *id)
 {
     char path[PATH_MAX], buffer[ELA_MAX_DIDURL_LEN];
     const char *data;
     int rc, size;
 
-    assert(result);
+    assert(biography);
     assert(id);
 
     size = snprintf(buffer, ELA_MAX_DIDURL_LEN, "%s_%s", id->did.idstring, id->fragment);
@@ -217,7 +218,7 @@ int ResolveCache_StoreCredential(VcResolveResult *result, DIDURL *id)
         return -1;
     }
 
-    data = VcResolveResult_ToJson(result);
+    data = Credentialbiography_ToJson(biography);
     if (!data) {
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Serialize the credential resolve result to json failed.");
         return -1;

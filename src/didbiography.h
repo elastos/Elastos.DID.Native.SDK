@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Elastos Foundation
+ * Copyright (c) 2019 Elastos Foundation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,22 +20,36 @@
  * SOFTWARE.
  */
 
-#include <string.h>
-#include <stdlib.h>
+#ifndef __DIDBiography_H__
+#define __DIDBiography_H__
 
 #include "ela_did.h"
-#include "diderror.h"
-#include "credentialhistory.h"
+#include "didtransactioninfo.h"
 
-void CredentialHistory_Destory(CredentialHistory *history)
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum DIDStatus
 {
-    size_t i;
+    DIDStatus_Valid = 0,
+    DIDStatus_Expired,
+    DIDStatus_Deactivated,
+    DIDStatus_NotFound
+} DIDStatus;
 
-    if (!history)
-        return;
+struct DIDBiography {
+    DID did;
+    DIDStatus status;
 
-    for (i = 0; i < history->txinfos.size; i++)
-        CredentialTransaction_Destroy(&history->txinfos.infos[i]);
+    struct {
+        size_t size;
+        DIDTransactionInfo *infos;
+    } txinfos;
+};
 
-    memset(history, 0, sizeof(CredentialHistory));
+#ifdef __cplusplus
 }
+#endif
+
+#endif //__DIDBiography_H__

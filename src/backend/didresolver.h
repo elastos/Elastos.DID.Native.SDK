@@ -31,14 +31,9 @@ extern "C" {
 
 #define URL_LEN              512
 
-typedef struct DefaultResolver {
-    DIDResolver base;
-    const char url[URL_LEN];
-} DefaultResolver;
+int DefaultResolve_Init(const char *url);
 
-DIDResolver *DefaultResolver_Create(const char *url);
-
-void DefaultResolver_Destroy(DIDResolver *resolver);
+const char *DefaultResolve_Resolve(const char *request);
 
 #ifdef __cplusplus
 }

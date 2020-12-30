@@ -20,9 +20,10 @@
  * SOFTWARE.
  */
 
-#ifndef __CREDENTIALHISTORY_H__
-#define __CREDENTIALHISTORY_H__
+#ifndef __CredentialBiography_H__
+#define __CredentialBiography_H__
 
+#include <jansson.h>
 #include "ela_did.h"
 #include "vctransactioninfo.h"
 
@@ -30,7 +31,7 @@
 extern "C" {
 #endif
 
-struct CredentialHistory {
+struct CredentialBiography {
     DIDURL id;
     CredentialStatus status;
 
@@ -40,12 +41,14 @@ struct CredentialHistory {
     } txinfos;
 };
 
-typedef struct CredentialHistory CredentialHistory;
+CredentialBiography *CredentialBiography_FromJson(json_t *json);
 
-void CredentialHistory_Destory(CredentialHistory *history);
+const char *Credentialbiography_ToJson(CredentialBiography *biography);
+
+void CredentialBiography_Free(CredentialBiography *biography);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //__CREDENTIALHISTORY_H__
+#endif //__CredentialBiography_H__

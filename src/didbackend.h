@@ -24,38 +24,36 @@
 #define __DIDBACKEND_H__
 
 #include "ela_did.h"
-#include "credentialhistory.h"
+#include "credentialbiography.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct DIDBackend {
-    DIDAdapter adapter;
-} DIDBackend;
+bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *storepass);
 
-bool DIDBackend_CreateDID(DIDBackend *backend, DIDDocument *document,
-        DIDURL *signkey, const char *storepass);
+bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *storepass);
 
-bool DIDBackend_UpdateDID(DIDBackend *backend, DIDDocument *document,
-        DIDURL *signkey, const char *storepass);
-
-bool DIDBackend_DeactivateDID(DIDBackend *backend, DID *did,
-        DIDURL *signkey, const char *storepass);
+bool DIDBackend_DeactivateDID(DID *did, DIDURL *signkey, const char *storepass);
 
 DIDDocument *DIDBackend_ResolveDID(DID *did, bool force);
 
-DIDHistory *DIDBackend_ResolveDIDHistory(DID *did);
+DIDBiography *DIDBackend_ResolveDIDBiography(DID *did);
 
-bool DIDBackend_DeclearCredential(DIDBackend *backend, Credential *vc, DIDURL *signkey,
+bool DIDBackend_DeclearCredential(Credential *vc, DIDURL *signkey,
         DIDDocument *document, const char *storepass);
 
-bool DIDBackend_RevokeCredential(DIDBackend *backend, DIDURL *credid, DIDURL *signkey,
+bool DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey,
         DIDDocument *document,  const char *storepass);
 
 Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force);
 
-CredentialHistory *DIDBackend_ResolveCredentialHistory(CredentialHistory *history, DIDURL *id);
+bool DIDBackend_ResolveRevocation(DIDURL *id, DID *issuer);
+
+CredentialBiography *DIDBackend_ResolveCredentialBiography(DIDURL *id, DID *issuer);
+
+ssize_t DIDBackend_ListCredentials(DID *did, DIDURL **buffer, size_t size,
+        int skip, int limit);
 
 #ifdef __cplusplus
 }

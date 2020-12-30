@@ -226,15 +226,11 @@ static void test_didstore_initial_error(void)
     char _path[PATH_MAX];
     const char *storePath;
     DIDStore *store;
-    DIDAdapter *adapter;
 
     storePath = get_store_path(_path, "DIDStore");
     store = DIDStore_Open(storePath);
     CU_ASSERT_PTR_NOT_NULL(store);
     DIDStore_Close(store);
-
-    adapter = TestData_GetAdapter(true);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(adapter);
 
     store = DIDStore_Open("");
     CU_ASSERT_PTR_NULL(store);
