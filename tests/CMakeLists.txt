@@ -52,7 +52,6 @@ file(GLOB ISSUER-TESTS "issuertests/*.c")
 file(GLOB HDKEY-TESTS "hdkeytests/*.c")
 file(GLOB JWT-TESTS "jwttests/*.c")
 file(GLOB VCCHAIN-TESTS "vcchaintests/*.c")
-file(GLOB TESTADAPTER-TESTS "testadapter/*.c")
 
 set(SRC
     tests.c
@@ -66,8 +65,7 @@ set(SRC
     ${ISSUER-TESTS}
     ${HDKEY-TESTS}
     ${JWT-TESTS}
-    ${VCCHAIN-TESTS}
-    ${TESTADAPTER-TESTS})
+    ${VCCHAIN-TESTS})
 
 if (NOT ENABLE_SHARED)
     set(STATIC_LIBS
