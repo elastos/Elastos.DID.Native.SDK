@@ -336,7 +336,7 @@ static ssize_t listvcs_from_backend(DID *did, DIDURL **buffer, size_t size, int 
 
     assert(buffer);
     assert(did);
-    assert(size == 0);
+    assert(size > 0);
     assert(skip >= 0);
     assert(limit > 0);
 
