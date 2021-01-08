@@ -242,8 +242,8 @@ Credential *CredentialBiography_GetCredentialByIndex(CredentialBiography *biogra
         return NULL;
     }
 
-    if (index >= 2) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than two, please check index.");
+    if (index >= biography->txs.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than transactions' size, please check index.");
         return NULL;
     }
 
@@ -272,8 +272,8 @@ const char *CredentialBiography_GetTransactionIdByIndex(CredentialBiography *bio
         return NULL;
     }
 
-    if (index >= 2) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than two, please check index.");
+    if (index >= biography->txs.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than transactions' size, please check index.");
         return NULL;
     }
 
@@ -287,8 +287,8 @@ time_t CredentialBiography_GetPublishedByIndex(CredentialBiography *biography, i
         return 0;
     }
 
-    if (index >= 2) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than two, please check index.");
+    if (index >= biography->txs.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than transactions' size, please check index.");
         return 0;
     }
 
@@ -302,8 +302,8 @@ const char *CredentialBiography_GetOperationByIndex(CredentialBiography *biograp
         return NULL;
     }
 
-    if (index >= 2) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than two, please check index.");
+    if (index >= biography->txs.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than transactions' size, please check index.");
         return NULL;
     }
 
@@ -317,8 +317,8 @@ DIDURL *CredentialBiography_GetTransactionSignkeyByIndex(CredentialBiography *bi
         return NULL;
     }
 
-    if (index >= 2) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than two, please check index.");
+    if (index >= biography->txs.size) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than transactions' size, please check index.");
         return NULL;
     }
 
