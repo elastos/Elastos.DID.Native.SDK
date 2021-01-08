@@ -19,21 +19,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef __DUMMY_ADAPTER_H__
-#define __DUMMY_ADAPTER_H__
+
+#ifndef __DIDBiography_H__
+#define __DIDBiography_H__
+
+#include "ela_did.h"
+#include "didtransactioninfo.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "ela_did.h"
+typedef enum DIDStatus
+{
+    DIDStatus_Valid = 0,
+    DIDStatus_Expired,
+    DIDStatus_Deactivated,
+    DIDStatus_NotFound
+} DIDStatus;
 
-DID_API int DummyAdapter_Set(const char *cachedir);
+struct DIDBiography {
+    DID did;
+    DIDStatus status;
 
-DID_API void DummyAdapter_Cleanup(void);
+    struct {
+        size_t size;
+        DIDTransaction *txs;
+    } txs;
+};
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __DUMMY_ADAPTER_H__ */
+#endif //__DIDBiography_H__

@@ -484,7 +484,7 @@ static void test_new_customizedid_with_existcontrollers2(void)
     props[1].key = "passport";
     props[1].value = "S653258Z07";
 
-    rc = DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid,
+    rc = DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid,
             types, 2, props, 2, expires, signkey1, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
@@ -538,7 +538,7 @@ static void test_new_customizedid_with_existcontrollers2(void)
             "https://www.elastos.org/testing2"));
 
     //add one credential
-    rc = DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid,
+    rc = DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid,
             types, 2, props, 2, expires, signkey1, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
@@ -606,7 +606,7 @@ static void test_new_customizedid_with_existcontrollers2(void)
             "https://www.elastos.org/testing2"));
 
     //add one credential
-    rc = DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid,
+    rc = DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid,
             types, 2, props, 2, expires, signkey3, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 

@@ -9,10 +9,12 @@ extern "C" {
 
 typedef const char* (GetPasswordCallback)(const char *walletDir, const char *walletId);
 
-DIDAdapter *TestDIDAdapter_Create(const char *walletDir, const char *walletId,
+bool TestDIDAdapter_CreateIdTransaction(const char *payload, const char *memo);
+
+int TestDIDAdapter_Init(const char *walletDir, const char *walletId,
         const char *network, GetPasswordCallback *callback);
 
-void TestDIDAdapter_Destroy(DIDAdapter *adapter);
+void TestDIDAdapter_Cleanup(void);
 
 #ifdef __cplusplus
 }

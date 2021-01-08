@@ -88,7 +88,7 @@ static void test_publish_ctmdid_with_onecontroller(void)
     props[0].key = "name";
     props[0].value = "whisper";
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid, types, 2,
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid, types, 2,
             props, 1, 0, NULL, storepass));
 
     customized_doc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -233,7 +233,7 @@ static void test_publish_ctmdid_with_multicontroller(void)
     props[0].key = "name";
     props[0].value = "cici";
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid, types, 2,
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid, types, 2,
             props, 1, 0, signkey3, storepass));
 
     customized_doc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -368,7 +368,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     props[0].key = "name";
     props[0].value = "tristan";
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid, types, 2,
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid, types, 2,
             props, 1, 0, NULL, storepass));
 
     customized_doc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -592,7 +592,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     props[0].key = "name";
     props[0].value = "jack";
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid, types, 2,
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid, types, 2,
             props, 1, 0, signkey1, storepass));
 
     customized_doc = DIDDocumentBuilder_Seal(builder, storepass);

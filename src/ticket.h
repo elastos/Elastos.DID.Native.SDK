@@ -34,19 +34,20 @@ typedef struct TicketProof {
     char type[MAX_TYPE_LEN];
     time_t created;
     DIDURL verificationMethod;
-    char signatureValue[MAX_SIGN_LEN];
+    char signatureValue[MAX_SIGNATURE_LEN];
 } TicketProof;
 
 struct TransferTicket {
     DID did;
     DID to;
-    DIDDocument *doc;
     char txid[ELA_MAX_TXID_LEN];
 
     struct {
         size_t size;
         TicketProof *proofs;
     } proofs;
+
+    DIDDocument *doc;
 };
 
 TransferTicket *TransferTicket_Construct(DID *owner, DID *to);

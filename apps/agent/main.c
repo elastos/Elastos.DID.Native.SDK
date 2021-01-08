@@ -464,8 +464,7 @@ static void usage(void)
     fprintf(stdout, "\n");
 }
 
-bool create_id_transaction(DIDAdapter *adapter,
-                                  const char *payload, const char *memo)
+bool create_id_transaction(const char *payload, const char *memo)
 {
     // TODO:
     return true;
@@ -506,7 +505,6 @@ int main(int argc, char *argv[])
     int wait_for_attach = 0;
     char *datadir = NULL;
 
-    DIDAdapter adapter;
     DIDStore *store;
     int rc;
 
@@ -573,8 +571,8 @@ int main(int argc, char *argv[])
     printf("DID store home directory at '%s'\n", datadir);
 
 
-    adapter.createIdTransaction = create_id_transaction;
-    store = DIDStore_Open(datadir, &adapter);
+    //adapter.createIdTransaction = create_id_transaction;
+    store = DIDStore_Open(datadir);
     if (!store) {
         printf("Error: open DID store at '%s' failed.\n", datadir );
         return -1;

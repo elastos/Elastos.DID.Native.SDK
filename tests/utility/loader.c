@@ -29,6 +29,7 @@
 #include "diddocument.h"
 #include "credential.h"
 #include "credmeta.h"
+#include "testadapter/didtest_adapter.h"
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <crystal.h>
@@ -92,9 +93,6 @@ typedef struct TestData {
 } TestData;
 
 TestData testdata;
-
-static DIDAdapter *adapter;
-static DummyAdapter *dummyadapter;
 
 char *get_wallet_path(char* path, const char* dir)
 {
@@ -473,6 +471,7 @@ int TestData_Init(bool dummy)
 {
     char _dir[PATH_MAX];
     char *walletDir;
+    int rc = 0;
 
     walletDir = get_wallet_path(_dir, walletdir);
     if (!dummy && !dir_exist(walletDir)) {
@@ -480,30 +479,20 @@ int TestData_Init(bool dummy)
         return -1;
     }
 
-#if defined(_WIN32) || defined(_WIN64)
-    adapter = NULL;
-#else
-    adapter = dummy ? NULL : TestDIDAdapter_Create(walletDir, walletId, network, getpassword);
+#if !defined(_WIN32) && !defined(_WIN64)
+    if (!dummy)
+        rc = TestDIDAdapter_Init(walletDir, walletId, network, getpassword);
 #endif
 
-    dummyadapter = DummyAdapter_Create();
-    return 0;
+    return rc;
 }
 
 void TestData_Deinit(void)
 {
 #if !defined(_WIN32) && !defined(_WIN64)
-    TestDIDAdapter_Destroy(adapter);
+    TestDIDAdapter_Cleanup();
 #endif
-    DummyAdapter_Destroy();
-}
-
-DIDAdapter *TestData_GetAdapter(bool dummybackend)
-{
-    if (dummybackend)
-        return &dummyadapter->adapter;
-
-    return adapter;
+    DummyAdapter_Cleanup();
 }
 
 static DIDStore *setup_store(bool dummybackend, const char *root)
@@ -513,14 +502,20 @@ static DIDStore *setup_store(bool dummybackend, const char *root)
     assert(root);
 
     sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
+    testdata.store = DIDStore_Open(root);
+
+#if defined(_WIN32) ||  defined(_WIN64)
+    dummybackend = true;
+#else
+    if (!dummybackend)
+        DIDBackend_InitializeDefault(TestDIDAdapter_CreateIdTransaction, resolver, cachedir);
+#endif
+
     if (dummybackend) {
-        dummyadapter->reset(dummyadapter);
-        testdata.store = DIDStore_Open(root, &dummyadapter->adapter);
-        DIDBackend_Initialize(&dummyadapter->resolver, cachedir);
-    } else {
-        testdata.store = DIDStore_Open(root, adapter);
-        DIDBackend_InitializeDefault(resolver, cachedir);
+        DummyAdapter_Cleanup();
+        DummyAdapter_Set(cachedir);
     }
+
     return testdata.store;
 }
 
@@ -553,7 +548,7 @@ int TestData_InitIdentity(DIDStore *store)
     int rc;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, passphase, language, false);
+    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, passphase, language, true);
     Mnemonic_Free((void*)mnemonic);
 
     return rc;

@@ -35,7 +35,7 @@
 
 extern const char *ProofType;
 
-static int proofs_func(const void *a, const void *b)
+static int proof_cmp(const void *a, const void *b)
 {
     TicketProof *proofa = (TicketProof*)a;
     TicketProof *proofb = (TicketProof*)b;
@@ -78,7 +78,7 @@ static int ProofArray_ToJson(JsonGenerator *gen, TransferTicket *ticket)
     if (size > 1)
         CHECK(JsonGenerator_WriteStartArray(gen));
 
-    qsort(proofs, size, sizeof(TicketProof), proofs_func);
+    qsort(proofs, size, sizeof(TicketProof), proof_cmp);
 
     for (i = 0; i < size; i++)
         CHECK(Proof_ToJson(gen, &proofs[i]));
@@ -198,7 +198,7 @@ static int ticket_addproof(TransferTicket *ticket, char *signature, DIDURL *sign
     rp = ticket->proofs.proofs;
     for (i = 0; i < size && rp; i++) {
         TicketProof *p = &rp[i];
-        if (DIDURL_Equals(&p->verificationMethod, signkey) || !strcmp(p->signatureValue, signature)) {
+        if (DID_Equals(&p->verificationMethod.did, &signkey->did)) {
             DIDError_Set(DIDERR_INVALID_KEY, "The signkey already exist.");
             return -1;
         }
@@ -342,7 +342,7 @@ static int Parse_Proof(TicketProof *proof, json_t *json)
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Invalid signature.");
         return -1;
     }
-    if (strlen(json_string_value(item)) + 1 > MAX_SIGN_LEN) {
+    if (strlen(json_string_value(item)) + 1 > MAX_SIGNATURE_LEN) {
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Document signature is too long.");
         return -1;
     }

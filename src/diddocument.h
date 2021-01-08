@@ -41,7 +41,7 @@ typedef struct DocumentProof {
     char type[MAX_TYPE_LEN];
     time_t created;
     DIDURL creater;
-    char signatureValue[MAX_SIGN_LEN];
+    char signatureValue[MAX_SIGNATURE_LEN];
 } DocumentProof;
 
 struct DIDDocument {

@@ -31,6 +31,7 @@
 #include "common.h"
 #include "did.h"
 #include "resolvercache.h"
+#include "credentialbiography.h"
 
 static char rootpath[PATH_MAX] = {0};
 
@@ -74,7 +75,7 @@ int ResolverCache_Reset(void)
     return 0;
 }
 
-int ResolverCache_Load(ResolveResult *result, DID *did, long ttl)
+int ResolverCache_LoadDID(ResolveResult *result, DID *did, long ttl)
 {
     char path[PATH_MAX];
     const char *data;
@@ -113,7 +114,7 @@ int ResolverCache_Load(ResolveResult *result, DID *did, long ttl)
     return rc;
 }
 
-int ResolveCache_Store(ResolveResult *result, DID *did)
+int ResolveCache_StoreDID(ResolveResult *result, DID *did)
 {
     char path[PATH_MAX];
     const char *data;
@@ -141,12 +142,119 @@ int ResolveCache_Store(ResolveResult *result, DID *did)
     return rc;
 }
 
-void ResolveCache_Invalid(DID *did)
+void ResolveCache_InvalidateDID(DID *did)
 {
     char path[PATH_MAX];
 
     assert(did);
 
     if (get_file(path, 0, 2, rootpath, did->idstring) == 0)
+        delete_file(path);
+}
+
+CredentialBiography *ResolverCache_LoadCredential(DIDURL *id, DID *issuer, long ttl)
+{
+    CredentialBiography *biography;
+    CredentialTransaction *tx;
+    char path[PATH_MAX], buffer[ELA_MAX_DIDURL_LEN];
+    DID *signer;
+    const char *data;
+    struct stat s;
+    time_t curtime;
+    json_t *root;
+    json_error_t error;
+    int size;
+
+    assert(id);
+    assert(ttl >= 0);
+
+    size = snprintf(buffer, ELA_MAX_DIDURL_LEN, "%s_%s", id->did.idstring, id->fragment);
+    if (size < 0 || size > sizeof(buffer)) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize the name for credential cache failed.");
+        return NULL;
+    }
+
+    if (get_file(path, 0, 2, rootpath, buffer) == -1)
+        return NULL;
+
+    //check the lasted modify time
+    if (stat(path, &s) < 0)
+        return NULL;
+
+    time(&curtime);
+    if (curtime - s.st_mtime > ttl)
+        return NULL;
+
+    data = load_file(path);
+    if (!data)
+        return NULL;
+
+    root = json_loads(data, JSON_COMPACT, &error);
+    free((void*)data);
+    if (!root)
+        return NULL;
+
+    biography = CredentialBiography_FromJson(root);
+    if (!biography)
+        goto errorExit;
+
+    for (size = 0; size < biography->txs.size; size++) {
+        tx = &biography->txs.txs[size];
+        if (!strcmp("revoke", tx->request.header.op)) {
+            signer = &tx->request.proof.verificationMethod.did;
+            if (!DID_Equals(&id->did, signer) && (issuer && !DID_Equals(issuer, signer))) {
+                CredentialBiography_Destroy(biography);
+                biography = NULL;
+                goto errorExit;
+            }
+        }
+    }
+
+errorExit:
+    json_decref(root);
+    return biography;
+}
+
+int ResolveCache_StoreCredential(CredentialBiography *biography, DIDURL *id)
+{
+    char path[PATH_MAX], buffer[ELA_MAX_DIDURL_LEN];
+    const char *data;
+    int rc, size;
+
+    assert(biography);
+    assert(id);
+
+    size = snprintf(buffer, ELA_MAX_DIDURL_LEN, "%s_%s", id->did.idstring, id->fragment);
+    if (size < 0 || size > sizeof(buffer)) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize the name for credential cache failed.");
+        return -1;
+    }
+
+    if (get_file(path, 1, 2, rootpath, buffer) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create resolver cache entry failed.");
+        return -1;
+    }
+
+    data = Credentialbiography_ToJson(biography);
+    if (!data) {
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Serialize the credential resolve result to json failed.");
+        return -1;
+    }
+
+    rc = store_file(path, data);
+    free((void*)data);
+    if (rc < 0)
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store credential resolve result data failed.");
+
+    return rc;
+}
+
+void ResolveCache_InvalidateCredential(DIDURL *id)
+{
+    char path[PATH_MAX];
+
+    assert(id);
+
+    if (get_file(path, 0, 3, rootpath, id->did.idstring, id->fragment) == 0)
         delete_file(path);
 }

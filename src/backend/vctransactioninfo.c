@@ -28,9 +28,11 @@
 #include "diderror.h"
 #include "common.h"
 #include "diddocument.h"
-#include "didtransactioninfo.h"
+#include "credential.h"
+#include "vctransactioninfo.h"
+#include "vcrequest.h"
 
-int DIDTransaction_FromJson(DIDTransaction *txinfo, json_t *json)
+int CredentialTransaction_FromJson(CredentialTransaction *txinfo, json_t *json)
 {
     json_t *item;
 
@@ -72,25 +74,25 @@ int DIDTransaction_FromJson(DIDTransaction *txinfo, json_t *json)
         return -1;
     }
 
-    txinfo->request.doc = DIDRequest_FromJson(&txinfo->request, item);
-    if (!txinfo->request.doc && strcmp(txinfo->request.header.op, "deactivate") != 0)
+    txinfo->request.vc = CredentialRequest_FromJson(&txinfo->request, item);
+    if (!txinfo->request.vc && strcmp(txinfo->request.header.op, "revoke"))
         return -1;
     return 0;
 }
 
-void DIDTransaction_Destroy(DIDTransaction *txinfo)
+void CredentialTransaction_Destroy(CredentialTransaction *txinfo)
 {
     if (txinfo)
-        DIDRequest_Destroy(&txinfo->request);
+        CredentialRequest_Destroy(&txinfo->request);
 }
 
-void DIDTransaction_Free(DIDTransaction *txinfo)
+void CredentialTransaction_Free(CredentialTransaction *txinfo)
 {
     if (txinfo)
-        DIDRequest_Free(&txinfo->request);
+        CredentialRequest_Free(&txinfo->request);
 }
 
-int DIDTransaction_ToJson_Internal(JsonGenerator *gen, DIDTransaction *txinfo)
+int CredentialTransaction_ToJson_Internal(JsonGenerator *gen, CredentialTransaction *txinfo)
 {
     char _timestring[DOC_BUFFER_LEN];
 
@@ -102,12 +104,12 @@ int DIDTransaction_ToJson_Internal(JsonGenerator *gen, DIDTransaction *txinfo)
     CHECK(JsonGenerator_WriteStringField(gen, "timestamp",
             get_time_string(_timestring, sizeof(_timestring), &txinfo->timestamp)));
     CHECK(JsonGenerator_WriteFieldName(gen, "operation"));
-    CHECK(DIDRequest_ToJson_Internal(gen, &txinfo->request));
+    CHECK(CredentialRequest_ToJson_Internal(gen, &txinfo->request));
     CHECK(JsonGenerator_WriteEndObject(gen));
     return 0;
 }
 
-const char *DIDTransaction_ToJson(DIDTransaction *txinfo)
+const char *CredentialTransaction_ToJson(CredentialTransaction *txinfo)
 {
     JsonGenerator g, *gen;
 
@@ -119,7 +121,7 @@ const char *DIDTransaction_ToJson(DIDTransaction *txinfo)
         return NULL;
     }
 
-    if (DIDTransaction_ToJson_Internal(gen, txinfo) < 0) {
+    if (CredentialTransaction_ToJson_Internal(gen, txinfo) < 0) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize ID transaction to json failed.");
         JsonGenerator_Destroy(gen);
         return NULL;
@@ -128,31 +130,39 @@ const char *DIDTransaction_ToJson(DIDTransaction *txinfo)
     return JsonGenerator_Finish(gen);
 }
 
-DIDRequest *DIDTransaction_GetRequest(DIDTransaction *txinfo)
+CredentialRequest *CredentialTransaction_GetRequest(CredentialTransaction *txinfo)
 {
     assert(txinfo);
 
     return &txinfo->request;
 }
 
-const char *DIDTransaction_GetTransactionId(DIDTransaction *txinfo)
+const char *CredentialTransaction_GetTransactionId(CredentialTransaction *txinfo)
 {
     assert(txinfo);
 
     return txinfo->txid;
 }
 
-time_t DIDTransaction_GetTimeStamp(DIDTransaction *txinfo)
+time_t CredentialTransaction_GetTimeStamp(CredentialTransaction *txinfo)
 {
     assert(txinfo);
 
     return txinfo->timestamp;
 }
 
-DID *DIDTransaction_GetOwner(DIDTransaction *txinfo)
+DID *CredentialTransaction_GetOwner(CredentialTransaction *txinfo)
 {
     if (!txinfo)
         return NULL;
 
-    return &txinfo->request.did;
+    return &txinfo->request.vc->subject.id;
+}
+
+DIDURL *CredentialTransaction_GetId(CredentialTransaction *txinfo)
+{
+    if (!txinfo)
+        return NULL;
+
+    return &txinfo->request.id;
 }

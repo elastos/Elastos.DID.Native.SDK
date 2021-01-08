@@ -34,6 +34,7 @@
 
 static const char *ALIAS = "DX-alias";
 static const char *LAST_MODIFIED= "DX-lastModified";
+static const char *REVOKED = "DX-revoke";
 
 int CredentialMetaData_ToJson_Internal(CredentialMetaData *metadata, JsonGenerator *gen)
 {
@@ -93,6 +94,23 @@ void CredentialMetaData_SetStore(CredentialMetaData *metadata, DIDStore *store)
     assert(store);
 
     MetaData_SetStore(&metadata->base, store);
+}
+
+int CredentialMetaData_SetRevoke(CredentialMetaData *metadata, bool revoke)
+{
+    assert(metadata);
+
+    return MetaData_SetExtraWithBoolean(&metadata->base, REVOKED, revoke);
+}
+
+bool CredentialMetaData_GetRevoke(CredentialMetaData *metadata)
+{
+    if (!metadata) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "There is not meta data for credential.");
+        return false;
+    }
+
+    return MetaData_GetExtraAsBoolean(&metadata->base, REVOKED);
 }
 
 DIDStore *CredentialMetaData_GetStore(CredentialMetaData *metadata)

@@ -26,14 +26,14 @@
 #include <jansson.h>
 
 #include "ela_did.h"
-#include "didhistory.h"
+#include "didbiography.h"
 #include "didtransactioninfo.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct DIDHistory   ResolveResult;
+typedef struct DIDBiography ResolveResult;
 
 int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all);
 
@@ -49,9 +49,9 @@ DIDStatus ResolveResult_GetStatus(ResolveResult *result);
 
 ssize_t ResolveResult_GetTransactionCount(ResolveResult *result);
 
-DIDTransactionInfo *ResolveResult_GetTransactionInfo(ResolveResult *result, int index);
+DIDTransaction *ResolveResult_GetTransactionInfo(ResolveResult *result, int index);
 
-DIDHistory *ResolveResult_ToDIDHistory(ResolveResult *result);
+DIDBiography *ResolveResult_ToDIDBiography(ResolveResult *result);
 
 #ifdef __cplusplus
 }
