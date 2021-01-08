@@ -1048,7 +1048,7 @@ CredentialBiography *Credential_ResolveBiography(DIDURL *id, DID *issuer)
 {
     if (!id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
+        return NULL;
     }
 
     return DIDBackend_ResolveCredentialBiography(id, issuer);
