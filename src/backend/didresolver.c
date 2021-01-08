@@ -29,7 +29,7 @@
 #include "diderror.h"
 #include "didresolver.h"
 
-#define DID_RESOLVE_REQUEST "{\"method\":\"resolvedid\",\"params\":{\"did\":\"%s\",\"all\":%s}}"
+static char gURL[URL_LEN];
 
 typedef struct HttpResponseBody {
     size_t used;
@@ -104,35 +104,19 @@ static size_t HttpRequestBodyReadCallback(void *dest, size_t size,
     return 0;
 }
 
-// Caller need free the pointer
-static const char *DefaultResolver_Resolve(DIDResolver *resolver, const char *did, int all)
+const char *DefaultResolve_Resolve(const char *resolve_request)
 {
-    DefaultResolver *_resolver = (DefaultResolver *)resolver;
-
     HttpRequestBody request;
     HttpResponseBody response;
-    char buffer[256];
-    const char *forAll;
 
-    if (!resolver || !*_resolver->url || !did) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    // TODO: max did length
-    if (strlen(did) > 64) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments: too long did string.");
-        return NULL;
-    }
-
-    forAll = !all ? "false" : "true";
+    assert(resolve_request);
 
     request.used = 0;
-    request.sz = sprintf(buffer, DID_RESOLVE_REQUEST, did, forAll);
-    request.data = buffer;
+    request.sz = strlen(resolve_request);
+    request.data = (char*)resolve_request;
 
     CURL *curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_URL, _resolver->url);
+    curl_easy_setopt(curl, CURLOPT_URL, gURL);
 
     curl_easy_setopt(curl, CURLOPT_POST, 1L);
     curl_easy_setopt(curl, CURLOPT_READFUNCTION, HttpRequestBodyReadCallback);
@@ -154,7 +138,7 @@ static const char *DefaultResolver_Resolve(DIDResolver *resolver, const char *di
     curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
     if (rc != CURLE_OK) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve [%s] error, status: %d, message: %s", did, rc, curl_easy_strerror(rc));
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve error, status: %d, message: %s", rc, curl_easy_strerror(rc));
         if (response.data)
             free(response.data);
 
@@ -165,29 +149,24 @@ static const char *DefaultResolver_Resolve(DIDResolver *resolver, const char *di
     return (const char *)response.data;
 }
 
-DIDResolver *DefaultResolver_Create(const char *url)
+int DefaultResolve_Init(const char *url)
 {
-    CURLcode rc = curl_global_init(CURL_GLOBAL_ALL);
-    if (rc != CURLE_OK) {
+    CURLUcode rc;
+    CURLU *curl;
+
+    if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
+        return -1;
     }
 
-    DefaultResolver *resolver = (DefaultResolver*)calloc(1, sizeof(DefaultResolver));
-    if (!resolver) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for Default Resolver failed.");
-        return NULL;
+    curl = curl_url();
+    rc = curl_url_set(curl, CURLUPART_URL, url, 0);
+    curl_url_cleanup(curl);
+    if(rc != 0) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid url.");
+        return -1;
     }
 
-    memcpy((char*)resolver->url, url, strlen(url) + 1);
-    resolver->base.resolve = DefaultResolver_Resolve;
-    return (DIDResolver *)resolver;
-}
-
-void DefaultResolver_Destroy(DIDResolver *resolver)
-{
-    if (resolver)
-        free(resolver);
-
-    curl_global_cleanup();
+    strcpy(gURL, url);
+    return 0;
 }

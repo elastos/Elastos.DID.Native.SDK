@@ -19,21 +19,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef __DUMMY_ADAPTER_H__
-#define __DUMMY_ADAPTER_H__
+
+#ifndef __CredentialBiography_H__
+#define __CredentialBiography_H__
+
+#include <jansson.h>
+#include "ela_did.h"
+#include "vctransactioninfo.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "ela_did.h"
+struct CredentialBiography {
+    DIDURL id;
+    CredentialStatus status;
 
-DID_API int DummyAdapter_Set(const char *cachedir);
+    struct {
+        size_t size;
+        CredentialTransaction txs[2];
+    } txs;
+};
 
-DID_API void DummyAdapter_Cleanup(void);
+CredentialBiography *CredentialBiography_FromJson(json_t *json);
+
+const char *Credentialbiography_ToJson(CredentialBiography *biography);
+
+void CredentialBiography_Free(CredentialBiography *biography);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __DUMMY_ADAPTER_H__ */
+#endif //__CredentialBiography_H__

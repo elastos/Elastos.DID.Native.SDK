@@ -66,6 +66,7 @@ static void test_didstore_change_password(void)
         CU_ASSERT_TRUE(file_exist(path));
 
         CU_ASSERT_TRUE_FATAL(DIDStore_PublishDID(store, storepass, did, NULL, false));
+
         DIDDocument *loaddoc = DID_Resolve(did, true);
         CU_ASSERT_PTR_NOT_NULL(loaddoc);
         CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_StoreDID(store, loaddoc));

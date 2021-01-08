@@ -1617,8 +1617,8 @@ static void test_multictmdoc_get_credential(void)
     CU_ASSERT_PTR_NOT_NULL(controller1);
 
     customized_doc = TestData_LoadCtmDoc_MultisigThree();
-    CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
-    CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
+    CU_ASSERT_PTR_NOT_NULL(customized_doc);
+    CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
 
     CU_ASSERT_EQUAL(1, DIDDocument_GetCredentialCount(customized_doc));
 
@@ -1688,7 +1688,7 @@ static void test_multictmdoc_add_credential(void)
     props[1].key = "address";
     props[1].value = "Shanghai";
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid,
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid,
             types, 2, props, 2, expires, signkey, storepass));
 
     customized_doc = DIDDocumentBuilder_Seal(builder, storepass);

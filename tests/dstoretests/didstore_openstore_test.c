@@ -12,12 +12,10 @@
 #include "constant.h"
 #include "ela_did.h"
 #include "did.h"
-//#include "didstore.h"
 
 static const char *password = "passwd";
 
 static DIDStore *store;
-static DIDAdapter *adapter;
 
 static int get_issuer_cred(DIDURL *id, void *context)
 {

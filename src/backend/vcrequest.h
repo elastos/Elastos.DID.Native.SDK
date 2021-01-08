@@ -20,43 +20,62 @@
  * SOFTWARE.
  */
 
-#ifndef __PRESENTATION_H__
-#define __PRESENTATION_H__
+#ifndef __VCREQUEST_H__
+#define __VCREQUEST_H__
+
+#include <jansson.h>
 
 #include "ela_did.h"
-#include "common.h"
+#include "JsonGenerator.h"
+#include "did.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define MAX_NONCE            128
-#define MAX_REALM            128
+#define  MAX_SPEC_LEN             32
+#define  MAX_OP_LEN               32
 
-typedef struct PresentationProof {
-    char type[MAX_TYPE_LEN];
-    DIDURL verificationMethod;
-    char nonce[MAX_NONCE];
-    char realm[MAX_REALM];
-    char signatureValue[MAX_SIGNATURE_LEN];
-} PresentationProof;
+typedef struct CredentialRequest {
+    struct {
+        char spec[MAX_SPEC_LEN];
+        char op[MAX_OP_LEN];
+    } header;
 
-struct Presentation {
-    char type[MAX_TYPE_LEN];
-    time_t created;
+    const char *payload;
+    //todo: remove it
+    Credential *vc;
+    DIDURL id;
 
     struct {
-       Credential **credentials;
-       size_t size;
-    } credentials;
+        DIDURL verificationMethod;
+        char signature[MAX_SIGNATURE_LEN];
+    } proof;
+} CredentialRequest;
 
-    PresentationProof proof;
-};
+typedef enum CredentialRequest_Type
+{
+   RequestType_Declare,
+   RequestType_Revoke
+} CredentialRequest_Type;
 
-int Presentation_Verify(Presentation *pre);
+const char *CredentialRequest_Sign(CredentialRequest_Type type, DIDURL *credid,
+        Credential *credential, DIDURL *signkey, DIDDocument *document, const char *storepass);
+
+const char *CredentialRequest_ToJson(CredentialRequest *request);
+
+Credential *CredentialRequest_FromJson(CredentialRequest *request, json_t *json);
+
+void CredentialRequest_Destroy(CredentialRequest *request);
+
+void CredentialRequest_Free(CredentialRequest *request);
+
+int CredentialRequest_Verify(CredentialRequest *request);
+
+int CredentialRequest_ToJson_Internal(JsonGenerator *gen, CredentialRequest *request);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //__PRESENTATION_H__
+#endif //__VCREQUEST_H__

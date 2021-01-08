@@ -49,8 +49,7 @@ static int header_toJson(JsonGenerator *gen, DIDRequest *req)
     CHECK(JsonGenerator_WriteStartObject(gen));
     CHECK(JsonGenerator_WriteStringField(gen, "specification", req->header.spec));
     CHECK(JsonGenerator_WriteStringField(gen, "operation", req->header.op));
-    if (!strcmp(req->header.op, operation[RequestType_Update]) ||
-           !strcmp(req->header.op, operation[RequestType_Transfer]))
+    if (!strcmp(req->header.op, operation[RequestType_Update]))
         CHECK(JsonGenerator_WriteStringField(gen, "previousTxid", req->header.prevtxid));
     if (req->header.ticket && *req->header.ticket)
         CHECK(JsonGenerator_WriteStringField(gen, "ticket", req->header.ticket));
@@ -136,14 +135,14 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
         return NULL;
     }
 
-    if (type == RequestType_Create || type == RequestType_Deactivate) {
-        prevtxid = "";
-    } else {
+    if (type == RequestType_Update) {
         prevtxid = DIDMetaData_GetTxid(&document->metadata);
         if (!prevtxid) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "Can not determine the previous transaction ID.");
             return NULL;
         }
+    } else {
+        prevtxid = "";
     }
 
     if (type == RequestType_Deactivate) {
@@ -263,7 +262,7 @@ static int parser_header(DIDRequest *request, json_t *json)
         return -1;
     }
 
-    if (type == RequestType_Update || type == RequestType_Transfer) {
+    if (type == RequestType_Update) {
         item = json_object_get(json, "previousTxid");
         if (!item) {
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing previous transaction id.");
@@ -383,7 +382,7 @@ static int parser_proof(DIDRequest *request, json_t *json)
         return -1;
     }
 
-    if (!json_is_string(item) || strlen(json_string_value(item)) >= MAX_SIGN_LEN) {
+    if (!json_is_string(item) || strlen(json_string_value(item)) >= MAX_SIGNATURE_LEN) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signature.");
         return -1;
     }

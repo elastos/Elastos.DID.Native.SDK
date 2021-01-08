@@ -29,13 +29,15 @@
 #include "ela_did.h"
 #include "diderror.h"
 #include "common.h"
+#include "crypto.h"
 #include "JsonGenerator.h"
 #include "JsonHelper.h"
 #include "did.h"
 #include "diddocument.h"
 #include "didstore.h"
 #include "credential.h"
-#include "crypto.h"
+#include "didbackend.h"
+#include "credentialbiography.h"
 
 static const char *PresentationsType = "VerifiablePresentation";
 extern const char *ProofType;
@@ -308,10 +310,43 @@ time_t Credential_GetIssuanceDate(Credential *cred)
     return cred->issuanceDate;
 }
 
-time_t Credential_GetExpirationDate(Credential *cred)
+time_t Credential_GetExpirationDate_Internal(Credential *cred, DIDDocument *document)
 {
     DIDDocument *doc;
     time_t _expire, expire;
+
+    assert(cred);
+    assert(document);
+
+    expire = DIDDocument_GetExpires(document);
+    if (!expire)
+        return 0;
+
+    if (cred->expirationDate != 0)
+        expire = MIN(expire, cred->expirationDate);
+
+    if (!Credential_IsSelfProclaimed(cred)) {
+        doc = DID_Resolve(&cred->issuer, false);
+        if (!doc)
+            return 0;
+    } else {
+        doc = document;
+    }
+
+    _expire = DIDDocument_GetExpires(doc);
+    if (doc != document)
+         DIDDocument_Destroy(doc);
+
+    if (!_expire)
+        return 0;
+
+    return MIN(expire, _expire);
+}
+
+time_t Credential_GetExpirationDate(Credential *cred)
+{
+    DIDDocument *doc;
+    time_t t;
 
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -322,24 +357,9 @@ time_t Credential_GetExpirationDate(Credential *cred)
     if (!doc)
         return 0;
 
-    expire = DIDDocument_GetExpires(doc);
+    t = Credential_GetExpirationDate_Internal(cred, doc);
     DIDDocument_Destroy(doc);
-    if (!expire)
-        return 0;
-
-    if (cred->expirationDate != 0)
-        expire = MIN(expire, cred->expirationDate);
-
-    doc = DID_Resolve(&cred->issuer, false);
-    if (!doc)
-        return 0;
-
-    _expire = DIDDocument_GetExpires(doc);
-    DIDDocument_Destroy(doc);
-    if (!_expire)
-        return 0;
-
-    return MIN(expire, _expire);
+    return t;
 }
 
 ssize_t Credential_GetPropertyCount(Credential *cred)
@@ -814,6 +834,23 @@ int Credential_Verify(Credential *cred)
     return rc;
 }
 
+bool Credential_IsExpired_Internal(Credential *cred, DIDDocument *document)
+{
+    time_t expires;
+    time_t now;
+
+    assert(cred);
+    assert(document);
+
+    expires = Credential_GetExpirationDate_Internal(cred, document);
+    now = time(NULL);
+
+    if (now > expires)
+        return true;
+
+    return false;
+}
+
 bool Credential_IsExpired(Credential *cred)
 {
     time_t expires;
@@ -827,10 +864,8 @@ bool Credential_IsExpired(Credential *cred)
     expires = Credential_GetExpirationDate(cred);
     now = time(NULL);
 
-    if (now > expires) {
-        DIDError_Set(DIDERR_EXPIRED, "Credential is expired.");
+    if (now > expires)
         return true;
-    }
 
     return false;
 }
@@ -886,11 +921,38 @@ bool Credential_IsGenuine(Credential *cred)
     return Credential_IsGenuine_Internal(cred, NULL);
 }
 
+bool Credential_IsValid_Internal(Credential *cred, DIDDocument *document)
+{
+    DIDDocument *issuerdoc;
+    bool valid;
+
+    assert(cred);
+    assert(document);
+
+    if (!Credential_IsSelfProclaimed(cred)) {
+        issuerdoc = DID_Resolve(&cred->issuer, false);
+        if (!issuerdoc)
+            return false;
+
+        valid = DIDDocument_IsValid(issuerdoc);
+        if (!valid) {
+            DIDDocument_Destroy(issuerdoc);
+            return false;
+        }
+    } else {
+        issuerdoc = document;
+    }
+
+    valid = Credential_IsGenuine_Internal(cred, issuerdoc) && !Credential_IsExpired_Internal(cred, document);
+    if (issuerdoc != document)
+        DIDDocument_Destroy(issuerdoc);
+    return valid;
+}
+
 bool Credential_IsValid(Credential *cred)
 {
     DIDDocument *doc;
     bool valid;
-
 
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -901,25 +963,14 @@ bool Credential_IsValid(Credential *cred)
     if (!doc)
         return false;
 
-    valid = DIDDocument_IsValid(doc);
-    DIDDocument_Destroy(doc);
-
-    if (!valid)
-        return false;
-
-    if (!Credential_IsSelfProclaimed(cred)) {
-        doc = DID_Resolve(&cred->issuer, false);
-        if (!doc)
-            return false;
-
-        valid = DIDDocument_IsValid(doc);
+    if (!DIDDocument_IsValid(doc)) {
         DIDDocument_Destroy(doc);
-
-        if (!valid)
-            return false;
+        return false;
     }
 
-    return Credential_IsGenuine(cred) && !Credential_IsExpired(cred);
+    valid = Credential_IsValid_Internal(cred, doc);
+    DIDDocument_Destroy(doc);
+    return valid;
 }
 
 int Credential_SaveMetaData(Credential *cred)
@@ -973,3 +1024,74 @@ int Credential_Copy(Credential *dest, Credential *src)
     return 0;
 }
 
+Credential *Credential_Resolve(DIDURL *id, bool force)
+{
+    if (!id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    return DIDBackend_ResolveCredential(id, force);
+}
+
+bool Credential_ResolveRevocation(DIDURL *id, DID *issuer)
+{
+    if (!id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    return DIDBackend_ResolveRevocation(id, issuer);
+}
+
+CredentialBiography *Credential_ResolveBiography(DIDURL *id, DID *issuer)
+{
+    if (!id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    return DIDBackend_ResolveCredentialBiography(id, issuer);
+}
+bool Credential_WasDeclared(DIDURL *id)
+{
+    Credential *credential;
+
+    if (!id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    credential = Credential_Resolve(id, true);
+    if (!credential)
+        return false;
+
+    Credential_Destroy(credential);
+    return true;
+}
+
+bool Credential_IsRevoked(Credential *credential)
+{
+    if (!credential) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    return Credential_ResolveRevocation(&credential->id, &credential->issuer) ||
+            Credential_ResolveRevocation(&credential->id, &credential->subject.id);
+}
+
+ssize_t Credential_List(DID *did, DIDURL **buffer, size_t size, int skip, int limit)
+{
+    if (!did || !buffer || size == 0 || skip < 0 || limit <= 0) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    if (limit > size) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Buffer to put credentials is smaller than 'limit' number.");
+        return -1;
+    }
+
+    return DIDBackend_ListCredentials(did, buffer, size, skip, limit);
+}

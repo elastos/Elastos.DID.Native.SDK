@@ -56,22 +56,10 @@ DID
 .. doxygentypedef:: DID
    :project: DIDAPI
 
-DIDMetaData
-############
-
-.. doxygentypedef:: DIDMetaData
-   :project: DIDAPI
-
 DIDURL
 ######
 
 .. doxygentypedef:: DIDURL
-   :project: DIDAPI
-
-DIDHistory
-############
-
-.. doxygentypedef:: DIDHistory
    :project: DIDAPI
 
 PublicKey
@@ -86,10 +74,10 @@ Credential
 .. doxygentypedef:: Credential
    :project: DIDAPI
 
-CredentialMetaData
-###################
+Service
+#######
 
-.. doxygentypedef:: CredentialMetaData
+.. doxygentypedef:: Service
    :project: DIDAPI
 
 Presentation
@@ -98,11 +86,6 @@ Presentation
 .. doxygentypedef:: Presentation
    :project: DIDAPI
 
-Service
-#######
-
-.. doxygentypedef:: Service
-   :project: DIDAPI
 
 DIDDocument
 ###########
@@ -116,10 +99,41 @@ DIDDocumentBuilder
 .. doxygentypedef:: DIDDocumentBuilder
    :project: DIDAPI
 
+DIDMetaData
+############
+
+.. doxygentypedef:: DIDMetaData
+   :project: DIDAPI
+
+
+CredentialMetaData
+###################
+
+.. doxygentypedef:: CredentialMetaData
+   :project: DIDAPI
+
+DIDBiography
+############
+
+.. doxygentypedef:: DIDBiography
+   :project: DIDAPI
+
+CredentialBiography
+###################
+
+.. doxygentypedef:: CredentialBiography
+   :project: DIDAPI
+
 Issuer
 ######
 
 .. doxygentypedef:: Issuer
+   :project: DIDAPI
+
+TransferTicket
+##############
+
+.. doxygentypedef:: TransferTicket
    :project: DIDAPI
 
 DIDStore
@@ -127,20 +141,6 @@ DIDStore
 
 .. doxygentypedef:: DIDStore
    :project: DIDAPI
-
-DIDAdapter
-##########
-
-.. doxygenstruct:: DIDAdapter
-   :project: DIDAPI
-   :members:
-
-DIDResolver
-###########
-
-.. doxygenstruct:: DIDResolver
-   :project: DIDAPI
-   :members:
 
 JWTBuilder
 ##########
@@ -170,6 +170,18 @@ DIDLocalResovleHandle
 ######################
 
 .. doxygentypedef:: DIDLocalResovleHandle
+   :project: DIDAPI
+
+CreateIdTransaction_Callback
+#############################
+
+.. doxygentypedef:: CreateIdTransaction_Callback
+   :project: DIDAPI
+
+Resolve_Callback
+#################
+
+.. doxygentypedef:: Resolve_Callback
    :project: DIDAPI
 
 DIDLogLevel
@@ -226,10 +238,10 @@ DID_Resolve
 .. doxygenfunction:: DID_Resolve
    :project: DIDAPI
 
-DID_ResolveHistory
-~~~~~~~~~~~~~~~~~~~
+DID_ResolveBiography
+~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DID_ResolveHistory
+.. doxygenfunction:: DID_ResolveBiography
    :project: DIDAPI
 
 DID_GetMetaData
@@ -370,55 +382,118 @@ DIDURL_SaveMetaData
 .. doxygenfunction:: DIDURL_SaveMetaData
    :project: DIDAPI
 
-DIDHistory Functions
-#####################
+DIDBiography Functions
+######################
 
-DIDHistory_GetOwner
+DIDBiography_GetOwner
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDHistory_GetOwner
+.. doxygenfunction:: DIDBiography_GetOwner
    :project: DIDAPI
 
-DIDHistory_GetStatus
-~~~~~~~~~~~~~~~~~~~~~
+DIDBiography_GetStatus
+~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDHistory_GetStatus
+.. doxygenfunction:: DIDBiography_GetStatus
    :project: DIDAPI
 
-DIDHistory_GetTransactionCount
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DIDBiography_GetTransactionCount
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDHistory_GetTransactionCount
+.. doxygenfunction:: DIDBiography_GetTransactionCount
    :project: DIDAPI
 
-DIDHistory_GetDocumentByIndex
+DIDBiography_GetDocumentByIndex
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDHistory_GetDocumentByIndex
+.. doxygenfunction:: DIDBiography_GetDocumentByIndex
    :project: DIDAPI
 
-DIDHistory_GetTransactionIdByIndex
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DIDBiography_GetTransactionIdByIndex
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDHistory_GetTransactionIdByIndex
+.. doxygenfunction:: DIDBiography_GetTransactionIdByIndex
    :project: DIDAPI
 
-DIDHistory_GetPublishedByIndex
+DIDBiography_GetPublishedByIndex
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDHistory_GetPublishedByIndex
+.. doxygenfunction:: DIDBiography_GetPublishedByIndex
    :project: DIDAPI
 
-DIDHistory_GetOperationByIndex
+DIDBiography_GetOperationByIndex
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDHistory_GetOperationByIndex
+.. doxygenfunction:: DIDBiography_GetOperationByIndex
    :project: DIDAPI
 
-DIDHistory_Destroy
-~~~~~~~~~~~~~~~~~~~
+DIDBiography_Destroy
+~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDHistory_Destroy
+.. doxygenfunction:: DIDBiography_Destroy
+   :project: DIDAPI
+
+CredentialBiography Functions
+#############################
+
+CredentialBiography_GetId
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: CredentialBiography_GetId
+   :project: DIDAPI
+
+CredentialBiography_GetOwner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: CredentialBiography_GetOwner
+   :project: DIDAPI
+
+CredentialBiography_GetStatus
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: CredentialBiography_GetStatus
+   :project: DIDAPI
+
+CredentialBiography_GetTransactionCount
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: CredentialBiography_GetTransactionCount
+   :project: DIDAPI
+
+CredentialBiography_GetCredentialByIndex
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: CredentialBiography_GetCredentialByIndex
+   :project: DIDAPI
+
+CredentialBiography_GetTransactionIdByIndex
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: CredentialBiography_GetTransactionIdByIndex
+   :project: DIDAPI
+
+CredentialBiography_GetPublishedByIndex
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: CredentialBiography_GetPublishedByIndex
+   :project: DIDAPI
+
+CredentialBiography_GetTransactionSignkeyByIndex
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: CredentialBiography_GetTransactionSignkeyByIndex
+   :project: DIDAPI
+
+CredentialBiography_GetOperationByIndex
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: CredentialBiography_GetOperationByIndex
+   :project: DIDAPI
+
+CredentialBiography_Destroy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: CredentialBiography_Destroy
    :project: DIDAPI
 
 CredentialMetaData Functions
@@ -505,16 +580,22 @@ DIDDocument_IsGenuine
 .. doxygenfunction:: DIDDocument_IsGenuine
    :project: DIDAPI
 
-DIDDocument_IsExpires
+DIDDocument_IsExpired
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: DIDDocument_IsExpires
+.. doxygenfunction:: DIDDocument_IsExpired
    :project: DIDAPI
 
 DIDDocument_IsValid
 ~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: DIDDocument_IsValid
+   :project: DIDAPI
+
+DIDDocument_IsQualified
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocument_IsQualified
    :project: DIDAPI
 
 DIDDocument_GetSubject
@@ -539,6 +620,18 @@ DIDDocumentBuilder_Seal
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: DIDDocumentBuilder_Seal
+   :project: DIDAPI
+
+DIDDocumentBuilder_AddController
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocumentBuilder_AddController
+   :project: DIDAPI
+
+DIDDocumentBuilder_RemoveController
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocumentBuilder_RemoveController
    :project: DIDAPI
 
 DIDDocumentBuilder_AddPublicKey
@@ -583,16 +676,28 @@ DIDDocumentBuilder_AddCredential
 .. doxygenfunction:: DIDDocumentBuilder_AddCredential
    :project: DIDAPI
 
-DIDDocumentBuilder_AddSelfClaimedCredential
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: DIDDocumentBuilder_AddSelfClaimedCredential
-   :project: DIDAPI
-
 DIDDocumentBuilder_RemoveCredential
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: DIDDocumentBuilder_RemoveCredential
+   :project: DIDAPI
+
+DIDDocumentBuilder_AddSelfProclaimedCredential
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocumentBuilder_AddSelfProclaimedCredential
+   :project: DIDAPI
+
+DIDDocumentBuilder_RenewSelfProclaimedCredential
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocumentBuilder_RenewSelfProclaimedCredential
+   :project: DIDAPI
+
+DIDDocumentBuilder_RemoveSelfProclaimedCredential
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocumentBuilder_RemoveSelfProclaimedCredential
    :project: DIDAPI
 
 DIDDocumentBuilder_AddService
@@ -607,10 +712,46 @@ DIDDocumentBuilder_RemoveService
 .. doxygenfunction:: DIDDocumentBuilder_RemoveService
    :project: DIDAPI
 
+DIDDocumentBuilder_RemoveProof
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocumentBuilder_RemoveProof
+   :project: DIDAPI
+
 DIDDocumentBuilder_SetExpires
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: DIDDocumentBuilder_SetExpires
+   :project: DIDAPI
+
+DIDDocumentBuilder_SetMultisig
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocumentBuilder_SetMultisig
+   :project: DIDAPI
+
+DIDDocument_GetMultisig
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocument_GetMultisig
+   :project: DIDAPI
+
+DIDDocument_GetControllerCount
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocument_GetControllerCount
+   :project: DIDAPI
+
+DIDDocument_GetControllers
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocument_GetControllers
+   :project: DIDAPI
+
+DIDDocument_ContainsController
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocument_ContainsController
    :project: DIDAPI
 
 DIDDocument_GetPublicKeyCount
@@ -769,6 +910,18 @@ DIDDocument_SaveMetaData
 .. doxygenfunction:: DIDDocument_SaveMetaData
    :project: DIDAPI
 
+DIDDocument_GetProofCount
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocument_GetProofCount
+   :project: DIDAPI
+
+DIDDocument_GetProofType
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocument_GetProofType
+   :project: DIDAPI
+
 DIDDocument_GetProofCreater
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -803,6 +956,30 @@ DIDDocument_Derive
 ~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: DIDDocument_Derive
+   :project: DIDAPI
+
+DIDDocument_SignDIDDocument
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocument_SignDIDDocument
+   :project: DIDAPI
+
+DIDDocument_MergeDIDDocuments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocument_MergeDIDDocuments
+   :project: DIDAPI
+
+DIDDocument_CreateTransferTicket
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocument_CreateTransferTicket
+   :project: DIDAPI
+
+DIDDocument_SignTransferTicket
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocument_SignTransferTicket
    :project: DIDAPI
 
 PublicKey_GetId
@@ -970,6 +1147,42 @@ Credential_SaveMetaData
 .. doxygenfunction:: Credential_SaveMetaData
    :project: DIDAPI
 
+Credential_Resolve
+~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: Credential_Resolve
+   :project: DIDAPI
+
+Credential_ResolveRevocation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: Credential_ResolveRevocation
+   :project: DIDAPI
+
+Credential_ResolveBiography
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: Credential_ResolveBiography
+   :project: DIDAPI
+
+Credential_WasDeclared
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: Credential_WasDeclared
+   :project: DIDAPI
+
+Credential_IsRevoked
+~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: Credential_IsRevoked
+   :project: DIDAPI
+
+Credential_List
+~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: Credential_List
+   :project: DIDAPI
+
 Issuer Functions
 ################
 
@@ -1046,6 +1259,12 @@ DIDStore_NewDID
 ~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: DIDStore_NewDID
+   :project: DIDAPI
+
+DIDStore_NewCustomizedDID
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_NewCustomizedDID
    :project: DIDAPI
 
 DIDStore_NewDIDByIndex
@@ -1156,6 +1375,30 @@ DIDStore_DeactivateDID
 .. doxygenfunction:: DIDStore_DeactivateDID
    :project: DIDAPI
 
+DIDStore_PublishDID
+~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_PublishDID
+   :project: DIDAPI
+
+DIDStore_TransferDID
+~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_TransferDID
+   :project: DIDAPI
+
+DIDStore_DeclareCredential
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_DeclareCredential
+   :project: DIDAPI
+
+DIDStore_RevokeCredential
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_RevokeCredential
+   :project: DIDAPI
+
 
 Mnemonic Functions
 ##################
@@ -1264,6 +1507,75 @@ Presentation_IsValid
 ~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: Presentation_IsValid
+   :project: DIDAPI
+
+Issuer Functions
+################
+
+TransferTicket_Destroy
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: TransferTicket_Destroy
+   :project: DIDAPI
+
+TransferTicket_ToJson
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: TransferTicket_ToJson
+   :project: DIDAPI
+
+TransferTicket_FromJson
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: TransferTicket_FromJson
+   :project: DIDAPI
+
+TransferTicket_IsValid
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: TransferTicket_IsValid
+   :project: DIDAPI
+
+TransferTicket_IsQualified
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: TransferTicket_IsQualified
+   :project: DIDAPI
+
+TransferTicket_IsGenuine
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: TransferTicket_IsGenuine
+   :project: DIDAPI
+
+TransferTicket_GetProofCount
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: TransferTicket_GetProofCount
+   :project: DIDAPI
+
+TransferTicket_GetProofType
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: TransferTicket_GetProofType
+   :project: DIDAPI
+
+TransferTicket_GetSignKey
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: TransferTicket_GetSignKey
+   :project: DIDAPI
+
+TransferTicket_GetProofCreatedTime
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: TransferTicket_GetProofCreatedTime
+   :project: DIDAPI
+
+TransferTicket_GetProofSignature
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: TransferTicket_GetProofSignature
    :project: DIDAPI
 
 DIDBackend Functions

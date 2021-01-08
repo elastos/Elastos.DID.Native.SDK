@@ -20,36 +20,47 @@
  * SOFTWARE.
  */
 
-#ifndef __DIDHISTORY_H__
-#define __DIDHISTORY_H__
+#ifndef __VCTRANSACTIONINFO_H__
+#define __VCTRANSACTIONINFO_H__
+
+#include <jansson.h>
 
 #include "ela_did.h"
-#include "didtransactioninfo.h"
+#include "vcrequest.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef enum DIDStatus
-{
-    DIDStatus_Valid = 0,
-    DIDStatus_Expired,
-    DIDStatus_Deactivated,
-    DIDStatus_NotFound
-} DIDStatus;
+typedef struct CredentialTransaction {
+    char txid[ELA_MAX_TXID_LEN];
+    time_t timestamp;
 
-struct DIDHistory {
-    DID did;
-    DIDStatus status;
+    CredentialRequest request;
+} CredentialTransaction;
 
-    struct {
-        size_t size;
-        DIDTransactionInfo *infos;
-    } txinfos;
-};
+int CredentialTransaction_FromJson(CredentialTransaction *txinfo, json_t *json);
+
+void CredentialTransaction_Destroy(CredentialTransaction *txinfo);
+
+void CredentialTransaction_Free(CredentialTransaction *txinfo);
+
+int CredentialTransaction_ToJson_Internal(JsonGenerator *gen, CredentialTransaction *info);
+
+const char *CredentialTransaction_ToJson(CredentialTransaction *txinfo);
+
+CredentialRequest *CredentialTransaction_GetRequest(CredentialTransaction *txinfo);
+
+const char *CredentialTransaction_GetTransactionId(CredentialTransaction *txinfo);
+
+time_t CredentialTransaction_GetTimeStamp(CredentialTransaction *txinfo);
+
+DID *CredentialTransaction_GetOwner(CredentialTransaction *txinfo);
+
+DIDURL *CredentialTransaction_GetId(CredentialTransaction *txinfo);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //__DIDHISTORY_H__
+#endif //__VCTRANSACTIONINFO_H__

@@ -43,7 +43,7 @@ typedef struct CredentialSubject {
 typedef struct CredentialProof {
     char type[MAX_TYPE_LEN];
     DIDURL verificationMethod;
-    char signatureValue[MAX_SIGN_LEN];
+    char signatureValue[MAX_SIGNATURE_LEN];
 } CredentialProof;
 
 struct Credential {
@@ -83,6 +83,12 @@ Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
         time_t expires, const char *storepass);
 
 bool Credential_IsGenuine_Internal(Credential *cred, DIDDocument *document);
+
+bool Credential_IsExpired_Internal(Credential *cred, DIDDocument *document);
+
+time_t Credential_GetExpirationDate_Internal(Credential *cred, DIDDocument *document);
+
+bool Credential_IsValid_Internal(Credential *cred, DIDDocument *document);
 
 #ifdef __cplusplus
 }

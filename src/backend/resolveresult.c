@@ -31,7 +31,7 @@
 #include "diddocument.h"
 #include "JsonGenerator.h"
 #include "resolveresult.h"
-#include "didhistory.h"
+#include "didbiography.h"
 
 int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
 {
@@ -89,8 +89,8 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
             }
         }
 
-        result->txinfos.infos = (DIDTransactionInfo *)calloc(size, sizeof(DIDTransactionInfo));
-        if (!result->txinfos.infos) {
+        result->txs.txs = (DIDTransaction *)calloc(size, sizeof(DIDTransaction));
+        if (!result->txs.txs) {
             DIDError_Set(DIDERR_OUT_OF_MEMORY, "Create transaction info failed.");
             return -1;
         }
@@ -106,8 +106,8 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
                 return -1;
             }
 
-            DIDTransactionInfo *txinfo = &result->txinfos.infos[i];
-            if (DIDTransactionInfo_FromJson(txinfo, field) == -1) {
+            DIDTransaction *txinfo = &result->txs.txs[i];
+            if (DIDTransaction_FromJson(txinfo, field) == -1) {
                 return -1;
             }
 
@@ -120,7 +120,7 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
                 DIDMetaData_SetDeactivated(&doc->metadata, result->status);
                 memcpy(&doc->did.metadata, &doc->metadata, sizeof(DIDMetaData));
             }
-            result->txinfos.size++;
+            result->txs.size++;
         }
     }
     return 0;
@@ -130,13 +130,13 @@ void ResolveResult_Destroy(ResolveResult *result)
 {
     size_t i;
 
-    if (!result || !result->txinfos.infos)
+    if (!result || !result->txs.txs)
         return;
 
-    for (i = 0; i < result->txinfos.size; i++)
-        DIDTransactionInfo_Destroy(&result->txinfos.infos[i]);
+    for (i = 0; i < result->txs.size; i++)
+        DIDTransaction_Destroy(&result->txs.txs[i]);
 
-    free(result->txinfos.infos);
+    free(result->txs.txs);
     memset(result, 0, sizeof(ResolveResult));
 }
 
@@ -144,13 +144,13 @@ void ResolveResult_Free(ResolveResult *result)
 {
     size_t i;
 
-    if (!result || !result->txinfos.infos)
+    if (!result || !result->txs.txs)
         return;
 
-    for (i = 0; i < result->txinfos.size; i++)
-        DIDTransactionInfo_Free(&result->txinfos.infos[i]);
+    for (i = 0; i < result->txs.size; i++)
+        DIDTransaction_Free(&result->txs.txs[i]);
 
-    free(result->txinfos.infos);
+    free(result->txs.txs);
 }
 
 static int resolveresult_tojson_internal(JsonGenerator *gen, ResolveResult *result)
@@ -169,9 +169,9 @@ static int resolveresult_tojson_internal(JsonGenerator *gen, ResolveResult *resu
     if (result->status != DIDStatus_NotFound) {
         CHECK(JsonGenerator_WriteFieldName(gen, "transaction"));
         CHECK(JsonGenerator_WriteStartArray(gen));
-        for (i = 0; i < result->txinfos.size; i++)
+        for (i = 0; i < result->txs.size; i++)
             //todo: check
-            CHECK(DIDTransactionInfo_ToJson_Internal(gen, &result->txinfos.infos[i]));
+            CHECK(DIDTransaction_ToJson_Internal(gen, &result->txs.txs[i]));
         CHECK(JsonGenerator_WriteEndArray(gen));
     }
     CHECK(JsonGenerator_WriteEndObject(gen));
@@ -214,37 +214,37 @@ ssize_t ResolveResult_GetTransactionCount(ResolveResult *result)
 {
     assert(result);
 
-    return result->txinfos.size;
+    return result->txs.size;
 }
 
-DIDTransactionInfo *ResolveResult_GetTransactionInfo(ResolveResult *result, int index)
+DIDTransaction *ResolveResult_GetTransactionInfo(ResolveResult *result, int index)
 {
     assert(result);
     assert(index >= 0);
 
-    return &result->txinfos.infos[index];
+    return &result->txs.txs[index];
 }
 
-DIDHistory *ResolveResult_ToDIDHistory(ResolveResult *result)
+DIDBiography *ResolveResult_ToDIDBiography(ResolveResult *result)
 {
-    DIDHistory *history;
+    DIDBiography *biography;
     size_t size;
 
     assert(result);
 
-    size = result->txinfos.size;
+    size = result->txs.size;
     if (size == 0) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "No transaction from resolve result.");
         return NULL;
     }
 
-    history = (DIDHistory*)calloc(1, sizeof(DIDHistory));
-    if (!history) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for didhistory failed.");
+    biography = (DIDBiography*)calloc(1, sizeof(DIDBiography));
+    if (!biography) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for DIDBiography failed.");
         return NULL;
     }
 
-    memcpy(history, result, sizeof(DIDHistory));
-    return history;
+    memcpy(biography, result, sizeof(DIDBiography));
+    return biography;
 }
 

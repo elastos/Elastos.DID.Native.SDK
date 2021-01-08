@@ -60,14 +60,11 @@ static void test_didstore_export_import_did(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     //create new store
-    DIDAdapter *adapter = TestData_GetAdapter(true);
-    CU_ASSERT_PTR_NOT_NULL(adapter);
-
     path = get_store_path(_path2, "restore");
     CU_ASSERT_PTR_NOT_NULL(path);
     delete_file(path);
 
-    DIDStore *store2 = DIDStore_Open(path, adapter);
+    DIDStore *store2 = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL(store2);
 
     rc = DIDStore_ImportDID(store2, password, file, "1234");
@@ -108,15 +105,12 @@ static void test_didstore_export_import_privateidentity(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     //create new store
-    DIDAdapter *adapter = TestData_GetAdapter(true);
-    CU_ASSERT_PTR_NOT_NULL(adapter);
-
     path = get_store_path(_path2, "restore");
     CU_ASSERT_PTR_NOT_NULL(path);
 
     delete_file(path);
 
-    DIDStore *store2 = DIDStore_Open(path, adapter);
+    DIDStore *store2 = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL(store2);
 
     rc = DIDStore_ImportPrivateIdentity(store2, password, file, "1234");
@@ -154,15 +148,12 @@ static void test_didstore_export_import_store(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     //create new store
-    DIDAdapter *adapter = TestData_GetAdapter(true);
-    CU_ASSERT_PTR_NOT_NULL(adapter);
-
     path = get_store_path(_path2, "restore");
     CU_ASSERT_PTR_NOT_NULL(path);
 
     delete_file(path);
 
-    DIDStore *store2 = DIDStore_Open(path, adapter);
+    DIDStore *store2 = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL(store2);
 
     rc = DIDStore_ImportStore(store2, password, file, "1234");

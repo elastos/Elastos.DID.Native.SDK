@@ -878,7 +878,7 @@ static void test_diddoc_add_selfclaimed_credential(void)
     props[1].key = "passport";
     props[1].value = "S653258Z07";
 
-    rc = DIDDocumentBuilder_AddSelfProClaimedCredential(builder, credid,
+    rc = DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid,
             types, 2, props, 2, DIDDocument_GetExpires(doc), NULL, storepass);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 

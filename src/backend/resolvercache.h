@@ -36,11 +36,17 @@ const char *ResolverCache_GetCacheDir(void);
 
 int ResolverCache_Reset(void);
 
-int ResolverCache_Load(ResolveResult *result, DID *did, long ttl);
+int ResolverCache_LoadDID(ResolveResult *result, DID *did, long ttl);
 
-int ResolveCache_Store(ResolveResult *result, DID *did);
+int ResolveCache_StoreDID(ResolveResult *result, DID *did);
 
-void ResolveCache_Invalid(DID *did);
+void ResolveCache_InvalidateDID(DID *did);
+
+CredentialBiography *ResolverCache_LoadCredential(DIDURL *id, DID *issuer, long ttl);
+
+int ResolveCache_StoreCredential(CredentialBiography *biography, DIDURL *id);
+
+void ResolveCache_InvalidateCredential(DIDURL *id);
 
 #ifdef __cplusplus
 }

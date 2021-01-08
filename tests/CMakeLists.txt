@@ -94,6 +94,7 @@ set(INCLUDE
     ../src/adapter
     ../src/jwt
     ../src/meta
+    ../src/backend
     ../hdkey
     ${PROJECT_INT_DIST_DIR}/include)
 

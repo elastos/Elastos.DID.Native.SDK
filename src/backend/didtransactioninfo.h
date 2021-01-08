@@ -32,30 +32,30 @@
 extern "C" {
 #endif
 
-typedef struct DIDTransactionInfo {
+typedef struct DIDTransaction {
     char txid[ELA_MAX_TXID_LEN];
     time_t timestamp;
 
     DIDRequest request;
-} DIDTransactionInfo;
+} DIDTransaction;
 
-int DIDTransactionInfo_FromJson(DIDTransactionInfo *txinfo, json_t *json);
+int DIDTransaction_FromJson(DIDTransaction *txinfo, json_t *json);
 
-void DIDTransactionInfo_Destroy(DIDTransactionInfo *txinfo);
+void DIDTransaction_Destroy(DIDTransaction *txinfo);
 
-void DIDTransactionInfo_Free(DIDTransactionInfo *txinfo);
+void DIDTransaction_Free(DIDTransaction *txinfo);
 
-int DIDTransactionInfo_ToJson_Internal(JsonGenerator *gen, DIDTransactionInfo *info);
+int DIDTransaction_ToJson_Internal(JsonGenerator *gen, DIDTransaction *info);
 
-const char *DIDTransactionInfo_ToJson(DIDTransactionInfo *txinfo);
+const char *DIDTransaction_ToJson(DIDTransaction *txinfo);
 
-DIDRequest *DIDTransactionInfo_GetRequest(DIDTransactionInfo *txinfo);
+DIDRequest *DIDTransaction_GetRequest(DIDTransaction *txinfo);
 
-const char *DIDTransactionInfo_GetTransactionId(DIDTransactionInfo *txinfo);
+const char *DIDTransaction_GetTransactionId(DIDTransaction *txinfo);
 
-time_t DIDTransactionInfo_GetTimeStamp(DIDTransactionInfo *txinfo);
+time_t DIDTransaction_GetTimeStamp(DIDTransaction *txinfo);
 
-DID *DIDTransactionInfo_GetOwner(DIDTransactionInfo *txinfo);
+DID *DIDTransaction_GetOwner(DIDTransaction *txinfo);
 
 #ifdef __cplusplus
 }

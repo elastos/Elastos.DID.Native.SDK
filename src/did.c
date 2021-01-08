@@ -33,6 +33,7 @@
 #include "credential.h"
 #include "didmeta.h"
 #include "diderror.h"
+#include "didbackend.h"
 
 static const char did_scheme[] = "did";
 static const char did_method[] = "elastos";
@@ -247,14 +248,14 @@ void DID_Destroy(DID *did)
     }
 }
 
-DIDHistory *DID_ResolveHistory(DID *did)
+DIDBiography *DID_ResolveBiography(DID *did)
 {
     if (!did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    return DIDBackend_ResolveHistory(did);
+    return DIDBackend_ResolveDIDBiography(did);
 }
 
 DIDDocument *DID_Resolve(DID *did, bool force)
@@ -264,7 +265,7 @@ DIDDocument *DID_Resolve(DID *did, bool force)
         return NULL;
     }
 
-    return DIDBackend_Resolve(did, force);
+    return DIDBackend_ResolveDID(did, force);
 }
 
 DIDMetaData *DID_GetMetaData(DID *did)
