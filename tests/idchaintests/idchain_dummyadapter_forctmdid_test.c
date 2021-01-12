@@ -37,6 +37,7 @@ static void test_publish_ctmdid_with_onecontroller(void)
     DIDDocumentBuilder *builder;
     HDKey _dkey, *dkey;
     const char *data;
+    int status;
 
     DID *controllers[1] = {0};
     controllers[0] = &controller1;
@@ -45,11 +46,11 @@ static void test_publish_ctmdid_with_onecontroller(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
     DID_Copy(&customizedid, &customized_doc->did);
+
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(customized_doc, NULL, true, storepass));
     DIDDocument_Destroy(customized_doc);
 
-    CU_ASSERT_TRUE(DIDStore_PublishDID(store, storepass, &customizedid, NULL, true));
-
-    resolve_doc = DID_Resolve(&customizedid, true);
+    resolve_doc = DID_Resolve(&customizedid, &status, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
     CU_ASSERT_EQUAL(1, DIDDocument_GetControllerCount(resolve_doc));
@@ -99,10 +100,11 @@ static void test_publish_ctmdid_with_onecontroller(void)
     CU_ASSERT_EQUAL(1, DIDDocument_GetCredentialCount(customized_doc));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customized_doc));
-    DIDDocument_Destroy(customized_doc);
-    CU_ASSERT_TRUE(DIDStore_PublishDID(store, storepass, &customizedid, keyid1, false));
 
-    resolve_doc = DID_Resolve(&customizedid, true);
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(customized_doc, keyid1, false, storepass));
+    DIDDocument_Destroy(customized_doc);
+
+    resolve_doc = DID_Resolve(&customizedid, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolve_doc);
 
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetCredential(resolve_doc, credid))
@@ -127,10 +129,11 @@ static void test_publish_ctmdid_with_onecontroller(void)
     DIDDocumentBuilder_Destroy(builder);
     CU_ASSERT_PTR_NOT_NULL(customized_doc);
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customized_doc));
-    DIDDocument_Destroy(customized_doc);
-    CU_ASSERT_TRUE(DIDStore_PublishDID(store, storepass, &customizedid, keyid2, false));
 
-    resolve_doc = DID_Resolve(&customizedid, true);
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(customized_doc, keyid2, false, storepass));
+    DIDDocument_Destroy(customized_doc);
+
+    resolve_doc = DID_Resolve(&customizedid, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolve_doc);
     CU_ASSERT_EQUAL(6, DIDDocument_GetPublicKeyCount(resolve_doc));
     CU_ASSERT_EQUAL(5, DIDDocument_GetAuthenticationCount(resolve_doc));
@@ -158,6 +161,7 @@ static void test_publish_ctmdid_with_multicontroller(void)
     DIDDocumentBuilder *builder;
     HDKey _dkey, *dkey;
     const char *data;
+    int status;
 
     DID *controllers[3] = {0};
     controllers[0] = &controller1;
@@ -189,11 +193,10 @@ static void test_publish_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(customized_doc);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customized_doc));
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(customized_doc, signkey1, true, storepass));
     DIDDocument_Destroy(customized_doc);
 
-    CU_ASSERT_TRUE(DIDStore_PublishDID(store, storepass, &customizedid, signkey1, true));
-
-    resolve_doc = DID_Resolve(&customizedid, true);
+    resolve_doc = DID_Resolve(&customizedid, &status, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
     CU_ASSERT_EQUAL(3, DIDDocument_GetControllerCount(resolve_doc));
@@ -255,15 +258,15 @@ static void test_publish_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NULL(DIDDocumentBuilder_Seal(builder, storepass));
     CU_ASSERT_STRING_EQUAL("The signers are enough.", DIDError_GetMessage());
     DIDDocumentBuilder_Destroy(builder);
-    DIDDocument_Destroy(customized_doc);
 
     //must be sepcify the sign key
-    CU_ASSERT_FALSE(DIDStore_PublishDID(store, storepass, &customizedid, NULL, true));
+    CU_ASSERT_FALSE(DIDDocument_PublishDID(customized_doc, NULL, true, storepass));
     CU_ASSERT_STRING_EQUAL("Multi-controller customized DID must have sign key to publish.",
             DIDError_GetMessage());
-    CU_ASSERT_TRUE(DIDStore_PublishDID(store, storepass, &customizedid, signkey1, true));
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(customized_doc, signkey1, true, storepass));
+    DIDDocument_Destroy(customized_doc);
 
-    resolve_doc = DID_Resolve(&customizedid, true);
+    resolve_doc = DID_Resolve(&customizedid, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolve_doc);
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, resolve_doc));
 
@@ -301,10 +304,11 @@ static void test_publish_ctmdid_with_multicontroller(void)
     CU_ASSERT_EQUAL(10, DIDDocument_GetPublicKeyCount(customized_doc));
     CU_ASSERT_EQUAL(8, DIDDocument_GetAuthenticationCount(customized_doc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetCredentialCount(customized_doc));
+
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(customized_doc, signkey3, false, storepass));
     DIDDocument_Destroy(customized_doc);
 
-    CU_ASSERT_TRUE(DIDStore_PublishDID(store, storepass, &customizedid, signkey3, false));
-    resolve_doc = DID_Resolve(&customizedid, true);
+    resolve_doc = DID_Resolve(&customizedid, &status, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetCredential(resolve_doc, credid));
@@ -329,6 +333,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     TransferTicket *ticket;
     HDKey _dkey, *dkey;
     const char *data;
+    int status;
 
     DID *controllers[1] = {0};
     controllers[0] = &controller1;
@@ -378,11 +383,11 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     CU_ASSERT_EQUAL(4, DIDDocument_GetAuthenticationCount(customized_doc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetCredentialCount(customized_doc));
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customized_doc));
+
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(customized_doc, keyid1, false, storepass));
     DIDDocument_Destroy(customized_doc);
 
-    CU_ASSERT_TRUE(DIDStore_PublishDID(store, storepass, &customizedid, keyid1, false));
-
-    resolve_doc = DID_Resolve(&customizedid, true);
+    resolve_doc = DID_Resolve(&customizedid, &status, true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(resolve_doc);
 
     CU_ASSERT_EQUAL(1, DIDDocument_GetControllerCount(resolve_doc));
@@ -444,7 +449,6 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     CU_ASSERT_EQUAL(1, DIDDocument_GetCredentialCount(customized_doc));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customized_doc));
-    DIDDocument_Destroy(customized_doc);
 
     //create ticket
     ticket = DIDDocument_CreateTransferTicket(controller1_doc, &customizedid,
@@ -460,10 +464,11 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     CU_ASSERT_PTR_NOT_NULL(ticket);
     CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));
 
-    CU_ASSERT_TRUE(DIDStore_TransferDID(store, storepass, &customizedid, ticket, signkey1));
+    CU_ASSERT_TRUE(DIDDocument_TransferDID(customized_doc, ticket, signkey1, storepass));
+    DIDDocument_Destroy(customized_doc);
     TransferTicket_Destroy(ticket);
 
-    resolve_doc = DID_Resolve(&customizedid, true);
+    resolve_doc = DID_Resolve(&customizedid, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolve_doc);
 
     CU_ASSERT_TRUE(DIDDocument_IsValid(resolve_doc));
@@ -502,7 +507,6 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetCredential(customized_doc, credid));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customized_doc));
-    DIDDocument_Destroy(customized_doc);
 
     ticket = DIDDocument_CreateTransferTicket(controller1_doc, &customizedid,
             &controller2, storepass);
@@ -516,10 +520,11 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     free((void*)data);
     CU_ASSERT_PTR_NOT_NULL(ticket);
 
-    CU_ASSERT_TRUE(DIDStore_TransferDID(store, storepass, &customizedid, ticket, signkey2));
+    CU_ASSERT_TRUE(DIDDocument_TransferDID(customized_doc, ticket, signkey2, storepass));
+    DIDDocument_Destroy(customized_doc);
     TransferTicket_Destroy(ticket);
 
-    resolve_doc = DID_Resolve(&customizedid, true);
+    resolve_doc = DID_Resolve(&customizedid, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolve_doc);
 
     CU_ASSERT_TRUE(DIDDocument_IsValid(resolve_doc));
@@ -550,7 +555,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     HDKey _dkey, *dkey;
     const char *data;
     size_t size;
-    int i;
+    int i, status;
 
     DID *controllers[3] = {0};
     controllers[0] = &controller1;
@@ -617,11 +622,11 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customized_doc, keyid1));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customized_doc));
+
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(customized_doc, signkey1, true, storepass));
     DIDDocument_Destroy(customized_doc);
 
-    CU_ASSERT_TRUE(DIDStore_PublishDID(store, storepass, &customizedid, signkey1, true));
-
-    resolve_doc = DID_Resolve(&customizedid, true);
+    resolve_doc = DID_Resolve(&customizedid, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolve_doc);
 
     CU_ASSERT_EQUAL(3, DIDDocument_GetControllerCount(resolve_doc));
@@ -694,10 +699,10 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_TRUE(DIDURL_Equals(signkey2, Credential_GetProofMethod(cred)));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customized_doc));
-    DIDDocument_Destroy(customized_doc);
 
     //publish DID after changing controller, fail.
-    CU_ASSERT_FALSE(DIDStore_PublishDID(store, storepass, &customizedid, signkey2, false));
+    CU_ASSERT_FALSE(DIDDocument_PublishDID(customized_doc, signkey2, false, storepass));
+
     CU_ASSERT_STRING_EQUAL("Unsupport publishing DID which is changed controller, please transfer it.",
             DIDError_GetMessage());
 
@@ -715,7 +720,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(ticket);
     CU_ASSERT_FALSE(TransferTicket_IsValid(ticket));
 
-    CU_ASSERT_FALSE(DIDStore_TransferDID(store, storepass, &customizedid, ticket, signkey2));
+    CU_ASSERT_FALSE(DIDDocument_TransferDID(customized_doc, ticket, signkey2, storepass));
     TransferTicket_Destroy(ticket);
     CU_ASSERT_STRING_EQUAL("Ticket is not qualified.", DIDError_GetMessage());
 
@@ -735,7 +740,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_NOT_EQUAL(-1, DIDDocument_SignTransferTicket(controller3_doc, ticket, storepass));
     CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));
 
-    CU_ASSERT_FALSE(DIDStore_TransferDID(store, storepass, &customizedid, ticket, signkey2));
+    CU_ASSERT_FALSE(DIDDocument_TransferDID(customized_doc, ticket, signkey2, storepass));
     TransferTicket_Destroy(ticket);
     CU_ASSERT_STRING_EQUAL("The DID to receive ticket is not the document's signer.",
             DIDError_GetMessage());
@@ -755,10 +760,11 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_NOT_EQUAL(-1, DIDDocument_SignTransferTicket(controller2_doc, ticket, storepass));
     CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));
 
-    CU_ASSERT_TRUE(DIDStore_TransferDID(store, storepass, &customizedid, ticket, signkey2));
+    CU_ASSERT_TRUE(DIDDocument_TransferDID(customized_doc, ticket, signkey2, storepass));
+    DIDDocument_Destroy(customized_doc);
     TransferTicket_Destroy(ticket);
 
-    resolve_doc = DID_Resolve(&customizedid, true);
+    resolve_doc = DID_Resolve(&customizedid, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolve_doc);
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, resolve_doc));
 
@@ -810,7 +816,6 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NULL(DIDDocument_GetCredential(customized_doc, credid));
     CU_ASSERT_PTR_NULL(DIDDocument_GetAuthenticationKey(customized_doc, keyid1));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customized_doc, keyid2));
-    DIDDocument_Destroy(customized_doc);
 
     //create ticket
     ticket = DIDDocument_CreateTransferTicket(controller2_doc, &customizedid,
@@ -826,15 +831,16 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(ticket);
     CU_ASSERT_FALSE(TransferTicket_IsValid(ticket));
 
-    CU_ASSERT_FALSE(DIDStore_TransferDID(store, storepass, &customizedid, ticket, keyid2));
+    CU_ASSERT_FALSE(DIDDocument_TransferDID(customized_doc, ticket, keyid2, storepass));
     CU_ASSERT_STRING_EQUAL("Ticket is not qualified.", DIDError_GetMessage());
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocument_SignTransferTicket(controller3_doc, ticket, storepass));
     CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));
-    CU_ASSERT_TRUE(DIDStore_TransferDID(store, storepass, &customizedid, ticket, keyid2));
+    CU_ASSERT_TRUE(DIDDocument_TransferDID(customized_doc, ticket, keyid2, storepass));
+    DIDDocument_Destroy(customized_doc);
     TransferTicket_Destroy(ticket);
 
-    resolve_doc = DID_Resolve(&customizedid, true);
+    resolve_doc = DID_Resolve(&customizedid, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolve_doc);
 
     CU_ASSERT_TRUE(DIDDocument_IsValid(resolve_doc));

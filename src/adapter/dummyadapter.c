@@ -19,6 +19,7 @@
 #include "diderror.h"
 #include "didbiography.h"
 #include "diddocument.h"
+#include "credential.h"
 
 #define TXID_LEN            32
 static const char elastos_did_prefix[] = "did:elastos:";
@@ -60,19 +61,57 @@ static DIDTransaction *get_lasttransaction(DID *did)
     return NULL;
 }
 
-static CredentialTransaction *get_lastvctransaction(DIDURL *id)
+bool credential_isrevoked(DIDURL *id, DID *repealer)
 {
     CredentialTransaction *info;
+    DID *issuer = NULL, *signer;
     int i;
 
     assert(id);
 
-    for (i = vcnum - 1; i >= 0; i--) {
+    for (i = 0; i < vcnum; i++) {
         info = vcinfos[i];
-        if (DIDURL_Equals(id, CredentialTransaction_GetId(info)))
-            return info;
+        if (DIDURL_Equals(id, &info->request.id)) {
+            if (!strcmp("declare", info->request.header.op))
+                issuer = &info->request.vc->issuer;
+
+            if (!strcmp("revoke", info->request.header.op)) {
+                signer = &info->request.proof.verificationMethod.did;
+                if (DID_Equals(&id->did, signer) || (issuer && DID_Equals(issuer, signer))
+                        ||(repealer && DID_Equals(issuer, repealer))) {
+                    return true;
+                }
+            }
+        }
     }
-    return NULL;
+
+    return false;
+}
+
+bool credential_readydeclare(DIDURL *id, DID *issuer)
+{
+    CredentialTransaction *info;
+    DID *signer;
+    int i;
+
+    assert(id);
+
+    for (i = 0; i < vcnum; i++) {
+        info = vcinfos[i];
+        if (DIDURL_Equals(id, &info->request.id)) {
+            if (!strcmp("declare", info->request.header.op))
+                return false;
+
+            if (!strcmp("revoke", info->request.header.op)) {
+                signer = &info->request.proof.verificationMethod.did;
+                if (DID_Equals(&id->did, signer) || (issuer && DID_Equals(issuer, signer))) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 static int get_method(const char *method)
@@ -232,8 +271,8 @@ errorExit:
 
 static bool create_vctransaction(json_t *json)
 {
-    CredentialTransaction *info = NULL, *lastinfo;
     Credential *vc = NULL;
+    CredentialTransaction *info;
 
     assert(json);
 
@@ -244,13 +283,11 @@ static bool create_vctransaction(json_t *json)
     }
 
     vc = CredentialRequest_FromJson(&info->request, json);
-    lastinfo = get_lastvctransaction(&info->request.id);
-
     if (!strcmp(info->request.header.op, "declare")) {
         if (!vc || !Credential_IsValid(vc))
             goto errorExit;
 
-        if (lastinfo) {
+        if (!credential_readydeclare(&vc->id, &vc->issuer)) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "Credential already exist.");
             goto errorExit;
         }
@@ -258,11 +295,9 @@ static bool create_vctransaction(json_t *json)
         if (vc)
             goto errorExit;
 
-        if (lastinfo) {
-            if (!strcmp(lastinfo->request.header.op, "revoke")) {
-                DIDError_Set(DIDERR_TRANSACTION_ERROR, "Don't revoke the inexistence credential.");
-                goto errorExit;
-            }
+        if (credential_isrevoked(&info->request.id, &info->request.proof.verificationMethod.did)) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "Don't revoke the inexistence credential.");
+            goto errorExit;
         }
     } else {
         DIDError_Set(DIDERR_UNSUPPOTED, "Unknown operation.");
@@ -340,14 +375,10 @@ static int didresult_tojson(JsonGenerator *gen, DID *did, bool all)
     if (!info) {
         status = DIDStatus_NotFound;
     } else {
-        if (!strcmp(info->request.header.op, "deactivate")) {
+        if (!strcmp(info->request.header.op, "deactivate"))
             status = DIDStatus_Deactivated;
-        } else {
-            if (DIDDocument_IsExpired(info->request.doc))
-                status = DIDStatus_Expired;
-            else
-                status = DIDStatus_Valid;
-        }
+        else
+            status = DIDStatus_Valid;
     }
 
     CHECK(JsonGenerator_WriteFieldName(gen, "status"));
@@ -358,6 +389,7 @@ static int didresult_tojson(JsonGenerator *gen, DID *did, bool all)
         return 0;
     }
 
+    info = NULL;
     CHECK(JsonGenerator_WriteFieldName(gen, "transaction"));
     CHECK(JsonGenerator_WriteStartArray(gen));
     if (all) {
@@ -367,8 +399,25 @@ static int didresult_tojson(JsonGenerator *gen, DID *did, bool all)
                 CHECK(DIDTransaction_ToJson_Internal(gen, info));
         }
     } else {
-        info = get_lasttransaction(did);
-        CHECK(DIDTransaction_ToJson_Internal(gen, info));
+        if (status != DIDStatus_Deactivated) {
+            info = get_lasttransaction(did);
+            CHECK(DIDTransaction_ToJson_Internal(gen, info));
+        } else {
+            for (i = num - 1; i >= 0; i--) {
+                if (infos[i] && DID_Equals(did, DIDTransaction_GetOwner(infos[i]))) {
+                    if (!strcmp(infos[i]->request.header.op, "deactivate")) {
+                        info = infos[i];
+                    }
+                    else {
+                        if (info) {
+                            CHECK(DIDTransaction_ToJson_Internal(gen, info));
+                            CHECK(DIDTransaction_ToJson_Internal(gen, infos[i]));
+                        }
+                        break;
+                    }
+                }
+            }
+        }
     }
     CHECK(JsonGenerator_WriteEndArray(gen));
     CHECK(JsonGenerator_WriteEndObject(gen));
@@ -561,22 +610,26 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, DID *issuer)
     CHECK(JsonGenerator_WriteStringField(gen, "id",
             DIDURL_ToString(id, idstring, sizeof(idstring), false)));
 
-    for (i = vcnum - 1; i >= 0; i--) {
+    for (i = 0; i < vcnum; i++) {
         info = vcinfos[i];
         if (info && DIDURL_Equals(id, CredentialTransaction_GetId(info))) {
             if (!strcmp("declare", info->request.header.op)) {
-                if (size > 1)
+                if (size > 0)
                     return -1;
+
+                if (!issuer)
+                    issuer = &info->request.vc->issuer;
+
                 infos[size++] = info;
-                if (status != CredentialStatus_Revoked)
-                    status = CredentialStatus_Valid;
+                status = CredentialStatus_Valid;
             }
 
             if (!strcmp("revoke", info->request.header.op)) {
                 signer = &info->request.proof.verificationMethod.did;
                 if (DID_Equals(&id->did, signer) || (issuer && DID_Equals(issuer, signer))) {
-                    if (size > 2)
+                    if (size > 1)
                         return -1;
+
                     infos[size++] = info;
                     status = CredentialStatus_Revoked;
                 }
@@ -594,7 +647,7 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, DID *issuer)
 
     CHECK(JsonGenerator_WriteFieldName(gen, "transaction"));
     CHECK(JsonGenerator_WriteStartArray(gen));
-    for (i = 0; i < size; i++) {
+    for (i = size - 1; i >= 0; i--) {
         info = infos[i];
         if (info)
             CHECK(CredentialTransaction_ToJson_Internal(gen, info));

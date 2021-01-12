@@ -48,7 +48,7 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
     uint8_t binkey[PUBLICKEY_BYTES];
     KeySpec _spec, *spec;
     cjose_jwk_t *jwk = NULL;
-    int rc = -1;
+    int rc = -1, status;
     bool isresolved = false;
 
     assert(jwt);
@@ -70,7 +70,7 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
     }
 
     if (!doc) {
-        doc = DID_Resolve(issuer, false);
+        doc = DID_Resolve(issuer, &status, false);
         isresolved = true;
     }
 

@@ -71,7 +71,7 @@ void DIDRequest_Destroy(DIDRequest *request);
 void DIDRequest_Free(DIDRequest *request);
 
 const char* DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
-        TransferTicket *ticket, DIDURL *signkey, const char *storepass);
+        DID *target, TransferTicket *ticket, DIDURL *signkey, const char *storepass);
 
 int DIDRequest_Verify(DIDRequest *request);
 

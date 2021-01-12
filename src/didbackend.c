@@ -121,7 +121,7 @@ bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *st
         return false;
     }
 
-    reqstring = DIDRequest_Sign(RequestType_Create, document, NULL, signkey, storepass);
+    reqstring = DIDRequest_Sign(RequestType_Create, document, NULL, NULL, signkey, storepass);
     if (!reqstring)
         return false;
 
@@ -153,7 +153,7 @@ bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *st
         return false;
     }
 
-    reqstring = DIDRequest_Sign(RequestType_Update, document, NULL, signkey, storepass);
+    reqstring = DIDRequest_Sign(RequestType_Update, document, NULL, NULL, signkey, storepass);
     if (!reqstring)
         return false;
 
@@ -187,7 +187,7 @@ bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
         return false;
     }
 
-    reqstring = DIDRequest_Sign(RequestType_Transfer, document, ticket, signkey, storepass);
+    reqstring = DIDRequest_Sign(RequestType_Transfer, document, NULL, ticket, signkey, storepass);
     if (!reqstring)
         return false;
 
@@ -199,13 +199,12 @@ bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
     return successed;
 }
 
-bool DIDBackend_DeactivateDID(DID *did, DIDURL *signkey, const char *storepass)
+bool DIDBackend_DeactivateDID(DIDDocument *document, DID *target, DIDURL *signkey, const char *storepass)
 {
     const char *reqstring;
-    DIDDocument *document;
     bool successed;
 
-    assert(did);
+    assert(document);
     assert(signkey);
     assert(storepass && *storepass);
 
@@ -215,17 +214,12 @@ bool DIDBackend_DeactivateDID(DID *did, DIDURL *signkey, const char *storepass)
         return false;
     }
 
-    if (!DIDMetaData_AttachedStore(&did->metadata)) {
+    if (!DIDMetaData_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
         return false;
     }
 
-    document = DIDStore_LoadDID(did->metadata.base.store, did);
-    if (!document)
-        return false;
-
-    reqstring = DIDRequest_Sign(RequestType_Deactivate, document, NULL, signkey, storepass);
-    DIDDocument_Destroy(document);
+    reqstring = DIDRequest_Sign(RequestType_Deactivate, document, target, NULL, signkey, storepass);
     if (!reqstring)
         return false;
 
@@ -493,7 +487,7 @@ static CredentialBiography *resolvevc_internal(DIDURL *id, DID *issuer, bool for
     return resolvevc_from_backend(id, issuer);
 }
 
-DIDDocument *DIDBackend_ResolveDID(DID *did, bool force)
+DIDDocument *DIDBackend_ResolveDID(DID *did, int *status, bool force)
 {
     DIDDocument *doc = NULL;
     ResolveResult result;
@@ -509,31 +503,41 @@ DIDDocument *DIDBackend_ResolveDID(DID *did, bool force)
     }
 
     if (!gResolve) {
+        *status = DIDStatus_Error;
         DIDError_Set(DIDERR_INVALID_BACKEND, "Resolver not initialized.");
         return NULL;
     }
 
     memset(&result, 0, sizeof(ResolveResult));
     if (resolve_internal(&result, did, false, force) == -1) {
+        *status = DIDStatus_Error;
         ResolveResult_Destroy(&result);
         return NULL;
     }
 
     if (ResolveResult_GetStatus(&result) == DIDStatus_NotFound) {
+        *status = DIDStatus_NotFound;
         ResolveResult_Destroy(&result);
-        DIDError_Set(DIDERR_NOT_EXISTS, "DID not exists.");
         return NULL;
-    } else if (ResolveResult_GetStatus(&result) == DIDStatus_Deactivated) {
-        ResolveResult_Destroy(&result);
-        DIDError_Set(DIDERR_DID_DEACTIVATED, "DID is deactivated.");
-        return NULL;
+    }
+
+    if (ResolveResult_GetStatus(&result) == DIDStatus_Deactivated) {
+        *status = DIDStatus_Deactivated;
+        doc = result.txs.txs[1].request.doc;
+        i = 2;
     } else {
+        *status = DIDStatus_Valid;
         doc = result.txs.txs[0].request.doc;
-        for (i = 1; i < result.txs.size; i++)
-            DIDDocument_Destroy(result.txs.txs[i].request.doc);
-        ResolveResult_Free(&result);
-        if (!doc)
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "Malformed resolver response.");
+        i = 1;
+    }
+
+    for (; i < result.txs.size; i++)
+        DIDDocument_Destroy(result.txs.txs[i].request.doc);
+    ResolveResult_Free(&result);
+
+    if (!doc) {
+        *status = DIDStatus_Error;
+        DIDError_Set(DIDERR_RESOLVE_ERROR, "Malformed resolver response.");
     }
 
     return doc;
@@ -650,7 +654,7 @@ bool DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey, DIDDocument *d
     return successed;
 }
 
-Credential *DIDBackend_ResolveCredential(DIDURL *id, bool force)
+Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force)
 {
     CredentialBiography *biography;
     Credential *cred;
@@ -664,10 +668,13 @@ Credential *DIDBackend_ResolveCredential(DIDURL *id, bool force)
     }
 
     biography = resolvevc_internal(id, NULL, false);
-    if (!biography)
+    if (!biography) {
+        *status = CredentialStatus_Error;
         return NULL;
+    }
 
-    if (CredentialBiography_GetStatus(biography) != CredentialStatus_NotFound) {
+    *status = biography->status;
+    if (biography->status != CredentialStatus_NotFound) {
         for (i = 0; i < biography->txs.size; i++) {
             cred = CredentialBiography_GetCredentialByIndex(biography, i);
             if (cred) {

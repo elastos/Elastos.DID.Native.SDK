@@ -258,14 +258,14 @@ DIDBiography *DID_ResolveBiography(DID *did)
     return DIDBackend_ResolveDIDBiography(did);
 }
 
-DIDDocument *DID_Resolve(DID *did, bool force)
+DIDDocument *DID_Resolve(DID *did, int *status, bool force)
 {
     if (!did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    return DIDBackend_ResolveDID(did, force);
+    return DIDBackend_ResolveDID(did, status, force);
 }
 
 DIDMetaData *DID_GetMetaData(DID *did)

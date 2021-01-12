@@ -48,6 +48,8 @@ int DIDStore_StoreDIDMetaData(DIDStore *store, DIDMetaData *meta, DID *did);
 
 int DIDStore_LoadDIDMeta(DIDStore *store, DIDMetaData *meta, DID *did);
 
+int DIDStore_WriteDIDMetaData(DIDStore *store, DIDMetaData *meta, DID *did);
+
 int DIDStore_StoreCredMeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id);
 
 int DIDStore_LoadCredMeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id);

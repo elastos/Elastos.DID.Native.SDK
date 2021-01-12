@@ -38,6 +38,7 @@
 #include "didmeta.h"
 #include "diderror.h"
 #include "ticket.h"
+#include "resolvercache.h"
 
 #ifndef DISABLE_JWT
     #include "ela_jwt.h"
@@ -381,7 +382,7 @@ static int Parse_Controllers(DIDDocument *document, json_t *json)
     DIDDocument *controllerdoc;
     json_t *field;
     DID controller;
-    int i, size = 1;
+    int i, size = 1, status;
 
     assert(document);
     assert(json);
@@ -410,7 +411,7 @@ static int Parse_Controllers(DIDDocument *document, json_t *json)
             return -1;
         }
 
-        controllerdoc = DID_Resolve(&controller, true);
+        controllerdoc = DID_Resolve(&controller, &status, true);
         if (!controllerdoc)
             return -1;
 
@@ -727,6 +728,10 @@ static int remove_publickey(DIDDocument *document, DIDURL *keyid)
             free((void*)pks);
             document->publickeys.pks = NULL;
         }
+
+        if (DIDMetaData_AttachedStore(&document->metadata))
+            DIDStore_DeletePrivateKey(document->metadata.base.store, &document->did, keyid);
+
         return 0;
     }
 
@@ -1296,6 +1301,7 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
 {
     DIDDocument *resolvedoc;
     bool isdeactived;
+    int status;
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1306,7 +1312,7 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
     if (isdeactived)
         return isdeactived;
 
-    resolvedoc = DID_Resolve(&document->did, true);
+    resolvedoc = DID_Resolve(&document->did, &status, true);
     if (!resolvedoc)
         return false;
 
@@ -2260,7 +2266,7 @@ int DIDDocumentBuilder_AuthorizationDid(DIDDocumentBuilder *builder, DIDURL *key
 {
     DIDDocument *doc, *document;
     PublicKey *pk;
-    int rc;
+    int rc, status;
 
     if (!builder || !builder->document || !keyid || !controller) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2278,7 +2284,7 @@ int DIDDocumentBuilder_AuthorizationDid(DIDDocumentBuilder *builder, DIDURL *key
         return -1;
     }
 
-    doc = DID_Resolve(controller, false);
+    doc = DID_Resolve(controller, &status, false);
     if (!doc)
         return -1;
 
@@ -2359,7 +2365,7 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
 {
     DIDDocument **docs;
     DIDDocument *controllerdoc, *document;
-    int i;
+    int i, status;
 
     if (!builder || !builder->document || !controller) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2385,7 +2391,7 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
         }
     }
 
-    controllerdoc = DID_Resolve(controller, true);
+    controllerdoc = DID_Resolve(controller, &status, true);
     if (!controllerdoc)
         return -1;
 
@@ -4173,6 +4179,329 @@ int DIDDocument_SignTransferTicket(DIDDocument *controllerdoc,
     }
 
     return TransferTicket_Seal(ticket, controllerdoc, storepass);
+}
+
+bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
+        const char *storepass)
+{
+    const char *last_txid, *local_signature, *local_prevsignature, *resolve_signature = NULL;
+    DIDDocument *resolve_doc = NULL;
+    DIDStore *store;
+    bool successed;
+    int rc = -1, status;
+
+    if (!document || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
+        return false;
+    }
+
+    store = document->metadata.base.store;
+    if (Is_CustomizedDID(document) && document->controllers.size > 1 && !signkey) {
+        DIDError_Set(DIDERR_INVALID_KEY, "Multi-controller customized DID must have sign key to publish.");
+        return false;
+    }
+
+    if (!DIDDocument_IsQualified(document)) {
+        DIDError_Set(DIDERR_NOT_GENUINE, "Did document is not qualified.");
+        return false;
+    }
+
+    if (!DIDDocument_IsGenuine(document)) {
+        DIDError_Set(DIDERR_NOT_GENUINE, "Did document is not genuine.");
+        return false;
+    }
+
+    if (DIDDocument_IsDeactivated(document)) {
+        DIDError_Set(DIDERR_DID_DEACTIVATED, "Did is already deactivated.");
+        return false;
+    }
+
+    if (!force && DIDDocument_IsExpired(document)) {
+        DIDError_Set(DIDERR_EXPIRED, "Did is already expired, use force mode to publish anyway.");
+        return false;
+    }
+
+    if (!signkey) {
+        signkey = DIDDocument_GetDefaultPublicKey(document);
+        if (!signkey)
+            return false;
+    } else {
+        if (!DIDDocument_IsAuthenticationKey(document, signkey))
+            return false;
+    }
+
+    resolve_doc = DID_Resolve(&document->did, &status, true);
+    if (!resolve_doc) {
+        if (status == DIDStatus_NotFound)
+            successed = DIDBackend_CreateDID(document, signkey, storepass);
+        else
+            return false;
+    } else {
+        if (DIDDocument_IsDeactivated(resolve_doc)) {
+            DIDError_Set(DIDERR_EXPIRED, "Did is already deactivated.");
+            goto errorExit;
+        }
+
+        if (Is_CustomizedDID(document) && document->controllers.size != resolve_doc->controllers.size) {
+            DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport publishing DID which is changed controller, please transfer it.");
+            goto errorExit;
+        }
+
+        resolve_signature = resolve_doc->proofs.proofs[0].signatureValue;
+        if (!resolve_signature || !*resolve_signature) {
+            DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing resolve signature.");
+            goto errorExit;
+        }
+        last_txid = DIDMetaData_GetTxid(&resolve_doc->metadata);
+
+        if (!force) {
+            local_signature = DIDMetaData_GetSignature(&document->metadata);
+            local_prevsignature = DIDMetaData_GetPrevSignature(&document->metadata);
+            if ((!local_signature || !*local_signature) && (!local_prevsignature || !*local_prevsignature)) {
+                DIDError_Set(DIDERR_DIDSTORE_ERROR,
+                        "Missing signatures information, DID SDK dosen't know how to handle it, use force mode to ignore checks.");
+                goto errorExit;
+            } else if (!local_signature || !local_prevsignature) {
+                const char *sig = local_signature != NULL ? local_signature : local_prevsignature;
+                if (strcmp(sig, resolve_signature)) {
+                    DIDError_Set(DIDERR_DIDSTORE_ERROR,
+                            "Current copy not based on the lastest on-chain copy.");
+                    goto errorExit;
+                }
+            } else {
+                if (strcmp(local_signature, resolve_signature) &&
+                        strcmp(local_prevsignature, resolve_signature)) {
+                    DIDError_Set(DIDERR_DIDSTORE_ERROR,
+                            "Current copy not based on the lastest on-chain copy.");
+                    goto errorExit;
+                }
+
+            }
+        }
+
+        DIDMetaData_SetTxid(&document->metadata, last_txid);
+        successed = DIDBackend_UpdateDID(document, signkey, storepass);
+    }
+
+    if (!successed)
+        goto errorExit;
+
+    ResolveCache_InvalidateDID(&document->did);
+    //Meta stores the resolved txid and local signature.
+    DIDMetaData_SetSignature(&document->metadata, DIDDocument_GetProofSignature(document, 0));
+    if (resolve_signature)
+        DIDMetaData_SetPrevSignature(&document->metadata, resolve_signature);
+    rc = DIDStore_WriteDIDMetaData(store, &document->metadata, &document->did);
+
+errorExit:
+    DIDDocument_Destroy(resolve_doc);
+    return rc == -1 ? false : true;
+}
+
+bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
+        DIDURL *signkey, const char *storepass)
+{
+    DIDDocument *resolve_doc = NULL;
+    DocumentProof *proof;
+    DIDStore *store;
+    bool bequals = false;
+    int rc = -1, i, status;
+
+    if (!document || !storepass || !*storepass || !ticket || !signkey) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
+        return false;
+    }
+
+    store = document->metadata.base.store;
+    resolve_doc = DID_Resolve(&document->did, &status, true);
+    if (!resolve_doc) {
+        if (status == DIDStatus_NotFound)
+             DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport transfering DID which isn't published.");
+        return false;
+    }
+
+    if (!Is_CustomizedDID(resolve_doc)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport transfering normal DID.");
+        goto errorExit;
+    }
+
+    if (!TransferTicket_IsValid(ticket))
+       goto errorExit;
+
+    if (strcmp(ticket->txid, DIDMetaData_GetTxid(&resolve_doc->metadata))) {
+        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Transaction id of ticket mismatches with the chain one.");
+        goto errorExit;
+    }
+
+    //check ticket "to"
+    for (i = 0; i < document->proofs.size; i++) {
+        proof = &document->proofs.proofs[i];
+        if (DID_Equals(&ticket->to, &proof->creater.did)) {
+            bequals = true;
+            break;
+        }
+    }
+
+    if (!bequals) {
+        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "The DID to receive ticket is not the document's signer.");
+        goto errorExit;
+    }
+
+    if (!DIDDocument_IsAuthenticationKey(document, signkey))
+        goto errorExit;
+
+    DIDMetaData_SetTxid(&document->metadata, DIDMetaData_GetTxid(&resolve_doc->metadata));
+    DIDMetaData_SetTxid(&document->did.metadata, DIDMetaData_GetTxid(&resolve_doc->metadata));
+    if (!DIDBackend_TransferDID(document, ticket, signkey, storepass))
+        goto errorExit;
+
+    ResolveCache_InvalidateDID(&document->did);
+    //Meta stores the resolved txid and local signature.
+    DIDMetaData_SetSignature(&document->metadata, DIDDocument_GetProofSignature(document, 0));
+    if (*resolve_doc->proofs.proofs[0].signatureValue)
+        DIDMetaData_SetPrevSignature(&document->metadata, resolve_doc->proofs.proofs[0].signatureValue);
+    rc = DIDStore_WriteDIDMetaData(store, &document->metadata, &document->did);
+
+errorExit:
+    DIDDocument_Destroy(resolve_doc);
+    return rc == -1 ? false : true;
+}
+
+bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
+{
+    DIDDocument *resolve_doc;
+    DIDStore *store;
+    bool localcopy = false;
+    int rc = 0, status;
+    bool successed;
+
+    if (!document || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    resolve_doc = DID_Resolve(&document->did, &status, true);
+    if (!resolve_doc) {
+        if (status == DIDStatus_NotFound)
+            DIDError_Set(DIDERR_NOT_EXISTS, "DID doesn't already exist.");
+        return false;
+    }
+
+    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
+        return false;
+    }
+
+    store = document->metadata.base.store;
+    DIDMetaData_SetStore(&resolve_doc->metadata, store);
+
+    if (!signkey) {
+        signkey = DIDDocument_GetDefaultPublicKey(resolve_doc);
+        if (!signkey) {
+            DIDDocument_Destroy(resolve_doc);
+            DIDError_Set(DIDERR_INVALID_KEY, "Not default key.");
+            return false;
+        }
+    } else {
+        if (!DIDDocument_IsAuthenticationKey(resolve_doc, signkey)) {
+            DIDDocument_Destroy(resolve_doc);
+            DIDError_Set(DIDERR_INVALID_KEY, "Invalid authentication key.");
+            return false;
+        }
+    }
+
+    successed = DIDBackend_DeactivateDID(document, NULL, signkey, storepass);
+    DIDDocument_Destroy(resolve_doc);
+    if (successed)
+        ResolveCache_InvalidateDID(&document->did);
+
+    return successed;
+}
+
+bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
+        DIDURL *signkey, const char *storepass)
+{
+    DIDDocument *targetdoc = NULL;
+    DIDStore *store;
+    PublicKey **candidatepks;
+    PublicKey *candidatepk, *pk;
+    bool successed = false, bexist = false;
+    size_t size;
+    int i, j, status;
+
+    if (!document || !target || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    targetdoc = DID_Resolve(target, &status, true);
+    if (!targetdoc) {
+        if (status == DIDStatus_NotFound)
+            DIDError_Set(DIDERR_NOT_EXISTS, "DID doesn't already exist.");
+        return false;
+    }
+
+    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
+        goto errorExit;
+    }
+
+    //check signkey
+    store = document->metadata.base.store;
+    if (!signkey) {
+        candidatepks = document->publickeys.pks;
+        size = document->publickeys.size;
+    } else {
+        candidatepks = (PublicKey **)alloca(sizeof(PublicKey*));
+        if (!candidatepks) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for candidate public keys failed.");
+            goto errorExit;
+        }
+        candidatepks[0] = DIDDocument_GetAuthenticationKey(document, signkey);
+        if (!candidatepks[0]) {
+            DIDError_Set(DIDERR_INVALID_KEY, "Sign key is not authentication key.");
+            goto errorExit;
+        }
+        size = 1;
+    }
+
+    for (i = 0; i < size; i++) {
+        candidatepk = candidatepks[i];
+        for (j = 0; j < targetdoc->publickeys.size; j++) {
+            pk = targetdoc->publickeys.pks[j];
+            if (!pk->authorizationKey || !DID_Equals(&document->did, &pk->controller) ||
+                    strcmp(candidatepk->publicKeyBase58, pk->publicKeyBase58))
+                continue;
+
+            bexist = true;
+            break;
+        }
+        if (bexist)
+            break;
+    }
+
+    if (!bexist) {
+        DIDError_Set(DIDERR_INVALID_KEY, "No invalid authorization key to deactivate did.");
+        goto errorExit;
+    }
+
+    successed = DIDBackend_DeactivateDID(document, target, &candidatepk->id, storepass);
+    if (successed)
+        ResolveCache_InvalidateDID(&document->did);
+
+errorExit:
+    DIDDocument_Destroy(targetdoc);
+    return successed;
 }
 
 DIDURL *PublicKey_GetId(PublicKey *publickey)
