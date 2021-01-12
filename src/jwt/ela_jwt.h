@@ -219,7 +219,7 @@ DID_API bool JWTBuilder_SetId(JWTBuilder *builder, const char *jti);
  * @param
  *      keyid               [in] The sign key.
  * @param
- *      storepass           [in] Pass word to sign.
+ *      storepass           [in] The password for DIDStore.
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */

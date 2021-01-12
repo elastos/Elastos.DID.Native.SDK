@@ -30,14 +30,6 @@
 extern "C" {
 #endif
 
-typedef enum DIDStatus
-{
-    DIDStatus_Valid = 0,
-    DIDStatus_Expired,
-    DIDStatus_Deactivated,
-    DIDStatus_NotFound
-} DIDStatus;
-
 struct DIDBiography {
     DID did;
     DIDStatus status;

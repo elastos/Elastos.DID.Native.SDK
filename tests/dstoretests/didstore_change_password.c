@@ -38,6 +38,7 @@ static void test_didstore_change_password(void)
     DIDStore *store;
     int rc, i, count = 0;
     DIDDocument *newdoc;
+    int status;
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -65,9 +66,8 @@ static void test_didstore_change_password(void)
                 PATH_STEP, did->idstring, PATH_STEP, META_FILE);
         CU_ASSERT_TRUE(file_exist(path));
 
-        CU_ASSERT_TRUE_FATAL(DIDStore_PublishDID(store, storepass, did, NULL, false));
-
-        DIDDocument *loaddoc = DID_Resolve(did, true);
+        CU_ASSERT_TRUE_FATAL(DIDDocument_PublishDID(doc, NULL, false, storepass));
+        DIDDocument *loaddoc = DID_Resolve(did, &status, true);
         CU_ASSERT_PTR_NOT_NULL(loaddoc);
         CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_StoreDID(store, loaddoc));
         DIDDocument_Destroy(loaddoc);

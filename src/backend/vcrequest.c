@@ -160,14 +160,14 @@ const char *CredentialRequest_Sign(CredentialRequest_Type type, DIDURL *credid,
 int CredentialRequest_Verify(CredentialRequest *request)
 {
     DIDDocument *doc;
-    int rc;
+    int rc, status;
 
     assert(request);
 
     if (!request->vc)
         return 0;
 
-    doc = DID_Resolve(&request->vc->subject.id, false);
+    doc = DID_Resolve(&request->vc->subject.id, &status, false);
     if (!doc)
         return -1;
 

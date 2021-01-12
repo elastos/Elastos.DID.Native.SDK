@@ -747,7 +747,7 @@ DIDDocument *TestData_LoadDoc(void)
 {
     DIDURL *id;
     DID *subject;
-    int rc;
+    int rc, status;
     DIDDocument *doc;
 
     if (!testdata.doc)
@@ -772,8 +772,8 @@ DIDDocument *TestData_LoadDoc(void)
     if (rc)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.doc, NULL, false, storepass))
         return NULL;
     DIDDocument_Destroy(doc);
 
@@ -784,7 +784,7 @@ DIDDocument *TestData_LoadControllerDoc(void)
 {
     DIDURL *id;
     DID *subject;
-    int rc;
+    int rc, status;
     DIDDocument *doc;
 
     if (!testdata.controllerdoc)
@@ -803,8 +803,8 @@ DIDDocument *TestData_LoadControllerDoc(void)
     if (rc)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.controllerdoc, NULL, false, storepass))
         return NULL;
     DIDDocument_Destroy(doc);
 
@@ -815,7 +815,7 @@ DIDDocument *TestData_LoadIssuerDoc(void)
 {
     DIDURL *id;
     DID *subject;
-    int rc;
+    int rc, status;
     DIDDocument *doc;
 
     if (!testdata.issuerdoc)
@@ -828,8 +828,8 @@ DIDDocument *TestData_LoadIssuerDoc(void)
     if (rc)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.issuerdoc, NULL, false, storepass))
         return NULL;
     DIDDocument_Destroy(doc);
 
@@ -840,6 +840,7 @@ DIDDocument *TestData_LoadEmptyCtmDoc(void)
 {
     DIDDocument *doc;
     DID *subject;
+    int status;
 
     TestData_LoadIssuerDoc();
     TestData_LoadDoc();
@@ -851,8 +852,8 @@ DIDDocument *TestData_LoadEmptyCtmDoc(void)
     if (!subject)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.emptyctmdoc, NULL, false, storepass))
         return NULL;
     DIDDocument_Destroy(doc);
 
@@ -864,7 +865,7 @@ DIDDocument *TestData_LoadCtmDoc(void)
     DIDDocument *doc;
     DID *subject;
     DIDURL *id;
-    int rc;
+    int rc, status;
 
     TestData_LoadIssuerDoc();
     TestData_LoadDoc();
@@ -888,8 +889,8 @@ DIDDocument *TestData_LoadCtmDoc(void)
     if (rc)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, NULL, false))
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.ctmdoc, NULL, false, storepass))
         return NULL;
 
     DIDDocument_Destroy(doc);
@@ -925,6 +926,7 @@ DIDDocument *TestData_LoadEmptyCtmDoc_MultisigOne(void)
     DIDDocument *doc, *controller_doc;
     DID *subject;
     DIDURL *signkey;
+    int status;
 
     TestData_LoadIssuerDoc();
     TestData_LoadControllerDoc();
@@ -943,8 +945,8 @@ DIDDocument *TestData_LoadEmptyCtmDoc_MultisigOne(void)
     if (!signkey)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.emptyctmdoc_multisigone, signkey, false, storepass))
         return NULL;
     DIDDocument_Destroy(doc);
 
@@ -957,6 +959,7 @@ DIDDocument *TestData_LoadCtmDoc_MultisigOne(void)
     DIDDocument *doc, *controller_doc;
     DID *subject;
     DIDURL *signkey;
+    int status;
 
     TestData_LoadIssuerDoc();
     TestData_LoadControllerDoc();
@@ -978,8 +981,8 @@ DIDDocument *TestData_LoadCtmDoc_MultisigOne(void)
     if (!signkey)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.ctmdoc_multisigone, signkey, false, storepass))
         return NULL;
     DIDDocument_Destroy(doc);
 
@@ -992,6 +995,7 @@ DIDDocument *TestData_LoadEmptyCtmDoc_MultisigTwo(void)
     DIDDocument *doc, *controller_doc;
     DID *subject;
     DIDURL *signkey;
+    int status;
 
     TestData_LoadIssuerDoc();
     TestData_LoadControllerDoc();
@@ -1010,8 +1014,8 @@ DIDDocument *TestData_LoadEmptyCtmDoc_MultisigTwo(void)
     if (!signkey)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.emptyctmdoc_multisigtwo, signkey, false, storepass))
         return NULL;
     DIDDocument_Destroy(doc);
 
@@ -1024,6 +1028,7 @@ DIDDocument *TestData_LoadCtmDoc_MultisigTwo(void)
     DIDDocument *doc, *controller_doc;
     DID *subject;
     DIDURL *signkey;
+    int status;
 
     TestData_LoadIssuerDoc();
     TestData_LoadControllerDoc();
@@ -1045,8 +1050,8 @@ DIDDocument *TestData_LoadCtmDoc_MultisigTwo(void)
     if (!signkey)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.ctmdoc_multisigtwo, signkey, false, storepass))
         return NULL;
     DIDDocument_Destroy(doc);
 
@@ -1059,6 +1064,7 @@ DIDDocument *TestData_LoadEmptyCtmDoc_MultisigThree(void)
     DIDDocument *doc, *controller_doc;
     DID *subject;
     DIDURL *signkey;
+    int status;
 
     TestData_LoadIssuerDoc();
     TestData_LoadControllerDoc();
@@ -1077,8 +1083,8 @@ DIDDocument *TestData_LoadEmptyCtmDoc_MultisigThree(void)
     if (!signkey)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.emptyctmdoc_multisigthree, signkey, false, storepass))
         return NULL;
     DIDDocument_Destroy(doc);
 
@@ -1091,6 +1097,7 @@ DIDDocument *TestData_LoadCtmDoc_MultisigThree(void)
     DIDDocument *doc, *controller_doc;
     DID *subject;
     DIDURL *signkey;
+    int status;
 
     TestData_LoadIssuerDoc();
     TestData_LoadControllerDoc();
@@ -1112,8 +1119,8 @@ DIDDocument *TestData_LoadCtmDoc_MultisigThree(void)
     if (!signkey)
         return NULL;
 
-    doc = DID_Resolve(subject, true);
-    if (!doc && !DIDStore_PublishDID(testdata.store, storepass, subject, signkey, false))
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.ctmdoc_multisigthree, signkey, false, storepass))
         return NULL;
     DIDDocument_Destroy(doc);
 

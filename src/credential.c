@@ -314,6 +314,7 @@ time_t Credential_GetExpirationDate_Internal(Credential *cred, DIDDocument *docu
 {
     DIDDocument *doc;
     time_t _expire, expire;
+    int status;
 
     assert(cred);
     assert(document);
@@ -325,18 +326,15 @@ time_t Credential_GetExpirationDate_Internal(Credential *cred, DIDDocument *docu
     if (cred->expirationDate != 0)
         expire = MIN(expire, cred->expirationDate);
 
-    if (!Credential_IsSelfProclaimed(cred)) {
-        doc = DID_Resolve(&cred->issuer, false);
-        if (!doc)
-            return 0;
-    } else {
-        doc = document;
-    }
+    if (Credential_IsSelfProclaimed(cred))
+        return expire;
+
+    doc = DID_Resolve(&cred->issuer, &status, false);
+    if (!doc)
+        return 0;
 
     _expire = DIDDocument_GetExpires(doc);
-    if (doc != document)
-         DIDDocument_Destroy(doc);
-
+    DIDDocument_Destroy(doc);
     if (!_expire)
         return 0;
 
@@ -346,6 +344,7 @@ time_t Credential_GetExpirationDate_Internal(Credential *cred, DIDDocument *docu
 time_t Credential_GetExpirationDate(Credential *cred)
 {
     DIDDocument *doc;
+    int status;
     time_t t;
 
     if (!cred) {
@@ -353,7 +352,7 @@ time_t Credential_GetExpirationDate(Credential *cred)
         return 0;
     }
 
-    doc = DID_Resolve(&cred->id.did, false);
+    doc = DID_Resolve(&cred->id.did, &status, false);
     if (!doc)
         return 0;
 
@@ -809,14 +808,14 @@ int Credential_Verify(Credential *cred)
 {
     DIDDocument *doc;
     const char *data;
-    int rc;
+    int rc, status;
 
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    doc = DID_Resolve(&cred->issuer, false);
+    doc = DID_Resolve(&cred->issuer, &status, false);
     if (!doc)
         return -1;
 
@@ -875,12 +874,12 @@ bool Credential_IsGenuine_Internal(Credential *cred, DIDDocument *document)
     DIDDocument *issuerdoc = NULL;
     bool bgenuine = false;
     const char *data;
-    int rc;
+    int rc, status;
 
     assert(cred);
 
     if (!document) {
-        issuerdoc = DID_Resolve(&cred->issuer, false);
+        issuerdoc = DID_Resolve(&cred->issuer, &status, false);
     } else {
         issuerdoc = document;
     }
@@ -925,12 +924,13 @@ bool Credential_IsValid_Internal(Credential *cred, DIDDocument *document)
 {
     DIDDocument *issuerdoc;
     bool valid;
+    int status;
 
     assert(cred);
     assert(document);
 
     if (!Credential_IsSelfProclaimed(cred)) {
-        issuerdoc = DID_Resolve(&cred->issuer, false);
+        issuerdoc = DID_Resolve(&cred->issuer, &status, false);
         if (!issuerdoc)
             return false;
 
@@ -953,13 +953,14 @@ bool Credential_IsValid(Credential *cred)
 {
     DIDDocument *doc;
     bool valid;
+    int status;
 
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    doc = DID_Resolve(&cred->subject.id, false);
+    doc = DID_Resolve(&cred->subject.id, &status, false);
     if (!doc)
         return false;
 
@@ -1024,14 +1025,197 @@ int Credential_Copy(Credential *dest, Credential *src)
     return 0;
 }
 
-Credential *Credential_Resolve(DIDURL *id, bool force)
+bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *storepass)
+{
+    DIDDocument *doc = NULL;
+    DIDStore *store;
+    bool successed = false;
+    int status;
+
+    if (!credential || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    if (!CredentialMetaData_AttachedStore(&credential->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Not attached with Credential.");
+        return false;
+    }
+
+    if (!Credential_IsValid(credential))
+        return false;
+
+    if (Credential_IsRevoked(credential)) {
+        DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "The credential is revoked.");
+        return false;
+    }
+
+    if (Credential_WasDeclared(&credential->id)) {
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "The credential already exist.");
+        return false;
+    }
+
+    store = credential->metadata.base.store;
+    doc = DIDStore_LoadDID(store, &credential->subject.id);
+    if (!doc) {
+        doc = DID_Resolve(&credential->subject.id, &status, false);
+        if (!doc) {
+            if (status == DIDStatus_NotFound)
+                DIDError_Set(DIDERR_NOT_EXISTS, "The owner of Credential doesn't already exist.");
+            return false;
+        }
+        DIDMetaData_SetStore(&doc->metadata, store);
+    }
+
+    if (!signkey) {
+        signkey = DIDDocument_GetDefaultPublicKey(doc);
+        if (!signkey) {
+            DIDError_Set(DIDERR_INVALID_KEY, "Please give the specificed sign key.");
+            goto errorExit;
+        }
+    } else {
+        if(!DIDDocument_IsAuthenticationKey(doc, signkey)) {
+            DIDError_Set(DIDERR_INVALID_KEY, "Please give the authentication key.");
+            goto errorExit;
+        }
+    }
+
+    successed = DIDBackend_DeclareCredential(credential, signkey, doc, storepass);
+
+errorExit:
+    DIDDocument_Destroy(doc);
+    return successed;
+}
+
+bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *storepass)
+{
+    DIDDocument *doc = NULL;
+    DIDStore *store;
+    bool successed = false, brevoked;
+    DID *signer;
+    int status;
+
+    if (!credential || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    if (!CredentialMetaData_AttachedStore(&credential->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Not attached with Credential.");
+        return false;
+    }
+
+    if (!Credential_IsSelfProclaimed(credential) && !signkey) {
+        DIDError_Set(DIDERR_INVALID_KEY, "Please specify the sign key for non-selfproclaimed credential.");
+        return false;
+    }
+
+    if (!signkey) {
+        signer = &credential->subject.id;
+    } else {
+        signer = &signkey->did;
+        if (!DID_Equals(signer, &credential->subject.id) && !DID_Equals(signer, &credential->issuer))
+            return false;
+    }
+
+    if (!Credential_IsValid(credential))
+        return false;
+
+    if (Credential_IsRevoked(credential)) {
+        DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "The credential is revoked.");
+        return false;
+    }
+
+    store = credential->metadata.base.store;
+    doc = DIDStore_LoadDID(store, signer);
+    if (!doc) {
+        doc = DID_Resolve(signer, &status, false);
+        if (!doc) {
+            if (status == DIDStatus_NotFound)
+                DIDError_Set(DIDERR_NOT_EXISTS, "The owner of Credential doesn't already exist.");
+            return false;
+        }
+        DIDMetaData_SetStore(&doc->metadata, store);
+    }
+
+    if (!signkey) {
+        signkey = DIDDocument_GetDefaultPublicKey(doc);
+        if (!signkey) {
+            DIDError_Set(DIDERR_INVALID_KEY, "Please give the specificed sign key.");
+            goto errorExit;
+        }
+    } else {
+        if(!DIDDocument_IsAuthenticationKey(doc, signkey)) {
+            DIDError_Set(DIDERR_INVALID_KEY, "Please give the authentication key to sign.");
+            goto errorExit;
+        }
+    }
+
+    successed = DIDBackend_RevokeCredential(&credential->id, signkey, doc, storepass);
+
+errorExit:
+    DIDDocument_Destroy(doc);
+    return successed;
+}
+
+bool Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
+        const char *storepass)
+{
+    DIDDocument *doc = NULL;
+    DIDStore *store;
+    Credential *local_vc;
+    bool successed = false, brevoked;
+    DID *signer;
+    int status;
+
+    if (!id || !document || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Document does not attached with DID store.");
+        return false;
+    }
+
+    store = document->metadata.base.store;
+    local_vc = DIDStore_LoadCredential(store, &id->did, id);
+    if (local_vc) {
+        brevoked = Credential_IsRevoked(local_vc);
+        Credential_Destroy(local_vc);
+        if (brevoked) {
+            DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "Credential is already revoked.");
+            return false;
+        }
+    }
+
+    if (Credential_ResolveRevocation(id, &document->did)) {
+        DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "Credential is already revoked.");
+        return false;
+    }
+
+    if (!signkey) {
+        signkey = DIDDocument_GetDefaultPublicKey(document);
+        if (!signkey) {
+            DIDError_Set(DIDERR_INVALID_KEY, "Please give the specificed sign key.");
+            return false;
+        }
+    } else {
+        if (!DIDDocument_IsAuthenticationKey(document, signkey))
+            return false;
+    }
+
+    return DIDBackend_RevokeCredential(id, signkey, document, storepass);
+}
+
+Credential *Credential_Resolve(DIDURL *id, int *status, bool force)
 {
     if (!id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    return DIDBackend_ResolveCredential(id, force);
+    return DIDBackend_ResolveCredential(id, status, force);
 }
 
 bool Credential_ResolveRevocation(DIDURL *id, DID *issuer)
@@ -1056,13 +1240,14 @@ CredentialBiography *Credential_ResolveBiography(DIDURL *id, DID *issuer)
 bool Credential_WasDeclared(DIDURL *id)
 {
     Credential *credential;
+    int status;
 
     if (!id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    credential = Credential_Resolve(id, true);
+    credential = Credential_Resolve(id, &status, true);
     if (!credential)
         return false;
 
@@ -1076,6 +1261,9 @@ bool Credential_IsRevoked(Credential *credential)
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
+
+    if (CredentialMetaData_GetRevoke(&credential->metadata))
+        return true;
 
     return Credential_ResolveRevocation(&credential->id, &credential->issuer) ||
             Credential_ResolveRevocation(&credential->id, &credential->subject.id);

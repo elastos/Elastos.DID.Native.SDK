@@ -562,7 +562,7 @@ int Presentation_Verify(Presentation *pre)
     DIDDocument *doc;
     const char *data;
     size_t i;
-    int rc;
+    int rc, status;
 
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -602,9 +602,10 @@ int Presentation_Verify(Presentation *pre)
         }
     }
 
-    doc = DID_Resolve(signer, false);
+    doc = DID_Resolve(signer, &status, false);
     if (!doc) {
-        DIDError_Set(DIDERR_MALFORMED_DID, "Presentation signer is not a published did.");
+        if (status == DIDStatus_NotFound)
+            DIDError_Set(DIDERR_MALFORMED_DID, "Presentation signer is not a published did.");
         return -1;
     }
 
@@ -785,7 +786,7 @@ bool Presentation_IsGenuine(Presentation *pre)
     DID *signer;
     DIDDocument *doc = NULL;
     size_t i;
-    int rc;
+    int rc, status;
 
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -803,9 +804,10 @@ bool Presentation_IsGenuine(Presentation *pre)
         return false;
     }
 
-    doc = DID_Resolve(signer, false);
+    doc = DID_Resolve(signer, &status, false);
     if (!doc) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Presentation signer is not a published did.");
+        if (status == DIDStatus_NotFound)
+            DIDError_Set(DIDERR_NOT_EXISTS, "Presentation signer is not a published did.");
         return false;
     }
 
@@ -854,7 +856,7 @@ bool Presentation_IsValid(Presentation *pre)
     DID *signer;
     DIDDocument *doc = NULL;
     size_t i;
-    int rc;
+    int rc, status;
 
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -870,9 +872,10 @@ bool Presentation_IsValid(Presentation *pre)
     if (!signer)
         return false;
 
-    doc = DID_Resolve(signer, false);
+    doc = DID_Resolve(signer, &status, false);
     if (!doc) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Presentation signer is not a published did.");
+        if (status == DIDStatus_NotFound)
+            DIDError_Set(DIDERR_NOT_EXISTS, "Presentation signer is not a published did.");
         return false;
     }
 

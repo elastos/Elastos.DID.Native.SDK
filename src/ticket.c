@@ -138,6 +138,7 @@ TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
     DIDDocument *document = NULL;
     const char *txid;
     bool bvalid;
+    int status;
 
     assert(owner);
     assert(to);
@@ -148,9 +149,10 @@ TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
         return NULL;
     }
 
-    document = DID_Resolve(to, false);
+    document = DID_Resolve(to, &status, false);
     if (!document) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "DID received ticket does not already exist.");
+        if (status == DIDStatus_NotFound)
+            DIDError_Set(DIDERR_NOT_EXISTS, "DID received ticket does not already exist.");
         goto errorExit;
     }
 
@@ -159,9 +161,12 @@ TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
     if (!bvalid)
         goto errorExit;
 
-    ticket->doc = DID_Resolve(owner, false);
-    if (!ticket->doc)
+    ticket->doc = DID_Resolve(owner, &status, false);
+    if (!ticket->doc) {
+        if (status == DIDStatus_NotFound)
+            DIDError_Set(DIDERR_NOT_EXISTS, "The ticket's owner does not already exist.");
         goto errorExit;
+    }
 
     if (!Is_CustomizedDID(ticket->doc)) {
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Ticket supports only for customized did.");
@@ -394,6 +399,7 @@ static TransferTicket *TransferTicket_FromJson_Internal(json_t *root)
 {
     TransferTicket *ticket = NULL;
     json_t *item;
+    int status;
 
     assert(root);
 
@@ -452,9 +458,12 @@ static TransferTicket *TransferTicket_FromJson_Internal(json_t *root)
     if (Parse_Proofs(ticket, item) == -1)
         goto errorExit;
 
-    ticket->doc = DID_Resolve(&ticket->did, true);
-    if (!ticket->doc)
+    ticket->doc = DID_Resolve(&ticket->did, &status, true);
+    if (!ticket->doc) {
+        if (status == DIDStatus_NotFound)
+            DIDError_Set(DIDERR_NOT_EXISTS, "The ticket's owner does not already exist.");
         goto errorExit;
+    }
 
     return ticket;
 

@@ -112,7 +112,7 @@ static const char *DIDRequest_ToJson(DIDRequest *req)
 }
 
 const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
-        TransferTicket *ticket, DIDURL *signkey, const char *storepass)
+        DID *target, TransferTicket *ticket, DIDURL *signkey, const char *storepass)
 {
     DIDRequest req;
     const char *payload = NULL, *op, *requestJson = NULL, *prevtxid, *data, *ticket_data = "";
@@ -146,7 +146,10 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
     }
 
     if (type == RequestType_Deactivate) {
-        data = DID_ToString(DIDDocument_GetSubject(document), idstring, sizeof(idstring));
+        if (!target)
+            target = &document->did;
+
+        data = DID_ToString(target, idstring, sizeof(idstring));
         if (!data)
             return NULL;
         payload = strdup(data);

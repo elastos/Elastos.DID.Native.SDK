@@ -133,7 +133,7 @@ typedef struct DID_Export {
     zip_t *zip;
 } DID_Export;
 
-static int store_didmeta(DIDStore *store, DIDMetaData *meta, DID *did)
+int DIDStore_WriteDIDMetaData(DIDStore *store, DIDMetaData *meta, DID *did)
 {
     char path[PATH_MAX];
     const char *data;
@@ -175,7 +175,7 @@ static int load_didmeta(DIDStore *store, DIDMetaData *meta, const char *did)
     time_t lastmodified;
     DIDDocument *doc;
     DID _did;
-    int rc;
+    int rc, status;
 
     assert(store);
     assert(meta);
@@ -188,10 +188,8 @@ static int load_didmeta(DIDStore *store, DIDMetaData *meta, const char *did)
     }
 
     rc = test_path(path);
-    if (rc < 0) {
-        DIDError_Set(DIDERR_IO_ERROR, "File error.");
+    if (rc < 0)
         return 0;
-    }
 
     if (rc == S_IFDIR) {
         DIDError_Set(DIDERR_IO_ERROR, "Did meta should be a file.");
@@ -210,7 +208,7 @@ static int load_didmeta(DIDStore *store, DIDMetaData *meta, const char *did)
     if (rc < 0) {
         delete_file(path);
         Init_DID(&_did, did);
-        doc = DID_Resolve(&_did, false);
+        doc = DID_Resolve(&_did, &status, false);
         if (!doc) {
             memset(meta, 0, sizeof(DIDMetaData));
             DIDMetaData_SetDeactivated(meta, false);
@@ -271,7 +269,7 @@ int DIDStore_StoreDIDMetaData(DIDStore *store, DIDMetaData *meta, DID *did)
         return -1;
     }
 
-    return store_didmeta(store, meta, did);
+    return DIDStore_WriteDIDMetaData(store, meta, did);
 }
 
 static int store_credmeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id)
@@ -341,6 +339,8 @@ static int load_credmeta(DIDStore *store, CredentialMetaData *meta, const char *
     assert(fragment);
 
     memset(meta, 0, sizeof(CredentialMetaData));
+
+    CredentialMetaData_SetStore(meta, store);
     if (get_file(path, 0, 6, store->root, DID_DIR, did, CREDENTIALS_DIR,
             fragment, META_FILE) == -1)
         return 0;
@@ -387,7 +387,6 @@ static int load_credmeta(DIDStore *store, CredentialMetaData *meta, const char *
     }
 
     CredentialMetaData_SetLastModified(meta, lastmodified);
-    CredentialMetaData_SetStore(meta, store);
     return 0;
 }
 
@@ -1226,7 +1225,7 @@ int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
         DIDMetaData_SetLastModified(&document->metadata, get_file_lastmodified(path));
     }
 
-    if (store_didmeta(store, &document->metadata, &document->did) == -1)
+    if (DIDStore_WriteDIDMetaData(store, &document->metadata, &document->did) == -1)
         goto errorExit;
 
     count = DIDDocument_GetCredentialCount(document);
@@ -1467,6 +1466,7 @@ Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
         Credential_Destroy(credential);
         return NULL;
     }
+
     return credential;
 }
 
@@ -1791,7 +1791,7 @@ void DIDStore_DeletePrivateKey(DIDStore *store, DID *did, DIDURL *id)
     if (!store || !did || !id)
         return;
 
-    if (get_file(path, 0, 6, store->root, DID_DIR, did->idstring,
+    if (get_file(path, 0, 5, store->root, DID_DIR, did->idstring,
             PRIVATEKEYS_DIR, id->fragment) == -1)
         return;
 
@@ -1958,6 +1958,7 @@ int DIDStore_Synchronize(DIDStore *store, const char *storepass, DIDStore_MergeC
     HDKey _derivedkey, *derivedkey;
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
     DID did;
+    int status;
 
      if (!store || !storepass || !*storepass)
         return -1;
@@ -1982,7 +1983,7 @@ int DIDStore_Synchronize(DIDStore *store, const char *storepass, DIDStore_MergeC
             continue;
 
         if (Init_DID(&did, HDKey_GetAddress(derivedkey)) == 0) {
-            chainCopy = DID_Resolve(&did, true);
+            chainCopy = DID_Resolve(&did, &status, true);
             if (chainCopy) {
                 if (DIDDocument_IsDeactivated(chainCopy)) {
                     DIDError_Set(DIDERR_DID_DEACTIVATED, "Did is deactivated.");
@@ -2229,6 +2230,7 @@ DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
     DIDURL *key;
     DID did;
     bool iscontain;
+    int status;
 
     if (!store || !storepass || !*storepass || !customizeddid || !*customizeddid ||
             !controllers|| size == 0 || multisig < 0) {
@@ -2260,7 +2262,7 @@ DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
         }
     }
 
-    controller_doc = DID_Resolve(controller, false);
+    controller_doc = DID_Resolve(controller, &status, false);
     if (!controller_doc) {
         DIDError_Set(DIDERR_INVALID_ARGS, "No controller's document in chain.");
         return NULL;
@@ -2285,6 +2287,21 @@ DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
 
     if (Init_DID(&did, customizeddid) == -1)
         return NULL;
+
+    //check the DID
+    doc = DIDStore_LoadDID(store, &did);
+    if (doc) {
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exist.");
+        DIDDocument_Destroy(doc);
+        return NULL;
+    }
+
+    doc = DID_Resolve(&did, &status, true);
+    if (doc) {
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exist.");
+        DIDDocument_Destroy(doc);
+        return NULL;
+    }
 
     doc = create_customized_document(store, storepass, &did, controllers, size,
             controller, multisig);
@@ -2509,359 +2526,6 @@ int DIDStore_Sign(DIDStore *store, const char *storepass, DID *did,
 
     memset(binkey, 0, sizeof(binkey));
     return 0;
-}
-
-bool DIDStore_PublishDID(DIDStore *store, const char *storepass, DID *did,
-        DIDURL *signkey, bool force)
-{
-    const char *last_txid, *local_signature, *local_prevsignature, *resolve_signature = NULL;
-    DIDDocument *doc = NULL, *resolve_doc = NULL;
-    int rc = -1;
-    bool successed;
-
-    if (!store || !storepass || !*storepass || !did) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
-
-    doc = DIDStore_LoadDID(store, did);
-    if (!doc)
-        return false;
-
-    if (Is_CustomizedDID(doc) && doc->controllers.size > 1 && !signkey) {
-        DIDError_Set(DIDERR_INVALID_KEY, "Multi-controller customized DID must have sign key to publish.");
-        goto errorExit;
-    }
-
-    if (!DIDDocument_IsQualified(doc)) {
-        DIDError_Set(DIDERR_NOT_GENUINE, "Did document is not qualified.");
-        goto errorExit;
-    }
-
-    if (!DIDDocument_IsGenuine(doc)) {
-        DIDError_Set(DIDERR_NOT_GENUINE, "Did document is not genuine.");
-        goto errorExit;
-    }
-
-    if (DIDDocument_IsDeactivated(doc)) {
-        DIDError_Set(DIDERR_DID_DEACTIVATED, "Did is already deactivated.");
-        goto errorExit;
-    }
-
-    if (!force && DIDDocument_IsExpired(doc)) {
-        DIDError_Set(DIDERR_EXPIRED, "Did already expired, use force mode to publish anyway.");
-        goto errorExit;
-    }
-
-    if (!signkey) {
-        signkey = DIDDocument_GetDefaultPublicKey(doc);
-        if (!signkey)
-            goto errorExit;
-    } else {
-        if (!DIDDocument_IsAuthenticationKey(doc, signkey))
-            goto errorExit;
-    }
-
-    resolve_doc = DID_Resolve(did, true);
-    if (!resolve_doc) {
-        successed = DIDBackend_CreateDID(doc, signkey, storepass);
-    } else {
-        if (DIDDocument_IsDeactivated(resolve_doc)) {
-            DIDError_Set(DIDERR_EXPIRED, "Did is already deactivated.");
-            goto errorExit;
-        }
-
-        if (Is_CustomizedDID(doc) && doc->controllers.size != resolve_doc->controllers.size) {
-            DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport publishing DID which is changed controller, please transfer it.");
-            goto errorExit;
-        }
-
-        resolve_signature = resolve_doc->proofs.proofs[0].signatureValue;
-        if (!resolve_signature || !*resolve_signature) {
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing resolve signature.");
-            goto errorExit;
-        }
-        last_txid = DIDMetaData_GetTxid(&resolve_doc->metadata);
-
-        if (!force) {
-            local_signature = DIDMetaData_GetSignature(&doc->metadata);
-            local_prevsignature = DIDMetaData_GetPrevSignature(&doc->metadata);
-            if ((!local_signature || !*local_signature) && (!local_prevsignature || !*local_prevsignature)) {
-                DIDError_Set(DIDERR_DIDSTORE_ERROR,
-                        "Missing signatures information, DID SDK dosen't know how to handle it, use force mode to ignore checks.");
-                goto errorExit;
-            } else if (!local_signature || !local_prevsignature) {
-                const char *sig = local_signature != NULL ? local_signature : local_prevsignature;
-                if (strcmp(sig, resolve_signature)) {
-                    DIDError_Set(DIDERR_DIDSTORE_ERROR,
-                            "Current copy not based on the lastest on-chain copy.");
-                    goto errorExit;
-                }
-            } else {
-                if (strcmp(local_signature, resolve_signature) &&
-                        strcmp(local_prevsignature, resolve_signature)) {
-                    DIDError_Set(DIDERR_DIDSTORE_ERROR,
-                            "Current copy not based on the lastest on-chain copy.");
-                    goto errorExit;
-                }
-
-            }
-        }
-
-        DIDMetaData_SetTxid(&doc->metadata, last_txid);
-        DIDMetaData_SetTxid(&doc->did.metadata, last_txid);
-        successed = DIDBackend_UpdateDID(doc, signkey, storepass);
-    }
-
-    if (!successed)
-        goto errorExit;
-
-    ResolveCache_InvalidateDID(did);
-    //Meta stores the resolved txid and local signature.
-    DIDMetaData_SetSignature(&doc->metadata, DIDDocument_GetProofSignature(doc, 0));
-    if (resolve_signature)
-        DIDMetaData_SetPrevSignature(&doc->metadata, resolve_signature);
-    rc = store_didmeta(store, &doc->metadata, &doc->did);
-
-errorExit:
-    if (resolve_doc)
-        DIDDocument_Destroy(resolve_doc);
-    if (doc)
-        DIDDocument_Destroy(doc);
-    return rc == -1 ? false : true;
-}
-
-bool DIDStore_TransferDID(DIDStore *store, const char *storepass, DID *did,
-       TransferTicket *ticket, DIDURL *signkey)
-{
-    DIDDocument *resolve_doc = NULL, *doc = NULL;
-    DocumentProof *proof;
-    bool bequals = false;
-    int rc = -1, i;
-
-    if (!store || !storepass || !*storepass || !did || !ticket || !signkey) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
-
-    resolve_doc = DID_Resolve(did, true);
-    if (!resolve_doc) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport transfering DID which isn't published.");
-        return false;
-    }
-
-    if (!Is_CustomizedDID(resolve_doc)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport transfering normal DID.");
-        goto errorExit;
-    }
-
-    if (!TransferTicket_IsValid(ticket))
-       goto errorExit;
-
-    if (strcmp(ticket->txid, DIDMetaData_GetTxid(&resolve_doc->metadata))) {
-        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Transaction id of ticket mismatches with the chain one.");
-        goto errorExit;
-    }
-
-    doc = DIDStore_LoadDID(store, did);
-    if (!doc)
-        goto errorExit;
-
-    //check ticket "to"
-    for (i = 0; i < doc->proofs.size; i++) {
-        proof = &doc->proofs.proofs[i];
-        if (DID_Equals(&ticket->to, &proof->creater.did)) {
-            bequals = true;
-            break;
-        }
-    }
-
-    if (!bequals) {
-        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "The DID to receive ticket is not the document's signer.");
-        goto errorExit;
-    }
-
-    if (!DIDDocument_IsAuthenticationKey(doc, signkey))
-        goto errorExit;
-
-    DIDMetaData_SetTxid(&doc->metadata, DIDMetaData_GetTxid(&resolve_doc->metadata));
-    DIDMetaData_SetTxid(&doc->did.metadata, DIDMetaData_GetTxid(&resolve_doc->metadata));
-    if (!DIDBackend_TransferDID(doc, ticket, signkey, storepass))
-        goto errorExit;
-
-    ResolveCache_InvalidateDID(did);
-    //Meta stores the resolved txid and local signature.
-    DIDMetaData_SetSignature(&doc->metadata, DIDDocument_GetProofSignature(doc, 0));
-    if (*resolve_doc->proofs.proofs[0].signatureValue)
-        DIDMetaData_SetPrevSignature(&doc->metadata, resolve_doc->proofs.proofs[0].signatureValue);
-    rc = store_didmeta(store, &doc->metadata, &doc->did);
-
-errorExit:
-    DIDDocument_Destroy(resolve_doc);
-    DIDDocument_Destroy(doc);
-    return rc == -1 ? false : true;
-}
-
-bool DIDStore_DeactivateDID(DIDStore *store, const char *storepass,
-        DID *did, DIDURL *signkey)
-{
-    DIDDocument *doc;
-    bool localcopy = false;
-    int rc = 0;
-    bool successed;
-
-    if (!store || !storepass || !*storepass || !did) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
-
-    doc = DID_Resolve(did, true);
-    if (!doc) {
-        doc = DIDStore_LoadDID(store, did);
-        if (!doc) {
-            DIDError_Set(DIDERR_NOT_EXISTS, "No this did.");
-            return false;
-        } else {
-            localcopy = true;
-        }
-    }
-    else {
-        DIDMetaData_SetStore(&doc->metadata, store);
-        DIDMetaData_SetStore(&doc->did.metadata, store);
-    }
-
-    if (!signkey) {
-        signkey = DIDDocument_GetDefaultPublicKey(doc);
-        if (!signkey) {
-            DIDDocument_Destroy(doc);
-            DIDError_Set(DIDERR_INVALID_KEY, "Not default key.");
-            return false;
-        }
-    } else {
-        if (!DIDDocument_IsAuthenticationKey(doc, signkey)) {
-            DIDDocument_Destroy(doc);
-            DIDError_Set(DIDERR_INVALID_KEY, "Invalid authentication key.");
-            return false;
-        }
-    }
-
-    successed = DIDBackend_DeactivateDID(&doc->did, signkey, storepass);
-    DIDDocument_Destroy(doc);
-    if (successed)
-        ResolveCache_InvalidateDID(did);
-
-    return successed;
-}
-
-bool DIDStore_DeclareCredential(DIDStore *store, const char *storepass, DIDURL *credid,
-        DIDURL *signkey)
-{
-    DIDDocument *doc = NULL;
-    Credential *load_vc = NULL;
-    bool successed = false;
-
-    if (!store || !storepass || !*storepass || !credid) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
-
-    load_vc = DIDStore_LoadCredential(store, &credid->did, credid);
-    if (!load_vc)
-        return false;
-
-    if (Credential_IsRevoked(load_vc)) {
-        DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "The credential is revoked.");
-        goto errorExit;
-    }
-
-    if (Credential_WasDeclared(credid)) {
-        DIDError_Set(DIDERR_ALREADY_EXISTS, "The credential already exist.");
-        goto errorExit;
-    }
-
-    if (!Credential_IsValid(load_vc))
-        goto errorExit;
-
-    doc = DIDStore_LoadDID(store, &credid->did);
-    if (!doc) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "There is no owner's document in DIDStore.");
-        goto errorExit;
-    }
-
-    if (!signkey) {
-        signkey = DIDDocument_GetDefaultPublicKey(doc);
-        if (!signkey) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Please give the specificed sign key.");
-            goto errorExit;
-        }
-    } else {
-        if(!DIDDocument_IsAuthenticationKey(doc, signkey)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Please give the authentication key.");
-            goto errorExit;
-        }
-    }
-
-    successed = DIDBackend_DeclareCredential(load_vc, signkey, doc, storepass);
-
-errorExit:
-    DIDDocument_Destroy(doc);
-    Credential_Destroy(load_vc);
-    return successed;
-}
-
-bool DIDStore_RevokeCredential(DIDStore *store, const char *storepass, DIDURL *credid,
-        DIDURL *signkey)
-{
-    DIDDocument *doc = NULL;
-    Credential *vc = NULL;
-    int status = -1;
-    bool successed = false, brevoked;
-    DID *signer;
-
-    if (!store || !storepass || !*storepass || !credid) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
-
-    vc = DIDStore_LoadCredential(store, &credid->did, credid);
-    if (vc) {
-        brevoked = CredentialMetaData_GetRevoke(&vc->metadata) || Credential_IsRevoked(vc);
-        Credential_Destroy(vc);
-        if (brevoked) {
-            DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "Credential is already revoked.");
-            return false;
-        }
-    }
-
-    if (signkey)
-        signer = &signkey->did;
-    else
-        signer = &credid->did;
-
-    doc = DIDStore_LoadDID(store, signer);
-    if (!doc) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "There is no signer's document in DIDStore.");
-        goto errorExit;
-    }
-
-    if (!signkey) {
-        signkey = DIDDocument_GetDefaultPublicKey(doc);
-        if (!signkey) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Please give the specificed sign key.");
-            goto errorExit;
-        }
-    } else {
-        if(!DIDDocument_IsAuthenticationKey(doc, signkey)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Please give the authentication key.");
-            goto errorExit;
-        }
-    }
-
-    successed = DIDBackend_RevokeCredential(credid, signkey, doc, storepass);
-
-errorExit:
-    DIDDocument_Destroy(doc);
-    return successed;
 }
 
 static bool need_reencrypt(const char *path)

@@ -79,7 +79,7 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
             return -1;
         }
 
-        if (!all) {
+        if (!all && result->status != DIDStatus_Deactivated) {
             size = 1;
         } else {
             size = json_array_size(item);

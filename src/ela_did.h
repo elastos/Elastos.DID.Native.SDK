@@ -121,6 +121,34 @@ typedef enum {
 
 /**
  * \~English
+ * Indicate the DID status on the chain. '1' remains for expired status.
+ */
+typedef enum
+{
+    /**
+     * \~English
+     * DID is valid on chain.
+     */
+    DIDStatus_Valid = 0,
+    /**
+     * \~English
+     * DID is deactivated on the chain.
+     */
+    DIDStatus_Deactivated = 2,
+    /**
+     * \~English
+     * DID is not on the chain.
+     */
+    DIDStatus_NotFound = 3,
+    /**
+     * \~English
+     * DID is not on the chain.
+     */
+    DIDStatus_Error = -1
+} DIDStatus;
+
+/**
+ * \~English
  * Indicate the credential status on the chain.
  */
 typedef enum
@@ -525,6 +553,8 @@ DID_API void DID_Destroy(DID *did);
  * @param
  *      did                      [in] The handle of DID.
  * @param
+ *      status                   [in] The status of DID.
+ * @param
  *      force                    [in] Indicate if load document from cache or not.
  *                               force = true, document gets only from chain.
  *                               force = false, document can get from cache,
@@ -534,7 +564,7 @@ DID_API void DID_Destroy(DID *did);
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API DIDDocument *DID_Resolve(DID *did, bool force);
+DID_API DIDDocument *DID_Resolve(DID *did, DIDStatus *status, bool force);
 
 /**
  * \~English
@@ -1359,7 +1389,7 @@ DID_API void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder);
  * @param
  *      builder              [in] A handle to DIDDocument Builder.
  * @param
- *      storepass            [in] Pass word to sign.
+ *      storepass            [in] The password for DIDStore.
  * @return
  *      If no error occurs, return a handle to DIDDocument.
  *      Otherwise, return NULL.
@@ -2118,7 +2148,7 @@ DID_API time_t DIDDocument_GetExpires(DIDDocument *document);
  *                                   If key = NULL, sdk will get default key from
  *                                   DID Document.
  * @param
- *      storepass                [in] Pass word to sign.
+ *      storepass                [in] The password for DIDStore.
  * @param
  *      sig                      [out] The buffer will receive signature data.
  * @param
@@ -2140,7 +2170,7 @@ DID_API int DIDDocument_Sign(DIDDocument *document, DIDURL *keyid, const char *s
  *                               If keyid is null, then will sign with
  *                               the default key of this DID document.
  * @param
- *      storepass                [in] Pass word to sign.
+ *      storepass                [in] The password for DIDStore.
  * @param
  *      sig                      [out] The buffer will receive signature data.
  * @param
@@ -2397,6 +2427,76 @@ DID_API TransferTicket *DIDDocument_CreateTransferTicket(DIDDocument *controller
  */
 DID_API int DIDDocument_SignTransferTicket(DIDDocument *controllerdoc,
         TransferTicket *ticket, const char *storepass);
+
+/**
+ * \~English
+ * Creates a DID and its associated DID Document to chain.
+ *
+ * @param
+ *      document                 [in] The handle to DIDDocument.
+ * @param
+ *      signkey                  [in] The public key to sign.
+ * @param
+ *      force                    [in] Force document into chain.
+ * @param
+ *      storepass                [in] The password for DIDStore.
+ * @return
+ *      true on success, false if an error occurred. Caller should free the returned value.
+ */
+DID_API bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
+        const char *storepass);
+
+/**
+ * \~English
+ * Transfer DID if customized DID had add or remove controller.
+ *
+ * @param
+ *      document                 [in] The handle to DIDDocument.
+ * @param
+ *      ticket                   [in] The handle to Transfer ticket.
+ * @param
+ *      signkey                  [in] The public key to sign.
+ * @param
+ *      storepass                [in] The password for DIDStore.
+ * @return
+ *      true on success, false if an error occurred. Caller should free the returned value.
+ */
+DID_API bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
+        DIDURL *signkey, const char *storepass);
+
+/**
+ * \~English
+ * Deactivate DID by owner.
+ *
+ * @param
+ *      document                 [in] The handle to DIDDocument.
+ * @param
+ *      signkey                  [in] The public key to sign.
+ * @param
+ *      storepass                [in] Password for DIDStore.
+ * @return
+ *      true on success, false if an error occurred. Caller should free the returned value.
+ */
+DID_API bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey,
+        const char *storepass);
+
+/**
+ * \~English
+ * Deactivate DID by authorizor.
+ *
+ * @param
+ *      document                 [in] The authorizor's DIDDocument.
+ * @param
+ *      target                   [in] The DID to be deactivated.
+ * @param
+ *      signkey                  [in] The public key of authorizor to sign.
+ * @param
+ *      storepass                [in] Password for DIDStore.
+ * @return
+ *      true on success, false if an error occurred. Caller should free the returned value.
+ */
+DID_API bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
+        DIDURL *signkey, const char *storepass);
 
 /**
  * \~English
@@ -2792,10 +2892,62 @@ DID_API int Credential_SaveMetaData(Credential *cred);
 
 /**
  * \~English
+ * Declare a credential to chain.
+ *
+ * @param
+ *      credential               [in] The handle to Credential.
+ * @param
+ *      signkey                  [in] The public key to sign.
+ * @param
+ *      storepass                [in] The password for DIDStore.
+ * @return
+ *      true on success, false if an error occurred(for example: the credential
+ *      is valid or revoked on the chain). Caller should free the returned value.
+ */
+DID_API bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *storepass);
+
+/**
+ * \~English
+ * Revoke credential to chain.
+ *
+ * @param
+ *      credential               [in] The handle to Credential.
+ * @param
+ *      signkey                  [in] The public key to sign.
+ *                               signkey can be owner's public key or issuer's public key.
+ * @param
+ *      storepass                [in] The password for DIDStore.
+ * @return
+ *      true on success, false if an error occurred. Caller should free the returned value.
+ */
+DID_API bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *storepass);
+
+/**
+ * \~English
+ * Revoke credential to chain.
+ *
+ * @param
+ *      id                       [in] The id of Credential.
+  * @param
+ *      document                 [in] The document of DID to revoke credential.
+ * @param
+ *      signkey                  [in] The public key of document.
+ * @param
+ *      storepass                [in] The password for DIDStore.
+ * @return
+ *      true on success, false if an error occurred. Caller should free the returned value.
+ */
+DID_API bool Credential_RevokeById(DIDURL *id, DIDDocument *document,  DIDURL *signkey,
+        const char *storepass);
+
+/**
+ * \~English
  * Get the lastest credential from the chain.
  *
  * @param
  *      id                     [in] The id of credential to resolve.
+ * @param
+ *      status                 [in] The status of credential.
  * @param
  *      force                  [in] Indicate if load document from cache or not.
  *                               force = true, document gets only from chain.
@@ -2806,7 +2958,7 @@ DID_API int Credential_SaveMetaData(Credential *cred);
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API Credential *Credential_Resolve(DIDURL *id, bool force);
+DID_API Credential *Credential_Resolve(DIDURL *id, int *status, bool force);
 
 /**
  * \~English
@@ -3463,101 +3615,6 @@ DID_API int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass,
  *      keyid                   [in] The identifier of public key.
  */
 DID_API void DIDStore_DeletePrivateKey(DIDStore *store, DID *did, DIDURL *keyid);
-
-/**
- * \~English
- * Creates a DID and its associated DID Document to chain.
- *
- * @param
- *      store                    [in] The handle to DID Store.
- * @param
- *      storepass                [in] Pass word to sign.
- * @param
- *      did                      [in] The handle to DID.
- * @param
- *      signkey                  [in] The public key to sign.
- * @param
- *      force                    [in] Force document into chain.
- * @return
- *      true on success, false if an error occurred. Caller should free the returned value.
- */
-DID_API bool DIDStore_PublishDID(DIDStore *store, const char *storepass,
-        DID *did, DIDURL *signkey, bool force);
-
-/*
- * \~English
- * Transfer DID if customized DID had add or remove controller.
- *
- * @param
- *      store                    [in] The handle to DID Store.
- * @param
- *      storepass                [in] Pass word to sign.
- * @param
- *      did                      [in] The handle to DID.
- * @param
- *      ticket                   [in] The handle to Transfer ticket.
- * @param
- *      signkey                  [in] The public key to sign.
- * @return
- *      true on success, false if an error occurred. Caller should free the returned value.
- */
-DID_API bool DIDStore_TransferDID(DIDStore *store, const char *storepass,
-       DID *did, TransferTicket *ticket, DIDURL *signkey);
-
-/**
- * \~English
- * Deactivate a DID on the chain.
- *
- * @param
- *      store                   [in] The handle to DIDStore.
- * @param
- *      storepass                [in] Password for DIDStore.
- * @param
- *      did                      [in] The handle to DID.
- * @param
- *      signkey                  [in] The public key to sign.
- * @return
- *      true on success, false if an error occurred. Caller should free the returned value.
- */
-DID_API bool DIDStore_DeactivateDID(DIDStore *store, const char *storepass,
-        DID *did, DIDURL *signkey);
-
-/**
- * \~English
- * Declare a credential to chain.
- *
- * @param
- *      store                    [in] The handle to DID Store.
- * @param
- *      storepass                [in] Pass word to sign.
- * @param
- *      credid                   [in] The handle to credential.
- * @param
- *      signkey                  [in] The public key to sign.
- * @return
- *      true on success, false if an error occurred(for example: the credential
- *      is valid or revoked on the chain). Caller should free the returned value.
- */
-DID_API bool DIDStore_DeclareCredential(DIDStore *store, const char *storepass, DIDURL *credid,
-        DIDURL *signkey);
-
-/**
- * \~English
- * Revoke credential to chain.
- *
- * @param
- *      store                    [in] The handle to DID Store.
- * @param
- *      storepass                [in] Pass word to sign.
- * @param
- *      credid                   [in] The handle to credential.
- * @param
- *      signkey                  [in] The public key to sign.
- * @return
- *      true on success, false if an error occurred. Caller should free the returned value.
- */
-DID_API bool DIDStore_RevokeCredential(DIDStore *store, const char *storepass, DIDURL *credid,
-        DIDURL *signkey);
 
 /**
  * \~English
