@@ -286,21 +286,14 @@ static int ProofArray_ToJson(JsonGenerator *gen, DIDDocument *document, int comp
 //api don't check if pk is existed in array.
 static int add_to_publickeys(DIDDocument *document, PublicKey *pk)
 {
-    PublicKey **pks, **pk_array;
+    PublicKey **pks;
 
     assert(document);
     assert(pk);
 
-    pk_array = document->publickeys.pks;
-
-    if (!pk_array)
-        pks = (PublicKey**)calloc(1, sizeof(PublicKey*));
-    else
-        pks = realloc(pk_array,
-                     (document->publickeys.size + 1) * sizeof(PublicKey*));
-
+    pks = realloc(document->publickeys.pks, (document->publickeys.size + 1) * sizeof(PublicKey*));
     if (!pks) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Remalloc buffer for public keys failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for public keys failed.");
         return -1;
     }
 
@@ -1347,21 +1340,6 @@ storeexit:
     return isdeactived;
 }
 
-static bool contains_did(DID **dids, size_t size, DID *did)
-{
-    int i;
-
-    assert(dids);
-    assert(did);
-
-    for (i = 0; i < size; i++) {
-        if (DID_Equals(dids[i], did))
-            return true;
-    }
-
-    return false;
-}
-
 static bool DIDDocument_IsGenuine_Internal(DIDDocument *document, bool isqualified)
 {
     DIDDocument *proof_doc;
@@ -1410,7 +1388,7 @@ static bool DIDDocument_IsGenuine_Internal(DIDDocument *document, bool isqualifi
             }
         }
 
-        if (contains_did(checksigners, i, &proof->creater.did)) {
+        if (Contains_DID(checksigners, i, &proof->creater.did)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "There is the same controller signed document two times.");
             goto errorExit;
         }
@@ -1795,34 +1773,32 @@ static int diddocument_addproof(DIDDocument *document, char *signature, DIDURL *
 {
     int i;
     size_t size;
-    DocumentProof *dp;
+    DocumentProof *dps, *p;
 
     assert(document);
     assert(signature);
     assert(signkey);
 
     size = document->proofs.size;
-    dp = document->proofs.proofs;
-    for (i = 0; i < size && dp; i++) {
-        DocumentProof *p = &dp[i];
+    for (i = 0; i < size; i++) {
+        p = &document->proofs.proofs[i];
         if (DID_Equals(&p->creater.did, &signkey->did)) {
             DIDError_Set(DIDERR_INVALID_KEY, "The signkey already exist.");
             return -1;
         }
     }
 
-    if (!dp)
-        document->proofs.proofs = (DocumentProof*)calloc(1, sizeof(DocumentProof));
-    else
-        document->proofs.proofs = realloc(dp, (document->proofs.size + 1) * sizeof(DocumentProof));
-
-    if (!document->proofs.proofs)
+    dps = (DocumentProof*)realloc(document->proofs.proofs, (size + 1) * sizeof(DocumentProof));
+    if (!dps) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for proofs failed.");
         return -1;
+    }
 
-    strcpy(document->proofs.proofs[size].signatureValue, signature);
-    strcpy(document->proofs.proofs[size].type, ProofType);
-    DIDURL_Copy(&document->proofs.proofs[size].creater, signkey);
-    document->proofs.proofs[size].created = created;
+    strcpy(dps[size].signatureValue, signature);
+    strcpy(dps[size].type, ProofType);
+    DIDURL_Copy(&dps[size].creater, signkey);
+    dps[size].created = created;
+    document->proofs.proofs = dps;
     document->proofs.size++;
     return 0;
 }
@@ -2345,12 +2321,8 @@ static int diddocument_addcredential(DIDDocument *document, Credential *credenti
     assert(document);
     assert(credential);
 
-    if (document->credentials.size == 0)
-        creds = (Credential**)calloc(1, sizeof(Credential*));
-    else
-        creds = (Credential**)realloc(document->credentials.credentials,
+    creds = (Credential**)realloc(document->credentials.credentials,
                        (document->credentials.size + 1) * sizeof(Credential*));
-
     if (!creds) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for credentials failed.");
         return -1;
@@ -2401,10 +2373,7 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
         return -1;
     }
 
-    if (document->controllers.size == 0)
-        docs = (DIDDocument**)calloc(1, sizeof(DIDDocument*));
-    else
-        docs = (DIDDocument**)realloc(document->controllers.docs,
+    docs = (DIDDocument**)realloc(document->controllers.docs,
                 (document->controllers.size + 1) * sizeof(DIDDocument*));
 
     if (!docs) {
@@ -2782,12 +2751,8 @@ int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder, DIDURL *serviceid
     strcpy(service->type, type);
     strcpy(service->endpoint, endpoint);
 
-    if (document->services.size == 0)
-        services = (Service**)calloc(1, sizeof(Service*));
-    else
-        services = (Service**)realloc(document->services.services,
-                            (document->services.size + 1) * sizeof(Service*));
-
+    services = (Service**)realloc(document->services.services,
+            (document->services.size + 1) * sizeof(Service*));
     if (!services) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for services failed.");
         Service_Destroy(service);
@@ -3874,11 +3839,6 @@ int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
         return -1;
     }
 
-    if (!PublicKey_IsAuthenticationKey(publickey)) {
-        DIDError_Set(DIDERR_INVALID_KEY, "The key is not an authentication key.");
-        return -1;
-    }
-
     base58_decode(binkey, sizeof(binkey), PublicKey_GetPublicKeyBase58(publickey));
 
     if (ecdsa_verify_base64(sig, binkey, digest, size) == -1) {
@@ -4361,7 +4321,6 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
         goto errorExit;
 
     DIDMetaData_SetTxid(&document->metadata, DIDMetaData_GetTxid(&resolve_doc->metadata));
-    DIDMetaData_SetTxid(&document->did.metadata, DIDMetaData_GetTxid(&resolve_doc->metadata));
     if (!DIDBackend_TransferDID(document, ticket, signkey, storepass))
         goto errorExit;
 
@@ -4420,7 +4379,7 @@ bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const cha
         }
     }
 
-    successed = DIDBackend_DeactivateDID(document, NULL, signkey, storepass);
+    successed = DIDBackend_DeactivateDID(document, signkey, NULL, storepass);
     DIDDocument_Destroy(resolve_doc);
     if (successed)
         ResolveCache_InvalidateDID(&document->did);
@@ -4495,7 +4454,7 @@ bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
         goto errorExit;
     }
 
-    successed = DIDBackend_DeactivateDID(document, target, &candidatepk->id, storepass);
+    successed = DIDBackend_DeactivateDID(document, &candidatepk->id, &pk->id, storepass);
     if (successed)
         ResolveCache_InvalidateDID(&document->did);
 

@@ -56,7 +56,7 @@ DIDStore *CredentialMetaData_GetStore(CredentialMetaData *metadata);
 
 int CredentialMetaData_SetRevoke(CredentialMetaData *metadata, bool revoke);
 
-bool CredentialMetaData_GetRevoke(CredentialMetaData *metadata);
+int CredentialMetaData_SetPublished(CredentialMetaData *metadata, time_t time);
 
 bool CredentialMetaData_AttachedStore(CredentialMetaData *metadata);
 

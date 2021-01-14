@@ -190,18 +190,21 @@ static bool create_didtransaction(json_t *json)
         return false;
     }
 
-    doc = DIDRequest_FromJson(&info->request, json);
-    if (strcmp(info->request.header.op, "deactivate")) {
-        if (!doc || !DIDDocument_IsValid(doc))
+    if (DIDRequest_FromJson(&info->request, json) < 0)
         goto errorExit;
-    }
 
     lastinfo = get_lasttransaction(&info->request.did);
+    //create
     if (!strcmp(info->request.header.op, "create")) {
         if (lastinfo) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID already exist.");
             goto errorExit;
         }
+        if (!DIDRequest_IsValid(&info->request, NULL)) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID transaction is not valid.");
+            goto errorExit;
+        }
+    //update
     } else if (!strcmp(info->request.header.op, "update")) {
         if (!lastinfo) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID not exist.");
@@ -218,6 +221,12 @@ static bool create_didtransaction(json_t *json)
         if (Is_CustomizedDID(info->request.doc) &&
                 !controllers_equals(info->request.doc, lastinfo->request.doc))
             goto errorExit;
+
+        if (!DIDRequest_IsValid(&info->request, NULL)) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID transaction is not valid.");
+            goto errorExit;
+        }
+    //transfer
     } else if (!strcmp(info->request.header.op, "transfer")) {
         if (!lastinfo) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID not exist.");
@@ -238,6 +247,12 @@ static bool create_didtransaction(json_t *json)
         //check ticket
         if (!check_ticket(info->request.header.ticket, info->request.doc, lastinfo->txid))
             goto errorExit;
+
+        if (!DIDRequest_IsValid(&info->request, NULL)) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID transaction is not valid.");
+            goto errorExit;
+        }
+    //deactivate
     } else if (!strcmp(info->request.header.op, "deactivate")) {
         if (!lastinfo) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID not exist.");
@@ -245,6 +260,10 @@ static bool create_didtransaction(json_t *json)
         }
         if (!strcmp(lastinfo->request.header.op, "deactivate")) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID already dactivated.");
+            goto errorExit;
+        }
+        if (!DIDRequest_IsValid(&info->request, lastinfo->request.doc)) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID transaction is not valid.");
             goto errorExit;
         }
     } else {
@@ -271,7 +290,6 @@ errorExit:
 
 static bool create_vctransaction(json_t *json)
 {
-    Credential *vc = NULL;
     CredentialTransaction *info;
 
     assert(json);
@@ -282,17 +300,19 @@ static bool create_vctransaction(json_t *json)
         return false;
     }
 
-    vc = CredentialRequest_FromJson(&info->request, json);
+    if (CredentialRequest_FromJson(&info->request, json) < 0)
+        goto errorExit;
+
     if (!strcmp(info->request.header.op, "declare")) {
-        if (!vc || !Credential_IsValid(vc))
+        if (!info->request.vc || !CredentialRequest_IsValid(&info->request, NULL))
             goto errorExit;
 
-        if (!credential_readydeclare(&vc->id, &vc->issuer)) {
+        if (!credential_readydeclare(&info->request.vc->id, &info->request.vc->issuer)) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "Credential already exist.");
             goto errorExit;
         }
     } else if (!strcmp(info->request.header.op, "revoke")) {
-        if (vc)
+        if (info->request.vc)
             goto errorExit;
 
         if (credential_isrevoked(&info->request.id, &info->request.proof.verificationMethod.did)) {

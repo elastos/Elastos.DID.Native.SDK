@@ -152,7 +152,7 @@ TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
     document = DID_Resolve(to, &status, false);
     if (!document) {
         if (status == DIDStatus_NotFound)
-            DIDError_Set(DIDERR_NOT_EXISTS, "DID received ticket does not already exist.");
+            DIDError_Set(DIDERR_NOT_EXISTS, "The ticket's receiver does not exist.");
         goto errorExit;
     }
 
@@ -164,7 +164,7 @@ TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
     ticket->doc = DID_Resolve(owner, &status, false);
     if (!ticket->doc) {
         if (status == DIDStatus_NotFound)
-            DIDError_Set(DIDERR_NOT_EXISTS, "The ticket's owner does not already exist.");
+            DIDError_Set(DIDERR_NOT_EXISTS, "The ticket's owner does not exist.");
         goto errorExit;
     }
 
@@ -193,36 +193,32 @@ static int ticket_addproof(TransferTicket *ticket, char *signature, DIDURL *sign
 {
     int i;
     size_t size;
-    TicketProof *rp;
+    TicketProof *rps, *p;
 
     assert(ticket);
     assert(signature);
     assert(signkey);
 
     size = ticket->proofs.size;
-    rp = ticket->proofs.proofs;
-    for (i = 0; i < size && rp; i++) {
-        TicketProof *p = &rp[i];
+    for (i = 0; i < size; i++) {
+        p = &ticket->proofs.proofs[i];
         if (DID_Equals(&p->verificationMethod.did, &signkey->did)) {
             DIDError_Set(DIDERR_INVALID_KEY, "The signkey already exist.");
             return -1;
         }
     }
 
-    if (!rp)
-        ticket->proofs.proofs = (TicketProof*)calloc(1, sizeof(TicketProof));
-    else
-        ticket->proofs.proofs = realloc(rp, (ticket->proofs.size + 1) * sizeof(TicketProof));
-
-    if (!ticket->proofs.proofs) {
+    rps = realloc(ticket->proofs.proofs, (ticket->proofs.size + 1) * sizeof(TicketProof));
+    if (!rps) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for ticket proofs failed.");
         return -1;
     }
 
-    strcpy(ticket->proofs.proofs[size].signatureValue, signature);
-    strcpy(ticket->proofs.proofs[size].type, ProofType);
-    DIDURL_Copy(&ticket->proofs.proofs[size].verificationMethod, signkey);
-    ticket->proofs.proofs[size].created = created;
+    strcpy(rps[size].signatureValue, signature);
+    strcpy(rps[size].type, ProofType);
+    DIDURL_Copy(&rps[size].verificationMethod, signkey);
+    rps[size].created = created;
+    ticket->proofs.proofs = rps;
     ticket->proofs.size++;
     return 0;
 }
@@ -539,8 +535,10 @@ bool TransferTicket_IsGenuine(TransferTicket *ticket)
 {
     TicketProof *proof;
     DIDDocument *doc;
+    DID **checksigners;
     const char *data = NULL;
     bool isgeninue = false;
+    size_t size;
     int i;
 
     if (!ticket) {
@@ -560,7 +558,14 @@ bool TransferTicket_IsGenuine(TransferTicket *ticket)
     if (!data)
         return false;
 
-    for (i = 0; i < ticket->proofs.size; i++) {
+    size = ticket->proofs.size;
+    checksigners = (DID**)alloca(size * sizeof(DID*));
+    if (!checksigners) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for signers failed.");
+        goto errorExit;
+    }
+
+    for (i = 0; i < size; i++) {
         proof = &ticket->proofs.proofs[i];
         doc = DIDDocument_GetControllerDocument(ticket->doc, &proof->verificationMethod.did);
         if (!doc) {
@@ -569,9 +574,19 @@ bool TransferTicket_IsGenuine(TransferTicket *ticket)
             goto errorExit;
         }
 
+        if (Contains_DID(checksigners, i, &proof->verificationMethod.did)) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "There is the same controller signed ticket two times.");
+            goto errorExit;
+        }
+
         if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(doc), &proof->verificationMethod)) {
             DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET,
                     "The sign key is not controller's default key.");
+            goto errorExit;
+        }
+
+        if (strcmp(proof->type, ProofType)) {
+            DIDError_Set(DIDERR_UNKNOWN, "Unsupported public key type.");
             goto errorExit;
         }
 
@@ -583,6 +598,8 @@ bool TransferTicket_IsGenuine(TransferTicket *ticket)
         if (DIDDocument_Verify(doc, &proof->verificationMethod, proof->signatureValue,
                 1, data, strlen(data)) < 0)
             goto errorExit;
+
+        checksigners[i] = &proof->verificationMethod.did;
     }
 
     isgeninue = true;

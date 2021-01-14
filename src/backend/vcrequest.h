@@ -64,15 +64,15 @@ const char *CredentialRequest_Sign(CredentialRequest_Type type, DIDURL *credid,
 
 const char *CredentialRequest_ToJson(CredentialRequest *request);
 
-Credential *CredentialRequest_FromJson(CredentialRequest *request, json_t *json);
+int CredentialRequest_FromJson(CredentialRequest *request, json_t *json);
 
 void CredentialRequest_Destroy(CredentialRequest *request);
 
 void CredentialRequest_Free(CredentialRequest *request);
 
-int CredentialRequest_Verify(CredentialRequest *request);
-
 int CredentialRequest_ToJson_Internal(JsonGenerator *gen, CredentialRequest *request);
+
+bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credential);
 
 #ifdef __cplusplus
 }

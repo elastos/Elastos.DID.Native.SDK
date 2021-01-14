@@ -64,20 +64,20 @@ typedef enum DIDRequest_Type
    RequestType_Deactivate
 } DIDRequest_Type;
 
-DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json);
+int DIDRequest_FromJson(DIDRequest *request, json_t *json);
 
 void DIDRequest_Destroy(DIDRequest *request);
 
 void DIDRequest_Free(DIDRequest *request);
 
-const char* DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
-        DID *target, TransferTicket *ticket, DIDURL *signkey, const char *storepass);
-
-int DIDRequest_Verify(DIDRequest *request);
+const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
+        DIDURL *signkey, DIDURL *creater, TransferTicket *ticket, const char *storepass);
 
 DIDDocument *DIDRequest_GetDocument(DIDRequest *request);
 
 int DIDRequest_ToJson_Internal(JsonGenerator *gen, DIDRequest *req);
+
+bool DIDRequest_IsValid(DIDRequest *request, DIDDocument *document);
 
 #ifdef __cplusplus
 }
