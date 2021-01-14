@@ -71,10 +71,9 @@ int DIDTransaction_FromJson(DIDTransaction *txinfo, json_t *json)
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid ID operation.");
         return -1;
     }
-
-    txinfo->request.doc = DIDRequest_FromJson(&txinfo->request, item);
-    if (!txinfo->request.doc && strcmp(txinfo->request.header.op, "deactivate") != 0)
+    if (DIDRequest_FromJson(&txinfo->request, item) < 0)
         return -1;
+
     return 0;
 }
 

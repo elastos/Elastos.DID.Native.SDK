@@ -33,6 +33,7 @@
 #include "diderror.h"
 
 static const char *ALIAS = "DX-alias";
+static const char *PUBLISHED = "DX-published";
 static const char *LAST_MODIFIED= "DX-lastModified";
 static const char *REVOKED = "DX-revoke";
 
@@ -111,6 +112,23 @@ bool CredentialMetaData_GetRevoke(CredentialMetaData *metadata)
     }
 
     return MetaData_GetExtraAsBoolean(&metadata->base, REVOKED);
+}
+
+int CredentialMetaData_SetPublished(CredentialMetaData *metadata, time_t time)
+{
+    assert(metadata);
+
+    return MetaData_SetExtraWithDouble(&metadata->base, PUBLISHED, (double)time);
+}
+
+time_t CredentialMetaData_GetPublished(CredentialMetaData *metadata)
+{
+    if (!metadata) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return 0;
+    }
+
+    return (time_t)MetaData_GetExtraAsDouble(&metadata->base, PUBLISHED);
 }
 
 DIDStore *CredentialMetaData_GetStore(CredentialMetaData *metadata)

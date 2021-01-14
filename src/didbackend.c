@@ -121,7 +121,7 @@ bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *st
         return false;
     }
 
-    reqstring = DIDRequest_Sign(RequestType_Create, document, NULL, NULL, signkey, storepass);
+    reqstring = DIDRequest_Sign(RequestType_Create, document, signkey, NULL, NULL, storepass);
     if (!reqstring)
         return false;
 
@@ -153,7 +153,7 @@ bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *st
         return false;
     }
 
-    reqstring = DIDRequest_Sign(RequestType_Update, document, NULL, NULL, signkey, storepass);
+    reqstring = DIDRequest_Sign(RequestType_Update, document, signkey, NULL, NULL, storepass);
     if (!reqstring)
         return false;
 
@@ -187,7 +187,7 @@ bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
         return false;
     }
 
-    reqstring = DIDRequest_Sign(RequestType_Transfer, document, NULL, ticket, signkey, storepass);
+    reqstring = DIDRequest_Sign(RequestType_Transfer, document, signkey, NULL, ticket, storepass);
     if (!reqstring)
         return false;
 
@@ -199,12 +199,15 @@ bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
     return successed;
 }
 
-bool DIDBackend_DeactivateDID(DIDDocument *document, DID *target, DIDURL *signkey, const char *storepass)
+//signkey provides sk, creater is real key in proof. If did is deactivated by ownerself, signkey and
+//creater is same.
+bool DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
+        DIDURL *creater, const char *storepass)
 {
     const char *reqstring;
     bool successed;
 
-    assert(document);
+    assert(signerdoc);
     assert(signkey);
     assert(storepass && *storepass);
 
@@ -214,12 +217,12 @@ bool DIDBackend_DeactivateDID(DIDDocument *document, DID *target, DIDURL *signke
         return false;
     }
 
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+    if (!DIDMetaData_AttachedStore(&signerdoc->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
         return false;
     }
 
-    reqstring = DIDRequest_Sign(RequestType_Deactivate, document, target, NULL, signkey, storepass);
+    reqstring = DIDRequest_Sign(RequestType_Deactivate, signerdoc, signkey, creater, NULL, storepass);
     if (!reqstring)
         return false;
 
@@ -491,6 +494,8 @@ DIDDocument *DIDBackend_ResolveDID(DID *did, int *status, bool force)
 {
     DIDDocument *doc = NULL;
     ResolveResult result;
+    DIDTransaction *info = NULL;
+    const char *op;
     size_t i;
 
     assert(did);
@@ -509,38 +514,80 @@ DIDDocument *DIDBackend_ResolveDID(DID *did, int *status, bool force)
     }
 
     memset(&result, 0, sizeof(ResolveResult));
-    if (resolve_internal(&result, did, false, force) == -1) {
-        *status = DIDStatus_Error;
-        ResolveResult_Destroy(&result);
-        return NULL;
+    if (resolve_internal(&result, did, false, force) == -1)
+        goto errorExit;
+
+    switch (result.status) {
+        case DIDStatus_NotFound:
+            *status = DIDStatus_NotFound;
+            ResolveResult_Destroy(&result);
+            return NULL;
+
+        case DIDStatus_Deactivated:
+            if (result.txs.size != 2) {
+                DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid DID biography, wrong transaction count.");
+                goto errorExit;
+            }
+
+            if (strcmp("deactivate", result.txs.txs[0].request.header.op) ||
+                    !strcmp("deactivate", result.txs.txs[1].request.header.op)) {
+                DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid DID biography, wrong status.");
+                goto errorExit;
+            }
+
+            info = &result.txs.txs[1];
+            doc = info->request.doc;
+            if (!doc) {
+                DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid DID biography, missing document.");
+                goto errorExit;
+            }
+
+            if (!DIDRequest_IsValid(&result.txs.txs[0].request, doc)) {
+                DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Document is not valid.");
+                goto errorExit;
+            }
+
+            *status = DIDStatus_Deactivated;
+            i = 2;
+            break;
+
+        case DIDStatus_Valid:
+            info = &result.txs.txs[0];
+            doc = info->request.doc;
+            if (!doc) {
+                DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid DID biography, missing document.");
+                goto errorExit;
+            }
+
+            *status = DIDStatus_Valid;
+            i = 1;
+            break;
+
+        default:
+            DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport other transaction status.");
+            goto errorExit;
     }
 
-    if (ResolveResult_GetStatus(&result) == DIDStatus_NotFound) {
-        *status = DIDStatus_NotFound;
-        ResolveResult_Destroy(&result);
-        return NULL;
+    op = info->request.header.op;
+    if (strcmp("create", op) && strcmp("update", op) && strcmp("transfer", op)) {
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Wrong transaction status.");
+        goto errorExit;
     }
 
-    if (ResolveResult_GetStatus(&result) == DIDStatus_Deactivated) {
-        *status = DIDStatus_Deactivated;
-        doc = result.txs.txs[1].request.doc;
-        i = 2;
-    } else {
-        *status = DIDStatus_Valid;
-        doc = result.txs.txs[0].request.doc;
-        i = 1;
+    if (!DIDRequest_IsValid(&info->request, doc)) {
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid transaction.");
+        goto errorExit;
     }
 
     for (; i < result.txs.size; i++)
         DIDDocument_Destroy(result.txs.txs[i].request.doc);
     ResolveResult_Free(&result);
-
-    if (!doc) {
-        *status = DIDStatus_Error;
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Malformed resolver response.");
-    }
-
     return doc;
+
+errorExit:
+    *status = DIDStatus_Error;
+    ResolveResult_Destroy(&result);
+    return NULL;
 }
 
 DIDBiography *DIDBackend_ResolveDIDBiography(DID *did)
@@ -657,7 +704,9 @@ bool DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey, DIDDocument *d
 Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force)
 {
     CredentialBiography *biography;
-    Credential *cred;
+    CredentialTransaction *info;
+    Credential *cred = NULL;
+    DIDDocument *issuerdoc = NULL;
     int i;
 
     assert(id);
@@ -673,17 +722,78 @@ Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force)
         return NULL;
     }
 
-    *status = biography->status;
-    if (biography->status != CredentialStatus_NotFound) {
-        for (i = 0; i < biography->txs.size; i++) {
-            cred = CredentialBiography_GetCredentialByIndex(biography, i);
-            if (cred) {
-                CredentialBiography_Destroy(biography);
-                return cred;
+    switch (biography->status) {
+        case CredentialStatus_NotFound:
+            *status = CredentialStatus_NotFound;
+            CredentialBiography_Destroy(biography);
+            return NULL;
+
+        case CredentialStatus_Revoked:
+            if (biography->txs.size > 2 || biography->txs.size == 0) {
+                DIDError_Set(DIDERR_TRANSACTION_ERROR, "Invalid Credential biography, wrong transaction count.");
+                break;
             }
-        }
+
+            for (i = biography->txs.size - 1; i >= 0 ; i--) {
+                info = &biography->txs.txs[i];
+                if (!strcmp("declare", info->request.header.op)) {
+                    if (i == 0) {
+                        DIDError_Set(DIDERR_TRANSACTION_ERROR, "Invalid declare transaction.");
+                        goto errorExit;
+                    }
+                    cred = info->request.vc;
+                    if (!cred) {
+                        DIDError_Set(DIDERR_TRANSACTION_ERROR, "Miss credential in transaction.");
+                        goto errorExit;
+                    }
+                }
+
+                if (!strcmp("revoke", info->request.header.op)) {
+                    if (info->request.vc) {
+                        DIDError_Set(DIDERR_TRANSACTION_ERROR, "Invalid revoke transaction.");
+                        goto errorExit;
+                    }
+                }
+
+                if (!CredentialRequest_IsValid(&info->request, cred))
+                    goto errorExit;
+            }
+            *status = CredentialStatus_Revoked;
+            CredentialBiography_Free(biography);
+            return cred;
+
+        case CredentialStatus_Valid:
+            if (biography->txs.size != 1) {
+                DIDError_Set(DIDERR_TRANSACTION_ERROR, "Invalid Credential biography, wrong transaction count.");
+                goto errorExit;
+            }
+
+            info = &biography->txs.txs[0];
+            if (strcmp("declare", info->request.header.op)) {
+                DIDError_Set(DIDERR_TRANSACTION_ERROR, "Invalid Credential biography, wrong transaction status.");
+                goto errorExit;
+            }
+
+            cred = info->request.vc;
+            if (!cred) {
+                DIDError_Set(DIDERR_TRANSACTION_ERROR, "Declare transaction must have credential.");
+                goto errorExit;
+            }
+
+            if (!CredentialRequest_IsValid(&info->request, cred))
+                goto errorExit;
+
+            *status = CredentialStatus_Valid;
+            CredentialBiography_Free(biography);
+            return cred;
+
+        default:
+            DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport other status.");
+            break;
     }
 
+errorExit:
+    *status = CredentialStatus_Error;
     CredentialBiography_Destroy(biography);
     return NULL;
 }

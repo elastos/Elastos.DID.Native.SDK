@@ -954,7 +954,7 @@ DID_API int CredentialMetaData_SetExtraWithDouble(CredentialMetaData *metadata,
 
 /**
  * \~English
- * Get alias for id, mainly for credential.
+ * Get alias from credential by meta data.
  *
  * @param
  *      metadata                     [in] The handle of CredentialMetaData.
@@ -962,6 +962,28 @@ DID_API int CredentialMetaData_SetExtraWithDouble(CredentialMetaData *metadata,
  *      If no error occurs, return alias string. Otherwise, return NULL.
  */
 DID_API const char *CredentialMetaData_GetAlias(CredentialMetaData *metadata);
+
+/**
+ * \~English
+ * Get alias from credential by meta data.
+ *
+ * @param
+ *      metadata                     [in] The handle of CredentialMetaData.
+ * @return
+ *      If no error occurs, return published time. Otherwise, return 0.
+ */
+DID_API time_t CredentialMetaData_GetPublished(CredentialMetaData *metadata);
+
+/**
+ * \~English
+ * Get revoked status from credential by meta data.
+ *
+ * @param
+ *      metadata                     [in] The handle of CredentialMetaData.
+ * @return
+ *      If credential is revoked, return true. Otherwise, return false.
+ */
+DID_API bool CredentialMetaData_GetRevoke(CredentialMetaData *metadata);
 
 /**
  * \~English

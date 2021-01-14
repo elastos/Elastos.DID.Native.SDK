@@ -111,14 +111,16 @@ static const char *DIDRequest_ToJson(DIDRequest *req)
     return JsonGenerator_Finish(gen);
 }
 
+//document is for signkey. If DID is deactivated by authorizor, document is authorizor's document.
 const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
-        DID *target, TransferTicket *ticket, DIDURL *signkey, const char *storepass)
+        DIDURL *signkey, DIDURL *creater, TransferTicket *ticket, const char *storepass)
 {
     DIDRequest req;
     const char *payload = NULL, *op, *requestJson = NULL, *prevtxid, *data, *ticket_data = "";
+    char signature[SIGNATURE_BYTES * 2 + 16], idstring[ELA_MAX_DID_LEN];
+    DID *did;
     size_t len;
     int rc;
-    char signature[SIGNATURE_BYTES * 2 + 16], idstring[ELA_MAX_DID_LEN];
 
     assert(type >= RequestType_Create && type <= RequestType_Deactivate);
     assert(document);
@@ -146,10 +148,12 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
     }
 
     if (type == RequestType_Deactivate) {
-        if (!target)
-            target = &document->did;
+        if (creater)
+            did = &creater->did;
+        else
+            did = &document->did;
 
-        data = DID_ToString(target, idstring, sizeof(idstring));
+        data = DID_ToString(did, idstring, sizeof(idstring));
         if (!data)
             return NULL;
         payload = strdup(data);
@@ -191,7 +195,10 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
     req.header.ticket = ticket_data;
     req.payload = payload;
     strcpy(req.proof.signatureValue, signature);
-    DIDURL_Copy(&req.proof.verificationMethod, signkey);
+    if (creater)
+        DIDURL_Copy(&req.proof.verificationMethod, creater);
+    else
+        DIDURL_Copy(&req.proof.verificationMethod, signkey);
 
     requestJson = DIDRequest_ToJson(&req);
 
@@ -201,23 +208,6 @@ pointExit:
     if (ticket_data && *ticket_data)
         free((void*)ticket_data);
     return requestJson;
-}
-
-int DIDRequest_Verify(DIDRequest *request)
-{
-    assert(request);
-
-    if (!request->doc)
-        return 0;
-
-    //todo: if(request->doc) is for deacativated without doc.
-    return DIDDocument_Verify(request->doc, &request->proof.verificationMethod,
-                (char*)request->proof.signatureValue, 5,
-                request->header.spec, strlen(request->header.spec),
-                request->header.op, strlen(request->header.op),
-                request->header.prevtxid, strlen(request->header.prevtxid),
-                request->header.ticket, strlen(request->header.ticket),
-                request->payload, strlen(request->payload));
 }
 
 static int parser_header(DIDRequest *request, json_t *json)
@@ -394,7 +384,7 @@ static int parser_proof(DIDRequest *request, json_t *json)
     return 0;
 }
 
-DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json)
+int DIDRequest_FromJson(DIDRequest *request, json_t *json)
 {
     json_t *item, *field = NULL;
 
@@ -406,11 +396,11 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json)
     item = json_object_get(json, "header");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing header.");
-        return NULL;
+        return -1;
     }
     if (!json_is_object(item)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid header.");
-        return NULL;
+        return -1;
     }
     if (parser_header(request, item) < 0)
         goto errorExit;
@@ -441,16 +431,50 @@ DIDDocument *DIDRequest_FromJson(DIDRequest *request, json_t *json)
     if (parser_proof(request, item) < 0)
         goto errorExit;
 
-    if (DIDRequest_Verify(request) < 0) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Verify payload failed.");
-        goto errorExit;
-    }
-
-    return request->doc;
+    return 0;
 
 errorExit:
     DIDRequest_Destroy(request);
-    return NULL;
+    memset(request, 0, sizeof(DIDRequest));
+    return -1;
+}
+
+bool DIDRequest_IsValid(DIDRequest *request, DIDDocument *document)
+{
+    DIDDocument *signerdoc;
+    DIDURL *signkey;
+    int rc;
+
+    assert(request);
+
+    if (!request->doc && !document)
+        return false;
+
+    signkey = &request->proof.verificationMethod;
+
+    if (!strcmp(operation[RequestType_Deactivate], request->header.op)) {
+        if (request->doc)
+            return false;
+        signerdoc = document;
+        if (!DIDDocument_IsAuthenticationKey(signerdoc, signkey) &&
+                !DIDDocument_IsAuthorizationKey(signerdoc, signkey))
+            return false;
+    } else {
+        if (!request->doc)
+            return false;
+        signerdoc = request->doc;
+        if (!DIDDocument_IsAuthenticationKey(signerdoc, signkey))
+            return false;
+    }
+
+    rc = DIDDocument_Verify(signerdoc, &request->proof.verificationMethod,
+                (char*)request->proof.signatureValue, 5,
+                request->header.spec, strlen(request->header.spec),
+                request->header.op, strlen(request->header.op),
+                request->header.prevtxid, strlen(request->header.prevtxid),
+                request->header.ticket, strlen(request->header.ticket),
+                request->payload, strlen(request->payload));
+    return rc == -1 ? false : true;
 }
 
 void DIDRequest_Destroy(DIDRequest *request)

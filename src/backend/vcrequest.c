@@ -157,30 +157,7 @@ const char *CredentialRequest_Sign(CredentialRequest_Type type, DIDURL *credid,
     return requestJson;
 }
 
-int CredentialRequest_Verify(CredentialRequest *request)
-{
-    DIDDocument *doc;
-    int rc, status;
-
-    assert(request);
-
-    if (!request->vc)
-        return 0;
-
-    doc = DID_Resolve(&request->vc->subject.id, &status, false);
-    if (!doc)
-        return -1;
-
-    rc = DIDDocument_Verify(doc, &request->proof.verificationMethod,
-                (char*)request->proof.signature, 3,
-                request->header.spec, strlen(request->header.spec),
-                request->header.op, strlen(request->header.op),
-                request->payload, strlen(request->payload));
-    DIDDocument_Destroy(doc);
-    return rc;
-}
-
-Credential *CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
+int CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
 {
     json_t *item, *field = NULL;
     char *vcJson;
@@ -195,64 +172,64 @@ Credential *CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
     item = json_object_get(json, "header");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing header.");
-        return NULL;
+        return -1;
     }
     if (!json_is_object(item)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid header.");
-        return NULL;
+        return -1;
     }
 
     field = json_object_get(item, "specification");
     if (!field) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing specification.");
-        return NULL;
+        return -1;
     }
     if (!json_is_string(field)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid specification.");
-        return NULL;
+        return -1;
     }
     if (strcmp(json_string_value(field), spec)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Unknown Credential specification. \
                 excepted: %s, actual: %s", spec, json_string_value(field));
-        return NULL;
+        return -1;
     }
     strcpy(request->header.spec, (char *)spec);
 
     field = json_object_get(item, "operation");
     if (!field) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing operation.");
-        return NULL;
+        return -1;
     }
     if (!json_is_string(field)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid operation.");
-        return NULL;
+        return -1;
     }
     op = json_string_value(field);
     if (!strcmp(op, operation[RequestType_Declare]) || !strcmp(op, operation[RequestType_Revoke])) {
         strcpy(request->header.op, op);
     } else {
         DIDError_Set(DIDERR_UNKNOWN, "Unknown Credential operaton.");
-        return NULL;
+        return -1;
     }
 
     item = json_object_get(json, "payload");
     if (!item) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing payload.");
-        return NULL;
+        return -1;
     }
     if (!json_is_string(item)) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
-        return NULL;
+        return -1;
     }
     payload = json_string_value(item);
     if (!payload) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "No payload.");
-        return NULL;
+        return -1;
     }
     request->payload = strdup(payload);
     if (!request->payload) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Record payload failed.");
-        return NULL;
+        return -1;
     }
 
     if (!strcmp(request->header.op, operation[RequestType_Declare])) {
@@ -320,26 +297,70 @@ Credential *CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
         goto errorExit;
     }
     strcpy(request->proof.signature, json_string_value(field));
-
-    if (CredentialRequest_Verify(request) < 0) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Verify payload failed.");
-        goto errorExit;
-    }
-
-    return request->vc;
+    return 0;
 
 errorExit:
-    if (request->payload) {
-        free((void*)request->payload);
-        request->payload = NULL;
+    CredentialRequest_Destroy(request);
+    memset(request, 0, sizeof(CredentialRequest));
+    return -1;
+}
+
+bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credential)
+{
+    DID *signer;
+    DIDDocument *signerdoc;
+    Credential *vc;
+    int status, rc;
+
+    assert(request);
+
+    signer = &request->proof.verificationMethod.did;
+    signerdoc = DID_Resolve(signer, &status, false);
+    if (!signerdoc) {
+        if (status == DIDStatus_NotFound)
+            DIDError_Set(DIDERR_NOT_EXISTS, "Credential request's signer does not exist.");
+        return false;
     }
 
-    if (request->vc) {
-        Credential_Destroy(request->vc);
-        request->vc = NULL;
+    if (!DIDDocument_IsValid(signerdoc))
+        return false;
+
+    if (!strcmp("declare", request->header.op)) {
+        vc = request->vc;
+        if (!vc) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "Miss credential in the transaction.");
+            return false;
+        }
+
+        if (!DID_Equals(signer, &vc->subject.id)) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "The transaction to declare credential must be signed by ownerself.");
+            return false;
+        }
+    } else {
+        vc = request->vc;
+        if (!vc)
+            vc = credential;
+
+        if (vc) {
+            if (!DID_Equals(signer, &vc->subject.id) && !DID_Equals(signer, &vc->issuer)) {
+               DIDError_Set(DIDERR_TRANSACTION_ERROR, "The transaction to revoke credential must be signed by ownerself or issuer.");
+               return false;
+            }
+        }
     }
 
-    return NULL;
+    if (!DIDDocument_IsAuthenticationKey(signerdoc, &request->proof.verificationMethod)) {
+        DIDError_Set(DIDERR_TRANSACTION_ERROR, "The sign key of transaction must be authentication key.");
+        return false;
+    }
+
+    rc = DIDDocument_Verify(signerdoc, &request->proof.verificationMethod,
+            (char*)request->proof.signature, 3,
+            request->header.spec, strlen(request->header.spec),
+            request->header.op, strlen(request->header.op),
+            request->payload, strlen(request->payload));
+    DIDDocument_Destroy(signerdoc);
+    return rc == -1 ? false : true;
 }
 
 void CredentialRequest_Destroy(CredentialRequest *request)

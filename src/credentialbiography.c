@@ -63,6 +63,8 @@ void CredentialBiography_Free(CredentialBiography *biography)
 CredentialBiography *CredentialBiography_FromJson(json_t *json)
 {
     CredentialBiography *biography;
+    CredentialTransaction *tx;
+    Credential *vc;
     json_t *item, *field;
     int i, size = 0;
     bool revoked;
@@ -130,14 +132,15 @@ CredentialBiography *CredentialBiography_FromJson(json_t *json)
                 goto errorExit;
             }
 
-            CredentialTransaction *tx = &biography->txs.txs[i];
+            tx = &biography->txs.txs[i];
             if (CredentialTransaction_FromJson(tx, field) == -1)
                 goto errorExit;
 
-            Credential *vc = tx->request.vc;
+            vc = tx->request.vc;
             if (vc) {
                 revoked = (biography->status == CredentialStatus_Revoked) ? true : false;
                 CredentialMetaData_SetRevoke(&vc->metadata, revoked);
+                CredentialMetaData_SetPublished(&vc->metadata, tx->timestamp);
             }
 
             biography->txs.size++;

@@ -929,6 +929,11 @@ bool Credential_IsValid_Internal(Credential *cred, DIDDocument *document)
     assert(cred);
     assert(document);
 
+    if (!DID_Equals(&cred->id.did, &cred->subject.id)) {
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Credential's id mismatch with Credential subject's owner.");
+        return false;
+    }
+
     if (!Credential_IsSelfProclaimed(cred)) {
         issuerdoc = DID_Resolve(&cred->issuer, &status, false);
         if (!issuerdoc)

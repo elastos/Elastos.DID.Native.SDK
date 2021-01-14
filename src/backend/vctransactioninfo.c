@@ -74,9 +74,9 @@ int CredentialTransaction_FromJson(CredentialTransaction *txinfo, json_t *json)
         return -1;
     }
 
-    txinfo->request.vc = CredentialRequest_FromJson(&txinfo->request, item);
-    if (!txinfo->request.vc && strcmp(txinfo->request.header.op, "revoke"))
+    if (CredentialRequest_FromJson(&txinfo->request, item) < 0)
         return -1;
+
     return 0;
 }
 
