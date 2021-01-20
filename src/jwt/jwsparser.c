@@ -86,7 +86,7 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
     if (!keybase58)
         goto errorExit;
 
-    base58_decode(binkey, sizeof(binkey), keybase58);
+    hdkey_base58_decode(binkey, sizeof(binkey), keybase58);
 
     memset(&_spec, 0, sizeof(KeySpec));
     spec = KeySpec_Fill(&_spec, binkey, NULL);

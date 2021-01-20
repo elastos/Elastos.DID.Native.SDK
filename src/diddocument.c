@@ -1286,7 +1286,7 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
         return -1;
     }
     //check base58 is valid
-    if (base58_decode(binkey, sizeof(binkey), key) != PUBLICKEY_BYTES) {
+    if (hdkey_base58_decode(binkey, sizeof(binkey), key) != PUBLICKEY_BYTES) {
         DIDError_Set(DIDERR_INVALID_KEY, "Decode public key failed.");
         return -1;
     }
@@ -1362,7 +1362,7 @@ int DIDDocumentBuilder_AddAuthenticationKey(DIDDocumentBuilder *builder,
         return -1;
     }
 
-    if (key && base58_decode(binkey, sizeof(binkey), key) != PUBLICKEY_BYTES) {
+    if (key && hdkey_base58_decode(binkey, sizeof(binkey), key) != PUBLICKEY_BYTES) {
         DIDError_Set(DIDERR_INVALID_KEY, "Decode authentication key failed.");
         return -1;
     }
@@ -1484,7 +1484,7 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
         return -1;
     }
 
-    if (key && base58_decode(binkey, sizeof(binkey), key) != PUBLICKEY_BYTES) {
+    if (key && hdkey_base58_decode(binkey, sizeof(binkey), key) != PUBLICKEY_BYTES) {
         DIDError_Set(DIDERR_INVALID_KEY, "Decode public key failed.");
         return -1;
     }
@@ -2010,7 +2010,7 @@ DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
         if (DID_Equals(&pk->controller, &document->did) == 0)
             continue;
 
-        base58_decode(binkey, sizeof(binkey), pk->publicKeyBase58);
+        hdkey_base58_decode(binkey, sizeof(binkey), pk->publicKeyBase58);
         HDKey_PublicKey2Address(binkey, idstring, sizeof(idstring));
 
         if (!strcmp(idstring, pk->id.did.idstring))
@@ -2557,7 +2557,7 @@ int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
         return -1;
     }
 
-    base58_decode(binkey, sizeof(binkey), PublicKey_GetPublicKeyBase58(publickey));
+    hdkey_base58_decode(binkey, sizeof(binkey), PublicKey_GetPublicKeyBase58(publickey));
 
     if (ecdsa_verify_base64(sig, binkey, digest, size) == -1) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Ecdsa verify failed.");

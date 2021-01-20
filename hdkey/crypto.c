@@ -285,7 +285,7 @@ ssize_t base64_url_decode(uint8_t *buffer, const char *base64)
 
     return len; //success
 }
-ssize_t base58_encode(char *base58, size_t base58_len, uint8_t *input, size_t len)
+ssize_t hdkey_base58_encode(char *base58, size_t base58_len, uint8_t *input, size_t len)
 {
     if (!base58 || base58_len <= 0 || !input || !len)
         return -1;
@@ -297,7 +297,7 @@ ssize_t base58_encode(char *base58, size_t base58_len, uint8_t *input, size_t le
     return BRBase58Encode(base58, size, input, len);
 }
 
-ssize_t base58_decode(uint8_t *data, size_t len, const char *base58)
+ssize_t hdkey_base58_decode(uint8_t *data, size_t len, const char *base58)
 {
     if (!data || len <= 0 || !base58)
         return -1;

@@ -305,7 +305,7 @@ int JWTBuilder_Sign(JWTBuilder *builder, DIDURL *keyid, const char *storepass)
         DIDError_Set(DIDERR_NOT_EXISTS, "Key no exist.");
         return -1;
     }
-    base58_decode(pubkey, sizeof(pubkey), PublicKey_GetPublicKeyBase58(pk));
+    hdkey_base58_decode(pubkey, sizeof(pubkey), PublicKey_GetPublicKeyBase58(pk));
 
     //get sk
     if (!DIDStore_ContainsPrivateKey(builder->doc->metadata.base.store, issuer, keyid))

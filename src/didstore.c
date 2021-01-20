@@ -638,7 +638,7 @@ static int store_extendedpubkey(DIDStore *store, uint8_t *extendedkey, size_t si
     assert(store);
     assert(extendedkey && size > 0);
 
-    if (base58_encode(publickeybase58, sizeof(publickeybase58), extendedkey, size) == -1) {
+    if (hdkey_base58_encode(publickeybase58, sizeof(publickeybase58), extendedkey, size) == -1) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode extended public key failed.");
         return -1;
     }
@@ -679,7 +679,7 @@ static ssize_t load_extendedpubkey(DIDStore *store, uint8_t *extendedkey, size_t
     if (!string)
         return -1;
 
-    len = base58_decode(extendedkey, size, string);
+    len = hdkey_base58_decode(extendedkey, size, string);
     free((void*)string);
     if (len < 0)
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode extended public key failed.");

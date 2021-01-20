@@ -54,9 +54,9 @@ ssize_t base64_url_encode(char *base64, const uint8_t *input, size_t len);
 
 ssize_t base64_url_decode(uint8_t *buffer, const char *base64);
 
-ssize_t base58_encode(char *base58, size_t base58_len, uint8_t *input, size_t len);
+ssize_t hdkey_base58_encode(char *base58, size_t base58_len, uint8_t *input, size_t len);
 
-ssize_t base58_decode(uint8_t *data, size_t len, const char *base58);
+ssize_t hdkey_base58_decode(uint8_t *data, size_t len, const char *base58);
 
 int sha256_digest_init(Sha256_Digest *sha256_digest);
 
