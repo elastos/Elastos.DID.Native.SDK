@@ -1,0 +1,99 @@
+diff -ruN jansson/src/hashtable.c jansson-mod/src/hashtable.c
+--- jansson/src/hashtable.c	2020-05-08 02:38:59.000000000 +0800
++++ jansson-mod/src/hashtable.c	2021-01-20 13:02:42.000000000 +0800
+@@ -240,7 +240,7 @@
+     return 0;
+ }
+ 
+-void *hashtable_get(hashtable_t *hashtable, const char *key) {
++void *hashtable_got(hashtable_t *hashtable, const char *key) {
+     pair_t *pair;
+     size_t hash;
+     bucket_t *bucket;
+@@ -260,7 +260,7 @@
+     return hashtable_do_del(hashtable, key, hash);
+ }
+ 
+-void hashtable_clear(hashtable_t *hashtable) {
++void hashtable_clean(hashtable_t *hashtable) {
+     size_t i;
+ 
+     hashtable_do_clear(hashtable);
+diff -ruN jansson/src/hashtable.h jansson-mod/src/hashtable.h
+--- jansson/src/hashtable.h	2020-05-08 02:38:59.000000000 +0800
++++ jansson-mod/src/hashtable.h	2021-01-20 13:02:40.000000000 +0800
+@@ -82,14 +82,14 @@
+ int hashtable_set(hashtable_t *hashtable, const char *key, json_t *value);
+ 
+ /**
+- * hashtable_get - Get a value associated with a key
++ * hashtable_got - Get a value associated with a key
+  *
+  * @hashtable: The hashtable object
+  * @key: The key
+  *
+  * Returns value if it is found, or NULL otherwise.
+  */
+-void *hashtable_get(hashtable_t *hashtable, const char *key);
++void *hashtable_got(hashtable_t *hashtable, const char *key);
+ 
+ /**
+  * hashtable_del - Remove a value from the hashtable
+@@ -102,13 +102,13 @@
+ int hashtable_del(hashtable_t *hashtable, const char *key);
+ 
+ /**
+- * hashtable_clear - Clear hashtable
++ * hashtable_clean - Clear hashtable
+  *
+  * @hashtable: The hashtable object
+  *
+  * Removes all items from the hashtable.
+  */
+-void hashtable_clear(hashtable_t *hashtable);
++void hashtable_clean(hashtable_t *hashtable);
+ 
+ /**
+  * hashtable_iter - Iterate over hashtable
+diff -ruN jansson/src/pack_unpack.c jansson-mod/src/pack_unpack.c
+--- jansson/src/pack_unpack.c	2020-05-08 02:38:59.000000000 +0800
++++ jansson-mod/src/pack_unpack.c	2021-01-20 13:02:39.000000000 +0800
+@@ -562,7 +562,7 @@
+ 
+         if (gotopt || json_object_size(root) != key_set.size) {
+             json_object_foreach(root, key, value) {
+-                if (!hashtable_get(&key_set, key)) {
++                if (!hashtable_got(&key_set, key)) {
+                     unpacked++;
+ 
+                     /* Save unrecognized keys for the error message */
+diff -ruN jansson/src/value.c jansson-mod/src/value.c
+--- jansson/src/value.c	2020-05-08 02:38:59.000000000 +0800
++++ jansson-mod/src/value.c	2021-01-20 13:02:37.000000000 +0800
+@@ -47,7 +47,7 @@
+ int jsonp_loop_check(hashtable_t *parents, const json_t *json, char *key,
+                      size_t key_size) {
+     snprintf(key, key_size, "%p", json);
+-    if (hashtable_get(parents, key))
++    if (hashtable_got(parents, key))
+         return -1;
+ 
+     return hashtable_set(parents, key, json_null());
+@@ -99,7 +99,7 @@
+         return NULL;
+ 
+     object = json_to_object(json);
+-    return hashtable_get(&object->hashtable, key);
++    return hashtable_got(&object->hashtable, key);
+ }
+ 
+ int json_object_set_new_nocheck(json_t *json, const char *key, json_t *value) {
+@@ -148,7 +148,7 @@
+         return -1;
+ 
+     object = json_to_object(json);
+-    hashtable_clear(&object->hashtable);
++    hashtable_clean(&object->hashtable);
+ 
+     return 0;
+ }
