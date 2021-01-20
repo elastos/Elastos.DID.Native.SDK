@@ -28,3 +28,7 @@ ExternalProject_Add(
         -DCMAKE_FIND_ROOT_PATH=${PROJECT_INT_DIST_DIR}
         ${CMAKE_ARGS_INIT}
 )
+
+if(ENABLE_STATIC)
+    export_static_library(zip)
+endif()
