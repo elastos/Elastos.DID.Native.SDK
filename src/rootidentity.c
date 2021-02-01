@@ -39,7 +39,6 @@ static RootIdentity *create_rootidentity(HDKey *hdkey, DIDStore *store, const ch
 {
     RootIdentity *rootidentity = NULL;
     HDKey _derivedkey, *predeviedkey = NULL;
-    uint8_t extendedkey[EXTENDEDKEY_BYTES];
 
     assert(hdkey);
     assert(store);

@@ -217,7 +217,6 @@ int Metadata_SetExtraWithBoolean(Metadata *metadata, const char *key, bool value
 
 int Metadata_SetDefaultExtraWithBoolean(Metadata *metadata, const char *key, bool value)
 {
-    char *uskey;
     json_t *json;
     int rc;
 

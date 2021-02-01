@@ -593,7 +593,7 @@ static int load_storemeta(DIDStore *store, StoreMetadata *metadata)
 
 static int create_store(DIDStore *store)
 {
-    char path[PATH_MAX], fingerprint[64];
+    char path[PATH_MAX];
     StoreMetadata metadata;
 
     assert(store);
@@ -919,14 +919,13 @@ static const char *load_index_string(DIDStore *store, const char *id)
 
 static int upgradeFromV2(DIDStore *store)
 {
-    char path[PATH_MAX], v2path[PATH_MAX], elem[10], id[MAX_ID_LEN], buffer[512];
-    char fingerprint[64];
-    uint8_t extendedkey[EXTENDEDKEY_BYTES], md[16];
+    char path[PATH_MAX], v2path[PATH_MAX], id[MAX_ID_LEN], buffer[512];
+    uint8_t extendedkey[EXTENDEDKEY_BYTES];
     StoreMetadata metadata;
     const char *data;
     time_t current = 0;
     size_t len;
-    int i, rc;
+    int rc;
 
     assert(store);
 
@@ -1206,7 +1205,7 @@ static ssize_t didstore_decrypt_from_base64(DIDStore *store, const char *storepa
     assert(base64);
 
     len = decrypt_from_base64(plain, storepass, base64);
-    if (!len) {
+    if (len < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt data failed.");
         return -1;
     }
@@ -1243,7 +1242,6 @@ static int store_extendedprvkey(DIDStore *store, const char *storepass,
         const char *id, uint8_t *extendedkey, size_t size)
 {
     char base64[512] = {0};
-    char path[PATH_MAX];
 
     assert(store);
     assert(id);
@@ -1262,7 +1260,6 @@ static ssize_t load_extendedprvkey(DIDStore *store, const char *storepass,
         const char *id, uint8_t *extendedkey, size_t size)
 {
     const char *string;
-    char path[PATH_MAX];
     ssize_t len;
 
     assert(store);
@@ -1347,7 +1344,6 @@ static int store_mnemonic(DIDStore *store, const char *storepass, const char *id
         const uint8_t *mnemonic, size_t size)
 {
     char base64[512] = {0};
-    char path[PATH_MAX];
 
     assert(store);
     assert(storepass && *storepass);
@@ -1545,7 +1541,6 @@ static int list_credential_helper(const char *path, void *context)
     Cred_List_Helper *ch = (Cred_List_Helper*)context;
     char credpath[PATH_MAX];
     DIDURL id;
-    const char *pos;
     int rc;
 
     if (!path)
@@ -2373,8 +2368,6 @@ int DIDStore_StoreRootIdentityWithElem(DIDStore *store, const char *storepass, c
         const char *mnemonic, uint8_t *rootPrivatekey, size_t rootsize,
         uint8_t *preDerivedPublicKey, size_t keysize, int index)
 {
-    char path[PATH_MAX];
-
     assert(store);
     assert(storepass && *storepass);
     assert(id);
@@ -2399,9 +2392,7 @@ int DIDStore_StoreRootIdentityWithElem(DIDStore *store, const char *storepass, c
 
 int DIDStore_StoreRootIdentity(DIDStore *store, const char *storepass, RootIdentity *rootidentity)
 {
-    const char *id;
     StoreMetadata metadata;
-    int rc;
 
     if (!store || !storepass || !*storepass || !rootidentity) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2431,9 +2422,6 @@ int DIDStore_StoreRootIdentity(DIDStore *store, const char *storepass, RootIdent
 RootIdentity *DIDStore_LoadRootIdentity(DIDStore *store, const char *id)
 {
     RootIdentity *rootidentity = NULL;
-    char mnemonic[ELA_MAX_MNEMONIC_LEN];
-    uint8_t extendedkey[EXTENDEDKEY_BYTES];
-    ssize_t size;
 
     if (!store || !id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2629,7 +2617,6 @@ bool DIDStore_ContainsRootIdentityMnemonic(DIDStore *store, const char *id)
 
 int DIDStore_LoadIndex(DIDStore *store, const char *id)
 {
-    char path[PATH_MAX];
     const char *string;
     int index;
 
@@ -2666,7 +2653,7 @@ int DIDStore_StoreIndex(DIDStore *store, const char *id, int index)
 static HDKey *get_derive(DIDStore *store, const char *storepass, const char *id,
         int index, HDKey *derivedkey)
 {
-    size_t size;
+    ssize_t size;
     uint8_t extendedprvkey[EXTENDEDKEY_BYTES];
     HDKey _identity, *identity, *dkey;
 
@@ -2705,8 +2692,8 @@ DIDDocument *DIDStore_NewDIDByIndex(DIDStore *store, const char *storepass,
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
     HDKey _derivedkey, *derivedkey;
     DIDDocument *document;
-    DID did, *_did;
-    int status, rc;
+    DID did;
+    int status;
 
     assert(store);
     assert(storepass && *storepass);
@@ -4362,7 +4349,6 @@ static int import_defaultId(json_t *json, DIDStore *store, const char *id,
         bool *isDefault, Sha256_Digest *digest)
 {
     json_t *item;
-    DIDMetadata metadata;
     const char *data;
 
     assert(json);
