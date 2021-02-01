@@ -218,7 +218,7 @@ static bool create_didtransaction(json_t *json)
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "Previous transaction id missmatch.");
             goto errorExit;
         }
-        if (Is_CustomizedDID(info->request.doc) &&
+        if (DIDDocument_IsCustomizedDID(info->request.doc) &&
                 !controllers_equals(info->request.doc, lastinfo->request.doc))
             goto errorExit;
 

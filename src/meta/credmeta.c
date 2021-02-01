@@ -32,215 +32,210 @@
 #include "diddocument.h"
 #include "diderror.h"
 
-static const char *ALIAS = "DX-alias";
-static const char *PUBLISHED = "DX-published";
-static const char *LAST_MODIFIED= "DX-lastModified";
-static const char *REVOKED = "DX-revoke";
+static const char *ALIAS = "alias";
+static const char *PUBLISHED = "published";
+static const char *REVOKED = "revoke";
+static const char *TXID = "txid";
 
-int CredentialMetaData_ToJson_Internal(CredentialMetaData *metadata, JsonGenerator *gen)
+int CredentialMetadata_ToJson_Internal(CredentialMetadata *metadata, JsonGenerator *gen)
 {
     assert(metadata);
     assert(gen);
 
-    return MetaData_ToJson_Internal(&metadata->base, gen);
+    return Metadata_ToJson_Internal(&metadata->base, gen);
 }
 
-const char *CredentialMetaData_ToJson(CredentialMetaData *metadata)
+const char *CredentialMetadata_ToJson(CredentialMetadata *metadata)
 {
     assert(metadata);
 
-    return MetaData_ToJson(&metadata->base);
+    return Metadata_ToJson(&metadata->base);
 }
 
-int CredentialMetaData_FromJson_Internal(CredentialMetaData *metadata, json_t *json)
+int CredentialMetadata_FromJson_Internal(CredentialMetadata *metadata, json_t *json)
 {
     assert(metadata);
     assert(json);
 
-    return MetaData_FromJson_Internal(&metadata->base, json);
+    return Metadata_FromJson_Internal(&metadata->base, json);
 }
 
-int CredentialMetaData_FromJson(CredentialMetaData *metadata, const char *data)
+int CredentialMetadata_FromJson(CredentialMetadata *metadata, const char *data)
 {
     assert(metadata);
     assert(data);
 
-    return MetaData_FromJson(&metadata->base, data);
+    return Metadata_FromJson(&metadata->base, data);
 }
 
-void CredentialMetaData_Free(CredentialMetaData *metadata)
+void CredentialMetadata_Free(CredentialMetadata *metadata)
 {
     assert(metadata);
 
-    MetaData_Free(&metadata->base);
+    Metadata_Free(&metadata->base);
 }
 
-int CredentialMetaData_Merge(CredentialMetaData *tometa, CredentialMetaData *frommeta)
+int CredentialMetadata_Merge(CredentialMetadata *tometa, CredentialMetadata *frommeta)
 {
     assert(tometa && frommeta);
 
-    return MetaData_Merge(&tometa->base, &frommeta->base);
+    return Metadata_Merge(&tometa->base, &frommeta->base);
 }
 
-int CredentialMetaData_Copy(CredentialMetaData *tometa, CredentialMetaData *frommeta)
+int CredentialMetadata_Copy(CredentialMetadata *tometa, CredentialMetadata *frommeta)
 {
     assert(tometa && frommeta);
 
-    return MetaData_Copy(&tometa->base, &frommeta->base);
+    return Metadata_Copy(&tometa->base, &frommeta->base);
 }
 
-void CredentialMetaData_SetStore(CredentialMetaData *metadata, DIDStore *store)
+void CredentialMetadata_SetStore(CredentialMetadata *metadata, DIDStore *store)
 {
     assert(metadata);
     assert(store);
 
-    MetaData_SetStore(&metadata->base, store);
+    Metadata_SetStore(&metadata->base, store);
 }
 
-int CredentialMetaData_SetRevoke(CredentialMetaData *metadata, bool revoke)
+int CredentialMetadata_SetRevoke(CredentialMetadata *metadata, bool revoke)
 {
     assert(metadata);
 
-    return MetaData_SetExtraWithBoolean(&metadata->base, REVOKED, revoke);
+    return Metadata_SetDefaultExtraWithBoolean(&metadata->base, REVOKED, revoke);
 }
 
-bool CredentialMetaData_GetRevoke(CredentialMetaData *metadata)
+bool CredentialMetadata_GetRevoke(CredentialMetadata *metadata)
 {
     if (!metadata) {
         DIDError_Set(DIDERR_INVALID_ARGS, "There is not meta data for credential.");
         return false;
     }
 
-    return MetaData_GetExtraAsBoolean(&metadata->base, REVOKED);
+    return Metadata_GetDefaultExtraAsBoolean(&metadata->base, REVOKED);
 }
 
-int CredentialMetaData_SetPublished(CredentialMetaData *metadata, time_t time)
+int CredentialMetadata_SetPublished(CredentialMetadata *metadata, time_t time)
 {
     assert(metadata);
 
-    return MetaData_SetExtraWithDouble(&metadata->base, PUBLISHED, (double)time);
+    return Metadata_SetDefaultExtraWithInteger(&metadata->base, PUBLISHED, time);
 }
 
-time_t CredentialMetaData_GetPublished(CredentialMetaData *metadata)
+time_t CredentialMetadata_GetPublished(CredentialMetadata *metadata)
 {
     if (!metadata) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
-    return (time_t)MetaData_GetExtraAsDouble(&metadata->base, PUBLISHED);
+    return (time_t)Metadata_GetDefaultExtraAsInteger(&metadata->base, PUBLISHED);
 }
 
-DIDStore *CredentialMetaData_GetStore(CredentialMetaData *metadata)
+DIDStore *CredentialMetadata_GetStore(CredentialMetadata *metadata)
 {
     assert(metadata);
 
-    return MetaData_GetStore(&metadata->base);
+    return Metadata_GetStore(&metadata->base);
 }
 
-bool CredentialMetaData_AttachedStore(CredentialMetaData *metadata)
+bool CredentialMetadata_AttachedStore(CredentialMetadata *metadata)
 {
     assert(metadata);
 
-    return MetaData_AttachedStore(&metadata->base);
+    return Metadata_AttachedStore(&metadata->base);
 }
 
-int CredentialMetaData_SetLastModified(CredentialMetaData *metadata, time_t time)
+int CredentialMetadata_SetTxid(CredentialMetadata *metadata, const char *txid)
 {
     assert(metadata);
 
-    if (time == 0) {
-        json_object_del(metadata->base.data, LAST_MODIFIED);
-        return 0;
-    }
-
-    return MetaData_SetExtraWithInteger(&metadata->base, LAST_MODIFIED, (int)time);
+    return Metadata_SetDefaultExtra(&metadata->base, TXID, txid);
 }
 
-time_t CredentialMetaData_GetLastModified(CredentialMetaData *metadata)
+const char *CredentialMetadata_GetTxid(CredentialMetadata *metadata)
 {
     assert(metadata);
 
-    return (time_t)MetaData_GetExtraAsInteger(&metadata->base, LAST_MODIFIED);
+    return Metadata_GetDefaultExtra(&metadata->base, TXID);
 }
 
 //****** DID_API
-int CredentialMetaData_SetAlias(CredentialMetaData *metadata, const char *alias)
+int CredentialMetadata_SetAlias(CredentialMetadata *metadata, const char *alias)
 {
     if (!metadata) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    return MetaData_SetExtra(&metadata->base, ALIAS, alias);
+    return Metadata_SetDefaultExtra(&metadata->base, ALIAS, alias);
 }
 
-const char *CredentialMetaData_GetAlias(CredentialMetaData *metadata)
+const char *CredentialMetadata_GetAlias(CredentialMetadata *metadata)
 {
     if (!metadata) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    return MetaData_GetExtra(&metadata->base, ALIAS);
+    return Metadata_GetDefaultExtra(&metadata->base, ALIAS);
 }
 
-int CredentialMetaData_SetExtra(CredentialMetaData *metadata, const char* key, const char *value)
+int CredentialMetadata_SetExtra(CredentialMetadata *metadata, const char* key, const char *value)
 {
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    return MetaData_SetExtra(&metadata->base, key, value);
+    return Metadata_SetExtra(&metadata->base, key, value);
 }
 
-int CredentialMetaData_SetExtraWithBoolean(CredentialMetaData *metadata, const char *key, bool value)
+int CredentialMetadata_SetExtraWithBoolean(CredentialMetadata *metadata, const char *key, bool value)
 {
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    return MetaData_SetExtraWithBoolean(&metadata->base, key, value);
+    return Metadata_SetExtraWithBoolean(&metadata->base, key, value);
 }
 
-int CredentialMetaData_SetExtraWithDouble(CredentialMetaData *metadata, const char *key, double value)
+int CredentialMetadata_SetExtraWithDouble(CredentialMetadata *metadata, const char *key, double value)
 {
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    return MetaData_SetExtraWithDouble(&metadata->base, key, value);
+    return Metadata_SetExtraWithDouble(&metadata->base, key, value);
 }
 
-const char *CredentialMetaData_GetExtra(CredentialMetaData *metadata, const char *key)
+const char *CredentialMetadata_GetExtra(CredentialMetadata *metadata, const char *key)
 {
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    return MetaData_GetExtra(&metadata->base, key);
+    return Metadata_GetExtra(&metadata->base, key);
 }
 
-bool CredentialMetaData_GetExtraAsBoolean(CredentialMetaData *metadata, const char *key)
+bool CredentialMetadata_GetExtraAsBoolean(CredentialMetadata *metadata, const char *key)
 {
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    return MetaData_GetExtraAsBoolean(&metadata->base, key);
+    return Metadata_GetExtraAsBoolean(&metadata->base, key);
 }
 
-double CredentialMetaData_GetExtraAsDouble(CredentialMetaData *metadata, const char *key)
+double CredentialMetadata_GetExtraAsDouble(CredentialMetadata *metadata, const char *key)
 {
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
-    return MetaData_GetExtraAsDouble(&metadata->base, key);
+    return Metadata_GetExtraAsDouble(&metadata->base, key);
 }

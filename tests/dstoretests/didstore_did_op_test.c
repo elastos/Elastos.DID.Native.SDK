@@ -27,6 +27,7 @@ static int get_did(DID *did, void *context)
 
 static void test_didstore_bulk_newdid(void)
 {
+    RootIdentity *rootidentity;
     char alias[ELA_MAX_ALIAS_LEN], _path[PATH_MAX];
     const char *gAlias;
     DIDStore *store;
@@ -35,15 +36,15 @@ static void test_didstore_bulk_newdid(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    rc = TestData_InitIdentity(store);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    rootidentity = TestData_InitIdentity(store);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     for (i = 0; i < 100; i++) {
         int size = snprintf(alias, sizeof(alias), "my did %d", i);
         if (size < 0 || size > sizeof(alias))
             continue;
 
-        DIDDocument *doc = DIDStore_NewDID(store, storepass, alias);
+        DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias);
         if (!doc)
             continue;
         CU_ASSERT_TRUE(DIDDocument_IsValid(doc));
@@ -51,21 +52,21 @@ static void test_didstore_bulk_newdid(void)
         DID *did = DIDDocument_GetSubject(doc);
         CU_ASSERT_PTR_NOT_NULL(did);
 
-        char *path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP,
-                DID_DIR, PATH_STEP, did->idstring, PATH_STEP, DOCUMENT_FILE);
+        char *path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP,
+                DATA_DIR, PATH_STEP,IDS_DIR, PATH_STEP, did->idstring, PATH_STEP, DOCUMENT_FILE);
         CU_ASSERT_TRUE(file_exist(path));
 
-        path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP, DID_DIR,
-                PATH_STEP, did->idstring, PATH_STEP, META_FILE);
+        path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
+                PATH_STEP, IDS_DIR, PATH_STEP, did->idstring, PATH_STEP, META_FILE);
         CU_ASSERT_TRUE(file_exist(path));
 
         DIDDocument *loaddoc = DIDStore_LoadDID(store, did);
         CU_ASSERT_PTR_NOT_NULL(loaddoc);
         CU_ASSERT_TRUE(DIDDocument_IsValid(loaddoc));
 
-        DIDMetaData *metadata = DIDDocument_GetMetaData(loaddoc);
+        DIDMetadata *metadata = DIDDocument_GetMetadata(loaddoc);
         CU_ASSERT_PTR_NOT_NULL(loaddoc);
-        gAlias = DIDMetaData_GetAlias(metadata);
+        gAlias = DIDMetadata_GetAlias(metadata);
         CU_ASSERT_PTR_NOT_NULL(gAlias);
         CU_ASSERT_STRING_EQUAL(alias, gAlias);
         CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(doc, 0),
@@ -97,6 +98,7 @@ static void test_didstore_bulk_newdid(void)
 
 static void test_didstore_op_deletedid(void)
 {
+    RootIdentity *rootidentity;
     DID dids[100];
     char alias[ELA_MAX_ALIAS_LEN], _path[PATH_MAX];
     DIDStore *store;
@@ -105,15 +107,15 @@ static void test_didstore_op_deletedid(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    rc = TestData_InitIdentity(store);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    rootidentity = TestData_InitIdentity(store);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     for(i = 0; i < 100; i++) {
         int size = snprintf(alias, sizeof(alias), "my did %d", i);
         if (size < 0 || size > sizeof(alias))
             continue;
 
-        DIDDocument *doc = DIDStore_NewDID(store, storepass, alias);
+        DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
         DID *did = DIDDocument_GetSubject(doc);
@@ -130,8 +132,8 @@ static void test_didstore_op_deletedid(void)
         bool isDeleted = DIDStore_DeleteDID(store, &dids[i]);
         CU_ASSERT_TRUE(isDeleted);
 
-        char *path = get_file_path(_path, PATH_MAX, 5, store->root, PATH_STEP,
-                DID_DIR, PATH_STEP, dids[i].idstring);
+        char *path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP,
+                DATA_DIR, PATH_STEP, IDS_DIR, PATH_STEP, dids[i].idstring);
         CU_ASSERT_FALSE_FATAL(file_exist(path));
     }
 
@@ -162,9 +164,6 @@ static void test_didstore_op_store_load_did(void)
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
-
-    rc = TestData_InitIdentity(store);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
 
     issuerdoc = TestData_LoadIssuerDoc();
     doc = TestData_LoadDoc();

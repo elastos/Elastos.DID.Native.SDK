@@ -44,6 +44,8 @@ struct AgentCtx ctx = {
     "english"
 };
 
+RootIdentity *rootidentity;
+
 static void clean(char *input)
 {
     char *p = input;
@@ -74,7 +76,7 @@ static void newdid(int argc, char *argv[])
         return;
     }
 
-    doc = DIDStore_NewDID(ctx.store, ctx.storepass, argv[1]);
+    doc = RootIdentity_NewDID(rootidentity, ctx.storepass, argv[1]);
     if (!doc) {
         printf("Error: new did document failed.\n");
         return;
@@ -88,7 +90,7 @@ static void newdid(int argc, char *argv[])
 
 static int iterate_did_cb(DID *did, void *context)
 {
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *alias;
 
     int *num = (int *)context;
@@ -96,11 +98,11 @@ static int iterate_did_cb(DID *did, void *context)
     if (!did)
         return 1;
 
-    metadata = DID_GetMetaData(did);
+    metadata = DID_GetMetadata(did);
     if (!metadata)
         return -1;
 
-    alias = DIDMetaData_GetAlias(metadata);
+    alias = DIDMetadata_GetAlias(metadata);
     if (!alias)
         return -1;
 
@@ -490,8 +492,8 @@ static int gen_priv_identity(struct AgentCtx *ctx)
     fgets(passphrase, sizeof(passphrase), stdin);
     clean(passphrase);
 
-    rc = DIDStore_InitPrivateIdentity(ctx->store, ctx->storepass, mnemonic, passphrase, ctx->lang, false);
-    if (rc < 0) {
+    rootidentity = RootIdentity_Create(mnemonic, passphrase, ctx->lang, false, ctx->store, ctx->storepass);
+    if (!rootidentity) {
         printf("Error: initialize private identity failed.\n");
         return -1;
     }
@@ -557,8 +559,6 @@ int main(int argc, char *argv[])
 #ifdef HAVE_SIGHUP
     signal(SIGHUP, signal_handler);
 #endif
-    //signal(SIGKILL, signal_handler);
-    //signal(SIGHUP,  signal_handler);
 
     datadir = get_datadir(datadir);
 
@@ -570,8 +570,6 @@ int main(int argc, char *argv[])
 
     printf("DID store home directory at '%s'\n", datadir);
 
-
-    //adapter.createIdTransaction = create_id_transaction;
     store = DIDStore_Open(datadir);
     if (!store) {
         printf("Error: open DID store at '%s' failed.\n", datadir );
@@ -582,7 +580,7 @@ int main(int argc, char *argv[])
     ctx.store = store;
     ctx.lang  = "english";
 
-    if (!DIDStore_ContainsPrivateIdentity(store)) {
+    if (!DIDStore_GetDefaultRootIdentity(store)) {
         char input[32] = {0};
         int which;
 
@@ -640,6 +638,9 @@ int main(int argc, char *argv[])
 
         run_cmd(argc, argv);
     }
+
+    if (rootidentity)
+        RootIdentity_Destroy(rootidentity);
 
     DIDStore_Close(store);
 }

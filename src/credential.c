@@ -165,6 +165,7 @@ static int subject_toJson(JsonGenerator *generator, Credential *cred, DID *did, 
 static int proof_toJson(JsonGenerator *generator, Credential *cred, int compact)
 {
     char id[ELA_MAX_DIDURL_LEN];
+    char _timestring[DOC_BUFFER_LEN];
 
     assert(generator);
     assert(generator->buffer);
@@ -173,8 +174,15 @@ static int proof_toJson(JsonGenerator *generator, Credential *cred, int compact)
     CHECK(JsonGenerator_WriteStartObject(generator));
     if (!compact)
         CHECK(JsonGenerator_WriteStringField(generator, "type", cred->proof.type));
-    CHECK(JsonGenerator_WriteStringField(generator, "verificationMethod",
-            DIDURL_ToString(&cred->proof.verificationMethod, id, sizeof(id), compact)));
+    if (cred->proof.created != 0)
+        CHECK(JsonGenerator_WriteStringField(generator, "created",
+                get_time_string(_timestring, sizeof(_timestring), &cred->proof.created)));
+    if (DID_Equals(&cred->issuer, &cred->proof.verificationMethod.did))
+        CHECK(JsonGenerator_WriteStringField(generator, "verificationMethod",
+                DIDURL_ToString(&cred->proof.verificationMethod, id, sizeof(id), compact)));
+    else
+        CHECK(JsonGenerator_WriteStringField(generator, "verificationMethod",
+                DIDURL_ToString(&cred->proof.verificationMethod, id, sizeof(id), false)));
     CHECK(JsonGenerator_WriteStringField(generator, "signature", cred->proof.signatureValue));
     CHECK(JsonGenerator_WriteEndObject(generator));
     return 0;
@@ -227,7 +235,7 @@ void Credential_Destroy(Credential *cred)
     if (cred->subject.properties)
         json_decref(cred->subject.properties);
 
-    CredentialMetaData_Free(&cred->metadata);
+    CredentialMetadata_Free(&cred->metadata);
     free(cred);
 }
 
@@ -454,6 +462,16 @@ const char *Credential_GetProperty(Credential *cred, const char *name)
     return item_astext(item);
 }
 
+time_t Credential_GetProofCreatedTime(Credential *cred)
+{
+    if (!cred) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return 0;
+    }
+
+    return cred->proof.created;
+}
+
 DIDURL *Credential_GetProofMethod(Credential *cred)
 {
     if (!cred) {
@@ -576,6 +594,16 @@ Credential *Parse_Credential(json_t *json, DID *did)
         }
         else
             strcpy((char*)credential->proof.type, json_string_value(field));
+    }
+
+    //compatible for no "created"
+    field = json_object_get(item, "created");
+    if (field) {
+        if (!json_is_string(field) ||
+                parse_time(&credential->proof.created, json_string_value(field)) < 0) {
+            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid create credential time.");
+            goto errorExit;
+        }
     }
 
     field = json_object_get(item, "verificationMethod");
@@ -979,13 +1007,13 @@ bool Credential_IsValid(Credential *cred)
     return valid;
 }
 
-int Credential_SaveMetaData(Credential *cred)
+int Credential_SaveMetadata(Credential *cred)
 {
-    return (!cred || !CredentialMetaData_AttachedStore(&cred->metadata)) ? 0:
+    return (!cred || !CredentialMetadata_AttachedStore(&cred->metadata)) ? 0:
             DIDStore_StoreCredMeta(cred->metadata.base.store, &cred->metadata, &cred->id);
 }
 
-CredentialMetaData *Credential_GetMetaData(Credential *cred)
+CredentialMetadata *Credential_GetMetadata(Credential *cred)
 {
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1025,7 +1053,7 @@ int Credential_Copy(Credential *dest, Credential *src)
     dest->subject.properties = json_deep_copy(src->subject.properties);
 
     memcpy(&dest->proof, &src->proof, sizeof(CredentialProof));
-    CredentialMetaData_Copy(&dest->metadata, &src->metadata);
+    CredentialMetadata_Copy(&dest->metadata, &src->metadata);
 
     return 0;
 }
@@ -1042,7 +1070,7 @@ bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *sto
         return false;
     }
 
-    if (!CredentialMetaData_AttachedStore(&credential->metadata)) {
+    if (!CredentialMetadata_AttachedStore(&credential->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Not attached with Credential.");
         return false;
     }
@@ -1069,7 +1097,7 @@ bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *sto
                 DIDError_Set(DIDERR_NOT_EXISTS, "The owner of Credential doesn't already exist.");
             return false;
         }
-        DIDMetaData_SetStore(&doc->metadata, store);
+        DIDMetadata_SetStore(&doc->metadata, store);
     }
 
     if (!signkey) {
@@ -1105,7 +1133,7 @@ bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *stor
         return false;
     }
 
-    if (!CredentialMetaData_AttachedStore(&credential->metadata)) {
+    if (!CredentialMetadata_AttachedStore(&credential->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Not attached with Credential.");
         return false;
     }
@@ -1140,7 +1168,7 @@ bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *stor
                 DIDError_Set(DIDERR_NOT_EXISTS, "The owner of Credential doesn't already exist.");
             return false;
         }
-        DIDMetaData_SetStore(&doc->metadata, store);
+        DIDMetadata_SetStore(&doc->metadata, store);
     }
 
     if (!signkey) {
@@ -1178,7 +1206,7 @@ bool Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
         return false;
     }
 
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Document does not attached with DID store.");
         return false;
     }
@@ -1267,7 +1295,7 @@ bool Credential_IsRevoked(Credential *credential)
         return false;
     }
 
-    if (CredentialMetaData_GetRevoke(&credential->metadata))
+    if (CredentialMetadata_GetRevoke(&credential->metadata))
         return true;
 
     return Credential_ResolveRevocation(&credential->id, &credential->issuer) ||

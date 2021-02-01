@@ -75,7 +75,7 @@ JWTBuilder *JWTBuilder_Create(DID *issuer)
         return NULL;
     }
 
-    if (!DIDMetaData_AttachedStore(&issuer->metadata)) {
+    if (!DIDMetadata_AttachedStore(&issuer->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DID, "Not attached with DID store.");
         return NULL;
     }

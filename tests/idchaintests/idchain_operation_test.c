@@ -22,6 +22,7 @@ static void test_idchain_publishdid_and_resolve(void)
 {
     DIDURL *signkey;
     char publickeybase58[MAX_PUBLICKEY_BASE58];
+    RootIdentity *rootidentity;
     char previous_txid[ELA_MAX_TXID_LEN];
     DIDDocument *resolvedoc = NULL, *doc;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
@@ -30,12 +31,13 @@ static void test_idchain_publishdid_and_resolve(void)
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     signkey = DIDDocument_GetDefaultPublicKey(doc);
@@ -64,9 +66,9 @@ static void test_idchain_publishdid_and_resolve(void)
     rc = DIDStore_StoreDID(store, resolvedoc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    DIDMetaData *metadata = DIDDocument_GetMetaData(resolvedoc);
+    DIDMetadata *metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
     strcpy(previous_txid, txid);
     printf("\n   txid = %s\n-- resolve result: successfully!\n-- publish begin(update), waiting...\n", txid);
@@ -114,8 +116,8 @@ static void test_idchain_publishdid_and_resolve(void)
         if (!resolvedoc) {
             break;
         } else {
-            metadata = DIDDocument_GetMetaData(resolvedoc);
-            txid = DIDMetaData_GetTxid(metadata);
+            metadata = DIDDocument_GetMetadata(resolvedoc);
+            txid = DIDMetadata_GetTxid(metadata);
             printf(".");
         }
 
@@ -174,8 +176,8 @@ static void test_idchain_publishdid_and_resolve(void)
         if (!resolvedoc) {
             break;
         } else {
-            metadata = DIDDocument_GetMetaData(resolvedoc);
-            txid = DIDMetaData_GetTxid(metadata);
+            metadata = DIDDocument_GetMetadata(resolvedoc);
+            txid = DIDMetadata_GetTxid(metadata);
             printf(".");
         }
 
@@ -195,6 +197,7 @@ static void test_idchain_publishdid_and_resolve(void)
 static void test_idchain_publishdid_with_credential(void)
 {
     DIDDocument *resolvedoc = NULL, *doc;
+    RootIdentity *rootidentity;
     char previous_txid[ELA_MAX_TXID_LEN];
     const char *mnemonic, *txid;
     Credential *cred;
@@ -203,11 +206,12 @@ static void test_idchain_publishdid_with_credential(void)
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
-    doc = DIDStore_NewDID(store, storepass, "littlefish");
+    doc = RootIdentity_NewDID(rootidentity, storepass, "littlefish");
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     DID_Copy(&did, DIDDocument_GetSubject(doc));
@@ -228,9 +232,9 @@ static void test_idchain_publishdid_with_credential(void)
                 CU_FAIL_FATAL("publish did timeout!!!!\n");
         }
     }
-    DIDMetaData *metadata = DIDDocument_GetMetaData(resolvedoc);
+    DIDMetadata *metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL_FATAL(txid);
     strcpy(previous_txid, txid);
 
@@ -286,8 +290,8 @@ static void test_idchain_publishdid_with_credential(void)
         if (!resolvedoc) {
             break;
         } else {
-            metadata = DIDDocument_GetMetaData(resolvedoc);
-            txid = DIDMetaData_GetTxid(metadata);
+            metadata = DIDDocument_GetMetadata(resolvedoc);
+            txid = DIDMetadata_GetTxid(metadata);
             printf(".");
         }
 

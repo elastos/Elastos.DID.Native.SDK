@@ -33,165 +33,175 @@
 #include "diddocument.h"
 #include "diderror.h"
 
-static const char *ALIAS = "DX-alias";
-static const char *TXID = "DX-txid";
-static const char *PREV_SIGNATURE = "DX-prevSignature";
-static const char *SIGNATURE = "DX-signature";
-static const char *PUBLISHED = "DX-published";
-static const char *DEACTIVATED = "DX-deactivated";
-static const char *LAST_MODIFIED= "DX-lastModified";
+static const char *ROOTIDENTITY = "rootidentity";
+static const char *INDEX = "index";
+static const char *ALIAS = "alias";
+static const char *TXID = "txid";
+static const char *PREV_SIGNATURE = "prevSignature";
+static const char *SIGNATURE = "signature";
+static const char *PUBLISHED = "published";
+static const char *DEACTIVATED = "deactivated";
 
-int DIDMetaData_ToJson_Internal(DIDMetaData *metadata, JsonGenerator *gen)
+int DIDMetadata_ToJson_Internal(DIDMetadata *metadata, JsonGenerator *gen)
 {
     assert(metadata);
 
-    return MetaData_ToJson_Internal(&metadata->base, gen);
+    return Metadata_ToJson_Internal(&metadata->base, gen);
 }
 
-const char *DIDMetaData_ToJson(DIDMetaData *metadata)
+const char *DIDMetadata_ToJson(DIDMetadata *metadata)
 {
     assert(metadata);
 
-    return MetaData_ToJson(&metadata->base);
+    return Metadata_ToJson(&metadata->base);
 }
 
-int DIDMetaData_FromJson_Internal(DIDMetaData *metadata, json_t *json)
+int DIDMetadata_FromJson_Internal(DIDMetadata *metadata, json_t *json)
 {
     assert(metadata);
 
-    return MetaData_FromJson_Internal(&metadata->base, json);
+    return Metadata_FromJson_Internal(&metadata->base, json);
 }
 
-int DIDMetaData_FromJson(DIDMetaData *metadata, const char *data)
+int DIDMetadata_FromJson(DIDMetadata *metadata, const char *data)
 {
     assert(metadata);
 
-    return MetaData_FromJson(&metadata->base, data);
+    return Metadata_FromJson(&metadata->base, data);
 }
 
-const char *DIDMetaData_ToString(DIDMetaData *metadata)
+const char *DIDMetadata_ToString(DIDMetadata *metadata)
 {
     assert(metadata);
 
-    return MetaData_ToString(&metadata->base);
+    return Metadata_ToString(&metadata->base);
 }
 
-void DIDMetaData_Free(DIDMetaData *metadata)
+void DIDMetadata_Free(DIDMetadata *metadata)
 {
     if (metadata)
-        MetaData_Free(&metadata->base);
+        Metadata_Free(&metadata->base);
 }
 
-int DIDMetaData_SetDeactivated(DIDMetaData *metadata, bool deactived)
+int DIDMetadata_SetDeactivated(DIDMetadata *metadata, bool deactived)
 {
     assert(metadata);
 
-    return MetaData_SetExtraWithBoolean(&metadata->base, DEACTIVATED, deactived);
+    return Metadata_SetDefaultExtraWithBoolean(&metadata->base, DEACTIVATED, deactived);
 }
 
-int DIDMetaData_SetPublished(DIDMetaData *metadata, time_t time)
+int DIDMetadata_SetPublished(DIDMetadata *metadata, time_t time)
 {
     assert(metadata);
 
-    return MetaData_SetExtraWithDouble(&metadata->base, PUBLISHED, (double)time);
+    return Metadata_SetDefaultExtraWithInteger(&metadata->base, PUBLISHED, time);
 }
 
-int DIDMetaData_SetTxid(DIDMetaData *metadata, const char *txid)
+int DIDMetadata_SetTxid(DIDMetadata *metadata, const char *txid)
 {
     assert(metadata);
 
-    return MetaData_SetExtra(&metadata->base, TXID, txid);
+    return Metadata_SetDefaultExtra(&metadata->base, TXID, txid);
 }
 
-int DIDMetaData_SetSignature(DIDMetaData *metadata, const char *signature)
+int DIDMetadata_SetSignature(DIDMetadata *metadata, const char *signature)
 {
     assert(metadata);
 
-    return MetaData_SetExtra(&metadata->base, SIGNATURE, signature);
+    return Metadata_SetDefaultExtra(&metadata->base, SIGNATURE, signature);
 }
 
-int DIDMetaData_SetPrevSignature(DIDMetaData *metadata, const char *signature)
+int DIDMetadata_SetPrevSignature(DIDMetadata *metadata, const char *signature)
 {
     assert(metadata);
 
-    return MetaData_SetExtra(&metadata->base, PREV_SIGNATURE, signature);
+    return Metadata_SetDefaultExtra(&metadata->base, PREV_SIGNATURE, signature);
 }
 
-int DIDMetaData_SetLastModified(DIDMetaData *metadata, time_t time)
+int DIDMetadata_SetRootIdentity(DIDMetadata *metadata, const char *rootidentity)
 {
     assert(metadata);
 
-    if (time == 0) {
-        json_object_del(metadata->base.data, LAST_MODIFIED);
-        return 0;
-    }
-
-    return MetaData_SetExtraWithInteger(&metadata->base, LAST_MODIFIED, (int)time);
+    return Metadata_SetDefaultExtra(&metadata->base, ROOTIDENTITY, rootidentity);
 }
 
-time_t DIDMetaData_GetLastModified(DIDMetaData *metadata)
+int DIDMetadata_SetIndex(DIDMetadata *metadata, int index)
 {
     assert(metadata);
 
-    return (time_t)MetaData_GetExtraAsInteger(&metadata->base, LAST_MODIFIED);
+    return Metadata_SetDefaultExtraWithInteger(&metadata->base, INDEX, index);
 }
 
-const char *DIDMetaData_GetTxid(DIDMetaData *metadata)
+const char *DIDMetadata_GetRootIdentity(DIDMetadata *metadata)
 {
     assert(metadata);
 
-    return MetaData_GetExtra(&metadata->base, TXID);
+    return Metadata_GetDefaultExtra(&metadata->base, SIGNATURE);
 }
 
-const char *DIDMetaData_GetSignature(DIDMetaData *metadata)
+int DIDMetadata_GetIndex(DIDMetadata *metadata)
 {
     assert(metadata);
 
-    return MetaData_GetExtra(&metadata->base, SIGNATURE);
+    return Metadata_GetDefaultExtraAsInteger(&metadata->base, INDEX);
 }
 
-const char *DIDMetaData_GetPrevSignature(DIDMetaData *metadata)
+const char *DIDMetadata_GetTxid(DIDMetadata *metadata)
 {
     assert(metadata);
 
-    return MetaData_GetExtra(&metadata->base, PREV_SIGNATURE);
+    return Metadata_GetDefaultExtra(&metadata->base, TXID);
 }
 
-int DIDMetaData_Merge(DIDMetaData *tometa, DIDMetaData *frommeta)
+const char *DIDMetadata_GetSignature(DIDMetadata *metadata)
+{
+    assert(metadata);
+
+    return Metadata_GetDefaultExtra(&metadata->base, SIGNATURE);
+}
+
+const char *DIDMetadata_GetPrevSignature(DIDMetadata *metadata)
+{
+    assert(metadata);
+
+    return Metadata_GetDefaultExtra(&metadata->base, PREV_SIGNATURE);
+}
+
+int DIDMetadata_Merge(DIDMetadata *tometa, DIDMetadata *frommeta)
 {
     assert(tometa && frommeta);
 
-    return MetaData_Merge(&tometa->base, &frommeta->base);
+    return Metadata_Merge(&tometa->base, &frommeta->base);
 }
 
-int DIDMetaData_Copy(DIDMetaData *tometa, DIDMetaData *frommeta)
+int DIDMetadata_Copy(DIDMetadata *tometa, DIDMetadata *frommeta)
 {
     assert(tometa && frommeta);
 
-    return MetaData_Copy(&tometa->base, &frommeta->base);
+    return Metadata_Copy(&tometa->base, &frommeta->base);
 }
 
-void DIDMetaData_SetStore(DIDMetaData *metadata, DIDStore *store)
+void DIDMetadata_SetStore(DIDMetadata *metadata, DIDStore *store)
 {
     assert(metadata);
 
-    MetaData_SetStore(&metadata->base, store);
+    Metadata_SetStore(&metadata->base, store);
 }
 
-DIDStore *DIDMetaData_GetStore(DIDMetaData *metadata)
+DIDStore *DIDMetadata_GetStore(DIDMetadata *metadata)
 {
     assert(metadata);
 
-    return MetaData_GetStore(&metadata->base);
+    return Metadata_GetStore(&metadata->base);
 }
 
-bool DIDMetaData_AttachedStore(DIDMetaData *metadata)
+bool DIDMetadata_AttachedStore(DIDMetadata *metadata)
 {
     bool bAttached;
 
     assert(metadata);
 
-    bAttached = MetaData_AttachedStore(&metadata->base);
+    bAttached = Metadata_AttachedStore(&metadata->base);
     if (!bAttached)
         DIDError_Set(DIDERR_MALFORMED_META, "No attached did store.");
 
@@ -199,102 +209,103 @@ bool DIDMetaData_AttachedStore(DIDMetaData *metadata)
 }
 
 //******** DID_API
-int DIDMetaData_SetAlias(DIDMetaData *metadata, const char *alias)
-{
-    if (!metadata) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
-    return MetaData_SetExtra(&metadata->base, ALIAS, alias);
-}
-
-int DIDMetaData_SetExtra(DIDMetaData *metadata, const char* key, const char *value)
-{
-    if (!metadata || !key || !*key) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
-    return MetaData_SetExtra(&metadata->base, key, value);
-}
-
-int DIDMetaData_SetExtraWithBoolean(DIDMetaData *metadata, const char *key, bool value)
-{
-    if (!metadata || !key || !*key) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
-    return MetaData_SetExtraWithBoolean(&metadata->base, key, value);
-}
-
-int DIDMetaData_SetExtraWithDouble(DIDMetaData *metadata, const char *key, double value)
-{
-    if (!metadata || !key || !*key) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
-    return MetaData_SetExtraWithDouble(&metadata->base, key, value);
-}
-
-const char *DIDMetaData_GetAlias(DIDMetaData *metadata)
-{
-    if (!metadata) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    return MetaData_GetExtra(&metadata->base, ALIAS);
-}
-
-time_t DIDMetaData_GetPublished(DIDMetaData *metadata)
+time_t DIDMetadata_GetPublished(DIDMetadata *metadata)
 {
     if (!metadata) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
-    return (time_t)MetaData_GetExtraAsDouble(&metadata->base, PUBLISHED);
+    return (time_t)Metadata_GetDefaultExtraAsInteger(&metadata->base, PUBLISHED);
 }
 
-bool DIDMetaData_GetDeactivated(DIDMetaData *metadata)
+bool DIDMetadata_GetDeactivated(DIDMetadata *metadata)
 {
     if (!metadata) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    return MetaData_GetExtraAsBoolean(&metadata->base, DEACTIVATED);
+    return Metadata_GetDefaultExtraAsBoolean(&metadata->base, DEACTIVATED);
 }
 
-const char *DIDMetaData_GetExtra(DIDMetaData *metadata, const char *key)
+int DIDMetadata_SetAlias(DIDMetadata *metadata, const char *alias)
+{
+    if (!metadata) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return Metadata_SetDefaultExtra(&metadata->base, ALIAS, alias);
+}
+
+const char *DIDMetadata_GetAlias(DIDMetadata *metadata)
+{
+    if (!metadata) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    return Metadata_GetDefaultExtra(&metadata->base, ALIAS);
+}
+
+int DIDMetadata_SetExtra(DIDMetadata *metadata, const char* key, const char *value)
+{
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return Metadata_SetExtra(&metadata->base, key, value);
+}
+
+int DIDMetadata_SetExtraWithBoolean(DIDMetadata *metadata, const char *key, bool value)
+{
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return Metadata_SetExtraWithBoolean(&metadata->base, key, value);
+}
+
+int DIDMetadata_SetExtraWithDouble(DIDMetadata *metadata, const char *key, double value)
+{
+    if (!metadata || !key || !*key) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return Metadata_SetExtraWithDouble(&metadata->base, key, value);
+}
+
+const char *DIDMetadata_GetExtra(DIDMetadata *metadata, const char *key)
 {
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
-    return MetaData_GetExtra(&metadata->base, key);
+
+    return Metadata_GetExtra(&metadata->base, key);
 }
 
-bool DIDMetaData_GetExtraAsBoolean(DIDMetaData *metadata, const char *key)
+bool DIDMetadata_GetExtraAsBoolean(DIDMetadata *metadata, const char *key)
 {
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    return MetaData_GetExtraAsBoolean(&metadata->base, key);
+    return Metadata_GetExtraAsBoolean(&metadata->base, key);
 }
 
-double DIDMetaData_GetExtraAsDouble(DIDMetaData *metadata, const char *key)
+double DIDMetadata_GetExtraAsDouble(DIDMetadata *metadata, const char *key)
 {
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
-    return MetaData_GetExtraAsDouble(&metadata->base, key);
+    return Metadata_GetExtraAsDouble(&metadata->base, key);
 }

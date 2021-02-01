@@ -81,12 +81,6 @@ static int diddoc_json_op_test_suite_init(void)
     if (!store)
         return -1;
 
-    rc = TestData_InitIdentity(store);
-    if (rc) {
-        TestData_Free();
-        return -1;
-    }
-
     return 0;
 }
 

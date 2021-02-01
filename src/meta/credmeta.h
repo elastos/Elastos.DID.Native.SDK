@@ -32,37 +32,37 @@
 extern "C" {
 #endif
 
-struct CredentialMetaData {
-    MetaData base;
+struct CredentialMetadata {
+    Metadata base;
 };
 
-int CredentialMetaData_ToJson_Internal(CredentialMetaData *metadata, JsonGenerator *gen);
+int CredentialMetadata_ToJson_Internal(CredentialMetadata *metadata, JsonGenerator *gen);
 
-const char *CredentialMetaData_ToJson(CredentialMetaData *metadata);
+const char *CredentialMetadata_ToJson(CredentialMetadata *metadata);
 
-int CredentialMetaData_FromJson_Internal(CredentialMetaData *metadata, json_t *json);
+int CredentialMetadata_FromJson_Internal(CredentialMetadata *metadata, json_t *json);
 
-int CredentialMetaData_FromJson(CredentialMetaData *metadata, const char *data);
+int CredentialMetadata_FromJson(CredentialMetadata *metadata, const char *data);
 
-void CredentialMetaData_Free(CredentialMetaData *metadata);
+void CredentialMetadata_Free(CredentialMetadata *metadata);
 
-int CredentialMetaData_Merge(CredentialMetaData *tometa, CredentialMetaData *frommeta);
+int CredentialMetadata_Merge(CredentialMetadata *tometa, CredentialMetadata *frommeta);
 
-int CredentialMetaData_Copy(CredentialMetaData *tometa, CredentialMetaData *frommeta);
+int CredentialMetadata_Copy(CredentialMetadata *tometa, CredentialMetadata *frommeta);
 
-void CredentialMetaData_SetStore(CredentialMetaData *metadata, DIDStore *store);
+void CredentialMetadata_SetStore(CredentialMetadata *metadata, DIDStore *store);
 
-DIDStore *CredentialMetaData_GetStore(CredentialMetaData *metadata);
+DIDStore *CredentialMetadata_GetStore(CredentialMetadata *metadata);
 
-int CredentialMetaData_SetRevoke(CredentialMetaData *metadata, bool revoke);
+int CredentialMetadata_SetRevoke(CredentialMetadata *metadata, bool revoke);
 
-int CredentialMetaData_SetPublished(CredentialMetaData *metadata, time_t time);
+int CredentialMetadata_SetPublished(CredentialMetadata *metadata, time_t time);
 
-bool CredentialMetaData_AttachedStore(CredentialMetaData *metadata);
+int CredentialMetadata_SetTxid(CredentialMetadata *metadata, const char *txid);
 
-int CredentialMetaData_SetLastModified(CredentialMetaData *metadata, time_t time);
+const char *CredentialMetadata_GetTxid(CredentialMetadata *metadata);
 
-time_t CredentialMetaData_GetLastModified(CredentialMetaData *metadata);
+bool CredentialMetadata_AttachedStore(CredentialMetadata *metadata);
 
 #ifdef __cplusplus
 }

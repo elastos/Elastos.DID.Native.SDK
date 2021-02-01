@@ -54,41 +54,42 @@
 #include "credential.h"
 #include "didmeta.h"
 #include "credmeta.h"
+#include "identitymeta.h"
+#include "storemeta.h"
 #include "resolvercache.h"
 #include "didrequest.h"
 #include "ticket.h"
+#include "rootidentity.h"
 
 #define MAX_PUBKEY_BASE58            128
 
-static const char *META_FILE = ".meta";
 static char MAGIC[] = { 0x00, 0x0D, 0x01, 0x0D };
 static char VERSION[] = { 0x00, 0x00, 0x00, 0x02 };
 
-#if defined(_WIN32) || defined(_WIN64)
-    static const char *KEY_PATH = "\\private\\key";
-    static const char *MNEMONIC_PATH = "\\private\\mnemonic";
-#else
-    static const char *KEY_PATH = "/private/key";
-    static const char *MNEMONIC_PATH = "/private/mnemonic";
-#endif
+static const char *DIDSTORE_TYPE = "did:elastos:store";
+static const char *DIDSTORE_VERSION = "3";
 
-static const char *PRIVATE_DIR = "private";
 static const char *HDKEY_FILE = "key";
 static const char *HDPUBKEY_FILE = "key.pub";
-static const char *INDEX_FILE = "index";
+static const char *META_FILE = ".metadata";
+static const char *DATA_DIR = "data";
+static const char *ROOTS_DIR = "roots";
 static const char *MNEMONIC_FILE = "mnemonic";
+static const char *PRIVATE_DIR = "private";
+static const char *PUBLIC_DIR = "public";
+static const char *INDEX_FILE = "index";
 
-static const char *DID_DIR = "ids";
+static const char *IDS_DIR = "ids";
 static const char *DOCUMENT_FILE = "document";
 static const char *CREDENTIALS_DIR = "credentials";
 static const char *CREDENTIAL_FILE = "credential";
 static const char *PRIVATEKEYS_DIR = "privatekeys";
 
-static const char *PRIVATE_JOURNAL = "private.journal";
-static const char *DID_JOURNAL = "ids.journal";
-
+static const char *DATA_JOURNAL = "data.journal";
 static const char *POST_PASSWORD = "postChangePassword";
-static const char *DID_EXPORT = "did.elastos.export/1.0";
+static const char *DID_EXPORT = "did.elastos.export/2.0";
+
+const char *renames[2] = {"credentials", "privatekeys"};
 
 extern const char *ProofType;
 
@@ -106,6 +107,12 @@ typedef struct Cred_List_Helper {
     DID did;
     const char *type;
 } Cred_List_Helper;
+
+typedef struct RootIdentity_List_Helper {
+    DIDStore *store;
+    DIDStore_RootIdentitiesCallback *cb;
+    void *context;
+} RootIdentity_List_Helper;
 
 typedef struct Dir_Copy_Helper {
     const char *srcpath;
@@ -133,7 +140,15 @@ typedef struct DID_Export {
     zip_t *zip;
 } DID_Export;
 
-int DIDStore_WriteDIDMetaData(DIDStore *store, DIDMetaData *meta, DID *did)
+typedef struct RootIdentity_Export {
+    DIDStore *store;
+    const char *storepass;
+    const char *password;
+    const char *tmpdir;
+    zip_t *zip;
+} RootIdentity_Export;
+
+int DIDStore_WriteDIDMetadata(DIDStore *store, DIDMetadata *meta, DID *did)
 {
     char path[PATH_MAX];
     const char *data;
@@ -143,7 +158,7 @@ int DIDStore_WriteDIDMetaData(DIDStore *store, DIDMetaData *meta, DID *did)
     assert(meta);
     assert(did);
 
-    if (get_file(path, 1, 4, store->root, DID_DIR, did->idstring, META_FILE) == -1) {
+    if (get_file(path, 1, 5, store->root, DATA_DIR, IDS_DIR, did->idstring, META_FILE) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for didmeta file failed.");
         return -1;
     }
@@ -154,7 +169,7 @@ int DIDStore_WriteDIDMetaData(DIDStore *store, DIDMetaData *meta, DID *did)
         return -1;
     }
 
-    data = DIDMetaData_ToJson(meta);
+    data = DIDMetadata_ToJson(meta);
     if (!data) {
         delete_file(path);
         return -1;
@@ -168,11 +183,10 @@ int DIDStore_WriteDIDMetaData(DIDStore *store, DIDMetaData *meta, DID *did)
     return rc;
 }
 
-static int load_didmeta(DIDStore *store, DIDMetaData *meta, const char *did)
+static int load_didmeta(DIDStore *store, DIDMetadata *meta, const char *did)
 {
     const char *data;
     char path[PATH_MAX];
-    time_t lastmodified;
     DIDDocument *doc;
     DID _did;
     int rc, status;
@@ -181,8 +195,8 @@ static int load_didmeta(DIDStore *store, DIDMetaData *meta, const char *did)
     assert(meta);
     assert(did);
 
-    memset(meta, 0, sizeof(DIDMetaData));
-    if (get_file(path, 0, 4, store->root, DID_DIR, did, META_FILE) == -1) {
+    memset(meta, 0, sizeof(DIDMetadata));
+    if (get_file(path, 0, 5, store->root, DATA_DIR, IDS_DIR, did, META_FILE) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Did meta don't exist.");
         return 0;
     }
@@ -203,42 +217,27 @@ static int load_didmeta(DIDStore *store, DIDMetaData *meta, const char *did)
         return -1;
     }
 
-    rc = DIDMetaData_FromJson(meta, data);
+    rc = DIDMetadata_FromJson(meta, data);
     free((void*)data);
     if (rc < 0) {
         delete_file(path);
         Init_DID(&_did, did);
         doc = DID_Resolve(&_did, &status, false);
         if (!doc) {
-            memset(meta, 0, sizeof(DIDMetaData));
-            DIDMetaData_SetDeactivated(meta, false);
+            memset(meta, 0, sizeof(DIDMetadata));
+            DIDMetadata_SetDeactivated(meta, false);
         } else {
-            DIDMetaData_Copy(meta, &doc->metadata);
+            DIDMetadata_Copy(meta, &doc->metadata);
         }
         DIDDocument_Destroy(doc);
-        DIDStore_StoreDIDMetaData(store, meta, &_did);
+        DIDStore_StoreDIDMetadata(store, meta, &_did);
     }
 
-    //set last modified
-    if (get_file(path, 0, 4, store->root, DID_DIR, did, DOCUMENT_FILE) == -1) {
-        DIDMetaData_Free(meta);
-        DIDError_Set(DIDERR_NOT_EXISTS, "The file for Did document don't exist.");
-        return -1;
-    }
-
-    lastmodified = get_file_lastmodified(path);
-    if (lastmodified == 0) {
-        DIDMetaData_Free(meta);
-        DIDError_Set(DIDERR_IO_ERROR, "Get last modified of document failed.");
-        return -1;
-    }
-
-    DIDMetaData_SetLastModified(meta, lastmodified);
-    DIDMetaData_SetStore(meta, store);
+    DIDMetadata_SetStore(meta, store);
     return 0;
 }
 
-int DIDStore_LoadDIDMeta(DIDStore *store, DIDMetaData *meta, DID *did)
+int DIDStore_LoadDIDMeta(DIDStore *store, DIDMetadata *meta, DID *did)
 {
     bool iscontain;
 
@@ -255,7 +254,7 @@ int DIDStore_LoadDIDMeta(DIDStore *store, DIDMetaData *meta, DID *did)
     return load_didmeta(store, meta, did->idstring);
 }
 
-int DIDStore_StoreDIDMetaData(DIDStore *store, DIDMetaData *meta, DID *did)
+int DIDStore_StoreDIDMetadata(DIDStore *store, DIDMetadata *meta, DID *did)
 {
     bool iscontain;
 
@@ -269,12 +268,12 @@ int DIDStore_StoreDIDMetaData(DIDStore *store, DIDMetaData *meta, DID *did)
         return -1;
     }
 
-    return DIDStore_WriteDIDMetaData(store, meta, did);
+    return DIDStore_WriteDIDMetadata(store, meta, did);
 }
 
-static int store_credmeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id)
+static int store_credmeta(DIDStore *store, CredentialMetadata *meta, DIDURL *id)
 {
-    char path[PATH_MAX];
+    char path[PATH_MAX], filename[128];
     const char *data;
     int rc;
 
@@ -285,12 +284,13 @@ static int store_credmeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id)
     if (!meta->base.data)
         return 0;
 
-    data = CredentialMetaData_ToJson(meta);
+    data = CredentialMetadata_ToJson(meta);
     if (!data)
         return -1;
 
-    if (get_file(path, 1, 6, store->root, DID_DIR, id->did.idstring,
-            CREDENTIALS_DIR, id->fragment, META_FILE) == -1) {
+    sprintf(filename, "%s%s", "#", id->fragment);
+    if (get_file(path, 1, 7, store->root, DATA_DIR, IDS_DIR, id->did.idstring,
+            CREDENTIALS_DIR, filename, META_FILE) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for credential meta failed.");
         free((void*)data);
         return -1;
@@ -310,13 +310,13 @@ static int store_credmeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id)
 errorExit:
     delete_file(path);
 
-    if (get_dir(path, 0, 5, store->root, DID_DIR, id->did.idstring,
-            CREDENTIALS_DIR, id->fragment) == 0) {
+    if (get_dir(path, 0, 6, store->root, DATA_DIR, IDS_DIR, id->did.idstring,
+            CREDENTIALS_DIR, filename) == 0) {
         if (is_empty(path))
             delete_file(path);
     }
 
-    if (get_dir(path, 0, 4, store->root, DID_DIR, id->did.idstring, CREDENTIALS_DIR) == 0) {
+    if (get_dir(path, 0, 5, store->root, DATA_DIR, IDS_DIR, id->did.idstring, CREDENTIALS_DIR) == 0) {
         if (is_empty(path))
             delete_file(path);
     }
@@ -325,12 +325,11 @@ errorExit:
     return -1;
 }
 
-static int load_credmeta(DIDStore *store, CredentialMetaData *meta, const char *did,
+static int load_credmeta(DIDStore *store, CredentialMetadata *meta, const char *did,
         const char *fragment)
 {
     const char *data;
-    char path[PATH_MAX];
-    time_t lastmodified;
+    char path[PATH_MAX], filename[128];
     int rc;
 
     assert(store);
@@ -338,11 +337,12 @@ static int load_credmeta(DIDStore *store, CredentialMetaData *meta, const char *
     assert(did);
     assert(fragment);
 
-    memset(meta, 0, sizeof(CredentialMetaData));
+    memset(meta, 0, sizeof(CredentialMetadata));
 
-    CredentialMetaData_SetStore(meta, store);
-    if (get_file(path, 0, 6, store->root, DID_DIR, did, CREDENTIALS_DIR,
-            fragment, META_FILE) == -1)
+    sprintf(filename, "%s%s", "#", fragment);
+    CredentialMetadata_SetStore(meta, store);
+    if (get_file(path, 0, 7, store->root, DATA_DIR, IDS_DIR, did, CREDENTIALS_DIR,
+            filename, META_FILE) == -1)
         return 0;
 
     rc = test_path(path);
@@ -363,34 +363,106 @@ static int load_credmeta(DIDStore *store, CredentialMetaData *meta, const char *
         return -1;
     }
 
-    rc = CredentialMetaData_FromJson(meta, data);
+    rc = CredentialMetadata_FromJson(meta, data);
     free((void*)data);
     if (rc < 0) {
         //compatible with the oldest version
         delete_file(path);
-        memset(meta, 0, sizeof(CredentialMetaData));
+        memset(meta, 0, sizeof(CredentialMetadata));
     }
 
-    //set last modified
-    if (get_file(path, 0, 6, store->root, DID_DIR, did, CREDENTIALS_DIR,
-            fragment, CREDENTIAL_FILE) == -1) {
-        CredentialMetaData_Free(meta);
-        DIDError_Set(DIDERR_NOT_EXISTS, "Credential don't exist.");
-        return -1;
-    }
-
-    lastmodified = get_file_lastmodified(path);
-    if (lastmodified == 0) {
-        CredentialMetaData_Free(meta);
-        DIDError_Set(DIDERR_IO_ERROR, "Get last modified of document failed.");
-        return -1;
-    }
-
-    CredentialMetaData_SetLastModified(meta, lastmodified);
-    return 0;
+    return rc;
 }
 
-int DIDStore_StoreCredMeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id)
+static int store_identitymeta(DIDStore *store, const char *id, IdentityMetadata *metadata)
+{
+    char path[PATH_MAX];
+    const char *data;
+    int rc;
+
+    assert(store);
+    assert(metadata);
+    assert(id);
+
+    if (!metadata->base.data)
+        return 0;
+
+    data = IdentityMetadata_ToJson(metadata);
+    if (!data)
+        return -1;
+
+    if (get_file(path, 1, 5, store->root, DATA_DIR, ROOTS_DIR, id, META_FILE) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for root identity meta data failed.");
+        free((void*)data);
+        return -1;
+    }
+
+    if (test_path(path) == S_IFDIR) {
+        DIDError_Set(DIDERR_IO_ERROR, "Root identity meta data should be a file.");
+        free((void*)data);
+        goto errorExit;
+    }
+
+    rc = store_file(path, data);
+    free((void*)data);
+    if (!rc)
+        return 0;
+
+errorExit:
+    delete_file(path);
+
+    if (get_dir(path, 0, 4, store->root, DATA_DIR, ROOTS_DIR, id) == 0) {
+        if (is_empty(path))
+            delete_file(path);
+    }
+
+    DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store root identity meta data failed.");
+    return -1;
+}
+
+static int load_identitymeta(DIDStore *store, const char *id, IdentityMetadata *meta)
+{
+    const char *data;
+    char path[PATH_MAX];
+    int rc;
+
+    assert(store);
+    assert(id);
+    assert(meta);
+
+    memset(meta, 0, sizeof(IdentityMetadata));
+
+    IdentityMetadata_SetStore(meta, store);
+    if (get_file(path, 0, 5, store->root, DATA_DIR, ROOTS_DIR, id, META_FILE) == -1)
+        return 0;
+
+    rc = test_path(path);
+    if (rc < 0) {
+        DIDError_Set(DIDERR_IO_ERROR, "File error.");
+        return 0;
+    }
+
+    if (rc == S_IFDIR) {
+        DIDError_Set(DIDERR_IO_ERROR, "Root identity meta should be file.");
+        delete_file(path);
+        return -1;
+    }
+
+    data = load_file(path);
+    if (!data) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Load identity meta data error.");
+        return -1;
+    }
+
+    rc = IdentityMetadata_FromJson(meta, data);
+    free((void*)data);
+    if (rc < 0)
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Get identity meta data failed.");
+
+    return rc;
+}
+
+int DIDStore_StoreCredMeta(DIDStore *store, CredentialMetadata *meta, DIDURL *id)
 {
     bool iscontain;
 
@@ -407,7 +479,7 @@ int DIDStore_StoreCredMeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id
     return store_credmeta(store, meta, id);
 }
 
-int DIDStore_LoadCredMeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id)
+int DIDStore_LoadCredMeta(DIDStore *store, CredentialMetadata *meta, DIDURL *id)
 {
     bool iscontain;
 
@@ -424,34 +496,121 @@ int DIDStore_LoadCredMeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id)
     return load_credmeta(store, meta, id->did.idstring, id->fragment);
 }
 
+static int calc_fingerprint(char *fingerprint, size_t size, const char *storepass)
+{
+    unsigned char *cipher;
+    uint8_t buffer[16];
+    char data[10];
+    size_t len;
+    int i;
+
+    assert(fingerprint);
+    assert(size >= 64);
+    assert(storepass);
+
+    memset(fingerprint, 0, size);
+
+    md5(buffer, sizeof(buffer), (unsigned char*)storepass, strlen(storepass));
+    cipher = (unsigned char *)alloca(sizeof(buffer) * 4);
+    len = _encrypt(cipher, storepass, buffer, sizeof(buffer));
+    if (len < 0)
+        return -1;
+
+    md5(buffer, sizeof(buffer), cipher, len);
+
+    for(i = 0; i < sizeof(buffer); i++) {
+        sprintf(data, "%02x", buffer[i]);
+        strcat(fingerprint, data);
+    }
+
+    return 0;
+}
+
+static int store_storemeta(DIDStore *store, StoreMetadata *metadata)
+{
+    char path[PATH_MAX];
+    const char *data;
+    int rc;
+
+    assert(store);
+    assert(metadata);
+
+    if (get_file(path, 1, 3, store->root, DATA_DIR, META_FILE) < 0) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create store metadata file failed.");
+        return -1;
+    }
+
+    data = StoreMetadata_ToJson(metadata);
+    if (!data) {
+        DIDError_Set(DIDERR_IO_ERROR, "Store store matadata failed.");
+        return -1;
+    }
+
+    rc = store_file(path, data);
+    free((void*)data);
+    if (rc < 0)
+        delete_file(path);
+
+    return rc;
+}
+
+static int load_storemeta(DIDStore *store, StoreMetadata *metadata)
+{
+    char path[PATH_MAX];
+    const char *data;
+    int rc;
+
+    assert(store);
+    assert(metadata);
+
+    memset(metadata, 0, sizeof(StoreMetadata));
+    if (get_file(path, 0, 3, store->root, DATA_DIR, META_FILE) == -1)
+        return 0;
+
+    rc = test_path(path);
+    if (rc < 0)
+        return 0;
+
+    if (rc == S_IFDIR) {
+        DIDError_Set(DIDERR_IO_ERROR, "Store meta data should be file.");
+        delete_file(path);
+        return -1;
+    }
+
+    data = load_file(path);
+    if (!data) {
+        DIDError_Set(DIDERR_IO_ERROR, "Load store meta data failed.");
+        return -1;
+    }
+
+    rc = StoreMetadata_FromJson(metadata, data);
+    free((void*)data);
+    if (rc < 0)
+        return -1;
+
+    return 0;
+}
+
 static int create_store(DIDStore *store)
 {
-    int fd;
-    size_t size;
-    char path[PATH_MAX];
+    char path[PATH_MAX], fingerprint[64];
+    StoreMetadata metadata;
 
     assert(store);
 
-    if (get_file(path, 1, 2, store->root, META_FILE) == -1)
+    if (get_file(path, 1, 3, store->root, DATA_DIR, META_FILE) == -1)
         return -1;
 
-    fd = open(path, O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR);
-    if (fd == -1)
-        return -1;
-
-    size = write(fd, MAGIC, sizeof(MAGIC));
-    if (size < sizeof(MAGIC)) {
-        close(fd);
-        return -1;
-    }
-
-    size = write(fd, VERSION, sizeof(VERSION));
-    if (size < sizeof(VERSION)) {
-        close(fd);
+    memset(&metadata, 0, sizeof(metadata));
+    if (StoreMetadata_SetType(&metadata, DIDSTORE_TYPE) < 0 ||
+           StoreMetadata_SetVersion(&metadata, DIDSTORE_VERSION) < 0 ||
+           store_storemeta(store, &metadata) < 0) {
+        StoreMetadata_Free(&metadata);
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create store meta file failed.");
         return -1;
     }
 
-    close(fd);
+    StoreMetadata_Free(&metadata);
     return 0;
 }
 
@@ -462,43 +621,27 @@ static int create_store(DIDStore *store)
 
 static int postchange_password(DIDStore *store)
 {
-    char post_file[PATH_MAX];
-    char private_dir[PATH_MAX], private_journal[PATH_MAX], private_deprecated[PATH_MAX];
-    char did_dir[PATH_MAX], did_journal[PATH_MAX], did_deprecated[PATH_MAX];
+    char post_file[PATH_MAX], buffer[DOC_BUFFER_LEN];
+    char data_dir[PATH_MAX], data_journal_dir[PATH_MAX], data_deprecated_dir[PATH_MAX];
 
     assert(store);
 
     sprintf(post_file, "%s%s%s", store->root, PATH_SEP, POST_PASSWORD);
-    if(test_path(post_file) == S_IFREG) {
-        if (get_dir(private_journal, 0, 2, store->root, PRIVATE_JOURNAL) == 0) {
-            if (get_dir(private_dir, 0, 2, store->root, PRIVATE_DIR) == 0) {
-                sprintf(private_deprecated, "%s%s%s", store->root, PATH_SEP, "private.deprecated");
-                delete_file(private_deprecated);
-                rename(private_dir, private_deprecated);
+    if (test_path(post_file) == S_IFREG) {
+        if (get_dir(data_journal_dir, 0, 2, store->root, DATA_JOURNAL) == 0) {
+            if (get_dir(data_dir, 0, 2, store->root, DATA_DIR) == 0) {
+                sprintf(buffer, "%s_%s", DATA_DIR, get_time_string(buffer, sizeof(buffer), NULL));
+                if (get_dir(data_deprecated_dir, 1, 2, store->root, buffer) == 0)
+                    rename(data_dir, data_deprecated_dir);
             }
-
-            rename(private_journal, private_dir);
+            rename(data_journal_dir, data_dir);
         }
-
-        if (get_dir(did_journal, 0, 2, store->root, DID_JOURNAL) == 0) {
-            if (get_dir(did_dir, 0, 2, store->root, DID_DIR) == 0) {
-                sprintf(did_deprecated, "%s%s%s", store->root, PATH_SEP, "ids.deprecated");
-                delete_file(did_deprecated);
-                rename(did_dir, did_deprecated);
-            }
-
-            rename(did_journal, did_dir);
-        }
-
-        delete_file(private_deprecated);
-        delete_file(did_deprecated);
         delete_file(post_file);
     } else {
-        if (get_dir(private_journal, 0, 2, store->root, PRIVATE_JOURNAL) == 0)
-            delete_file(private_journal);
-        if (get_dir(did_journal, 0, 2, store->root, DID_JOURNAL) == 0)
-            delete_file(did_journal);
+        if (get_dir(data_journal_dir, 0, 2, store->root, DATA_JOURNAL) == 0)
+            delete_file(data_journal_dir);
     }
+
     return 0;
 }
 
@@ -506,7 +649,7 @@ static int postchange_password(DIDStore *store)
 #pragma GCC diagnostic pop
 #endif
 
-static int check_store(DIDStore *store)
+static bool check_old_store(DIDStore *store)
 {
     int fd;
     char symbol[1];
@@ -516,14 +659,14 @@ static int check_store(DIDStore *store)
     assert(store);
 
     if (test_path(store->root) != S_IFDIR)
-        return -1;
+        return false;
 
     if (get_file(path, 0, 2, store->root, META_FILE) == -1)
-        return -1;
+        return false;
 
     fd = open(path, O_RDONLY);
     if (fd == -1)
-        return -1;
+        return false;
 
     while (read(fd, symbol, sizeof(char)) == 1) {
         for (i = 0; i < sizeof(MAGIC); i++) {
@@ -532,7 +675,7 @@ static int check_store(DIDStore *store)
         }
         if (!flag) {
             close(fd);
-            return -1;
+            return false;
         }
     }
     flag = 0;
@@ -543,69 +686,597 @@ static int check_store(DIDStore *store)
         }
         if (!flag) {
             close(fd);
-            return -1;
+            return false;
         }
     }
 
-    close(fd);
-
-    return postchange_password(store);
+    return true;
 }
 
-static int store_extendedprvkey(DIDStore *store, uint8_t *extendedkey,
-        size_t size, const char *storepass)
+static char *last_strstr(const char *haystack, const char *needle)
 {
-    unsigned char base64[512];
+    assert(haystack && needle);
+
+    if (*needle == '\0')
+        return (char *)haystack;
+
+    char *result = NULL;
+    for (;;) {
+        char *p = strstr(haystack, needle);
+        if (p == NULL)
+            break;
+        result = p;
+        haystack = p + strlen(needle);
+    }
+
+    return result;
+}
+
+int dids_upgrade(const char *dst, const char *src);
+
+static int dids_upgrade_helper(const char *path, void *context)
+{
+    char srcpath[PATH_MAX];
+    char dstpath[PATH_MAX];
+    char *pos;
+    int i;
+
+    Dir_Copy_Helper *dh = (Dir_Copy_Helper*)context;
+
+    if (!path)
+        return 0;
+
+    if (strcmp(path, ".") == 0 || strcmp(path, "..") == 0)
+        return 0;
+
+    sprintf(srcpath, "%s%s%s", dh->srcpath, PATH_SEP, path);
+
+    if (!strcmp(".meta", path))
+        path = META_FILE;
+
+    for (i = 0; i < 2; i++) {
+        pos = last_strstr(dh->srcpath, renames[i]);
+        if (pos && !strcmp(pos, renames[i])) {
+            sprintf(dstpath, "%s%s%s%s", dh->dstpath, PATH_SEP, "#", path);
+            break;
+        }
+
+        if (i == 1)
+            sprintf(dstpath, "%s%s%s", dh->dstpath, PATH_SEP, path);
+    }
+
+    return dids_upgrade(dstpath, srcpath);
+}
+
+int dids_upgrade(const char *dst, const char *src)
+{
+    Dir_Copy_Helper dh;
+    const char *string;
+    int rc;
+
+    assert(dst && *dst);
+    assert(src && *src);
+
+    if (test_path(src) < 0)
+        return -1;
+
+    //src is directory.
+    if (test_path(src) == S_IFDIR) {
+        if (test_path(dst) < 0) {
+            rc = mkdirs(dst, S_IRWXU);
+            if (rc < 0) {
+                DIDError_Set(DIDERR_IO_ERROR, "Create upgrade ids folder (%s) failed", dst);
+                return -1;
+            }
+        }
+
+        dh.srcpath = src;
+        dh.dstpath = dst;
+        dh.oldpassword = NULL;
+        dh.newpassword = NULL;
+
+        if (list_dir(src, "*", dids_upgrade_helper, (void*)&dh) == -1) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Copy directory failed.");
+            return -1;
+        }
+
+        return 0;
+    }
+
+    //src is file
+    string = load_file(src);
+    if (!string || !*string) {
+        DIDError_Set(DIDERR_IO_ERROR, "Load %s failed.", src);
+        return -1;
+    }
+
+    rc = store_file(dst, string);
+    free((void*)string);
+    if (rc < 0)
+        DIDError_Set(DIDERR_IO_ERROR, "Store %s failed.", dst);
+
+    return rc;
+}
+
+static const char *get_rootfile(DIDStore *store, const char *filename)
+{
+    char path[PATH_MAX];
+    const char *data;
+
+    assert(store);
+    assert(filename);
+
+    if (get_file(path, 0, 3, store->root, PRIVATE_DIR, filename) == -1 || test_path(path) != S_IFREG)
+        return NULL;
+
+    data = load_file(path);
+    if (!data)
+        return NULL;
+
+    return data;
+}
+
+static int store_pubkey_file(DIDStore *store, const char *id, const char *keybase58)
+{
     char path[PATH_MAX];
 
     assert(store);
-    assert(extendedkey && size > 0);
-    assert(storepass);
-    assert(*storepass);
+    assert(id);
+    assert(keybase58);
 
-    memset(base64, 0, sizeof(base64));
-    if (encrypt_to_base64((char *)base64, storepass, extendedkey, size) == -1) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt extended private key failed.");
+    if (get_file(path, 1, 5, store->root, DATA_DIR, ROOTS_DIR, id, PUBLIC_DIR) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for extended public key failed.");
         return -1;
     }
 
-    if (get_file(path, 1, 3, store->root, PRIVATE_DIR, HDKEY_FILE) == -1) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for extended private key failed.");
+    if (store_file(path, (const char *)keybase58) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store extended public key failed.");
+        delete_file(path);
+        return -1;
+    }
+    return 0;
+}
+
+static int store_prvkey_file(DIDStore *store, const char *id, const char *rootPrivateKey)
+{
+    char path[PATH_MAX];
+
+    assert(store);
+    assert(id);
+    assert(rootPrivateKey);
+
+    if (get_file(path, 1, 5, store->root, DATA_DIR, ROOTS_DIR, id, PRIVATE_DIR) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for root private key failed.");
         return -1;
     }
 
-    if (store_file(path, (const char *)base64) == -1) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store extended private key failed.");
+    if (store_file(path, rootPrivateKey) < 0) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store root private key failed.");
+        delete_file(path);
         return -1;
     }
 
     return 0;
 }
 
-static ssize_t load_extendedprvkey(DIDStore *store, uint8_t *extendedkey, size_t size,
-        const char *storepass)
+static int store_mnemonic_file(DIDStore *store, const char *id, const char *base64)
+{
+    char path[PATH_MAX];
+
+    assert(store);
+    assert(id);
+    assert(base64);
+
+    if (get_file(path, 1, 5, store->root, DATA_DIR, ROOTS_DIR, id, MNEMONIC_FILE) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for mnemonic failed.");
+        return -1;
+    }
+
+    if (store_file(path, base64) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store mnemonic failed.");
+        delete_file(path);
+        return -1;
+    }
+
+    return 0;
+}
+
+static int store_index_string(DIDStore *store, const char *id, const char *index)
+{
+    char path[PATH_MAX];
+
+    assert(store);
+    assert(id);
+    assert(index && *index);
+
+    if (get_file(path, 1, 5, store->root, DATA_DIR, ROOTS_DIR, id, INDEX_FILE) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for index failed.");
+        return -1;
+    }
+
+    if (store_file(path, index) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store index failed.");
+        delete_file(path);
+        return -1;
+    }
+    return 0;
+}
+
+static const char *load_index_string(DIDStore *store, const char *id)
+{
+    char path[PATH_MAX];
+
+    assert(store);
+    assert(id);
+
+    if (get_file(path, 0, 5, store->root, DATA_DIR, ROOTS_DIR, id, INDEX_FILE) == -1) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "Index file is not exist.");
+        return NULL;
+    }
+
+    return load_file(path);
+}
+
+static int upgradeFromV2(DIDStore *store)
+{
+    char path[PATH_MAX], v2path[PATH_MAX], elem[10], id[MAX_ID_LEN], buffer[512];
+    char fingerprint[64];
+    uint8_t extendedkey[EXTENDEDKEY_BYTES], md[16];
+    StoreMetadata metadata;
+    const char *data;
+    time_t current = 0;
+    size_t len;
+    int i, rc;
+
+    assert(store);
+
+    if (!check_old_store(store)) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Invalid DID store.");
+        return -1;
+    }
+
+    //upgrade to data journal directory
+    if (get_dir(v2path, 0, 2, store->root, DATA_JOURNAL) == 0)
+        delete_file(path);
+
+    if (get_dir(path, 0, 2, store->root, PRIVATE_DIR) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Get root identity directory (old store) failed.");
+        return -1;
+    }
+
+    if (get_dir(v2path, 1, 2, store->root, DATA_JOURNAL) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create data journal directory failed.");
+        return -1;
+    }
+
+    if (test_path(path) != S_IFDIR) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Invalid root identity folder.");
+        goto errorExit;
+    }
+
+    //private/key.pub
+    data = get_rootfile(store, HDPUBKEY_FILE);
+    if (!data) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Get root prederived public key failed.");
+        goto errorExit;
+    }
+
+    len = base58_decode(extendedkey, EXTENDEDKEY_BYTES, data);
+    if (len < 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode extended public key failed.");
+        free((void*)data);
+        goto errorExit;
+    }
+
+    if (to_hexstring(id, sizeof(id), extendedkey, EXTENDEDKEY_BYTES) < 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get id from public key failed.");
+        free((void*)data);
+        goto errorExit;
+    }
+
+    rc = store_pubkey_file(store, id, data);
+    free((void*)data);
+    if (rc < 0) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store root private failed.");
+        goto errorExit;
+    }
+
+    //private/key
+    data = get_rootfile(store, HDKEY_FILE);
+    if (!data) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Get root prederived public key failed.");
+        goto errorExit;
+    }
+    rc = store_prvkey_file(store, id, data);
+    free((void*)data);
+    if (rc < 0) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store root private key failed.");
+        goto errorExit;
+    }
+
+    //private/mnemonic
+    data = get_rootfile(store, MNEMONIC_FILE);
+    if (!data) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Load mnemonic string failed.");
+        goto errorExit;
+    }
+    rc = store_mnemonic_file(store, id, data);
+    free((void*)data);
+    if (rc < 0)
+        goto errorExit;
+
+    //private/index
+    data = get_rootfile(store, INDEX_FILE);
+    if (!data) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Load index string failed.");
+        goto errorExit;
+    }
+    rc = store_index_string(store, id, data);
+    free((void*)data);
+    if (rc < 0)
+        goto errorExit;
+
+    //ids
+    if (get_dir(path, 0, 2, store->root, IDS_DIR) == 0) {
+        if (get_dir(v2path, 1, 3, store->root, DATA_JOURNAL, IDS_DIR) < 0) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create ids folder failed.");
+            goto errorExit;
+        }
+        if (dids_upgrade(v2path, path) < 0) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create ids folder failed.");
+            goto errorExit;
+        }
+    }
+
+    if (StoreMetadata_Init(&metadata, DIDSTORE_TYPE, DIDSTORE_VERSION, NULL, id) < 0) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Upgrade store metadata failed.");
+        goto errorExit;
+    }
+
+    if (store_storemeta(store, &metadata) < 0) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store store metadata failed.");
+        goto errorExit;
+    }
+
+    if (get_dir(path, 0, 2, store->root, DATA_JOURNAL) == 0) {
+        if (get_dir(v2path, 0, 2, store->root, DATA_DIR) == 0)
+            rename(path, v2path);
+    }
+
+    sprintf(buffer, "%s_%s", DATA_DIR, get_time_string(buffer, sizeof(buffer), &current));
+    if (get_dir(v2path, 1, 2, store->root, buffer) == 0) {
+        if (get_dir(path, 0, 2, store->root, PRIVATE_DIR) == 0) {
+            if (get_dir(v2path, 1, 3, store->root, buffer, PRIVATE_DIR) == 0)
+                rename(path, v2path);
+        }
+        if (get_dir(path, 0, 2, store->root, IDS_DIR) == 0) {
+            if (get_dir(v2path, 1, 3, store->root, buffer, IDS_DIR) == 0)
+                rename(path, v2path);
+        }
+        if (get_file(path, 0, 2, store->root, ".meta") == 0) {
+            if (get_file(v2path, 1, 3, store->root, buffer, META_FILE) == 0)
+                rename(path, v2path);
+        }
+    }
+
+    return 0;
+
+errorExit:
+    if (get_dir(v2path, 0, 2, store->root, DATA_JOURNAL) == 0)
+        delete_file(path);
+    return -1;
+}
+
+static int check_store(DIDStore *store)
+{
+    char path[PATH_MAX], metapath[PATH_MAX];
+    StoreMetadata metadata;
+    int rc = -1;
+
+    assert(store);
+
+    if (test_path(store->root) != S_IFDIR)
+        return -1;
+
+    postchange_password(store);
+
+    //data does not already exist.
+    if (get_dir(path, 0, 2, store->root, DATA_DIR) == -1) {
+        if (get_file(metapath, 0, 2, store->root, META_FILE) == -1) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Invalid DID store.");
+            return -1;
+        }
+        if (test_path(metapath) == S_IFREG)
+            upgradeFromV2(store);
+    } else {
+        if (test_path(path) != S_IFDIR) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Invalid DID store, missing data directory.");
+            return -1;
+        }
+    }
+
+    if (load_storemeta(store, &metadata) < 0)
+        return -1;
+
+    if (strcmp(DIDSTORE_TYPE, StoreMetadata_GetType(&metadata))) {
+        DIDError_Set(DIDERR_UNKNOWN, "Unknown DIDStore type");
+        goto errorExit;
+    }
+
+    if (strcmp(DIDSTORE_VERSION, StoreMetadata_GetVersion(&metadata))) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupported DIDStore version");
+        goto errorExit;
+    }
+    rc = 0;
+
+errorExit:
+    StoreMetadata_Free(&metadata);
+    return rc;
+}
+
+static bool is_default_password(DIDStore *store, const char *storepass)
+{
+    char fingerprint[64] = {0};
+    const char *_fingerprint;
+    StoreMetadata metadata;
+    bool isDefault = false;
+
+    if (calc_fingerprint(fingerprint, sizeof(fingerprint), storepass) < 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get fingerprint failed.");
+        return false;
+    }
+
+    if (load_storemeta(store, &metadata) < 0)
+        return false;
+
+    _fingerprint = StoreMetadata_GetFingerPrint(&metadata);
+    if (_fingerprint) {
+        if (strcmp(fingerprint, _fingerprint)) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "DIDStore password mismatch with the first one.");
+            goto errorExit;
+        }
+    } else {
+        if (StoreMetadata_SetFingerPrint(&metadata, fingerprint) < 0 ||
+                store_storemeta(store, &metadata) < 0) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store StoreMetadata failed.");
+            goto errorExit;
+        }
+    }
+    isDefault = true;
+
+errorExit:
+    StoreMetadata_Free(&metadata);
+    return isDefault;
+}
+
+static ssize_t didstore_encrypt(DIDStore *store, const char *storepass,
+        uint8_t *cipher, size_t size, const uint8_t *input, size_t len)
+{
+    ssize_t length;
+
+    assert(store);
+    assert(storepass && *storepass);
+    assert(cipher);
+    assert(size >= len * 2);
+    assert(input);
+    assert(len > 0);
+
+    length = _encrypt(cipher, storepass, input, len);
+    if (length < 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt DIDStore password failed.");
+        return -1;
+    }
+
+    if (!is_default_password(store, storepass))
+        return -1;
+
+    return length;
+}
+
+static ssize_t didstore_encrypt_to_base64(DIDStore *store, const char *storepass,
+        char *base64, const uint8_t *input, size_t len)
+{
+    ssize_t size;
+
+    assert(store);
+    assert(storepass && *storepass);
+    assert(base64);
+    assert(input);
+
+    size = encrypt_to_base64(base64, storepass, input, len);
+    if (!size) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt data failed.");
+        return -1;
+    }
+
+    if (!is_default_password(store, storepass))
+        return -1;
+
+    return size;
+}
+
+static ssize_t didstore_decrypt_from_base64(DIDStore *store, const char *storepass,
+       uint8_t *plain, const char *base64)
+{
+    ssize_t len;
+
+    assert(store);
+    assert(storepass && *storepass);
+    assert(plain);
+    assert(base64);
+
+    len = decrypt_from_base64(plain, storepass, base64);
+    if (!len) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt data failed.");
+        return -1;
+    }
+
+    if (!is_default_password(store, storepass))
+        return -1;
+
+    return len;
+}
+
+static const char *load_prvkey_file(DIDStore *store, const char *id)
+{
+    const char *string;
+    char path[PATH_MAX];
+
+    assert(store);
+    assert(id);
+
+    if (get_file(path, 0, 5, store->root, DATA_DIR, ROOTS_DIR, id, PRIVATE_DIR) == -1) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "Extended private key don't already exist.");
+        return NULL;
+    }
+
+    string = load_file(path);
+    if (!string) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Load extended private key failed.");
+        return NULL;
+    }
+
+    return string;
+}
+
+static int store_extendedprvkey(DIDStore *store, const char *storepass,
+        const char *id, uint8_t *extendedkey, size_t size)
+{
+    char base64[512] = {0};
+    char path[PATH_MAX];
+
+    assert(store);
+    assert(id);
+    assert(extendedkey && size > 0);
+    assert(storepass && *storepass);
+
+    if (didstore_encrypt_to_base64(store, storepass, base64, extendedkey, size) == -1) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt extended private key failed.");
+        return -1;
+    }
+
+    return store_prvkey_file(store, id, base64);
+}
+
+static ssize_t load_extendedprvkey(DIDStore *store, const char *storepass,
+        const char *id, uint8_t *extendedkey, size_t size)
 {
     const char *string;
     char path[PATH_MAX];
     ssize_t len;
 
     assert(store);
+    assert(storepass && *storepass);
+    assert(id);
     assert(extendedkey && size >= EXTENDEDKEY_BYTES);
-    assert(storepass);
-    assert(*storepass);
 
-    if (get_file(path, 0, 3, store->root, PRIVATE_DIR, HDKEY_FILE) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "extended private key don't already exist.");
-        return -1;
-    }
-
-    string = load_file(path);
+    string = load_prvkey_file(store, id);
     if (!string) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Load extended private key failed.");
         return -1;
     }
 
-    len = decrypt_from_base64(extendedkey, storepass, string);
+    len = didstore_decrypt_from_base64(store, storepass, extendedkey, string);
     free((void*)string);
     if (len < 0)
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt extended private key failed.");
@@ -613,48 +1284,15 @@ static ssize_t load_extendedprvkey(DIDStore *store, uint8_t *extendedkey, size_t
     return len;
 }
 
-static int store_pubkey(DIDStore *store, const char *keybase58)
-{
-    char path[PATH_MAX];
-
-    assert(store);
-    assert(keybase58);
-
-    if (get_file(path, 1, 3, store->root, PRIVATE_DIR, HDPUBKEY_FILE) == -1) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for extended public key failed.");
-        return -1;
-    }
-
-    if (store_file(path, (const char *)keybase58) == -1) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store extended public key failed.");
-        return -1;
-    }
-    return 0;
-}
-
-static int store_extendedpubkey(DIDStore *store, uint8_t *extendedkey, size_t size)
-{
-    char publickeybase58[MAX_PUBKEY_BASE58];
-
-    assert(store);
-    assert(extendedkey && size > 0);
-
-    if (base58_encode(publickeybase58, sizeof(publickeybase58), extendedkey, size) == -1) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode extended public key failed.");
-        return -1;
-    }
-
-    return store_pubkey(store, publickeybase58);
-}
-
-static const char *load_pubkey_file(DIDStore *store)
+static const char *load_pubkey_file(DIDStore *store, const char *id)
 {
     const char *string;
     char path[PATH_MAX];
 
     assert(store);
+    assert(id);
 
-    if (get_file(path, 0, 3, store->root, PRIVATE_DIR, HDPUBKEY_FILE) == -1) {
+    if (get_file(path, 0, 5, store->root, DATA_DIR, ROOTS_DIR, id, PUBLIC_DIR) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Extended public key don't exist.");
         return NULL;
     }
@@ -668,15 +1306,32 @@ static const char *load_pubkey_file(DIDStore *store)
     return string;
 }
 
-static ssize_t load_extendedpubkey(DIDStore *store, uint8_t *extendedkey, size_t size)
+static int store_extendedpubkey(DIDStore *store, const char *id, uint8_t *extendedkey, size_t size)
+{
+    char publickeybase58[MAX_PUBKEY_BASE58];
+
+    assert(store);
+    assert(id);
+    assert(extendedkey && size > 0);
+
+    if (base58_encode(publickeybase58, sizeof(publickeybase58), extendedkey, size) == -1) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode extended public key failed.");
+        return -1;
+    }
+
+    return store_pubkey_file(store, id, publickeybase58);
+}
+
+static ssize_t load_extendedpubkey(DIDStore *store, const char *id, uint8_t *extendedkey, size_t size)
 {
     const char *string;
     ssize_t len;
 
     assert(store);
+    assert(id);
     assert(extendedkey && size >= EXTENDEDKEY_BYTES);
 
-    string = load_pubkey_file(store);
+    string = load_pubkey_file(store, id);
     if (!string)
         return -1;
 
@@ -688,36 +1343,27 @@ static ssize_t load_extendedpubkey(DIDStore *store, uint8_t *extendedkey, size_t
     return len;
 }
 
-static int store_mnemonic(DIDStore *store, const char *storepass, const uint8_t *mnemonic,
-        size_t size)
+static int store_mnemonic(DIDStore *store, const char *storepass, const char *id,
+        const uint8_t *mnemonic, size_t size)
 {
-    char base64[512];
+    char base64[512] = {0};
     char path[PATH_MAX];
 
     assert(store);
+    assert(storepass && *storepass);
+    assert(id);
     assert(mnemonic);
     assert(size > 0);
 
-    memset(base64, 0, sizeof(base64));
-    if (encrypt_to_base64(base64, storepass, mnemonic, size) == -1) {
+    if (didstore_encrypt_to_base64(store, storepass, base64, mnemonic, size) == -1) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt mnemonic failed.");
         return -1;
     }
 
-    if (get_file(path, 1, 3, store->root, PRIVATE_DIR, MNEMONIC_FILE) == -1) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for mnemonic failed.");
-        return -1;
-    }
-
-    if (store_file(path, base64) == -1) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store mnemonic failed.");
-        return -1;
-    }
-
-    return 0;
+    return store_mnemonic_file(store, id, base64);
 }
 
-static ssize_t load_mnemonic(DIDStore *store, const char *storepass,
+static ssize_t load_mnemonic(DIDStore *store, const char *storepass, const char *id,
         char *mnemonic, size_t size)
 {
     const char *encrpted_mnemonic;
@@ -725,21 +1371,24 @@ static ssize_t load_mnemonic(DIDStore *store, const char *storepass,
     ssize_t len;
 
     assert(store);
+    assert(storepass && *storepass);
+    assert(id);
     assert(mnemonic);
     assert(size >= ELA_MAX_MNEMONIC_LEN);
 
-    if (get_file(path, 0, 3, store->root, PRIVATE_DIR, MNEMONIC_FILE) == -1) {
+    *mnemonic = 0;
+    if (get_file(path, 0, 5, store->root, DATA_DIR, ROOTS_DIR, id, MNEMONIC_FILE) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Mnemonic file don't exist.");
-        return -1;
+        return 0;
     }
 
     encrpted_mnemonic = load_file(path);
     if (!encrpted_mnemonic) {
-        DIDError_Set(DIDERR_IO_ERROR, "File error.");
+        DIDError_Set(DIDERR_IO_ERROR, "Get mnemonic failed.");
         return -1;
     }
 
-    len = decrypt_from_base64((uint8_t*)mnemonic, storepass, encrpted_mnemonic);
+    len = didstore_decrypt_from_base64(store, storepass, (uint8_t*)mnemonic, encrpted_mnemonic);
     free((void*)encrpted_mnemonic);
     if (len < 0)
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt mnemonic failed.");
@@ -747,65 +1396,6 @@ static ssize_t load_mnemonic(DIDStore *store, const char *storepass,
     mnemonic[len++] = 0;
 
     return len;
-}
-
-static int load_index(DIDStore *store)
-{
-    char path[PATH_MAX];
-    const char *string;
-    int index;
-
-    assert(store);
-
-    if (get_file(path, 0, 3, store->root, PRIVATE_DIR, INDEX_FILE) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Index file is not exist.");
-        return -1;
-    }
-
-    string = load_file(path);
-    if (!string) {
-        DIDError_Set(DIDERR_IO_ERROR, "Load index failed.");
-        return -1;
-    }
-
-    index = atoi(string);
-    free((void*)string);
-    return index;
-}
-
-static int store_index_string(DIDStore *store, const char *index)
-{
-    char path[PATH_MAX];
-
-    assert(store);
-    assert(index && *index);
-
-    if (get_file(path, 1, 3, store->root, PRIVATE_DIR, INDEX_FILE) == -1) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for index failed.");
-        return -1;
-    }
-
-    if (store_file(path, index) == -1) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store index failed.");
-        return -1;
-    }
-    return 0;
-}
-
-static int store_index(DIDStore *store, int index)
-{
-    char string[32];
-    int len;
-
-    assert(store);
-    assert(index >= 0);
-
-    len = snprintf(string, sizeof(string), "%d", index);
-    if (len < 0 || len > sizeof(string)) {
-        DIDError_Set(DIDERR_UNKNOWN, "Unknown error.");
-        return -1;
-    }
-    return store_index_string(store, string);
 }
 
 static int list_did_helper(const char *path, void *context)
@@ -821,7 +1411,8 @@ static int list_did_helper(const char *path, void *context)
     if (strcmp(path, ".") == 0 || strcmp(path, "..") == 0)
         return 0;
 
-    len = snprintf(didpath, sizeof(didpath), "%s%s%s%s%s", dh->store->root, PATH_SEP, DID_DIR, PATH_SEP, path);
+    len = snprintf(didpath, sizeof(didpath), "%s%s%s%s%s%s%s", dh->store->root, PATH_SEP,
+            DATA_DIR,  PATH_SEP, IDS_DIR, PATH_SEP, path);
     if (len < 0 || len > sizeof(didpath))
         return -1;
 
@@ -837,9 +1428,42 @@ static int list_did_helper(const char *path, void *context)
             (dh->filter == 2 && !DIDSotre_ContainsPrivateKeys(dh->store, &did)))
         rc = dh->cb(&did, dh->context);
 
-    DIDMetaData_Free(&did.metadata);
+    DIDMetadata_Free(&did.metadata);
     return rc;
 }
+
+static int list_rootidentity_helper(const char *path, void *context)
+{
+    RootIdentity_List_Helper *rh = (RootIdentity_List_Helper*)context;
+    char identitypath[PATH_MAX];
+    RootIdentity *rootidentity;
+    size_t len;
+    int rc;
+
+    if (!path)
+        return rh->cb(NULL, rh->context);
+
+    if (strcmp(path, ".") == 0 || strcmp(path, "..") == 0)
+        return 0;
+
+    len = snprintf(identitypath, sizeof(identitypath), "%s%s%s%s%s%s%s", rh->store->root, PATH_SEP,
+            DATA_DIR,  PATH_SEP, ROOTS_DIR, PATH_SEP, path);
+    if (len < 0 || len > sizeof(identitypath))
+        return -1;
+
+    if (test_path(identitypath) == S_IFREG || strlen(path) >= MAX_ID_LEN) {
+        delete_file(identitypath);
+        return 0;
+    }
+
+    rootidentity = DIDStore_LoadRootIdentity(rh->store, path);
+    if (rootidentity)
+        rc = rh->cb(rootidentity, rh->context);
+
+    RootIdentity_Destroy(rootidentity);
+    return rc;
+}
+
 
 static bool has_type(DID *did, const char *path, const char *type)
 {
@@ -888,7 +1512,7 @@ static int select_credential_helper(const char *path, void *context)
     if (strcmp(path, ".") == 0 || strcmp(path, "..") == 0)
         return -1;
 
-    if (get_file(credpath, 0, 6, ch->store->root, DID_DIR, ch->did.idstring,
+    if (get_file(credpath, 0, 7, ch->store->root, DATA_DIR, IDS_DIR, ch->did.idstring,
             CREDENTIALS_DIR, path, CREDENTIAL_FILE) == -1)
         return -1;
 
@@ -921,6 +1545,7 @@ static int list_credential_helper(const char *path, void *context)
     Cred_List_Helper *ch = (Cred_List_Helper*)context;
     char credpath[PATH_MAX];
     DIDURL id;
+    const char *pos;
     int rc;
 
     if (!path)
@@ -930,7 +1555,7 @@ static int list_credential_helper(const char *path, void *context)
         return 0;
 
     if (strlen(path) >= sizeof(id.fragment)) {
-        if (get_dir(credpath, 0, 5, ch->store->root, DID_DIR, ch->did.idstring,
+        if (get_dir(credpath, 0, 6, ch->store->root, DATA_DIR, IDS_DIR, ch->did.idstring,
                 CREDENTIALS_DIR, path) == 0) {
             delete_file(credpath);
             return 0;
@@ -938,48 +1563,13 @@ static int list_credential_helper(const char *path, void *context)
     }
 
     strcpy(id.did.idstring, ch->did.idstring);
-    strcpy(id.fragment, path);
+    strcpy(id.fragment, path + 1);
     load_credmeta(ch->store, &id.metadata, id.did.idstring, id.fragment);
     rc = ch->cb(&id, ch->context);
-    CredentialMetaData_Free(&id.metadata);
+    CredentialMetadata_Free(&id.metadata);
     return rc;
 }
 
-static DIDDocumentBuilder* did_createbuilder(DID *did, DID *controller, DIDStore *store)
-{
-    DIDDocumentBuilder *builder;
-    DIDDocument *controller_doc = NULL;
-
-    builder = (DIDDocumentBuilder*)calloc(1, sizeof(DIDDocumentBuilder));
-    if (!builder) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for document builder failed.");
-        return NULL;
-    }
-
-    builder->document = (DIDDocument*)calloc(1, sizeof(DIDDocument));
-    if (!builder->document) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for document failed.");
-        goto errorExit;
-    }
-
-    if (!DID_Copy(&builder->document->did, did))
-        goto errorExit;
-
-    if (controller) {
-        controller_doc = DIDStore_LoadDID(store, controller);
-        if (!controller_doc)
-            goto errorExit;
-
-        builder->controllerdoc = controller_doc;
-    }
-
-    DIDDocument_SetStore(builder->document, store);
-    return builder;
-
-errorExit:
-    DIDDocumentBuilder_Destroy(builder);
-    return NULL;
-}
 
 static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
         const char *storepass, const char *alias)
@@ -997,7 +1587,7 @@ static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
     if (Init_DIDURL(&id, did, "primary") == -1)
         return NULL;
 
-    builder = did_createbuilder(did, NULL, store);
+    builder = DIDDocument_CreateBuilder(did, NULL, store);
     if (!builder)
         return NULL;
 
@@ -1021,60 +1611,14 @@ static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
     if (!document)
         return NULL;
 
-    DIDMetaData_SetAlias(&document->metadata, alias);
-    DIDMetaData_SetDeactivated(&document->metadata, false);
-    memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetaData));
-    return document;
-}
-
-static DIDDocument *create_customized_document(DIDStore *store, const char *storepass,
-        DID *did, DID **controllers, size_t size, DID *controller, int multisig)
-{
-    DIDDocument *document;
-    DIDDocumentBuilder *builder;
-    int i;
-
-    assert(store);
-    assert(storepass && *storepass);
-    assert(did);
-    assert(controllers);
-    assert(size > 0);
-    assert(controller);
-
-    builder = did_createbuilder(did, controller, store);
-    if (!builder)
-        return NULL;
-
-    for (i = 0; i < size; i++) {
-        if (DIDDocumentBuilder_AddController(builder, controllers[i]) == -1) {
-            DIDDocumentBuilder_Destroy(builder);
-            return NULL;
-        }
-    }
-
-    builder->document->multisig = multisig;
-
-    if (DIDDocumentBuilder_SetExpires(builder, 0) == -1) {
-        DIDDocumentBuilder_Destroy(builder);
-        return NULL;
-    }
-
-    document = DIDDocumentBuilder_Seal(builder, storepass);
-    DIDDocumentBuilder_Destroy(builder);
-    if (!document)
-        return NULL;
-
-    DIDMetaData_SetDeactivated(&document->metadata, false);
-    memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetaData));
     return document;
 }
 
 static int store_credential(DIDStore *store, Credential *credential)
 {
     const char *data;
-    char path[PATH_MAX];
+    char path[PATH_MAX], filename[128];
     DIDURL *id;
-    time_t lastmodified;
     int rc;
 
     assert(store);
@@ -1088,8 +1632,9 @@ static int store_credential(DIDStore *store, Credential *credential)
     if (!data)
         return -1;
 
-    if (get_file(path, 1, 6, store->root, DID_DIR, id->did.idstring,
-            CREDENTIALS_DIR, id->fragment, CREDENTIAL_FILE) == -1) {
+    sprintf(filename, "%s%s", "#", id->fragment);
+    if (get_file(path, 1, 7, store->root, DATA_DIR, IDS_DIR, id->did.idstring,
+            CREDENTIALS_DIR, filename, CREDENTIAL_FILE) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create credential file failed.");
         free((void*)data);
         return -1;
@@ -1097,26 +1642,18 @@ static int store_credential(DIDStore *store, Credential *credential)
 
     rc = store_file(path, data);
     free((void*)data);
-    if (!rc) {
-        //set credential last modified
-        lastmodified = CredentialMetaData_GetLastModified(&credential->metadata);
-        if (lastmodified > 0) {
-            set_file_lastmodified(path, lastmodified);
-        } else {
-            CredentialMetaData_SetLastModified(&credential->metadata, get_file_lastmodified(path));
-        }
+    if (!rc)
         return 0;
-    }
 
     delete_file(path);
 
-    if (get_dir(path, 0, 5, store->root, DID_DIR, id->did.idstring,
-            CREDENTIALS_DIR, id->fragment) == 0) {
+    if (get_dir(path, 0, 6, store->root, DATA_DIR, IDS_DIR, id->did.idstring,
+            CREDENTIALS_DIR, filename) == 0) {
         if (is_empty(path))
             delete_file(path);
     }
 
-    if (get_dir(path, 0, 4, store->root, DID_DIR, id->did.idstring, CREDENTIALS_DIR) == 0) {
+    if (get_dir(path, 0, 5, store->root, DATA_DIR, IDS_DIR, id->did.idstring, CREDENTIALS_DIR) == 0) {
         if (is_empty(path))
             delete_file(path);
     }
@@ -1148,10 +1685,10 @@ DIDStore* DIDStore_Open(const char *root)
 
     strcpy(didstore->root, root);
 
-    if (get_dir(path, 0, 1, root) == 0 && !check_store(didstore))
+    if (get_dir(path, 0, 2, root, DATA_DIR) == 0 && !check_store(didstore))
         return didstore;
 
-    if (mkdirs(root, S_IRWXU) == 0 && !create_store(didstore))
+    if (mkdirs(path, S_IRWXU) == 0 && !create_store(didstore))
         return didstore;
 
     DIDError_Set(DIDERR_DIDSTORE_ERROR, "Open DIDStore failed.");
@@ -1165,23 +1702,11 @@ void DIDStore_Close(DIDStore *didstore)
         free(didstore);
 }
 
-int DIDStore_ExportMnemonic(DIDStore *store, const char *storepass,
-        char *mnemonic, size_t size)
-{
-    if (!store || !storepass || !*storepass || !mnemonic || size == 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
-    return load_mnemonic(store, storepass, mnemonic, size);
-}
-
 int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
 {
     char path[PATH_MAX];
     const char *data;
-    DIDMetaData meta;
-    time_t lastmodified;
+    DIDMetadata meta;
     ssize_t count;
     int rc;
 
@@ -1193,17 +1718,17 @@ int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
     if (load_didmeta(store, &meta, document->did.idstring) == -1)
         return -1;
 
-    rc = DIDMetaData_Merge(&document->metadata, &meta);
-    DIDMetaData_Free(&meta);
+    rc = DIDMetadata_Merge(&document->metadata, &meta);
+    DIDMetadata_Free(&meta);
     if (rc < 0)
         return -1;
 
-    DIDMetaData_SetStore(&document->metadata, store);
+    DIDMetadata_SetStore(&document->metadata, store);
 	data = DIDDocument_ToJson(document, true);
 	if (!data)
 		return -1;
 
-    rc = get_file(path, 1, 4, store->root, DID_DIR, document->did.idstring, DOCUMENT_FILE);
+    rc = get_file(path, 1, 5, store->root, DATA_DIR, IDS_DIR, document->did.idstring, DOCUMENT_FILE);
     if (rc < 0) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for did document failed.");
         free((void*)data);
@@ -1217,15 +1742,7 @@ int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
         goto errorExit;
     }
 
-    //set document last modified
-    lastmodified = DIDMetaData_GetLastModified(&document->metadata);
-    if (lastmodified > 0) {
-        set_file_lastmodified(path, lastmodified);
-    } else {
-        DIDMetaData_SetLastModified(&document->metadata, get_file_lastmodified(path));
-    }
-
-    if (DIDStore_WriteDIDMetaData(store, &document->metadata, &document->did) == -1)
+    if (DIDStore_WriteDIDMetadata(store, &document->metadata, &document->did) == -1)
         goto errorExit;
 
     count = DIDDocument_GetCredentialCount(document);
@@ -1240,27 +1757,23 @@ errorExit:
     delete_file(path);
 
     //check ids directory is empty or not
-    if (get_dir(path, 0, 3, store->root, DID_DIR, document->did.idstring) == 0) {
+    if (get_dir(path, 0, 4, store->root, DATA_DIR, IDS_DIR, document->did.idstring) == 0) {
         if (is_empty(path))
             delete_file(path);
     }
-
     return -1;
 }
 
-DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did)
+const char *load_didfile(DIDStore *store, DID *did)
 {
-    DIDDocument *document;
     char path[PATH_MAX];
     const char *data;
     int rc;
 
-    if (!store || !did) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    assert(store);
+    assert(did);
 
-    if (get_file(path, 0, 4, store->root, DID_DIR, did->idstring, DOCUMENT_FILE) == -1) {
+    if (get_file(path, 0, 5, store->root, DATA_DIR, IDS_DIR, did->idstring, DOCUMENT_FILE) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "The file for Did document don't exist.");
         return NULL;
     }
@@ -1283,6 +1796,25 @@ DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did)
         return NULL;
     }
 
+    return data;
+}
+
+DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did)
+{
+    DIDDocument *document;
+    const char *data;
+
+    if (!store || !did) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    data = load_didfile(store, did);
+    if (!data) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Load file error.");
+        return NULL;
+    }
+
     document = DIDDocument_FromJson(data);
     free((void*)data);
     if (!document)
@@ -1293,8 +1825,8 @@ DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did)
         return NULL;
     }
 
-    DIDMetaData_SetStore(&document->metadata, store);
-    memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetaData));
+    DIDMetadata_SetStore(&document->metadata, store);
+    memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetadata));
 
     return document;
 }
@@ -1309,7 +1841,7 @@ bool DIDStore_ContainsDID(DIDStore *store, DID *did)
         return false;
     }
 
-    if (get_dir(path, 0, 3, store->root, DID_DIR, did->idstring) == -1) {
+    if (get_dir(path, 0, 4, store->root, DATA_DIR, IDS_DIR, did->idstring) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "No DID [%s] in store.", did->idstring);
         return false;
     }
@@ -1338,7 +1870,7 @@ bool DIDStore_DeleteDID(DIDStore *store, DID *did)
         return false;
     }
 
-    if (get_dir(path, 0, 3, store->root, DID_DIR, did->idstring) == -1) {
+    if (get_dir(path, 0, 4, store->root, DATA_DIR, IDS_DIR, did->idstring) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Dids don't exist.");
         return false;
     }
@@ -1364,10 +1896,8 @@ int DIDStore_ListDIDs(DIDStore *store, ELA_DID_FILTER filter,
         return -1;
     }
 
-    if (get_dir(path, 0, 2, store->root, DID_DIR) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "The directory stored dids is not exist: %s", path);
-        return -1;
-    }
+    if (get_dir(path, 0, 3, store->root, DATA_DIR, IDS_DIR) == -1)
+        return 0;
 
     rc = test_path(path);
     if (rc < 0) {
@@ -1395,7 +1925,7 @@ int DIDStore_ListDIDs(DIDStore *store, ELA_DID_FILTER filter,
 
 int DIDStore_StoreCredential(DIDStore *store, Credential *credential)
 {
-    CredentialMetaData meta;
+    CredentialMetadata meta;
     DIDURL *id;
 
     if (!store || !credential) {
@@ -1410,11 +1940,11 @@ int DIDStore_StoreCredential(DIDStore *store, Credential *credential)
     if (load_credmeta(store, &meta, id->did.idstring, id->fragment) == -1)
         return -1;
 
-    if (CredentialMetaData_Merge(&credential->metadata, &meta) < 0)
+    if (CredentialMetadata_Merge(&credential->metadata, &meta) < 0)
         return -1;
 
-    CredentialMetaData_SetStore(&credential->metadata, store);
-    CredentialMetaData_Free(&meta);
+    CredentialMetadata_SetStore(&credential->metadata, store);
+    CredentialMetadata_Free(&meta);
 
     if (store_credential(store, credential) == -1 ||
             store_credmeta(store, &credential->metadata, id) == -1)
@@ -1426,15 +1956,16 @@ int DIDStore_StoreCredential(DIDStore *store, Credential *credential)
 Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
 {
     const char *data;
-    char path[PATH_MAX];
+    char path[PATH_MAX], filename[128];
     Credential *credential;
     int rc;
 
     if (!store || !did ||!id)
         return NULL;
 
-    if (get_file(path, 0, 6, store->root, DID_DIR, did->idstring,
-            CREDENTIALS_DIR, id->fragment, CREDENTIAL_FILE) == -1) {
+    sprintf(filename, "%s%s", "#", id->fragment);
+    if (get_file(path, 0, 7, store->root, DATA_DIR, IDS_DIR, did->idstring,
+            CREDENTIALS_DIR, filename, CREDENTIAL_FILE) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "The file stored credential don't exist.");
         return NULL;
     }
@@ -1481,7 +2012,7 @@ bool DIDStore_ContainsCredentials(DIDStore *store, DID *did)
         return false;
     }
 
-    if (get_dir(path, 0, 4, store->root, DID_DIR, did->idstring, CREDENTIALS_DIR) == -1) {
+    if (get_dir(path, 0, 5, store->root, DATA_DIR, IDS_DIR, did->idstring, CREDENTIALS_DIR) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "The directory stored credentials is not exist: %s", path);
         return -1;
     }
@@ -1507,7 +2038,7 @@ bool DIDStore_ContainsCredentials(DIDStore *store, DID *did)
 
 bool DIDStore_ContainsCredential(DIDStore *store, DID *did, DIDURL *id)
 {
-    char path[PATH_MAX];
+    char path[PATH_MAX], filename[128];
     int rc;
 
     if (!store || !did || !id) {
@@ -1515,8 +2046,9 @@ bool DIDStore_ContainsCredential(DIDStore *store, DID *did, DIDURL *id)
         return false;
     }
 
-    if (get_dir(path, 0, 5, store->root, DID_DIR, did->idstring,
-            CREDENTIALS_DIR, id->fragment) == -1) {
+    sprintf(filename, "%s%s", "#", id->fragment);
+    if (get_dir(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
+            CREDENTIALS_DIR, filename) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Credential[%s] is not existed in did store.", id->fragment);
         return false;
     }
@@ -1538,15 +2070,16 @@ bool DIDStore_ContainsCredential(DIDStore *store, DID *did, DIDURL *id)
 
 bool DIDStore_DeleteCredential(DIDStore *store, DID *did, DIDURL *id)
 {
-    char path[PATH_MAX];
+    char path[PATH_MAX], filename[128];
 
     if (!store || !did || !id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    if (get_dir(path, 0, 5, store->root, DID_DIR, did->idstring,
-            CREDENTIALS_DIR, id->fragment) == -1) {
+    sprintf(filename, "%s%s", "#", id->fragment);
+    if (get_dir(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
+            CREDENTIALS_DIR, filename) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Credential[%s] is not existed in did store.", id->fragment);
         return false;
     }
@@ -1557,7 +2090,7 @@ bool DIDStore_DeleteCredential(DIDStore *store, DID *did, DIDURL *id)
     }
 
     delete_file(path);
-    if (get_dir(path, 0, 4, store->root, DID_DIR, did->idstring, CREDENTIALS_DIR) == 0) {
+    if (get_dir(path, 0, 5, store->root, DATA_DIR, IDS_DIR, did->idstring, CREDENTIALS_DIR) == 0) {
         if (is_empty(path))
             delete_file(path);
     }
@@ -1577,10 +2110,8 @@ int DIDStore_ListCredentials(DIDStore *store, DID *did,
         return -1;
     }
 
-    if (get_dir(path, 0, 4, store->root, DID_DIR, did->idstring, CREDENTIALS_DIR) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "The directory stored credentials is not exist: %s", path);
-        return -1;
-    }
+    if (get_dir(path, 0, 5, store->root, DATA_DIR, IDS_DIR, did->idstring, CREDENTIALS_DIR) == -1)
+        return 0;
 
     rc = test_path(path);
     if (rc < 0) {
@@ -1611,7 +2142,7 @@ int DIDStore_ListCredentials(DIDStore *store, DID *did,
 int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *id,
         const char *type, DIDStore_CredentialsCallback *callback, void *context)
 {
-    char path[PATH_MAX];
+    char path[PATH_MAX], filename[128];
     Cred_List_Helper ch;
     int rc;
 
@@ -1625,8 +2156,9 @@ int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *id,
     }
 
     if (id) {
-        if (get_file(path, 0, 6, store->root, DID_DIR, did->idstring,
-                CREDENTIALS_DIR, id->fragment, CREDENTIAL_FILE) == -1) {
+        sprintf(filename, "%s%s", "#", id->fragment);
+        if (get_file(path, 0, 7, store->root, DATA_DIR, IDS_DIR, did->idstring,
+                CREDENTIALS_DIR, filename, CREDENTIAL_FILE) == -1) {
             DIDError_Set(DIDERR_NOT_EXISTS, "Credential don't exist.");
             return -1;
         }
@@ -1648,7 +2180,7 @@ int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *id,
         return -1;
     }
 
-    if (get_dir(path, 0, 4, store->root, DID_DIR, did->idstring, CREDENTIALS_DIR) == -1) {
+    if (get_dir(path, 0, 5, store->root, DATA_DIR, IDS_DIR, did->idstring, CREDENTIALS_DIR) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "No credentials.");
         return -1;
     }
@@ -1689,9 +2221,9 @@ bool DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did)
         return false;
     }
 
-    if (get_dir(path, 0, 4, store->root, DID_DIR, did->idstring, PRIVATEKEYS_DIR) == -1) {
+    if (get_dir(path, 0, 5, store->root, DATA_DIR, IDS_DIR, did->idstring, PRIVATEKEYS_DIR) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "The directory stored private keys is not exist: %s", path);
-        return -1;
+        return false;
     }
 
     empty = is_empty(path);
@@ -1703,7 +2235,7 @@ bool DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did)
 
 bool DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
 {
-    char path[PATH_MAX];
+    char path[PATH_MAX], filename[128];
     int rc;
 
     if (!store || !did || !id) {
@@ -1711,8 +2243,9 @@ bool DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
         return false;
     }
 
-    if (get_file(path, 0, 5, store->root, DID_DIR, did->idstring,
-            PRIVATEKEYS_DIR, id->fragment) == -1) {
+    sprintf(filename, "%s%s", "#", id->fragment);
+    if (get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
+            PRIVATEKEYS_DIR, filename) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "The file for private key don't exist.");
         return false;
     }
@@ -1735,7 +2268,7 @@ bool DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
 int DIDStore_StorePrivateKey_Internal(DIDStore *store, DID *did, DIDURL *id,
         const char *prvkey)
 {
-    char path[PATH_MAX];
+    char path[PATH_MAX], filename[128];
 
     if (!store || !did || !id || !prvkey || !*prvkey) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1747,8 +2280,9 @@ int DIDStore_StorePrivateKey_Internal(DIDStore *store, DID *did, DIDURL *id,
         return -1;
     }
 
-    if (get_file(path, 1, 5, store->root, DID_DIR, did->idstring,
-            PRIVATEKEYS_DIR, id->fragment) == -1) {
+    sprintf(filename, "%s%s", "#", id->fragment);
+    if (get_file(path, 1, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
+            PRIVATEKEYS_DIR, filename) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create private key file failed.");
         return -1;
     }
@@ -1776,7 +2310,7 @@ int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass, DID *did,
         return -1;
     }
 
-    if (encrypt_to_base64(base64, storepass, privatekey, size) == -1) {
+    if (didstore_encrypt_to_base64(store, storepass, base64, privatekey, size) == -1) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt private key failed.");
         return -1;
     }
@@ -1786,136 +2320,20 @@ int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass, DID *did,
 
 void DIDStore_DeletePrivateKey(DIDStore *store, DID *did, DIDURL *id)
 {
-    char path[PATH_MAX];
+    char path[PATH_MAX], filename[128];
 
     if (!store || !did || !id)
         return;
 
-    if (get_file(path, 0, 5, store->root, DID_DIR, did->idstring,
-            PRIVATEKEYS_DIR, id->fragment) == -1)
+    sprintf(filename, "%s%s", "#", id->fragment);
+    if (get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
+            PRIVATEKEYS_DIR, filename) == -1)
         return;
 
     if (test_path(path) > 0)
         delete_file(path);
 
     return;
-}
-
-static int store_pubidentity_from_prvidentity(DIDStore *store, HDKey *hdkey)
-{
-    ssize_t size;
-    HDKey _derivedkey, *predeviedkey;
-    uint8_t extendedkey[EXTENDEDKEY_BYTES];
-
-    assert(store);
-    assert(hdkey);
-
-    //// Pre-derive publickey path: m/44'/0'/0'
-    predeviedkey = HDKey_GetDerivedKey(hdkey, &_derivedkey, 3, 44 | HARDENED,
-            0 | HARDENED, 0 | HARDENED);
-    if (!predeviedkey) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get derived key failed.");
-        return -1;
-    }
-
-    size = HDKey_SerializePub(predeviedkey, extendedkey, sizeof(extendedkey));
-    if (size == -1) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Serialize extended public key failed.");
-        return -1;
-    }
-
-    if (store_extendedpubkey(store, extendedkey, size) == -1)
-        return -1;
-
-    return 0;
-}
-
-
-static bool DIDStore_ContainsPublicIdentity(DIDStore *store)
-{
-    char path[PATH_MAX];
-    struct stat st;
-
-    if (!store) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
-
-    if (get_file(path, 0, 3, store->root, PRIVATE_DIR, HDPUBKEY_FILE) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Public identity don't already exist.");
-        return false;
-    }
-
-    if (stat(path, &st) < 0) {
-        DIDError_Set(DIDERR_IO_ERROR, "File error.");
-        return false;
-    }
-
-    if (st.st_size <= 0) {
-        DIDError_Set(DIDERR_IO_ERROR, "No private identity.");
-        return false;
-    }
-
-    return true;
-}
-
-//caller provide HDKey object.
-static HDKey *load_privateIdentity(DIDStore *store, const char *storepass,
-        HDKey *identity)
-{
-    uint8_t extendedkey[EXTENDEDKEY_BYTES];
-    ssize_t size;
-    int rc = 0;
-
-    assert(store);
-    assert(storepass && *storepass);
-    assert(identity);
-
-    size = load_extendedprvkey(store, extendedkey, sizeof(extendedkey), storepass);
-    if (size == -1)
-        return NULL;
-
-    if (size == SEED_BYTES) {
-        if (HDKey_FromSeed(extendedkey, size, identity)) {
-            size = HDKey_SerializePrv(identity, extendedkey, sizeof(extendedkey));
-            if (size != -1) {
-                rc = store_extendedprvkey(store, extendedkey, size, storepass);
-            }
-        }
-    } else {
-        if (!HDKey_FromExtendedKey(extendedkey, sizeof(extendedkey), identity)) {
-            DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial private identity failed.");
-            rc = -1;
-        }
-
-        // For backward compatible, create pre-derived public key if not exist.
-        // TODO: Should be remove in the future
-        if (!DIDStore_ContainsPublicIdentity(store))
-            rc = store_pubidentity_from_prvidentity(store, identity);
-    }
-
-    memset(extendedkey, 0, sizeof(extendedkey));
-    return rc == 0 ? identity : NULL;
-}
-
-static HDKey *load_publicIdentity(DIDStore *store, HDKey *identity)
-{
-    uint8_t extendedkey[EXTENDEDKEY_BYTES];
-    ssize_t size;
-    HDKey *hdkey;
-
-    assert(store);
-    assert(identity);
-
-    size = load_extendedpubkey(store, extendedkey, sizeof(extendedkey));
-    if (size == -1)
-        return NULL;
-
-    hdkey = HDKey_FromExtendedKey(extendedkey, sizeof(extendedkey), identity);
-    if (!hdkey)
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial private identity failed.");
-
-    return hdkey;
 }
 
 static int store_default_privatekey(DIDStore *store, const char *storepass,
@@ -1938,252 +2356,338 @@ static int store_default_privatekey(DIDStore *store, const char *storepass,
     return 0;
 }
 
-static DIDDocument* default_didstore_merge(DIDDocument *chaincopy, DIDDocument *localcopy)
+bool DIDStore_ContainsRootIdentity(DIDStore *store, const char *id)
 {
-    assert(chaincopy);
-    assert(localcopy);
+    char path[PATH_MAX];
 
-    DIDMetaData_SetPublished(&localcopy->metadata, DIDMetaData_GetPublished(&chaincopy->metadata));
-    DIDMetaData_SetSignature(&localcopy->metadata, DIDMetaData_GetSignature(&chaincopy->metadata));
-    memcpy(&localcopy->did.metadata, &localcopy->metadata, sizeof(DIDMetaData));
+    assert(store);
+    assert(id);
 
-    return localcopy;
+    if (get_dir(path, 0, 4, store->root, DATA_DIR, ROOTS_DIR, id) == -1)
+        return false;
+
+    return true;
 }
 
-int DIDStore_Synchronize(DIDStore *store, const char *storepass, DIDStore_MergeCallback *callback)
+int DIDStore_StoreRootIdentityWithElem(DIDStore *store, const char *storepass, const char *id,
+        const char *mnemonic, uint8_t *rootPrivatekey, size_t rootsize,
+        uint8_t *preDerivedPublicKey, size_t keysize, int index)
 {
-    int nextindex, i = 0, blanks = 0;
-    DIDDocument *chainCopy = NULL, *localCopy = NULL, *finalCopy;
-    HDKey _identity, *privateIdentity;
-    HDKey _derivedkey, *derivedkey;
-    uint8_t extendedkey[EXTENDEDKEY_BYTES];
-    DID did;
-    int status;
+    char path[PATH_MAX];
 
-     if (!store || !storepass || !*storepass)
+    assert(store);
+    assert(storepass && *storepass);
+    assert(id);
+
+    if (mnemonic && *mnemonic && store_mnemonic(store, storepass, id,
+            (unsigned char*)mnemonic, strlen(mnemonic)) < 0)
         return -1;
 
-    if (!callback)
-        callback = default_didstore_merge;
-
-    privateIdentity = load_privateIdentity(store, storepass, &_identity);
-    if (!privateIdentity)
+    if (rootPrivatekey && rootsize == EXTENDEDKEY_BYTES && store_extendedprvkey(store,
+            storepass, id, rootPrivatekey, rootsize) < 0)
         return -1;
 
-    nextindex = load_index(store);
-    if (nextindex < 0) {
-        HDKey_Wipe(privateIdentity);
+    if (preDerivedPublicKey && keysize == EXTENDEDKEY_BYTES && store_extendedpubkey(store,
+            id, preDerivedPublicKey, keysize) < 0)
         return -1;
-    }
 
-    while (i < nextindex || blanks < 20) {
-        derivedkey = HDKey_GetDerivedKey(privateIdentity, &_derivedkey, 5, 44 | HARDENED,
-               0 | HARDENED, 0 | HARDENED, 0, i++);
-        if (!derivedkey)
-            continue;
+    if (index >= 0 && DIDStore_StoreIndex(store, id, index) < 0)
+        return -1;
 
-        if (Init_DID(&did, HDKey_GetAddress(derivedkey)) == 0) {
-            chainCopy = DID_Resolve(&did, &status, true);
-            if (chainCopy) {
-                if (DIDDocument_IsDeactivated(chainCopy)) {
-                    DIDError_Set(DIDERR_DID_DEACTIVATED, "Did is deactivated.");
-                    DIDDocument_Destroy(chainCopy);
-                    blanks = 0;
-                    continue;
-                }
-
-                if (DIDDocument_IsExpired(chainCopy)) {
-                    DIDError_Set(DIDERR_EXPIRED, "Did is expired.");
-                    DIDDocument_Destroy(chainCopy);
-                    blanks = 0;
-                    continue;
-                }
-
-                finalCopy = chainCopy;
-                localCopy = DIDStore_LoadDID(store, &did);
-                if (localCopy) {
-                    const char *local_signature = DIDMetaData_GetSignature(&localCopy->metadata);
-                    if (!*local_signature ||
-                            strcmp(DIDDocument_GetProofSignature(localCopy, 0), local_signature)) {
-                        finalCopy = callback(chainCopy, localCopy);
-                        if (!finalCopy || !DID_Equals(DIDDocument_GetSubject(finalCopy), &did)) {
-                            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Conflict handle merge the DIDDocument error.");
-                            if (finalCopy != chainCopy && finalCopy != localCopy)
-                                DIDDocument_Destroy(finalCopy);
-                            DIDDocument_Destroy(chainCopy);
-                            DIDDocument_Destroy(localCopy);
-                            return -1;
-                        }
-                    }
-                }
-
-                if (DIDStore_StoreDID(store, finalCopy) == 0) {
-                    if (HDKey_SerializePrv(derivedkey, extendedkey, sizeof(extendedkey)) > 0) {
-                        if (store_default_privatekey(store, storepass, HDKey_GetAddress(derivedkey),
-                                extendedkey, sizeof(extendedkey)) == 0) {
-                            store_index(store, i);
-                        }
-                    }
-                }
-
-                if (finalCopy != chainCopy && finalCopy != localCopy)
-                    DIDDocument_Destroy(finalCopy);
-
-                DIDDocument_Destroy(chainCopy);
-                DIDDocument_Destroy(localCopy);
-                blanks = 0;
-            } else {
-                if (i >= nextindex)
-                    blanks++;
-            }
-        }
-        HDKey_Wipe(derivedkey);
-    }
-
-    HDKey_Wipe(privateIdentity);
     return 0;
 }
 
-bool DIDStore_ContainsPrivateIdentity(DIDStore *store)
+int DIDStore_StoreRootIdentity(DIDStore *store, const char *storepass, RootIdentity *rootidentity)
+{
+    const char *id;
+    StoreMetadata metadata;
+    int rc;
+
+    if (!store || !storepass || !*storepass || !rootidentity) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    if (DIDStore_StoreRootIdentityWithElem(store, storepass, rootidentity->id,
+            rootidentity->mnemonic, rootidentity->rootPrivateKey, sizeof(rootidentity->rootPrivateKey),
+            rootidentity->preDerivedPublicKey, sizeof(rootidentity->preDerivedPublicKey),
+            rootidentity->index) < 0)
+        return -1;
+
+    load_storemeta(store, &metadata);
+    if (!StoreMetadata_GetDefaultRootIdentity(&metadata)) {
+        if (StoreMetadata_SetDefaultRootIdentity(&metadata, rootidentity->id) < 0 ||
+                store_storemeta(store, &metadata) < 0) {
+            StoreMetadata_Free(&metadata);
+            return -1;
+        }
+    }
+
+    StoreMetadata_Free(&metadata);
+    return 0;
+}
+
+
+RootIdentity *DIDStore_LoadRootIdentity(DIDStore *store, const char *id)
+{
+    RootIdentity *rootidentity = NULL;
+    char mnemonic[ELA_MAX_MNEMONIC_LEN];
+    uint8_t extendedkey[EXTENDEDKEY_BYTES];
+    ssize_t size;
+
+    if (!store || !id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    if (strlen(id) + 1 > MAX_ID_LEN) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Id string is too long.");
+        return NULL;
+    }
+
+    rootidentity = (RootIdentity*)calloc(1, sizeof(RootIdentity));
+    if (!rootidentity) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for RootIdentity failed.");
+        return NULL;
+    }
+
+    if (load_extendedpubkey(store, id, rootidentity->preDerivedPublicKey, EXTENDEDKEY_BYTES) < 0)
+        goto errorExit;
+
+    rootidentity->index = DIDStore_LoadIndex(store, id);
+    if (rootidentity->index < 0)
+        goto errorExit;
+
+    strcpy((char*)rootidentity->id, id);
+    load_identitymeta(store, id, &rootidentity->metadata);
+    return rootidentity;
+
+errorExit:
+    RootIdentity_Destroy(rootidentity);
+    return NULL;
+}
+
+bool DIDStore_DeleteRootIdentity(DIDStore *store, const char *id)
 {
     char path[PATH_MAX];
-    struct stat st;
+    const char *defaultid;
 
-    if (!store) {
+    if (!store || !id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
-    if (get_file(path, 0, 3, store->root, PRIVATE_DIR, HDKEY_FILE) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Private identity don't already exist.");
+    if (get_dir(path, 0, 4, store->root, DATA_DIR, ROOTS_DIR, id) == -1) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "The root identity does not exist.");
         return false;
     }
 
+    delete_file(path);
+
+    defaultid = DIDStore_GetDefaultRootIdentity(store);
+    if (defaultid) {
+        if (!strcmp(defaultid, id))
+            DIDStore_SetDefaultRootIdentity(store, NULL);
+
+        free((void*)defaultid);
+    }
+    return true;
+}
+
+ssize_t DIDStore_ListRootIdentities(DIDStore *store,
+        DIDStore_RootIdentitiesCallback *callback, void *context)
+{
+    char path[PATH_MAX];
+    RootIdentity_List_Helper rh;
+    int rc;
+
+    if (!store || !callback) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    if (get_dir(path, 0, 3, store->root, DATA_DIR, ROOTS_DIR) == -1) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "The directory stored root identities is not exist: %s", path);
+        return -1;
+    }
+
+    rc = test_path(path);
+    if (rc < 0) {
+        DIDError_Set(DIDERR_IO_ERROR, "The directory stored root identities error.");
+        return -1;
+    }
+
+    if (rc != S_IFDIR) {
+        DIDError_Set(DIDERR_IO_ERROR, "The directory stored root identities should be directory.");
+        return -1;
+    }
+
+    rh.store = store;
+    rh.cb = callback;
+    rh.context = context;
+
+    if (list_dir(path, "*", list_rootidentity_helper, (void*)&rh) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "List root identity failed.");
+        return -1;
+    }
+
+    return 0;
+}
+
+int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id)
+{
+    StoreMetadata metadata;
+    int rc = -1;
+
+    if (!store) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    if (load_storemeta(store, &metadata) < 0) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "load StoreMetadata file failed.");
+        return -1;
+    }
+
+    if (StoreMetadata_SetDefaultRootIdentity(&metadata, id) < 0) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Set default rootidentity failed.");
+        goto errorExit;
+    }
+
+    if (store_storemeta(store, &metadata) < 0) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store StoreMetadata file failed.");
+        goto errorExit;
+    }
+
+    rc = 0;
+errorExit:
+    StoreMetadata_Free(&metadata);
+    return rc;
+}
+
+const char *DIDStore_GetDefaultRootIdentity(DIDStore *store)
+{
+    StoreMetadata metadata;
+    const char *id, *_id = NULL;
+
+    if (!store) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    if (load_storemeta(store, &metadata) < 0) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "load store meta file failed.");
+        return NULL;
+    }
+
+    id = StoreMetadata_GetDefaultRootIdentity(&metadata);
+    if (id)
+        _id = strdup(id);
+
+    StoreMetadata_Free(&metadata);
+    return _id;
+}
+
+int DIDStore_ExportRootIdentityMnemonic(DIDStore *store, const char *storepass,
+        const char *id, char *mnemonic, size_t size)
+{
+    if (!store || !storepass || !*storepass || !id || !mnemonic || size == 0) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    return load_mnemonic(store, storepass, id, mnemonic, size);
+}
+
+bool DIDStore_ContainsRootIdentityMnemonic(DIDStore *store, const char *id)
+{
+    char path[PATH_MAX];
+    struct stat st;
+
+    if (!store || !id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    if (get_file(path, 0, 5, store->root, DATA_DIR, ROOTS_DIR, id, MNEMONIC_FILE) == -1) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "Mnemonic file don't exist.");
+        return -1;
+    }
+
     if (stat(path, &st) < 0) {
-        DIDError_Set(DIDERR_IO_ERROR, "File error.");
+        DIDError_Set(DIDERR_IO_ERROR, "Mnemonic file error.");
         return false;
     }
 
     if (st.st_size <= 0) {
-        DIDError_Set(DIDERR_IO_ERROR, "No private identity.");
+        DIDError_Set(DIDERR_IO_ERROR, "No mnemonic content.");
         return false;
     }
 
     return true;
 }
 
-static int didstore_initidentity(DIDStore *store, const char *storepass, HDKey *hdkey)
+int DIDStore_LoadIndex(DIDStore *store, const char *id)
 {
-    ssize_t size;
-    uint8_t extendedkey[EXTENDEDKEY_BYTES];
+    char path[PATH_MAX];
+    const char *string;
+    int index;
 
     assert(store);
-    assert(storepass && *storepass);
-    assert(hdkey);
+    assert(id);
 
-    size = HDKey_SerializePrv(hdkey, extendedkey, sizeof(extendedkey));
-    if (size == -1) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Serialize extended private key failed.");
+    string = load_index_string(store, id);
+    if (!string) {
+        DIDError_Set(DIDERR_IO_ERROR, "Load index failed.");
         return -1;
     }
 
-    if (store_extendedprvkey(store, extendedkey, size, storepass) == -1)
-        return -1;
-
-    memset(extendedkey, 0, sizeof(extendedkey));
-    return store_pubidentity_from_prvidentity(store, hdkey);
+    index = atoi(string);
+    free((void*)string);
+    return index;
 }
 
-int DIDStore_InitPrivateIdentity(DIDStore *store, const char *storepass,
-        const char *mnemonic, const char *passphrase, const char *language, bool force)
+int DIDStore_StoreIndex(DIDStore *store, const char *id, int index)
 {
-    char path[PATH_MAX];
-    HDKey _privateIdentity, *privateIdentity;
-
-    if (!store || !storepass || !*storepass|| !mnemonic || !*mnemonic) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
-    if (!passphrase)
-        passphrase = "";
-
-    //check if DIDStore has existed private identity
-    if (get_file(path, 0, 3, store->root, PRIVATE_DIR, HDKEY_FILE) == 0) {
-        if (DIDStore_ContainsPrivateIdentity(store) && !force) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Private identity don't exist.");
-            return -1;
-        }
-    }
-
-    privateIdentity = HDKey_FromMnemonic(mnemonic, passphrase, language, &_privateIdentity);
-    if (!privateIdentity) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial private identity failed.");
-        return -1;
-    }
-
-    if (didstore_initidentity(store, storepass, privateIdentity) == -1)
-        return -1;
-
-    if (store_mnemonic(store, storepass, (uint8_t *)mnemonic, strlen(mnemonic)) == -1)
-        return -1;
-
-    if (store_index(store, 0) == -1)
-        return -1;
-
-    return 0;
-}
-
-int DIDStore_InitPrivateIdentityFromRootKey(DIDStore *store, const char *storepass,
-        const char *extendedprvkey, bool force)
-{
-    char path[PATH_MAX];
-    HDKey _privateIdentity, *privateIdentity;
-
-    if (!store || !storepass || !*storepass || !extendedprvkey || !*extendedprvkey) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
-    //check if DIDStore has existed private identity
-    if (get_file(path, 0, 3, store->root, PRIVATE_DIR, HDKEY_FILE) == 0) {
-        if (DIDStore_ContainsPrivateIdentity(store) && !force) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Private identity already exist.");
-            return -1;
-        }
-    }
-
-    privateIdentity = HDKey_FromExtendedKeyBase58(extendedprvkey, strlen(extendedprvkey) + 1, &_privateIdentity);
-    if (!privateIdentity) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial private identity failed.");
-        return -1;
-    }
-
-    if (didstore_initidentity(store, storepass, privateIdentity) == -1)
-        return -1;
-
-    if (store_index(store, 0) == -1)
-        return -1;
-
-    return 0;
-}
-
-static HDKey *get_childkey(DIDStore *store, const char *storepass, int index,
-        HDKey *derivedkey)
-{
-    HDKey _identity, *identity, *dkey;
+    char string[32];
+    int len;
 
     assert(store);
     assert(index >= 0);
+
+    len = snprintf(string, sizeof(string), "%d", index);
+    if (len < 0 || len > sizeof(string)) {
+        DIDError_Set(DIDERR_UNKNOWN, "Unknown error.");
+        return -1;
+    }
+    return store_index_string(store, id, string);
+}
+
+static HDKey *get_derive(DIDStore *store, const char *storepass, const char *id,
+        int index, HDKey *derivedkey)
+{
+    size_t size;
+    uint8_t extendedprvkey[EXTENDEDKEY_BYTES];
+    HDKey _identity, *identity, *dkey;
+
+    assert(store);
+    assert(storepass && *storepass);
+    assert(id);
+    assert(index >= 0);
     assert(derivedkey);
 
-    if (!storepass)
-        identity = load_publicIdentity(store, &_identity);
-    else
-        identity = load_privateIdentity(store, storepass, &_identity);
-
-    if (!identity)
+    size = load_extendedprvkey(store, storepass, id, extendedprvkey, sizeof(extendedprvkey));
+    if (size < 0) {
+        memset(extendedprvkey, 0, sizeof(extendedprvkey));
         return NULL;
+    }
+
+    identity = HDKey_FromExtendedKey(extendedprvkey, sizeof(extendedprvkey), &_identity);
+    memset(extendedprvkey, 0, sizeof(extendedprvkey));
+    if (!identity) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial private identity failed.");
+        return NULL;
+    }
 
     dkey = HDKey_GetDerivedKey(identity, derivedkey, 5, 44 | HARDENED, 0 | HARDENED,
             0 | HARDENED, 0, index);
@@ -2194,175 +2698,39 @@ static HDKey *get_childkey(DIDStore *store, const char *storepass, int index,
     return dkey;
 }
 
-DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass, const char *alias)
-{
-    int index;
-    DIDDocument *document;
-
-    if (!store || !storepass || !*storepass) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    index = load_index(store);
-    if (index < 0)
-        return NULL;
-
-    document = DIDStore_NewDIDByIndex(store, storepass, index++, alias);
-    if (!document)
-        return NULL;
-
-    if (store_index(store, index) == -1) {
-        DIDStore_DeleteDID(store, DIDDocument_GetSubject(document));
-        DIDDocument_Destroy(document);
-        return NULL;
-    }
-
-    return document;
-}
-
-DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
-        const char *customizeddid, DID *controller, DID **controllers, size_t size,
-        int multisig)
-{
-    DIDDocument *controller_doc;
-    DIDDocument *doc;
-    DIDURL *key;
-    DID did;
-    bool iscontain;
-    int status;
-
-    if (!store || !storepass || !*storepass || !customizeddid || !*customizeddid ||
-            !controllers|| size == 0 || multisig < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (multisig > size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Multisig is larger than the count of controllers.");
-        return NULL;
-    }
-
-    if (size > 1 && !controller) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Please specified the default controller.");
-        return NULL;
-    }
-
-    if (size > 1 && multisig == 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Please specify multisig.");
-        return NULL;
-    }
-
-    if (!controller) {
-        controller = controllers[0];
-    } else {
-        if (!Contains_DID(controllers, size, controller)) {
-            DIDError_Set(DIDERR_INVALID_ARGS, "Controller must be in the controller array.");
-            return NULL;
-        }
-    }
-
-    controller_doc = DID_Resolve(controller, &status, false);
-    if (!controller_doc) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "No controller's document in chain.");
-        return NULL;
-    }
-
-    if (Is_CustomizedDID(controller_doc)) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The controller must be normal DID.");
-        DIDDocument_Destroy(controller_doc);
-        return NULL;
-    }
-
-    key = DIDDocument_GetDefaultPublicKey(controller_doc);
-    if (!key) {
-        DIDDocument_Destroy(controller_doc);
-        return NULL;
-    }
-
-    iscontain = DIDStore_ContainsPrivateKey(store, controller, key);
-    DIDDocument_Destroy(controller_doc);
-    if (!iscontain)
-        return NULL;
-
-    if (Init_DID(&did, customizeddid) == -1)
-        return NULL;
-
-    //check the DID
-    doc = DIDStore_LoadDID(store, &did);
-    if (doc) {
-        DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exist.");
-        DIDDocument_Destroy(doc);
-        return NULL;
-    }
-
-    doc = DID_Resolve(&did, &status, true);
-    if (doc) {
-        DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exist.");
-        DIDDocument_Destroy(doc);
-        return NULL;
-    }
-
-    doc = create_customized_document(store, storepass, &did, controllers, size,
-            controller, multisig);
-    if (!doc)
-        return NULL;
-
-    if (DIDStore_StoreDID(store, doc) == -1) {
-        DIDDocument_Destroy(doc);
-        return NULL;
-    }
-
-    DIDDocument_SetStore(doc, store);
-    return doc;
-}
-
-//free DID after use it.
-DID *DIDStore_GetDIDByIndex(DIDStore *store, int index)
-{
-    HDKey _derivedkey, *derivedkey;
-    DID *did;
-
-    if (!store || index < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    derivedkey = get_childkey(store, NULL, index, &_derivedkey);
-    if (!derivedkey)
-        return NULL;
-
-    did = DID_New(HDKey_GetAddress(derivedkey));
-    HDKey_Wipe(derivedkey);
-    return did;
-}
-
 DIDDocument *DIDStore_NewDIDByIndex(DIDStore *store, const char *storepass,
-        int index, const char *alias)
+        const char *id, int index, const char *alias)
 {
     char publickeybase58[MAX_PUBLICKEY_BASE58];
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
     HDKey _derivedkey, *derivedkey;
     DIDDocument *document;
-    DID did;
+    DID did, *_did;
+    int status, rc;
 
-    if (!store || !storepass || !*storepass || index < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    assert(store);
+    assert(storepass && *storepass);
+    assert(id);
+    assert(index >= 0);
 
-    derivedkey = get_childkey(store, storepass, index, &_derivedkey);
+    derivedkey = get_derive(store, storepass, id, index, &_derivedkey);
     if (!derivedkey)
         return NULL;
 
-    if (Init_DID(&did, HDKey_GetAddress(derivedkey)) == -1) {
-        HDKey_Wipe(derivedkey);
-        return NULL;
-    }
+    Init_DID(&did, HDKey_GetAddress(derivedkey));
 
     //check did is exist or not
     document = DIDStore_LoadDID(store, &did);
     if (document) {
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exists.");
+        HDKey_Wipe(derivedkey);
+        DIDDocument_Destroy(document);
+        return NULL;
+    }
+
+    document = DID_Resolve(&did, &status, true);
+    if (document) {
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exists.");
         HDKey_Wipe(derivedkey);
         DIDDocument_Destroy(document);
         return NULL;
@@ -2372,6 +2740,7 @@ DIDDocument *DIDStore_NewDIDByIndex(DIDStore *store, const char *storepass,
         HDKey_Wipe(derivedkey);
         return NULL;
     }
+
     if (store_default_privatekey(store, storepass, HDKey_GetAddress(derivedkey),
             extendedkey, sizeof(extendedkey)) == -1) {
         HDKey_Wipe(derivedkey);
@@ -2386,6 +2755,11 @@ DIDDocument *DIDStore_NewDIDByIndex(DIDStore *store, const char *storepass,
         DIDStore_DeleteDID(store, &did);
         return NULL;
     }
+
+    DIDMetadata_SetRootIdentity(&document->metadata, id);
+    DIDMetadata_SetAlias(&document->metadata, alias);
+    DIDMetadata_SetDeactivated(&document->metadata, false);
+    memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetadata));
 
     if (DIDStore_StoreDID(store, document) == -1) {
         DIDStore_DeleteDID(store, &did);
@@ -2402,6 +2776,7 @@ ssize_t DIDStore_LoadPrivateKey(DIDStore *store, const char *storepass,
 {
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
     HDKey _identity, *identity;
+    ssize_t len;
 
     assert(store);
     assert(did);
@@ -2409,8 +2784,15 @@ ssize_t DIDStore_LoadPrivateKey(DIDStore *store, const char *storepass,
     assert(privatekey);
     assert(size >= PRIVATEKEY_BYTES);
 
-    if (DIDStore_LoadPrivateKey_Internal(store, storepass, did, key, extendedkey, sizeof(extendedkey)) < 0)
+    len = DIDStore_LoadPrivateKey_Internal(store, storepass, did, key, extendedkey, sizeof(extendedkey));
+    if (len < 0)
         return -1;
+
+    //To remove later! only for test case.
+    if (len == PRIVATEKEY_BYTES) {
+        memcpy(privatekey, extendedkey, PRIVATEKEY_BYTES);
+        return len;
+    }
 
     identity = HDKey_FromExtendedKey(extendedkey, sizeof(extendedkey), &_identity);
     memset(extendedkey, 0, sizeof(extendedkey));
@@ -2421,15 +2803,12 @@ ssize_t DIDStore_LoadPrivateKey(DIDStore *store, const char *storepass,
     return PRIVATEKEY_BYTES;
 }
 
-int DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass, DID *did,
+ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, uint8_t *extendedkey, size_t size)
 {
-    ssize_t loadsize, len;
+    ssize_t len;
     const char *privatekey_str;
-    char path[PATH_MAX];
-    HDKey _identity, *identity;
-    HDKey _derivedkey, *derivedkey;
-    uint8_t loadextendedkey[EXTENDEDKEY_BYTES];
+    char path[PATH_MAX], filename[128];
     bool bsuccessed = false;
     ssize_t rc = -1;
 
@@ -2440,7 +2819,8 @@ int DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass, DID
     assert(extendedkey);
     assert(size >= EXTENDEDKEY_BYTES);
 
-    if (get_file(path, 0, 5, store->root, DID_DIR, did->idstring, PRIVATEKEYS_DIR, key->fragment) == -1) {
+    sprintf(filename, "%s%s", "#", key->fragment);
+    if (get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring, PRIVATEKEYS_DIR, filename) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "No private key file.");
         return -1;
     }
@@ -2451,58 +2831,12 @@ int DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass, DID
         return -1;
     }
 
-    loadsize = decrypt_from_base64(loadextendedkey, storepass, privatekey_str);
+    len = didstore_decrypt_from_base64(store, storepass, extendedkey, privatekey_str);
     free((void*)privatekey_str);
-    if (loadsize == -1) {
+    if (len == -1)
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt private key failed.");
-        return -1;
-    }
 
-    if (loadsize == PRIVATEKEY_BYTES) {
-        identity = load_privateIdentity(store, storepass, &_identity);
-        if (identity) {
-            int i;
-            for (i = 0; i < 100; i++) {
-                memset(&_derivedkey, 0, sizeof(HDKey));
-                memset(extendedkey, 0, size);
-                derivedkey = HDKey_GetDerivedKey(identity, &_derivedkey, 5, 44 | HARDENED,
-                        0 | HARDENED, 0 | HARDENED, 0, i);
-                if (!derivedkey)
-                    continue;
-
-                if (memcmp(loadextendedkey, HDKey_GetPrivateKey(derivedkey), PRIVATEKEY_BYTES) == 0) {
-                    len = HDKey_SerializePrv(derivedkey, extendedkey, size);
-                    if (len < 0) {
-                        DIDError_Set(DIDERR_CRYPTO_ERROR, "Serialize derived key failed.");
-                        goto errorExit;
-                    }
-                    bsuccessed = true;
-                    break;
-                }
-            }
-        }
-
-        if (!bsuccessed) {
-            rc = HDKey_PaddingToExtendedPrivateKey(loadextendedkey, PRIVATEKEY_BYTES, extendedkey, size);
-            if (rc < 0)
-                goto errorExit;
-        }
-
-        if (DIDStore_StorePrivateKey(store, storepass, did, key, extendedkey, size) < 0) {
-            memset(extendedkey, 0, size);
-            goto errorExit;
-        }
-        rc = 0;
-    } else if (loadsize == EXTENDEDKEY_BYTES) {
-        memcpy(extendedkey, loadextendedkey, loadsize);
-        rc = 0;
-    } else {
-        goto errorExit;
-    }
-
-errorExit:
-    memset(loadextendedkey, 0, sizeof(loadextendedkey));
-    return rc;
+    return len;
 }
 
 int DIDStore_Sign(DIDStore *store, const char *storepass, DID *did,
@@ -2531,26 +2865,34 @@ int DIDStore_Sign(DIDStore *store, const char *storepass, DID *did,
 static bool need_reencrypt(const char *path)
 {
     char file[PATH_MAX];
-    char *token;
-    int i = 0;
+    char *token, *pos;
+    bool bprivates = false;
+    int i = -1;
 
     assert(path && *path);
 
-    strcpy(file, path);
+    pos = strstr(path, DATA_DIR);
+    if (!pos)
+        return false;
 
-    if (!strcmp(file + strlen(file) - strlen(KEY_PATH), KEY_PATH) ||
-            !strcmp(file + strlen(file) - strlen(MNEMONIC_PATH), MNEMONIC_PATH))
-        return true;
+    strcpy(file, pos);
 
-    //handle did privatekeys
     token = strtok((char*)file, PATH_SEP);
     while(token) {
-        if (i >= 1 || !strcmp(token, DID_DIR))
+        if (i <= 2)
             i++;
-        if (i == 3 && !strcmp(token, PRIVATEKEYS_DIR))
+        if (i == 3) {
+            if (!strcmp(token, PRIVATE_DIR) || !strcmp(token, MNEMONIC_FILE))
+                return true;
             i++;
-        if (i == 4 && strlen(token) > 0)
+        }
+        if (i == 4 && !strcmp(token, PRIVATEKEYS_DIR)) {
+            bprivates = true;
+            i++;
+        }
+        if (i == 5 && bprivates)
             return true;
+
         token = strtok(NULL, PATH_SEP);
     }
 
@@ -2654,67 +2996,42 @@ int dir_copy(const char *dst, const char *src, const char *newpw, const char *ol
     return rc;
 }
 
+
 static int change_password(DIDStore *store, const char *newpw, const char *oldpw)
 {
-    char private_dir[PATH_MAX] = {0}, private_journal[PATH_MAX]= {0};
-    char did_dir[PATH_MAX]= {0}, did_journal[PATH_MAX]= {0};
+    char data_dir[PATH_MAX] = {0}, data_journal_dir[PATH_MAX] = {0};
     char path[PATH_MAX] = {0};
 
     assert(store);
     assert(newpw && *newpw);
     assert(oldpw && *oldpw);
 
-    if (get_dir(private_dir, 0, 2, store->root, PRIVATE_DIR) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Private identity doesn't exist.");
+    if (get_dir(data_dir, 0, 2, store->root, DATA_DIR) == -1) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "Data directory doesn't exist.");
         return -1;
     }
-    if (test_path(private_dir) != S_IFDIR) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Private identity is not a directory.");
-        return -1;
-    }
-
-    if (get_dir(private_journal, 1, 2, store->root, PRIVATE_JOURNAL) == -1) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create private identiaty journal failed.");
-        return -1;
-    }
-    if (test_path(private_journal) != S_IFDIR) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Private identity journal is not a directory.");
+    if (test_path(data_dir) != S_IFDIR) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Data directory is not a directory.");
         return -1;
     }
 
-    if (get_dir(did_dir, 0, 2, store->root, DID_DIR) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "DID directory doesn't exist.");
+    if (get_dir(data_journal_dir, 1, 2, store->root, DATA_JOURNAL) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create data journal directory failed.");
         return -1;
     }
-    if (test_path(did_dir) != S_IFDIR) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "DID directory is not a directory.");
-        return -1;
-    }
-
-    if (get_dir(did_journal, 1, 2, store->root, DID_JOURNAL) == -1) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create did journal failed.");
-        return -1;
-    }
-    if (test_path(did_journal) != S_IFDIR) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "DID journal is not a directory.");
+    if (test_path(data_journal_dir) != S_IFDIR) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Data journal is not a directory.");
         return -1;
     }
 
-    if (dir_copy(private_journal, private_dir, newpw, oldpw) == -1) {
-        delete_file(private_journal);
-        return -1;
-    }
-
-    if (dir_copy(did_journal, did_dir, newpw, oldpw) == -1) {
-        delete_file(private_journal);
-        delete_file(did_journal);
+    if (dir_copy(data_journal_dir, data_dir, newpw, oldpw) == -1) {
+        delete_file(data_journal_dir);
         return -1;
     }
 
     //create tag file to indicate copying dir successfully.
     if (get_file(path, 1, 2, store->root, POST_PASSWORD) == -1) {
-        delete_file(private_journal);
-        delete_file(did_journal);
+        delete_file(data_journal_dir);
         return -1;
     }
 
@@ -2723,15 +3040,41 @@ static int change_password(DIDStore *store, const char *newpw, const char *oldpw
 
 int DIDStore_ChangePassword(DIDStore *store, const char *newpw, const char *oldpw)
 {
+    StoreMetadata metadata;
+    char fingerprint[64] = {0};
+
     if (!store || !oldpw || !*oldpw || !newpw || !*newpw) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    if (!is_default_password(store, oldpw)) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Old password isn't current DIDStore's password.");
         return -1;
     }
 
     if (change_password(store, newpw, oldpw) == -1)
         return -1;
 
-    return postchange_password(store);
+    if (calc_fingerprint(fingerprint, sizeof(fingerprint), newpw) < 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get new fingerprint failed.");
+        return -1;
+    }
+
+    if (postchange_password(store) < 0)
+        return -1;
+
+    if (load_storemeta(store, &metadata) < 0)
+        return -1;
+
+    if (StoreMetadata_SetFingerPrint(&metadata, fingerprint) < 0 ||
+            store_storemeta(store, &metadata) < 0) {
+        StoreMetadata_Free(&metadata);
+        return -1;
+    }
+
+    StoreMetadata_Free(&metadata);
+    return 0;
 }
 
 //--------export and import store
@@ -2762,22 +3105,25 @@ static int write_credentials(DIDURL *id, void *context)
             DIDERR_OUT_OF_MEMORY, "Write 'vc' failed.");
     CHECK_TO_MSG_ERROREXIT(Credential_ToJson_Internal(ch->gen, cred, creddid, true, false),
             DIDERR_OUT_OF_MEMORY, "Write credential failed.");
-    CHECK_TO_MSG_ERROREXIT(JsonGenerator_WriteFieldName(ch->gen, "meta"),
-            DIDERR_OUT_OF_MEMORY, "Write 'meta' failed.");
-    CHECK_TO_MSG_ERROREXIT(CredentialMetaData_ToJson_Internal(&cred->metadata, ch->gen),
-            DIDERR_OUT_OF_MEMORY, "Write credential meta failed.");
+    if (cred->metadata.base.data) {
+        CHECK_TO_MSG_ERROREXIT(JsonGenerator_WriteFieldName(ch->gen, "metadata"),
+                DIDERR_OUT_OF_MEMORY, "Write 'metadata' failed.");
+        CHECK_TO_MSG_ERROREXIT(CredentialMetadata_ToJson_Internal(&cred->metadata, ch->gen),
+                DIDERR_OUT_OF_MEMORY, "Write credential meta failed.");
+    }
     CHECK_TO_MSG_ERROREXIT(JsonGenerator_WriteEndObject(ch->gen),
             DIDERR_OUT_OF_MEMORY, "End 'credential' object failed.");
     vc_string = Credential_ToJson(cred, true);
     if (!vc_string)
         goto errorExit;
 
-    meta_string = CredentialMetaData_ToJson(&cred->metadata);
-    if (!meta_string)
+    if (sha256_digest_update(ch->digest, 1, vc_string, strlen(vc_string)) < 0)
         goto errorExit;
 
-    rc = sha256_digest_update(ch->digest, 2, vc_string, strlen(vc_string),
-            meta_string, strlen(meta_string));
+    rc = 0;
+    meta_string = CredentialMetadata_ToJson(&cred->metadata);
+    if (meta_string)
+        rc = sha256_digest_update(ch->digest, 1, meta_string, strlen(meta_string));
 
 errorExit:
     if (cred)
@@ -2859,15 +3205,15 @@ static int export_document(JsonGenerator *gen, DIDDocument *doc, Sha256_Digest *
     CHECK(JsonGenerator_WriteStartObject(gen));
     CHECK(JsonGenerator_WriteFieldName(gen, "content"));
     CHECK(DIDDocument_ToJson_Internal(gen, doc, true, false));
-    CHECK(JsonGenerator_WriteFieldName(gen, "meta"));
-    CHECK(DIDMetaData_ToJson_Internal(&doc->metadata, gen));
+    CHECK(JsonGenerator_WriteFieldName(gen, "metadata"));
+    CHECK(DIDMetadata_ToJson_Internal(&doc->metadata, gen));
     CHECK(JsonGenerator_WriteEndObject(gen));
 
     docstring = DIDDocument_ToJson(doc, true);
     if (!docstring)
         return -1;
 
-    meta = DIDMetaData_ToJson(&doc->metadata);
+    meta = DIDMetadata_ToJson(&doc->metadata);
     if (!meta) {
         free((void*)docstring);
         return -1;
@@ -2920,16 +3266,12 @@ static int export_privatekey(JsonGenerator *gen, DIDStore *store, const char *st
 
     did = &doc->did;
     if (DIDSotre_ContainsPrivateKeys(store, did)) {
-        size = DIDDocument_GetPublicKeyCount(doc);
-        if (size == -1)
+        size = doc->publickeys.size;
+        if (size == 0)
             return -1;
 
-        PublicKey **pks = (PublicKey**)alloca(size * sizeof(PublicKey*));
+        PublicKey **pks = doc->publickeys.pks;
         if (!pks)
-            return -1;
-
-        rc = DIDDocument_GetPublicKeys(doc, pks, size);
-        if (rc < 0)
             return -1;
 
         CHECK_TO_MSG(JsonGenerator_WriteFieldName(gen, "privatekey"),
@@ -2955,7 +3297,7 @@ static int export_privatekey(JsonGenerator *gen, DIDStore *store, const char *st
                 idstring = DIDURL_ToString(keyid, _idstring, sizeof(_idstring), false);
                 CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "id", idstring),
                         DIDERR_OUT_OF_MEMORY, "Write 'id' failed.");
-                CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "key", (char*)base64),
+                CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "privatekey", (char*)base64),
                         DIDERR_OUT_OF_MEMORY, "Write 'key' failed.");
                 CHECK_TO_MSG(JsonGenerator_WriteEndObject(gen),
                         DIDERR_OUT_OF_MEMORY, "End 'privatekey' failed.");
@@ -3031,10 +3373,10 @@ static int exportdid_internal(JsonGenerator *gen, DIDStore *store, const char * 
     if (export_init(gen, password, &digest) < 0 ||
             export_type(gen, &digest) < 0 ||
             export_id(gen, did, &digest) < 0 ||
-            export_created(gen, &digest) < 0 ||
             export_document(gen, doc, &digest) < 0 ||
             export_creds(gen, store, did, &digest) < 0 ||
             export_privatekey(gen, store, storepass, password, doc, &digest) < 0 ||
+            export_created(gen, &digest) < 0 ||
             export_final(gen, &digest) < 0)
         goto errorExit;
 
@@ -3047,25 +3389,6 @@ errorExit:
         DIDDocument_Destroy(doc);
 
     return rc;
-}
-
-static char *last_strstr(const char *haystack, const char *needle)
-{
-    assert(haystack && needle);
-
-    if (*needle == '\0')
-        return (char *)haystack;
-
-    char *result = NULL;
-    for (;;) {
-        char *p = strstr(haystack, needle);
-        if (p == NULL)
-            break;
-        result = p;
-        haystack = p + strlen(needle);
-    }
-
-    return result;
 }
 
 static int check_file(const char *file)
@@ -3258,21 +3581,21 @@ static DIDDocument *import_document(json_t *json, DID *did, Sha256_Digest *diges
     if (!docstring)
         goto errorExit;
 
-    field = json_object_get(item, "meta");
+    field = json_object_get(item, "metadata");
     if (!field) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'meta'.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'metadata'.");
         goto errorExit;
     }
     if (!json_is_object(field)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'meta'.");
+        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'metadata'.");
         goto errorExit;
     }
 
-    if (DIDMetaData_FromJson_Internal(&doc->metadata, field) < 0)
+    if (DIDMetadata_FromJson_Internal(&doc->metadata, field) < 0)
         goto errorExit;
 
-    memcpy(&doc->did.metadata, &doc->metadata, sizeof(DIDMetaData));
-    metastring = DIDMetaData_ToJson(&doc->metadata);
+    memcpy(&doc->did.metadata, &doc->metadata, sizeof(DIDMetadata));
+    metastring = DIDMetadata_ToJson(&doc->metadata);
     if (!metastring)
         goto errorExit;
 
@@ -3320,6 +3643,7 @@ static ssize_t import_creds(json_t *json, DID *did, Credential **creds, size_t s
         Sha256_Digest *digest)
 {
     json_t *item, *field, *child_field;
+    const char *metastring, *credstring;
     int count;
     int i, rc;
 
@@ -3358,42 +3682,41 @@ static ssize_t import_creds(json_t *json, DID *did, Credential **creds, size_t s
         if (!cred)
             goto errorExit;
 
-        child_field = json_object_get(field, "meta");
-        if (!child_field) {
-            DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'meta'.");
-            goto errorExit;
-        }
-        if (!json_is_object(child_field)) {
-            DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'meta'.");
-            goto errorExit;
-        }
-        if (CredentialMetaData_FromJson_Internal(&cred->metadata, child_field) < 0)
-            goto errorExit;
-
-        const char *credstring = Credential_ToJson(cred, true);
+        creds[i] = cred;
+        credstring = Credential_ToJson(cred, true);
         if (!credstring)
             goto errorExit;
 
-        const char *metastring = CredentialMetaData_ToJson(&cred->metadata);
-        if (!metastring) {
-            free((void*)credstring);
-            goto errorExit;
-        }
-
-        rc = sha256_digest_update(digest, 2, credstring, strlen(credstring), metastring, strlen(metastring));
+        rc = sha256_digest_update(digest, 1, credstring, strlen(credstring));
         free((void*)credstring);
-        free((void*)metastring);
         if (rc < 0)
             goto errorExit;
 
-        creds[i] = cred;
+        child_field = json_object_get(field, "metadata");
+        if (child_field) {
+            if (!json_is_object(child_field)) {
+                DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'metadata'.");
+                goto errorExit;
+            }
+            if (CredentialMetadata_FromJson_Internal(&cred->metadata, child_field) < 0)
+                goto errorExit;
+
+            metastring = CredentialMetadata_ToJson(&cred->metadata);
+            if (!metastring)
+                goto errorExit;
+
+            rc = sha256_digest_update(digest, 1, metastring, strlen(metastring));
+            free((void*)metastring);
+            if (rc < 0)
+                goto errorExit;
+        }
     }
 
     return i;
 
 errorExit:
     if (i > 0) {
-        for (int j = 0; j < i; j++)
+        for (int j = 0; j < i + 1; j++)
             Credential_Destroy(creds[j]);
     }
 
@@ -3407,10 +3730,9 @@ static ssize_t import_privatekey_count(json_t *json)
     assert(json);
 
     item = json_object_get(json, "privatekey");
-    if (!item) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'privatekey'.");
-        return -1;
-    }
+    if (!item)
+        return 0;
+
     if (!json_is_array(item)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'privatekey'.");
         return -1;
@@ -3482,7 +3804,7 @@ static ssize_t import_privatekey(json_t *json, const char *storepass, const char
         DIDURL_Copy(&prvs[i].keyid, id);
         DIDURL_Destroy(id);
 
-        key_field = json_object_get(field, "key");
+        key_field = json_object_get(field, "privatekey");
         if (!key_field) {
             DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'key' in 'privatekey'.");
             return -1;
@@ -3610,10 +3932,6 @@ int DIDStore_ImportDID(DIDStore *store, const char *storepass,
     if (!did)
         goto errorExit;
 
-    //created
-    if (import_created(root, &digest) < 0)
-        goto errorExit;
-
     //document
     doc = import_document(root, did, &digest);
     if (!doc)
@@ -3641,6 +3959,10 @@ int DIDStore_ImportDID(DIDStore *store, const char *storepass,
         if (prv_size < 0)
             goto errorExit;
     }
+
+    //created
+    if (import_created(root, &digest) < 0)
+        goto errorExit;
 
     //fingerprint
     if (import_fingerprint(root, &digest) < 0)
@@ -3679,8 +4001,40 @@ errorExit:
     return rc;
 }
 
+static int export_mnemonic(JsonGenerator *gen, DIDStore *store, const char *storepass,
+        const char *id, const char *password, Sha256_Digest *digest)
+{
+    char mnemonic[ELA_MAX_MNEMONIC_LEN], encryptedmnemonic[512];
+    ssize_t size;
+
+    assert(gen);
+    assert(store);
+    assert(storepass && *storepass);
+    assert(id);
+    assert(password && *password);
+    assert(digest);
+
+    size = load_mnemonic(store, storepass, id, mnemonic, sizeof(mnemonic));
+    if (size < 0)
+        return -1;
+
+    if (size > 0) {
+        size = encrypt_to_base64(encryptedmnemonic, password, (uint8_t*)mnemonic, size - 1);
+        memset(mnemonic, 0, sizeof(mnemonic));
+        if (size < 0)
+            return -1;
+
+        CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "mnemonic", encryptedmnemonic),
+                DIDERR_OUT_OF_MEMORY, "Write 'mnemonic' failed.");
+        CHECK_TO_MSG(sha256_digest_update(digest, 1, encryptedmnemonic, strlen(encryptedmnemonic)),
+               DIDERR_CRYPTO_ERROR, "Sha256 'mnemonic' failed.");
+    }
+
+    return 0;
+}
+
 static int export_prvkey(JsonGenerator *gen, DIDStore *store, const char *storepass,
-        const char *password, Sha256_Digest *digest)
+        const char *id, const char *password, Sha256_Digest *digest)
 {
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
     char encryptedKey[512];
@@ -3689,10 +4043,11 @@ static int export_prvkey(JsonGenerator *gen, DIDStore *store, const char *storep
     assert(gen);
     assert(store);
     assert(storepass && *storepass);
+    assert(id);
     assert(password && *password);
     assert(digest);
 
-    size = load_extendedprvkey(store, extendedkey, sizeof(extendedkey), storepass);
+    size = load_extendedprvkey(store, storepass, id, extendedkey, sizeof(extendedkey));
     if (size < 0)
         return -1;
 
@@ -3703,7 +4058,7 @@ static int export_prvkey(JsonGenerator *gen, DIDStore *store, const char *storep
         return -1;
     }
 
-    CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "key", encryptedKey),
+    CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "privatekey", encryptedKey),
         DIDERR_OUT_OF_MEMORY, "Write 'key' failed.");
     CHECK_TO_MSG(sha256_digest_update(digest, 1, encryptedKey, strlen(encryptedKey)),
         DIDERR_CRYPTO_ERROR, "Sha256 'key' failed.");
@@ -3711,52 +4066,24 @@ static int export_prvkey(JsonGenerator *gen, DIDStore *store, const char *storep
     return 0;
 }
 
-static int export_mnemonic(JsonGenerator *gen, DIDStore *store, const char *storepass,
-        const char *password, Sha256_Digest *digest)
-{
-    char mnemonic[ELA_MAX_MNEMONIC_LEN], encryptedmnemonic[512];
-    ssize_t size;
-
-    assert(gen);
-    assert(store);
-    assert(storepass && *storepass);
-    assert(password && *password);
-    assert(digest);
-
-    size = load_mnemonic(store, storepass, mnemonic, sizeof(mnemonic));
-    if (size < 0)
-        return -1;
-
-    size = encrypt_to_base64(encryptedmnemonic, password, (uint8_t*)mnemonic, size - 1);
-    memset(mnemonic, 0, sizeof(mnemonic));
-    if (size < 0)
-        return -1;
-
-    CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "mnemonic", encryptedmnemonic),
-            DIDERR_OUT_OF_MEMORY, "Write 'mnemonic' failed.");
-    CHECK_TO_MSG(sha256_digest_update(digest, 1, encryptedmnemonic, strlen(encryptedmnemonic)),
-           DIDERR_CRYPTO_ERROR, "Sha256 'mnemonic' failed.");
-
-    return 0;
-}
-
-static int export_pubkey(JsonGenerator *gen, DIDStore *store, Sha256_Digest *digest)
+static int export_pubkey(JsonGenerator *gen, DIDStore *store, const char *id, Sha256_Digest *digest)
 {
     const char *pubKey = NULL;
     int rc = -1;
 
     assert(gen);
     assert(store);
+    assert(id);
     assert(digest);
 
-    pubKey = load_pubkey_file(store);
+    pubKey = load_pubkey_file(store, id);
     if (!pubKey)
-        return 0;
+        return -1;
 
-    CHECK_TO_MSG_ERROREXIT(JsonGenerator_WriteStringField(gen, "key.pub", pubKey),
-            DIDERR_OUT_OF_MEMORY, "Write 'key.pub' failed.");
+    CHECK_TO_MSG_ERROREXIT(JsonGenerator_WriteStringField(gen, "publickey", pubKey),
+            DIDERR_OUT_OF_MEMORY, "Write 'publickey' failed.");
     CHECK_TO_MSG_ERROREXIT(sha256_digest_update(digest, 1, pubKey, strlen(pubKey)),
-            DIDERR_CRYPTO_ERROR, "Sha256 'key.pub' failed.");
+            DIDERR_CRYPTO_ERROR, "Sha256 'publickey' failed.");
 
     rc = 0;
 
@@ -3767,30 +4094,62 @@ errorExit:
     return rc;
 }
 
-static int export_index(JsonGenerator *gen, DIDStore *store, Sha256_Digest *digest)
+static int export_index(JsonGenerator *gen, DIDStore *store, const char *id, Sha256_Digest *digest)
 {
-    char string[32];
-    int len, index;
+    const char *index;
+    int rc = -1;
 
     assert(gen);
     assert(store);
+    assert(id);
     assert(digest);
 
-    index = load_index(store);
-    len = snprintf(string, sizeof(string), "%d", index);
-    if (len < 0 || len > sizeof(string))
+    index = load_index_string(store, id);
+    if (!index) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Load index faied.");
         return -1;
+    }
 
-    CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "index", string),
+    CHECK_TO_MSG_ERROREXIT(JsonGenerator_WriteStringField(gen, "index", index),
             DIDERR_OUT_OF_MEMORY, "Write 'index' failed.");
-    CHECK_TO_MSG(sha256_digest_update(digest, 1, string, strlen(string)),
+    CHECK_TO_MSG_ERROREXIT(sha256_digest_update(digest, 1, index, strlen(index)),
             DIDERR_CRYPTO_ERROR, "Sha256 'index' failed.");
+    rc = 0;
+
+errorExit:
+    free((void*)index);
+    return rc;
+}
+
+static int export_defaultId(JsonGenerator *gen, DIDStore *store, const char *id, Sha256_Digest *digest)
+{
+    const char *defaultid;
+    bool isDefault = false;
+
+    assert(gen);
+    assert(digest);
+
+    defaultid = DIDStore_GetDefaultRootIdentity(store);
+    if (defaultid) {
+        if (!strcmp(id, defaultid))
+           isDefault = true;
+        free((void*)defaultid);
+    }
+
+    defaultid = isDefault ? "true" : "false";
+
+    CHECK_TO_MSG(JsonGenerator_WriteFieldName(gen, "default"),
+            DIDERR_OUT_OF_MEMORY, "Write 'default' failed.");
+    CHECK_TO_MSG(JsonGenerator_WriteBoolean(gen, isDefault),
+            DIDERR_OUT_OF_MEMORY, "Write 'default' failed.");
+    CHECK_TO_MSG(sha256_digest_update(digest, 1, defaultid, strlen(defaultid)),
+            DIDERR_CRYPTO_ERROR, "Sha256 'default' failed.");
 
     return 0;
 }
 
-int DIDStore_ExportPrivateIdentity(DIDStore *store, const char *storepass,
-        const char *file, const char *password)
+int DIDStore_ExportRootIdentity(DIDStore *store, const char *storepass,
+        const char *id, const char *file, const char *password)
 {
     Sha256_Digest digest;
 
@@ -3798,7 +4157,7 @@ int DIDStore_ExportPrivateIdentity(DIDStore *store, const char *storepass,
     int rc = -1;
     JsonGenerator g, *gen;
 
-    if (!store || !storepass || !*storepass || !file || !*file ||
+    if (!store || !storepass || !*storepass || !id || !file || !*file ||
             !password || !*password) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -3817,10 +4176,12 @@ int DIDStore_ExportPrivateIdentity(DIDStore *store, const char *storepass,
         goto errorExit;
 
     //private extended key
-    if (export_mnemonic(gen, store, storepass, password, &digest) < 0 ||
-            export_prvkey(gen, store, storepass, password, &digest) < 0 ||
-            export_pubkey(gen, store, &digest) < 0 ||
-            export_index(gen, store, &digest) < 0)
+    if (export_mnemonic(gen, store, storepass, id, password, &digest) < 0 ||
+            export_prvkey(gen, store, storepass, id, password, &digest) < 0 ||
+            export_pubkey(gen, store, id, &digest) < 0 ||
+            export_index(gen, store, id, &digest) < 0 ||
+            export_defaultId(gen, store, id, &digest) < 0 ||
+            export_created(gen, &digest) < 0)
         return -1;
 
     if (export_final(gen, &digest) < 0)
@@ -3843,17 +4204,200 @@ errorExit:
     return rc;
 }
 
-int DIDStore_ImportPrivateIdentity(DIDStore *store, const char *storepass,
+static int import_rootidentity_id(json_t *json, DIDStore *store, char *id, size_t size)
+{
+    json_t *item;
+    const char *string;
+
+    assert(json);
+    assert(store);
+    assert(id);
+    assert(size > 0);
+
+    item = json_object_get(json, "publickey");
+    if (!item) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Missing 'publickey'.");
+        return -1;
+    }
+    if (!json_is_string(item)) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Invalid 'publickey'.");
+        return -1;
+    }
+
+    string = json_string_value(item);
+    if (!string) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "No 'publickey' value.");
+        return -1;
+    }
+
+    if (to_hexstringfrombase58(id, size, string) < 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get root identity's id failed.");
+        return -1;
+    }
+
+    CHECK(store_pubkey_file(store, id, json_string_value(item)));
+    return 0;
+}
+
+static int import_pubkey(DIDStore *store, const char *id, Sha256_Digest *digest)
+{
+    const char *string;
+    int rc = -1;
+
+    assert(store);
+    assert(id);
+    assert(digest);
+
+    string = load_pubkey_file(store, id);
+    if (!string)
+        return -1;
+
+    CHECK_TO_MSG_ERROREXIT(sha256_digest_update(digest, 1, string, strlen(string)),
+            DIDERR_CRYPTO_ERROR, "Sha256 'publickey' failed.");
+    rc = 0;
+
+errorExit:
+    free((void*)string);
+    return rc;
+}
+
+static int import_prvkey(json_t *json, DIDStore *store, const char *storepass,
+        const char *id, Sha256_Digest *digest, const char *password)
+{
+    json_t *item;
+    uint8_t extendedkey[EXTENDEDKEY_BYTES];
+    ssize_t size;
+
+    assert(json);
+    assert(store);
+    assert(storepass && *storepass);
+    assert(id);
+    assert(digest);
+    assert(password);
+
+    item = json_object_get(json, "privatekey");
+    if (!item) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'privatekey'.");
+        return -1;
+    }
+    if (!json_is_string(item)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'privatekey'.");
+        return -1;
+    }
+    memset(extendedkey, 0, sizeof(extendedkey));
+    size = decrypt_from_base64(extendedkey, password, json_string_value(item));
+    if (size < 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt 'privatekey' failed.");
+        return -1;
+    }
+
+    CHECK(store_extendedprvkey(store, storepass, id, extendedkey, size));
+    memset(extendedkey, 0, sizeof(extendedkey));
+    CHECK_TO_MSG(sha256_digest_update(digest, 1, json_string_value(item), strlen(json_string_value(item))),
+            DIDERR_CRYPTO_ERROR, "Sha256 'privatekey' failed.");
+    return 0;
+}
+
+static int import_mnemonic(json_t *json, DIDStore *store, const char *storepass,
+       const char *id, Sha256_Digest *digest, const char *password)
+{
+    json_t *item;
+    uint8_t mnemonic[ELA_MAX_MNEMONIC_LEN];
+    ssize_t size;
+
+    assert(json);
+    assert(store);
+    assert(storepass && *storepass);
+    assert(id);
+    assert(digest);
+    assert(password);
+
+    item = json_object_get(json, "mnemonic");
+    if (!item) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'mnemonic'.");
+        return -1;
+    }
+    if (!json_is_string(item)) {
+        DIDError_Set(DIDERR_UNKNOWN, "Invalid 'mnemonic'.");
+        return -1;
+    }
+
+    size = decrypt_from_base64(mnemonic, password, json_string_value(item));
+    if (size < 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt mnemonic failed.");
+        return -1;
+    }
+
+    CHECK(store_mnemonic(store, storepass, id, mnemonic, size));
+    CHECK_TO_MSG(sha256_digest_update(digest, 1, json_string_value(item), strlen(json_string_value(item))),
+            DIDERR_CRYPTO_ERROR, "Sha256 'mnemonic' failed.");
+    return 0;
+}
+
+static int import_index(json_t *json, DIDStore *store, const char *id, Sha256_Digest *digest)
+{
+    json_t *item;
+
+    assert(json);
+    assert(store);
+    assert(id);
+    assert(digest);
+
+    item = json_object_get(json, "index");
+    if (!item) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'index'.");
+        return -1;
+    }
+    if (!json_is_string(item)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'index'.");
+        return -1;
+    }
+    CHECK(store_index_string(store, id, json_string_value(item)));
+    CHECK_TO_MSG(sha256_digest_update(digest, 1, json_string_value(item), strlen(json_string_value(item))),
+            DIDERR_CRYPTO_ERROR, "Sha256 'index' failed.");
+    return 0;
+}
+
+static int import_defaultId(json_t *json, DIDStore *store, const char *id,
+        bool *isDefault, Sha256_Digest *digest)
+{
+    json_t *item;
+    DIDMetadata metadata;
+    const char *data;
+
+    assert(json);
+    assert(store);
+    assert(id);
+    assert(digest);
+
+    item = json_object_get(json, "default");
+    if (!item) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'default'.");
+        return -1;
+    }
+    if (!json_is_boolean(item)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'default'.");
+        return -1;
+    }
+
+    *isDefault = json_is_true(item) ? true : false;
+    data = *isDefault ? "true" : "false";
+    CHECK_TO_MSG(sha256_digest_update(digest, 1, data, strlen(data)),
+            DIDERR_CRYPTO_ERROR, "Sha256 'default' failed.");
+    return 0;
+}
+
+int DIDStore_ImportRootIdentity(DIDStore *store, const char *storepass,
         const char *file, const char *password)
 {
-    json_t *root = NULL, *item;
+    json_t *root = NULL;
     json_error_t error;
     const char *string = NULL;
-    uint8_t mnemonic[ELA_MAX_MNEMONIC_LEN], extendedkey[EXTENDEDKEY_BYTES];
-    uint8_t final_digest[SHA256_BYTES];
-    ssize_t size;
-    char base64[512];
+    StoreMetadata metadata;
+    char fingerprint[64] = {0};
+    char id[MAX_ID_LEN] = {0}, path[PATH_MAX];
     Sha256_Digest digest;
+    bool isDefault, bdelete = true;
     int rc = -1;
 
     if (!store || !storepass || !*storepass || !file || !*file ||
@@ -3878,105 +4422,48 @@ int DIDStore_ImportPrivateIdentity(DIDStore *store, const char *storepass,
         return -1;
     }
 
+    memset(&metadata, 0, sizeof(metadata));
     if (import_init(password, &digest) < 0 || import_type(root, &digest) < 0)
-        return -1;
-
-    //mnemonic
-    item = json_object_get(root, "mnemonic");
-    if (!item) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'mnemonic'.");
-        return -1;
-    }
-    if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_UNKNOWN, "Invalid 'mnemonic'.");
-        return -1;
-    }
-
-    size = decrypt_from_base64(mnemonic, password, json_string_value(item));
-    if (size < 0) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt mnemonic failed.");
-        return -1;
-    }
-
-    CHECK_TO_ERROREXIT(store_mnemonic(store, storepass, mnemonic, size));
-    CHECK_TO_MSG_ERROREXIT(sha256_digest_update(&digest, 1, json_string_value(item), strlen(json_string_value(item))),
-            DIDERR_CRYPTO_ERROR, "Sha256 'mnemonic' failed.");
-
-    //prvkey
-    item = json_object_get(root, "key");
-    if (!item) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'key'.");
-        return -1;
-    }
-    if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'key'.");
-        return -1;
-    }
-    memset(extendedkey, 0, sizeof(extendedkey));
-    size = decrypt_from_base64(extendedkey, password, json_string_value(item));
-    if (size < 0) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt 'key' failed.");
-        return -1;
-    }
-
-    CHECK_TO_ERROREXIT(store_extendedprvkey(store, extendedkey, size, storepass));
-    memset(extendedkey, 0, sizeof(extendedkey));
-    CHECK_TO_MSG_ERROREXIT(sha256_digest_update(&digest, 1, json_string_value(item), strlen(json_string_value(item))),
-            DIDERR_CRYPTO_ERROR, "Sha256 'key' failed.");
-
-    //pubkey
-    item = json_object_get(root, "key.pub");
-    if (item) {
-        if (!json_is_string(item)) {
-            DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'key.pub'.");
-            return -1;
-        }
-
-        CHECK_TO_ERROREXIT(store_pubkey(store, json_string_value(item)));
-        CHECK_TO_MSG_ERROREXIT(sha256_digest_update(&digest, 1, json_string_value(item), strlen(json_string_value(item))),
-                DIDERR_CRYPTO_ERROR, "Sha256 'key.pub' failed.");
-    }
-
-    //index
-    item = json_object_get(root, "index");
-    if (!item) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'index'.");
-        return -1;
-    }
-    if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'index'.");
-        return -1;
-    }
-    CHECK_TO_ERROREXIT(store_index_string(store, json_string_value(item)));
-    CHECK_TO_MSG_ERROREXIT(sha256_digest_update(&digest, 1, json_string_value(item), strlen(json_string_value(item))),
-            DIDERR_CRYPTO_ERROR, "Sha256 'index' failed.");
-
-    //fingerprint
-    item = json_object_get(root, "fingerprint");
-    if (!item) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Missing 'fingerprint'.");
-        return -1;
-    }
-    if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'fingerprint'.");
-        return -1;
-    }
-
-    CHECK_TO_MSG_ERROREXIT(sha256_digest_final(&digest, final_digest),
-            DIDERR_CRYPTO_ERROR, "Sha256 final failed.");
-    CHECK_TO_MSG(base64_url_encode(base64, final_digest, sizeof(final_digest)),
-            DIDERR_CRYPTO_ERROR, "Final sha256 digest failed.");
-    if (strcmp(base64, json_string_value(item))) {
-        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid export data, the fingerprint mismatch.");
         goto errorExit;
-    }
 
+    if (import_rootidentity_id(root, store, id, sizeof(id)) < 0)
+        goto errorExit;
+
+    if (import_mnemonic(root, store, storepass, id, &digest, password) < 0 ||
+            import_prvkey(root, store, storepass, id, &digest, password) < 0 ||
+            import_pubkey(store, id, &digest) < 0 ||
+            import_index(root, store, id, &digest) < 0 ||
+            import_defaultId(root, store, id, &isDefault, &digest) < 0 ||
+            import_created(root, &digest) < 0)
+        goto errorExit;
+
+    if (import_fingerprint(root, &digest) < 0)
+        goto errorExit;
+
+    if (calc_fingerprint(fingerprint, sizeof(fingerprint), storepass) < 0)
+        goto errorExit;
+
+    if (load_storemeta(store, &metadata) < 0 || StoreMetadata_SetFingerPrint(&metadata, fingerprint) < 0)
+        goto errorExit;
+
+    if (isDefault && StoreMetadata_SetDefaultRootIdentity(&metadata, id) < 0)
+        goto errorExit;
+
+    if (store_storemeta(store, &metadata) < 0)
+        goto errorExit;
+
+    bdelete = false;
     rc = 0;
+
 errorExit:
     if (root)
        json_decref(root);
-
-   return rc;
+    if (*id && bdelete) {
+        get_dir(path, 0, 4, store->root, DATA_DIR, ROOTS_DIR, id);
+        delete_file(path);
+    }
+    StoreMetadata_Free(&metadata);
+    return rc;
 }
 
 static zip_t *create_zip(const char *file)
@@ -4044,39 +4531,54 @@ static int exportdid_to_zip(DIDStore *store, const char *storepass, zip_t *zip,
     return DIDStore_ListDIDs(store, 0, did_to_zip, (void*)&export);
 }
 
-static int exportprv_to_zip(DIDStore *store, const char *storepass, zip_t *zip,
+static int rootidentity_to_zip(RootIdentity *rootidentity, void *context)
+{
+    RootIdentity_Export *export = (RootIdentity_Export*)context;
+
+    char tmpfile[PATH_MAX], path[PATH_MAX];
+    zip_source_t *prv_source;
+
+    if (!rootidentity)
+        return 0;
+
+    sprintf(tmpfile, "%s%s%s.json", export->tmpdir, PATH_SEP, rootidentity->id);
+    delete_file(tmpfile);
+    if (DIDStore_ExportRootIdentity(export->store, export->storepass, rootidentity->id, tmpfile, export->password) < 0)
+        return -1;
+
+    prv_source = zip_source_file(export->zip, tmpfile, 0, 0);
+    if (!prv_source) {
+        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Get source file failed.");
+        return -1;
+    }
+
+    sprintf(path, "rootIdentity-%s", rootidentity->id);
+    if (zip_file_add(export->zip, path, prv_source, 0) < 0) {
+        zip_source_free(prv_source);
+        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Add source file failed.");
+        return -1;
+    }
+
+    return 0;
+}
+
+static int exportidentity_to_zip(DIDStore *store, const char *storepass, zip_t *zip,
         const char *password, const char *tmpdir)
 {
-    char tmpfile[PATH_MAX];
-    zip_source_t *prv_source = NULL;
+    RootIdentity_Export export;
 
     assert(store);
     assert(storepass && *storepass);
     assert(zip);
     assert(password && *password);
 
-    sprintf(tmpfile, "%s%sprvexport.json", tmpdir, PATH_SEP);
-    delete_file(tmpfile);
-    if (DIDStore_ExportPrivateIdentity(store, storepass, tmpfile, password) < 0)
-        goto errorExit;
+    export.store = store;
+    export.storepass = storepass;
+    export.password = password;
+    export.zip = zip;
+    export.tmpdir = tmpdir;
 
-    prv_source = zip_source_file(zip, tmpfile, 0, 0);
-    if (!prv_source) {
-        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Get source file failed.");
-        goto errorExit;
-    }
-
-    if (zip_file_add(zip, "privateIdentity", prv_source, 0) < 0) {
-        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Add source file failed.");
-        goto errorExit;
-    }
-
-    return 0;
-errorExit:
-    if (prv_source)
-        zip_source_free(prv_source);
-
-    return -1;
+    return DIDStore_ListRootIdentities(store, rootidentity_to_zip, (void*)&export);
 }
 
 int DIDStore_ExportStore(DIDStore *store, const char *storepass,
@@ -4114,8 +4616,8 @@ int DIDStore_ExportStore(DIDStore *store, const char *storepass,
     snprintf(tmpdir, sizeof(tmpdir), "%s%sdidexport", tmp, PATH_SEP);
     mkdirs(tmpdir, S_IRWXU);
 
-    if (exportdid_to_zip(store, storepass, zip, password, tmpdir) < 0 ||
-            exportprv_to_zip(store, storepass, zip, password, tmpdir) < 0)
+    if (exportidentity_to_zip(store, storepass, zip, password, tmpdir) < 0 ||
+            exportdid_to_zip(store, storepass, zip, password, tmpdir) < 0 )
         goto errorExit;
 
     rc = 0;
@@ -4207,8 +4709,8 @@ int DIDStore_ImportStore(DIDStore *store, const char *storepass, const char *zip
             goto errorExit;
         }
 
-        if (!strcmp(stat.name, "privateIdentity")) {
-            code = DIDStore_ImportPrivateIdentity(store, storepass, filename, password);
+        if (!strncmp(stat.name, "rootIdentity-", strlen("rootIdentity-"))) {
+            code = DIDStore_ImportRootIdentity(store, storepass, filename, password);
             delete_file(filename);
             if (code < 0)
                 goto errorExit;

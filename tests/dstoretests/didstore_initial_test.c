@@ -20,12 +20,24 @@ static const char *getpassword(const char *walletDir, const char *walletId)
     return walletpass;
 }
 
+static int get_rootidentity(RootIdentity *rootidentity, void *context)
+{
+    int *count = (int*)context;
+
+    if (!rootidentity)
+        return 0;
+
+    (*count)++;
+    return 0;
+}
+
 static void test_didstore_newdid(void)
 {
     char _path[PATH_MAX];
-    const char *newalias;
+    const char *newalias, *id;
     char *path;
     DIDDocument *doc, *loaddoc;
+    RootIdentity *rootidentity;
     DIDStore *store;
     bool hasidentity, isEquals;
     int rc;
@@ -33,50 +45,53 @@ static void test_didstore_newdid(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    path = get_file_path(_path, PATH_MAX, 3, store->root, PATH_STEP, META_FILE);
+    path = get_file_path(_path, PATH_MAX, 5, store->root, PATH_STEP, DATA_DIR, PATH_STEP, META_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
-
-    hasidentity = DIDStore_ContainsPrivateIdentity(store);
-    CU_ASSERT_FALSE(hasidentity);
 
     const char *newmnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, newmnemonic, "", language, false);
+    rootidentity = RootIdentity_Create(newmnemonic, "", language, false, store, storepass);
     Mnemonic_Free((void*)newmnemonic);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    hasidentity = DIDStore_ContainsPrivateIdentity(store);
-    CU_ASSERT_TRUE_FATAL(hasidentity);
+    id = RootIdentity_GetId(rootidentity);
+    CU_ASSERT_PTR_NOT_NULL(id);
+    CU_ASSERT_TRUE(DIDStore_ContainsRootIdentity(store, id));
 
-    path = get_file_path(_path, PATH_MAX, 5, store->root, PATH_STEP, PRIVATE_DIR,
-            PATH_STEP, INDEX_FILE);
-    CU_ASSERT_TRUE_FATAL(file_exist(path));
+    path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
+            PATH_STEP, ROOTS_DIR, PATH_STEP, id, PATH_STEP, INDEX_FILE);
+    CU_ASSERT_TRUE(file_exist(path));
 
-    path = get_file_path(_path, PATH_MAX, 5, store->root, PATH_STEP, PRIVATE_DIR,
-            PATH_STEP, HDKEY_FILE);
-    CU_ASSERT_TRUE_FATAL(file_exist(path));
+    path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
+            PATH_STEP, ROOTS_DIR, PATH_STEP, id, PATH_STEP, PRIVATE_FILE);
+    CU_ASSERT_TRUE(file_exist(path));
 
-    path = get_file_path(_path, PATH_MAX, 5, store->root, PATH_STEP, PRIVATE_DIR,
-            PATH_STEP, HDKEY_FILE);
-    CU_ASSERT_TRUE_FATAL(file_exist(path));
+    path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
+            PATH_STEP, ROOTS_DIR, PATH_STEP, id, PATH_STEP, MNEMONIC_FILE);
+    CU_ASSERT_TRUE(file_exist(path));
 
-    doc = DIDStore_NewDID(store, storepass, alias);
+    path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
+            PATH_STEP, ROOTS_DIR, PATH_STEP, id, PATH_STEP, PUBLIC_FILE);
+    CU_ASSERT_TRUE(file_exist(path));
+
+    //doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
     DID *did = DIDDocument_GetSubject(doc);
     const char *idstring = DID_GetMethodSpecificId(did);
 
-    path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP, DID_DIR,
-            PATH_STEP, (char*)idstring, PATH_STEP, DOCUMENT_FILE);
+    path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
+            PATH_STEP, IDS_DIR, PATH_STEP, (char*)idstring, PATH_STEP, DOCUMENT_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
-    path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP, DID_DIR,
-            PATH_STEP, (char*)idstring, PATH_STEP, META_FILE);
+    path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
+            PATH_STEP, IDS_DIR, PATH_STEP, (char*)idstring, PATH_STEP, META_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
-    DIDMetaData *metadata = DIDDocument_GetMetaData(doc);
+    DIDMetadata *metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    newalias = DIDMetaData_GetAlias(metadata);
+    newalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(newalias);
     CU_ASSERT_STRING_EQUAL(newalias, alias);
 
@@ -91,6 +106,7 @@ static void test_didstore_newdid(void)
 
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(loaddoc));
 
+    RootIdentity_Destroy(rootidentity);
     DIDDocument_Destroy(doc);
     DIDDocument_Destroy(loaddoc);
     TestData_Free();
@@ -98,6 +114,7 @@ static void test_didstore_newdid(void)
 
 static void test_didstore_newdid_byindex(void)
 {
+    RootIdentity *rootidentity;
     char *path, _path[PATH_MAX];
     DIDDocument *doc;
     DIDStore *store;
@@ -108,19 +125,19 @@ static void test_didstore_newdid_byindex(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    path = get_file_path(_path, PATH_MAX, 3, store->root, PATH_STEP, META_FILE);
+    path = get_file_path(_path, PATH_MAX, 5, store->root, PATH_STEP, DATA_DIR, PATH_STEP, META_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
     const char *mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, false);
+    rootidentity = RootIdentity_Create(mnemonic, "", language, false, store, storepass);
     Mnemonic_Free((void*)mnemonic);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    doc = DIDStore_NewDIDByIndex(store, storepass, 0, "did0 by index");
+    doc = RootIdentity_NewDIDByIndex(rootidentity, 0, storepass, "did0 by index");
     CU_ASSERT_PTR_NOT_NULL(doc);
     DID_Copy(&did, DIDDocument_GetSubject(doc));
 
-    ndid = DIDStore_GetDIDByIndex(store, 0);
+    ndid = RootIdentity_GetDIDByIndex(rootidentity, 0);
     CU_ASSERT_PTR_NOT_NULL(ndid);
 
     isEquals = DID_Equals(&did, ndid);
@@ -132,25 +149,27 @@ static void test_didstore_newdid_byindex(void)
     DID_Destroy(ndid);
     DIDDocument_Destroy(doc);
 
-    doc = DIDStore_NewDID(store, storepass, "did0");
+    doc = RootIdentity_NewDID(rootidentity, storepass, "did0");
     CU_ASSERT_PTR_NULL(doc);
     CU_ASSERT_TRUE(DIDStore_DeleteDID(store, &did));
     DIDDocument_Destroy(doc);
 
-    doc = DIDStore_NewDID(store, storepass, "did0");
+    doc = RootIdentity_NewDID(rootidentity, storepass, "did0");
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     isEquals = DID_Equals(&did, DIDDocument_GetSubject(doc));
     CU_ASSERT_TRUE(isEquals);
     DIDDocument_Destroy(doc);
 
+    RootIdentity_Destroy(rootidentity);
     TestData_Free();
 }
 
 static void test_didstore_newdid_withouAlias(void)
 {
+    RootIdentity *rootidentity;
     char _path[PATH_MAX];
-    const char *newalias;
+    const char *newalias, *id;
     char *path;
     DIDDocument *doc, *loaddoc;
     DIDStore *store;
@@ -160,61 +179,62 @@ static void test_didstore_newdid_withouAlias(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    path = get_file_path(_path, PATH_MAX, 3, store->root, PATH_STEP, META_FILE);
+    path = get_file_path(_path, PATH_MAX, 5, store->root, PATH_STEP, DATA_DIR, PATH_STEP, META_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
-
-    hasidentity = DIDStore_ContainsPrivateIdentity(store);
-    CU_ASSERT_FALSE(hasidentity);
 
     const char *newmnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, newmnemonic, "", language, false);
+    rootidentity = RootIdentity_Create(newmnemonic, "", language, false, store, storepass);
     Mnemonic_Free((void*)newmnemonic);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    hasidentity = DIDStore_ContainsPrivateIdentity(store);
+    id = RootIdentity_GetId(rootidentity);
+    CU_ASSERT_PTR_NOT_NULL(id);
+
+    hasidentity = DIDStore_ContainsRootIdentity(store, id);
     CU_ASSERT_TRUE_FATAL(hasidentity);
 
-    path = get_file_path(_path, PATH_MAX, 5, store->root, PATH_STEP, PRIVATE_DIR,
-            PATH_STEP, INDEX_FILE);
+    path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
+            PATH_STEP, ROOTS_DIR, PATH_STEP, id, PATH_STEP, INDEX_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
-    path = get_file_path(_path, PATH_MAX, 5, store->root, PATH_STEP, PRIVATE_DIR,
-            PATH_STEP, HDKEY_FILE);
+    path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
+            PATH_STEP, ROOTS_DIR, PATH_STEP, id, PATH_STEP, PRIVATE_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
-    doc = DIDStore_NewDID(store, storepass, NULL);
+    doc = RootIdentity_NewDID(rootidentity, storepass, NULL);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
     DID *did = DIDDocument_GetSubject(doc);
     const char *idstring = DID_GetMethodSpecificId(did);
 
-    path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP, DID_DIR,
-            PATH_STEP, (char*)idstring, PATH_STEP, DOCUMENT_FILE);
+    path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
+            PATH_STEP, IDS_DIR, PATH_STEP, (char*)idstring, PATH_STEP, DOCUMENT_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
-    DIDMetaData *metadata = DIDDocument_GetMetaData(doc);
+    DIDMetadata *metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    newalias = DIDMetaData_GetAlias(metadata);
+    newalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NULL(newalias);
 
-    rc = DIDMetaData_SetAlias(metadata, "testdoc");
+    rc = DIDMetadata_SetAlias(metadata, "testdoc");
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDMetaData_SetExtra(metadata, "name", "littlefish");
+    rc = DIDMetadata_SetExtra(metadata, "name", "littlefish");
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDMetaData_SetExtraWithBoolean(metadata, "femal", false);
+    rc = DIDMetadata_SetExtraWithBoolean(metadata, "femal", false);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDDocument_SaveMetaData(doc);
+    rc = DIDDocument_SaveMetadata(doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     loaddoc = DIDStore_LoadDID(store, did);
     CU_ASSERT_PTR_NOT_NULL(loaddoc);
-    metadata = DIDDocument_GetMetaData(loaddoc);
+    metadata = DIDDocument_GetMetadata(loaddoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    CU_ASSERT_STRING_EQUAL("testdoc", DIDMetaData_GetAlias(metadata));
-    CU_ASSERT_STRING_EQUAL("littlefish", DIDMetaData_GetExtra(metadata, "name"));
-    CU_ASSERT_FALSE(DIDMetaData_GetExtraAsBoolean(metadata, "femal"));
+    CU_ASSERT_STRING_EQUAL("testdoc", DIDMetadata_GetAlias(metadata));
+    CU_ASSERT_STRING_EQUAL("littlefish", DIDMetadata_GetExtra(metadata, "name"));
+    CU_ASSERT_FALSE(DIDMetadata_GetExtraAsBoolean(metadata, "femal"));
 
+    RootIdentity_Destroy(rootidentity);
     DIDDocument_Destroy(doc);
     DIDDocument_Destroy(loaddoc);
 
@@ -240,34 +260,20 @@ static void test_didstore_initial_error(void)
 
 static void test_didstore_privateIdentity_error(void)
 {
+    RootIdentity *rootidentity;
     char _temp[PATH_MAX];
     char *path;
     DIDStore *store;
-    bool hasidentity;
-    int rc;
+    int count = 0;
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    hasidentity = DIDStore_ContainsPrivateIdentity(store);
-    CU_ASSERT_FALSE(hasidentity);
+    CU_ASSERT_PTR_NULL(RootIdentity_Create("", "", language, false, store, storepass));
+    CU_ASSERT_PTR_NULL(RootIdentity_Create(mnemonic, "", language, false, store, ""));
 
-    rc = DIDStore_InitPrivateIdentity(store, storepass, "", "", language, false);
-    CU_ASSERT_EQUAL(rc, -1);
-
-    rc = DIDStore_InitPrivateIdentity(store, "", mnemonic, "", language, false);
-    CU_ASSERT_EQUAL(rc, -1);
-
-    hasidentity = DIDStore_ContainsPrivateIdentity(store);
-    CU_ASSERT_FALSE(hasidentity);
-
-    path = get_file_path(_temp, PATH_MAX, 5, store->root, PATH_STEP, PRIVATE_DIR,
-            PATH_STEP, INDEX_FILE);
-    CU_ASSERT_FALSE(file_exist(path));
-
-    path = get_file_path(_temp, PATH_MAX, 5, store->root, PATH_STEP, PRIVATE_DIR,
-            PATH_STEP, HDKEY_FILE);
-    CU_ASSERT_FALSE(file_exist(path));
+    CU_ASSERT_EQUAL(-1, DIDStore_ListRootIdentities(store, get_rootidentity, (void*)&count));
+    CU_ASSERT_EQUAL(0, count);
 
     TestData_Free();
 }
@@ -281,10 +287,7 @@ static void test_didstore_newdid_emptystore(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    hasidentity = DIDStore_ContainsPrivateIdentity(store);
-    CU_ASSERT_FALSE(hasidentity);
-
-    doc = DIDStore_NewDID(store, storepass, "little fish");
+    doc = RootIdentity_NewDID(NULL, storepass, "little fish");
     CU_ASSERT_PTR_NULL_FATAL(doc);
     DIDDocument_Destroy(doc);
 
@@ -293,6 +296,7 @@ static void test_didstore_newdid_emptystore(void)
 
 static void test_didstore_privateidentity_compatibility(void)
 {
+    RootIdentity *rootidentity;
     DIDStore *store;
     bool isEquals;
     DIDDocument *doc;
@@ -306,22 +310,22 @@ static void test_didstore_privateidentity_compatibility(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, passphrase,
-            language, false);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    rootidentity = RootIdentity_Create(mnemonic, passphrase, language, false, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    doc = DIDStore_NewDID(store, storepass, "identity test1");
+    doc = RootIdentity_NewDID(rootidentity, storepass, "identity test1");
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     DID_Copy(&did, &doc->did);
     DIDStore_DeleteDID(store, &did);
     DIDDocument_Destroy(doc);
+    RootIdentity_Destroy(rootidentity);
 
-    rc = DIDStore_InitPrivateIdentityFromRootKey(store, storepass, ExtendedkeyBase,
-            true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    rootidentity = RootIdentity_CreateByFromRootKey(ExtendedkeyBase, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    doc = DIDStore_NewDID(store, storepass, "identity test2");
+    doc = RootIdentity_NewDID(rootidentity, storepass, "identity test2");
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     isEquals = DID_Equals(&did, &doc->did);

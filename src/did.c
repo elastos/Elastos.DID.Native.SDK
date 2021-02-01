@@ -120,7 +120,7 @@ int Init_DID(DID *did, const char *idstring)
     }
 
     strcpy(did->idstring, idstring);
-    memset(&did->metadata, 0, sizeof(DIDMetaData));
+    memset(&did->metadata, 0, sizeof(DIDMetadata));
     return 0;
 }
 
@@ -211,10 +211,8 @@ char *DID_ToString(DID *did, char *idstring, size_t len)
 
 DID *DID_Copy(DID *dest, DID *src)
 {
-    if (!dest || !src) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    assert(dest);
+    assert(src);
 
     strcpy(dest->idstring, src->idstring);
     return dest;
@@ -243,7 +241,7 @@ int DID_Compare(DID *did1, DID *did2)
 void DID_Destroy(DID *did)
 {
     if (did) {
-        DIDMetaData_Free(&did->metadata);
+        DIDMetadata_Free(&did->metadata);
         free(did);
     }
 }
@@ -268,7 +266,7 @@ DIDDocument *DID_Resolve(DID *did, int *status, bool force)
     return DIDBackend_ResolveDID(did, status, force);
 }
 
-DIDMetaData *DID_GetMetaData(DID *did)
+DIDMetadata *DID_GetMetadata(DID *did)
 {
     if (!did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -277,10 +275,10 @@ DIDMetaData *DID_GetMetaData(DID *did)
     return &did->metadata;
 }
 
-int DID_SaveMetaData(DID *did)
+int DID_SaveMetadata(DID *did)
 {
-    if (did && DIDMetaData_AttachedStore(&did->metadata))
-        return DIDStore_StoreDIDMetaData(did->metadata.base.store, &did->metadata, did);
+    if (did && DIDMetadata_AttachedStore(&did->metadata))
+        return DIDStore_StoreDIDMetadata(did->metadata.base.store, &did->metadata, did);
 
     return 0;
 }
@@ -303,7 +301,7 @@ int Init_DIDURL(DIDURL *id, DID *did, const char *fragment)
 
     DID_Copy(&id->did, did);
     strcpy(id->fragment, fragment);
-    memset(&did->metadata, 0, sizeof(CredentialMetaData));
+    memset(&did->metadata, 0, sizeof(CredentialMetadata));
     return 0;
 }
 
@@ -494,11 +492,11 @@ void DIDURL_Destroy(DIDURL *id)
     if (!id)
         return;
 
-    CredentialMetaData_Free(&id->metadata);
+    CredentialMetadata_Free(&id->metadata);
     free(id);
 }
 
-CredentialMetaData *DIDURL_GetMetaData(DIDURL *id)
+CredentialMetadata *DIDURL_GetMetadata(DIDURL *id)
 {
     if (!id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -507,9 +505,9 @@ CredentialMetaData *DIDURL_GetMetaData(DIDURL *id)
     return &id->metadata;
 }
 
-int DIDURL_SaveMetaData(DIDURL *id)
+int DIDURL_SaveMetadata(DIDURL *id)
 {
-    if (id && CredentialMetaData_AttachedStore(&id->metadata))
+    if (id && CredentialMetadata_AttachedStore(&id->metadata))
         return DIDStore_StoreCredMeta(id->metadata.base.store, &id->metadata, id);
 
     return 0;

@@ -75,7 +75,7 @@ struct DIDDocument {
     } proofs;
 
     time_t expires;
-    DIDMetaData metadata;
+    DIDMetadata metadata;
 };
 
 struct PublicKey {
@@ -105,17 +105,21 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
 
 DIDDocument *DIDDocument_FromJson_Internal(json_t *root);
 
-int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc);
-
 DIDDocument *DIDDocument_GetControllerDocument(DIDDocument *doc, DID *controller);
 
-ssize_t DIDDocument_GetDigest(DIDDocument *document, uint8_t *digest, size_t size);
+size_t DIDDocument_GetSelfAuthenticationKeyCount(DIDDocument *document);
 
-const char *DIDDocument_Merge(DIDDocument **documents, size_t size);
+int DIDDocumentBuilder_AddController_Internal(DIDDocument *customizedoc, DIDDocument *document);
+
+DIDDocumentBuilder* DIDDocument_CreateBuilder(DID *did, DIDDocument *controllerdoc, DIDStore *store);
 
 bool DIDDocument_IsValid_Internal(DIDDocument *document, bool isqualified);
 
-bool Is_CustomizedDID(DIDDocument *document);
+int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc);
+
+const char *DIDDocument_Merge(DIDDocument **documents, size_t size);
+
+ssize_t DIDDocument_GetDigest(DIDDocument *document, uint8_t *digest, size_t size);
 
 #ifdef __cplusplus
 }

@@ -111,6 +111,7 @@ static void test_idchain_restore(void)
 {
     int rc;
     char _path[PATH_MAX], cachedir[PATH_MAX];
+    RootIdentity *rootidentity;
     const char *path;
     DIDStore *store;
     DIDs dids;
@@ -125,12 +126,11 @@ static void test_idchain_restore(void)
     sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
     DIDBackend_InitializeDefault(NULL, resolver, cachedir);
 
-    rc = DIDStore_InitPrivateIdentity(store, storepass, TestData_LoadRestoreMnemonic(),
-        "secret", language, true);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    rootidentity = RootIdentity_Create(TestData_LoadRestoreMnemonic(), "secret", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     printf("\nSynchronizing from IDChain...");
-    rc = DIDStore_Synchronize(store, storepass, merge_to_localcopy);
+    rc = RootIdentity_Synchronize(rootidentity, merge_to_localcopy);
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
     printf("OK!\n");
 
@@ -139,7 +139,7 @@ static void test_idchain_restore(void)
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
     CU_ASSERT_EQUAL(dids.index, 5);
 
-    path = get_path(_path, "dids.restore");
+    path = get_path(_path, "dids.restore", 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(path);
 
     memset(&restore_dids, 0, sizeof(DIDs));
@@ -170,18 +170,19 @@ static void test_idchain_restore(void)
         }
         DIDDocument_Destroy(doc);
     }
-
+    RootIdentity_Destroy(rootidentity);
     DIDStore_Close(store);
     TestData_Free();
 }
 
 static void test_sync_with_localmodification1(void)
 {
-    int rc, i;
+    RootIdentity *rootidentity;
     char _path[PATH_MAX], modified_signature[MAX_DOC_SIGN], cachedir[PATH_MAX];
     const char *path;
     DIDStore *store;
     DIDs dids;
+    int rc, i;
 
     path = get_store_path(_path, "DIDStore");
     delete_file(path);
@@ -191,12 +192,12 @@ static void test_sync_with_localmodification1(void)
     sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
     DIDBackend_InitializeDefault(NULL, resolver, cachedir);
 
-    rc = DIDStore_InitPrivateIdentity(store, storepass, TestData_LoadRestoreMnemonic(),
-        "secret", language, true);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    rootidentity = RootIdentity_Create(TestData_LoadRestoreMnemonic(), "secret",
+           language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     printf("\nSynchronizing from IDChain...");
-    rc = DIDStore_Synchronize(store, storepass, merge_to_localcopy);
+    rc = RootIdentity_Synchronize(rootidentity, merge_to_localcopy);
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
     printf("OK!\n");
 
@@ -230,7 +231,7 @@ static void test_sync_with_localmodification1(void)
     DIDDocument_Destroy(modified_doc);
 
     printf("Synchronizing again from IDChain...");
-    rc = DIDStore_Synchronize(store, storepass, merge_to_localcopy);
+    rc = RootIdentity_Synchronize(rootidentity, merge_to_localcopy);
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
 
     memset(&dids, 0, sizeof(DIDs));
@@ -266,6 +267,7 @@ static void test_sync_with_localmodification1(void)
     CU_ASSERT_STRING_EQUAL(modified_signature, DIDDocument_GetProofSignature(modified_doc, 0));
     DIDDocument_Destroy(modified_doc);
 
+    RootIdentity_Destroy(rootidentity);
     DIDStore_Close(store);
     TestData_Free();
 }
@@ -273,11 +275,12 @@ static void test_sync_with_localmodification1(void)
 
 static void test_sync_with_localmodification2(void)
 {
-    int rc, i;
+    RootIdentity *rootidentity;
     char _path[PATH_MAX], origin_signature[MAX_DOC_SIGN], cachedir[PATH_MAX];
     const char *path;
     DIDStore *store;
     DIDs dids;
+    int rc, i;
 
     path = get_store_path(_path, "DIDStore");
     delete_file(path);
@@ -287,12 +290,12 @@ static void test_sync_with_localmodification2(void)
     sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
     DIDBackend_InitializeDefault(NULL, resolver, cachedir);
 
-    rc = DIDStore_InitPrivateIdentity(store, storepass, TestData_LoadRestoreMnemonic(),
-        "secret", language, true);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    rootidentity = RootIdentity_Create(TestData_LoadRestoreMnemonic(),
+        "secret", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     printf("\nSynchronizing from IDChain...");
-    rc = DIDStore_Synchronize(store, storepass, merge_to_localcopy);
+    rc = RootIdentity_Synchronize(rootidentity, merge_to_localcopy);
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
     printf("OK!\n");
 
@@ -326,7 +329,7 @@ static void test_sync_with_localmodification2(void)
     DIDDocument_Destroy(modified_doc);
 
     printf("Synchronizing again from IDChain...");
-    rc = DIDStore_Synchronize(store, storepass, merge_to_chaincopy);
+    rc = RootIdentity_Synchronize(rootidentity, merge_to_chaincopy);
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
 
     memset(&dids, 0, sizeof(DIDs));
@@ -362,6 +365,7 @@ static void test_sync_with_localmodification2(void)
     CU_ASSERT_STRING_EQUAL(origin_signature, DIDDocument_GetProofSignature(modified_doc, 0));
     DIDDocument_Destroy(modified_doc);
 
+    RootIdentity_Destroy(rootidentity);
     DIDStore_Close(store);
     TestData_Free();
 }

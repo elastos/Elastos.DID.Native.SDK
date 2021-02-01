@@ -56,6 +56,8 @@
 
 #include "common.h"
 #include "did.h"
+#include "HDkey.h"
+#include "crypto.h"
 
 #define DID_MAX_LEN      512
 
@@ -432,34 +434,42 @@ int mkdirs(const char *path, mode_t mode)
     return rc;
 }
 
-time_t get_file_lastmodified(const char *path)
+int to_hexstring(char *id, size_t size, uint8_t *data, size_t datasize)
 {
-    struct stat st;
+    uint8_t md[16];
+    char step[10];
+    size_t len = 0;
+    int i;
 
-    assert(path && *path);
+    assert(id);
+    assert(size > 0);
+    assert(data);
+    assert(datasize > 0);
 
-    if (stat(path, &st) < 0) {
-        DIDError_Set(DIDERR_IO_ERROR, "File error.");
-        return 0;
+    md5(md, sizeof(md), data, datasize);
+    for (i = 0; i < sizeof(md); i++) {
+        sprintf(step, "%02x", md[i]);
+        if (len + strlen(step) + 1 > datasize)
+            return -1;
+        strcat(id, step);
     }
 
-    return st.st_mtime;
+    return 0;
 }
 
-int set_file_lastmodified(const char *path, time_t lastmodified)
+int to_hexstringfrombase58(char *id, size_t size, const char *base58)
 {
-    struct utimbuf new_times;
-    struct stat st;
+    uint8_t binkey[EXTENDEDKEY_BYTES];
+    ssize_t len;
 
-    assert(path && *path);
-    assert(lastmodified > 0);
+    assert(id);
+    assert(size > 0);
+    assert(base58);
 
-    if (stat(path, &st) < 0) {
-        DIDError_Set(DIDERR_IO_ERROR, "File error.");
+    len = base58_decode(binkey, sizeof(binkey), base58);
+    if (len != EXTENDEDKEY_BYTES)
         return -1;
-    }
 
-    new_times.actime = st.st_atime;
-    new_times.modtime = lastmodified;    /* set mtime to current time */
-    return utime(path, &new_times);
+    return to_hexstring(id, size, binkey, len);
 }
+

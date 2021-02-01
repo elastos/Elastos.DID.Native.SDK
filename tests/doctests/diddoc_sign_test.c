@@ -65,13 +65,17 @@ static void test_diddoc_digest_sign_verify(void)
 
 static void test_diddoc_derive_fromidentifier(void)
 {
+    DIDDocument *doc;
     HDKey *hdkey, _hdkey;
     uint8_t binkey[EXTENDEDKEY_BYTES], sk[PRIVATEKEY_BYTES];
 
     const char *identifier = "org.elastos.did.test";
 
+    doc = TestData_LoadUser1Doc();
+    CU_ASSERT_PTR_NOT_NULL(doc);
+
     for (int i = -100; i < 100; i++) {
-        const char *strkey = DIDDocument_Derive(document, identifier, i, storepass);
+        const char *strkey = DIDDocument_Derive(doc, identifier, i, storepass);
         CU_ASSERT_PTR_NOT_NULL_FATAL(strkey);
 
         hdkey = HDKey_DeserializeBase58(&_hdkey, strkey, strlen(strkey) + 1);
@@ -149,7 +153,7 @@ static CU_TestInfo cases[] = {
     {   "test_diddoc_sign_verify",                test_diddoc_sign_verify                },
     {   "test_diddoc_digest_sign_verify",         test_diddoc_digest_sign_verify         },
     {   "test_diddoc_derive_fromidentifier",      test_diddoc_derive_fromidentifier      },
-    {   "test_diddoc_derive_compatible_withjava", test_diddoc_derive_compatible_withjava },
+    //{   "test_diddoc_derive_compatible_withjava", test_diddoc_derive_compatible_withjava },
     {   NULL,                                     NULL                                   }
 };
 

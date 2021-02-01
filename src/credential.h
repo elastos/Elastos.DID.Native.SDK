@@ -42,6 +42,7 @@ typedef struct CredentialSubject {
 
 typedef struct CredentialProof {
     char type[MAX_TYPE_LEN];
+    time_t created;
     DIDURL verificationMethod;
     char signatureValue[MAX_SIGNATURE_LEN];
 } CredentialProof;
@@ -59,7 +60,7 @@ struct Credential {
     time_t expirationDate;
     CredentialSubject subject;
     CredentialProof proof;
-    CredentialMetaData metadata;
+    CredentialMetadata metadata;
 };
 
 int CredentialArray_ToJson(JsonGenerator *gen, Credential **creds, size_t size,

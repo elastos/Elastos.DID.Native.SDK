@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <sys/stat.h>
 
 #include "diderror.h"
@@ -38,7 +39,8 @@
 extern "C" {
 #endif
 
-#define DOC_BUFFER_LEN         512
+#define DOC_BUFFER_LEN                     512
+#define MAX_ID_LEN                         64
 
 #define CHECK(func)                    do { if (func < 0) return -1; } while(0)
 #define CHECK_TO_ERROREXIT(func)       do { if (func < 0) goto errorExit;} while(0)
@@ -65,7 +67,6 @@ extern "C" {
     static const char *PATH_SEP = "/";
 #endif
 
-
 const char *get_time_string(char *timestring, size_t len, time_t *p_time);
 
 int parse_time(time_t *time, const char *string);
@@ -89,9 +90,9 @@ bool is_empty(const char *path);
 
 int mkdirs(const char *path, mode_t mode);
 
-time_t get_file_lastmodified(const char *path);
+int to_hexstring(char *id, size_t size, uint8_t *data, size_t datasize);
 
-int set_file_lastmodified(const char *path, time_t lastmodified);
+int to_hexstringfrombase58(char *id, size_t size, const char *base58);
 
 #ifdef __cplusplus
 }

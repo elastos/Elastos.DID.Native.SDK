@@ -41,6 +41,7 @@
 
 typedef struct TestData {
     DIDStore *store;
+    RootIdentity *rootidentity;
 
     DIDDocument *issuerdoc;
     char *issuerJson;
@@ -53,6 +54,10 @@ typedef struct TestData {
     char *docNormalizedJson;
 
     DIDDocument *controllerdoc;
+    DIDDocument *user1doc;
+    DIDDocument *user2doc;
+    DIDDocument *user3doc;
+    DIDDocument *issuerIddoc;
 
     DIDDocument *emptyctmdoc;
     DIDDocument *ctmdoc;
@@ -118,17 +123,32 @@ const char *get_store_path(char* path, const char *dir)
     return path;
 }
 
-char *get_path(char *path, const char *file)
+char *get_path(char *path, const char *file, int version)
 {
     size_t len;
 
     assert(file);
     assert(*file);
 
-    len = snprintf(path, PATH_MAX, "..%setc%sdid%sresources%stestdata%s%s",
-        PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, file);
-        if (len < 0 || len > PATH_MAX)
+    switch (version) {
+        case 0:
+            len = snprintf(path, PATH_MAX, "..%setc%sdid%sresources%stestdata%s%s",
+                PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, file);
+            break;
+        case 1:
+            len = snprintf(path, PATH_MAX, "..%setc%sdid%sresources%sv1%stestdata%s%s",
+                PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, file);
+            break;
+        case 2:
+            len = snprintf(path, PATH_MAX, "..%setc%sdid%sresources%sv2%stestdata%s%s",
+                PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, file);
+            break;
+        default:
             return NULL;
+    }
+
+    if (len < 0 || len > PATH_MAX)
+        return NULL;
 
     return path;
 }
@@ -187,14 +207,14 @@ int store_file(const char *path, const char *string)
     return 0;
 }
 
-static char *load_testdata_file(const char *file)
+static char *load_testdata_file(const char *file, int version)
 {
     char _path[PATH_MAX];
     char *readstring = NULL, *path;
 
     assert(file && *file);
 
-    path = get_path(_path, file);
+    path = get_path(_path, file, version);
     if (!path)
         return NULL;
 
@@ -334,12 +354,12 @@ void delete_file(const char *path)
         remove(path);
 }
 
-static Credential *store_credential(const char *file, const char *alias)
+static Credential *store_credential(const char *file, const char *alias, bool version)
 {
     Credential *cred;
     const char *data;
 
-    data = load_testdata_file(file);
+    data = load_testdata_file(file, version);
     if (!data)
         return NULL;
 
@@ -348,13 +368,13 @@ static Credential *store_credential(const char *file, const char *alias)
     if (!cred)
         return NULL;
 
-    CredentialMetaData *metadata = Credential_GetMetaData(cred);
+    CredentialMetadata *metadata = Credential_GetMetadata(cred);
     if (!metadata) {
         Credential_Destroy(cred);
         return NULL;
     }
 
-    if (CredentialMetaData_SetAlias(metadata, alias) < 0) {
+    if (CredentialMetadata_SetAlias(metadata, alias) < 0) {
         Credential_Destroy(cred);
         return NULL;
     }
@@ -367,14 +387,14 @@ static Credential *store_credential(const char *file, const char *alias)
     return cred;
 }
 
-static DIDDocument *store_document(const char *file, const char *alias)
+static DIDDocument *store_document(const char *file, const char *alias, int version)
 {
     DIDDocument *doc;
     const char *string;
     DID did;
     int rc;
 
-    string = load_testdata_file(file);
+    string = load_testdata_file(file, version);
     if (!string)
         return NULL;
 
@@ -384,13 +404,13 @@ static DIDDocument *store_document(const char *file, const char *alias)
         return NULL;
 
     strcpy(did.idstring, doc->did.idstring);
-    DIDMetaData *metadata = DIDDocument_GetMetaData(doc);
+    DIDMetadata *metadata = DIDDocument_GetMetadata(doc);
     if (!metadata) {
         DIDDocument_Destroy(doc);
         return NULL;
     }
 
-    if (DIDMetaData_SetAlias(metadata, alias) < 0) {
+    if (DIDMetadata_SetAlias(metadata, alias) < 0) {
         DIDDocument_Destroy(doc);
         return NULL;
     }
@@ -413,32 +433,29 @@ bool dir_exist(const char* path)
     return test_paths(path) == S_IFDIR;
 }
 
-static int import_privatekey(DIDURL *id, const char *storepass, const char *file)
+static int import_privatekey(DIDURL *id, const char *storepass, const char *file, int version)
 {
     char *skbase;
-    uint8_t privatekey[EXTENDEDKEY_BYTES];
+    uint8_t extendedkey[EXTENDEDKEY_BYTES];
+    ssize_t size;
     HDKey _hdkey, *hdkey;
 
     if (!id || !file || !*file)
         return -1;
 
-    skbase = load_testdata_file(file);
+    skbase = load_testdata_file(file, version);
     if (!skbase || !*skbase)
         return -1;
 
-    if (base58_decode(privatekey, sizeof(privatekey), skbase) == EXTENDEDKEY_BYTES) {
-        hdkey = HDKey_FromExtendedKeyBase58(skbase, strlen(skbase), &_hdkey);
-        if (!hdkey) {
-            free(skbase);
+    size = base58_decode(extendedkey, sizeof(extendedkey), skbase);
+    free((void*)skbase);
+    if (version != 0) {
+        if (size != EXTENDEDKEY_BYTES)
             return -1;
-        }
-
-        memcpy(privatekey, HDKey_GetPrivateKey(hdkey), PRIVATEKEY_BYTES);
     }
 
-    free(skbase);
     if (DIDStore_StorePrivateKey(testdata.store, storepass, DIDURL_GetDid(id),
-            id, privatekey, PRIVATEKEY_BYTES) == -1)
+            id, extendedkey, size) == -1)
         return -1;
 
     return 0;
@@ -529,35 +546,36 @@ DIDStore *TestData_SetupStore(bool dummybackend)
     return setup_store(dummybackend, root);
 }
 
+//only for v2
 DIDStore *TestData_SetupTestStore(bool dummybackend)
 {
     char _path[PATH_MAX];
     const char *path;
 
-    path = get_file_path(_path, PATH_MAX, 9, "..", PATH_STEP, "etc", PATH_STEP,
-        "did", PATH_STEP, "resources", PATH_STEP, "teststore");
+    path = get_file_path(_path, PATH_MAX, 11, "..", PATH_STEP, "etc", PATH_STEP,
+        "did", PATH_STEP, "resources", PATH_STEP, "v2", PATH_STEP, "teststore");
     if (!path)
         return NULL;
 
     return setup_store(dummybackend, path);
 }
 
-int TestData_InitIdentity(DIDStore *store)
+RootIdentity *TestData_InitIdentity(DIDStore *store)
 {
     const char *mnemonic;
     int rc;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, passphase, language, true);
+    testdata.rootidentity = RootIdentity_Create(mnemonic, passphrase, language, true, store, storepass);
     Mnemonic_Free((void*)mnemonic);
 
-    return rc;
+    return testdata.rootidentity;
 }
 
 const char *TestData_LoadIssuerJson(void)
 {
     if (!testdata.issuerJson)
-        testdata.issuerJson = load_testdata_file("issuer.json");
+        testdata.issuerJson = load_testdata_file("issuer.json", 0);
 
     return testdata.issuerJson;
 }
@@ -565,7 +583,7 @@ const char *TestData_LoadIssuerJson(void)
 const char *TestData_LoadIssuerCompJson(void)
 {
     if (!testdata.issuerCompactJson)
-        testdata.issuerCompactJson = load_testdata_file("issuer.compact.json");
+        testdata.issuerCompactJson = load_testdata_file("issuer.compact.json", 0);
 
     return testdata.issuerCompactJson;
 }
@@ -573,7 +591,7 @@ const char *TestData_LoadIssuerCompJson(void)
 const char *TestData_LoadIssuerNormJson(void)
 {
     if (!testdata.issuerNormalizedJson)
-        testdata.issuerNormalizedJson = load_testdata_file("issuer.normalized.json");
+        testdata.issuerNormalizedJson = load_testdata_file("issuer.normalized.json", 0);
 
     return testdata.issuerNormalizedJson;
 }
@@ -581,7 +599,7 @@ const char *TestData_LoadIssuerNormJson(void)
 const char *TestData_LoadDocJson(void)
 {
     if (!testdata.docJson)
-        testdata.docJson = load_testdata_file("document.json");
+        testdata.docJson = load_testdata_file("document.json", 0);
 
     return testdata.docJson;
 }
@@ -589,7 +607,7 @@ const char *TestData_LoadDocJson(void)
 const char *TestData_LoadDocCompJson(void)
 {
     if (!testdata.docCompactJson)
-        testdata.docCompactJson = load_testdata_file("document.compact.json");
+        testdata.docCompactJson = load_testdata_file("document.compact.json", 0);
 
     return testdata.docCompactJson;
 }
@@ -597,7 +615,7 @@ const char *TestData_LoadDocCompJson(void)
 const char *TestData_LoadDocNormJson(void)
 {
     if (!testdata.docNormalizedJson)
-        testdata.docNormalizedJson = load_testdata_file("document.normalized.json");
+        testdata.docNormalizedJson = load_testdata_file("document.normalized.json", 0);
 
     return testdata.docNormalizedJson;
 }
@@ -605,7 +623,7 @@ const char *TestData_LoadDocNormJson(void)
 Credential *TestData_LoadProfileVc(void)
 {
     if (!testdata.profileVc)
-        testdata.profileVc = store_credential("vc-profile.json", "profile vc");
+        testdata.profileVc = store_credential("vc-profile.json", "profile vc", 0);
 
     return testdata.profileVc;
 }
@@ -613,7 +631,7 @@ Credential *TestData_LoadProfileVc(void)
 const char *TestData_LoadProfileVcCompJson(void)
 {
     if (!testdata.profileVcCompactJson)
-        testdata.profileVcCompactJson = load_testdata_file("vc-profile.compact.json");
+        testdata.profileVcCompactJson = load_testdata_file("vc-profile.compact.json", 0);
 
     return testdata.profileVcCompactJson;
 }
@@ -621,7 +639,7 @@ const char *TestData_LoadProfileVcCompJson(void)
 const char *TestData_LoadProfileVcNormJson(void)
 {
     if (!testdata.profileVcNormalizedJson)
-        testdata.profileVcNormalizedJson = load_testdata_file("vc-profile.normalized.json");
+        testdata.profileVcNormalizedJson = load_testdata_file("vc-profile.normalized.json", 0);
 
     return testdata.profileVcNormalizedJson;
 }
@@ -629,7 +647,7 @@ const char *TestData_LoadProfileVcNormJson(void)
 Credential *TestData_LoadEmailVc(void)
 {
     if (!testdata.emailVc)
-        testdata.emailVc = store_credential("vc-email.json", "email vc");
+        testdata.emailVc = store_credential("vc-email.json", "email vc", 0);
 
     return testdata.emailVc;
 }
@@ -637,7 +655,7 @@ Credential *TestData_LoadEmailVc(void)
 const char *TestData_LoadEmailVcCompJson(void)
 {
     if (!testdata.emailVcCompactJson)
-        testdata.emailVcCompactJson = load_testdata_file("vc-email.compact.json");
+        testdata.emailVcCompactJson = load_testdata_file("vc-email.compact.json", 0);
 
     return testdata.emailVcCompactJson;
 }
@@ -645,7 +663,7 @@ const char *TestData_LoadEmailVcCompJson(void)
 const char *TestData_LoadEmailVcNormJson(void)
 {
     if (!testdata.emailVcNormalizedJson)
-        testdata.emailVcNormalizedJson = load_testdata_file("vc-email.normalized.json");
+        testdata.emailVcNormalizedJson = load_testdata_file("vc-email.normalized.json", 0);
 
     return testdata.emailVcNormalizedJson;
 }
@@ -653,7 +671,7 @@ const char *TestData_LoadEmailVcNormJson(void)
 Credential *TestData_LoadPassportVc(void)
 {
     if (!testdata.passportVc)
-        testdata.passportVc = store_credential("vc-passport.json", "passport vc");
+        testdata.passportVc = store_credential("vc-passport.json", "passport vc", 0);
 
     return testdata.passportVc;
 }
@@ -661,7 +679,7 @@ Credential *TestData_LoadPassportVc(void)
 const char *TestData_LoadPassportVcCompJson(void)
 {
     if (!testdata.passportVcCompactJson)
-        testdata.passportVcCompactJson = load_testdata_file("vc-passport.compact.json");
+        testdata.passportVcCompactJson = load_testdata_file("vc-passport.compact.json", 0);
 
     return testdata.passportVcCompactJson;
 }
@@ -669,7 +687,7 @@ const char *TestData_LoadPassportVcCompJson(void)
 const char *TestData_LoadPassportVcNormJson(void)
 {
     if (!testdata.passportVcNormalizedJson)
-        testdata.passportVcNormalizedJson = load_testdata_file("vc-passport.normalized.json");
+        testdata.passportVcNormalizedJson = load_testdata_file("vc-passport.normalized.json", 0);
 
     return testdata.passportVcNormalizedJson;
 }
@@ -677,7 +695,7 @@ const char *TestData_LoadPassportVcNormJson(void)
 Credential *TestData_LoadTwitterVc(void)
 {
     if (!testdata.twitterVc)
-        testdata.twitterVc = store_credential("vc-twitter.json", "twitter vc");
+        testdata.twitterVc = store_credential("vc-twitter.json", "twitter vc", 0);
 
     return testdata.twitterVc;
 }
@@ -685,7 +703,7 @@ Credential *TestData_LoadTwitterVc(void)
 const char *TestData_LoadTwitterVcCompJson(void)
 {
     if (!testdata.twitterVcCompactJson)
-        testdata.twitterVcCompactJson = load_testdata_file("vc-twitter.compact.json");
+        testdata.twitterVcCompactJson = load_testdata_file("vc-twitter.compact.json", 0);
 
     return testdata.twitterVcCompactJson;
 }
@@ -693,7 +711,7 @@ const char *TestData_LoadTwitterVcCompJson(void)
 const char *TestData_LoadTwitterVcNormJson(void)
 {
     if (!testdata.twitterVcNormalizedJson)
-        testdata.twitterVcNormalizedJson = load_testdata_file("vc-twitter.normalized.json");
+        testdata.twitterVcNormalizedJson = load_testdata_file("vc-twitter.normalized.json", 0);
 
     return testdata.twitterVcNormalizedJson;
 }
@@ -701,7 +719,7 @@ const char *TestData_LoadTwitterVcNormJson(void)
 Credential *TestData_LoadVc(void)
 {
     if (!testdata.Vc)
-        testdata.Vc = store_credential("vc-json.json", "test vc");
+        testdata.Vc = store_credential("vc-json.json", "test vc", 0);
 
     return testdata.Vc;
 }
@@ -709,7 +727,7 @@ Credential *TestData_LoadVc(void)
 const char *TestData_LoadVcCompJson(void)
 {
     if (!testdata.VcCompactJson)
-        testdata.VcCompactJson = load_testdata_file("vc-json.compact.json");
+        testdata.VcCompactJson = load_testdata_file("vc-json.compact.json", 0);
 
     return testdata.VcCompactJson;
 }
@@ -717,7 +735,7 @@ const char *TestData_LoadVcCompJson(void)
 const char *TestData_LoadVcNormJson(void)
 {
     if (!testdata.VcNormalizedJson)
-        testdata.VcNormalizedJson = load_testdata_file("vc-json.normalized.json");
+        testdata.VcNormalizedJson = load_testdata_file("vc-json.normalized.json", 0);
 
     return testdata.VcNormalizedJson;
 }
@@ -725,7 +743,7 @@ const char *TestData_LoadVcNormJson(void)
 Presentation *TestData_LoadVp(void)
 {
     if (!testdata.vp) {
-        const char *data = load_testdata_file("vp.json");
+        const char *data = load_testdata_file("vp.json", 0);
         if (!data)
             return NULL;
 
@@ -738,7 +756,7 @@ Presentation *TestData_LoadVp(void)
 const char *TestData_LoadVpNormJson(void)
 {
     if (!testdata.vpNormalizedJson)
-        testdata.vpNormalizedJson = load_testdata_file("vp.normalized.json");
+        testdata.vpNormalizedJson = load_testdata_file("vp.normalized.json", 0);
 
     return testdata.vpNormalizedJson;
 }
@@ -751,23 +769,23 @@ DIDDocument *TestData_LoadDoc(void)
     DIDDocument *doc;
 
     if (!testdata.doc)
-       testdata.doc = store_document("document.json", "doc test");
+       testdata.doc = store_document("document.json", "doc test", 0);
 
     subject = DIDDocument_GetSubject(testdata.doc);
     id = DIDURL_NewByDid(subject, "key2");
-    rc = import_privatekey(id, storepass, "document.key2.sk");
+    rc = import_privatekey(id, storepass, "document.key2.sk", 0);
     DIDURL_Destroy(id);
     if (rc)
         return NULL;
 
     id = DIDURL_NewByDid(subject, "key3");
-    rc = import_privatekey(id, storepass, "document.key3.sk");
+    rc = import_privatekey(id, storepass, "document.key3.sk", 0);
     DIDURL_Destroy(id);
     if (rc)
         return NULL;
 
     id = DIDURL_NewByDid(subject, "primary");
-    rc = import_privatekey(id, storepass, "document.primary.sk");
+    rc = import_privatekey(id, storepass, "document.primary.sk", 0);
     DIDURL_Destroy(id);
     if (rc)
         return NULL;
@@ -788,17 +806,17 @@ DIDDocument *TestData_LoadControllerDoc(void)
     DIDDocument *doc;
 
     if (!testdata.controllerdoc)
-       testdata.controllerdoc = store_document("controller.json", "controller test");
+       testdata.controllerdoc = store_document("controller.json", "controller test", 0);
 
     subject = DIDDocument_GetSubject(testdata.controllerdoc);
     id = DIDURL_NewByDid(subject, "pk1");
-    rc = import_privatekey(id, storepass, "controller.pk1.sk");
+    rc = import_privatekey(id, storepass, "controller.pk1.sk", 0);
     DIDURL_Destroy(id);
     if (rc)
         return NULL;
 
     id = DIDURL_NewByDid(subject, "primary");
-    rc = import_privatekey(id, storepass, "controller.primary.sk");
+    rc = import_privatekey(id, storepass, "controller.primary.sk", 0);
     DIDURL_Destroy(id);
     if (rc)
         return NULL;
@@ -819,11 +837,11 @@ DIDDocument *TestData_LoadIssuerDoc(void)
     DIDDocument *doc;
 
     if (!testdata.issuerdoc)
-        testdata.issuerdoc = store_document("issuer.json", "issuer test");
+        testdata.issuerdoc = store_document("issuer.json", "issuer test", 0);
 
     subject = DIDDocument_GetSubject(testdata.issuerdoc);
     id = DIDURL_NewByDid(subject, "primary");
-    rc = import_privatekey(id, storepass, "issuer.primary.sk");
+    rc = import_privatekey(id, storepass, "issuer.primary.sk", 0);
     DIDURL_Destroy(id);
     if (rc)
         return NULL;
@@ -836,6 +854,118 @@ DIDDocument *TestData_LoadIssuerDoc(void)
     return testdata.issuerdoc;
 }
 
+DIDDocument *TestData_LoadUser1Doc(void)
+{
+    DIDURL *id;
+    DID *subject;
+    int rc, status;
+    DIDDocument *doc;
+
+    if (!testdata.user1doc)
+        testdata.user1doc = store_document("user1.id.json", "User1", 2);
+
+    subject = DIDDocument_GetSubject(testdata.user1doc);
+    id = DIDURL_NewByDid(subject, "key2");
+    rc = import_privatekey(id, storepass, "user1.id.key2.sk", 2);
+    DIDURL_Destroy(id);
+    if (rc)
+        return NULL;
+
+    id = DIDURL_NewByDid(subject, "key3");
+    rc = import_privatekey(id, storepass, "user1.id.key3.sk", 2);
+    DIDURL_Destroy(id);
+    if (rc)
+        return NULL;
+
+    id = DIDURL_NewByDid(subject, "primary");
+    rc = import_privatekey(id, storepass, "user1.id.primary.sk", 2);
+    DIDURL_Destroy(id);
+    if (rc)
+        return NULL;
+
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.user1doc, NULL, false, storepass))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.user1doc;
+}
+
+DIDDocument *TestData_LoadUser2Doc(void)
+{
+    DIDURL *id;
+    DID *subject;
+    int rc, status;
+    DIDDocument *doc;
+
+    if (!testdata.user2doc)
+        testdata.user2doc = store_document("user2.id.json", "User2", 2);
+
+    subject = DIDDocument_GetSubject(testdata.user2doc);
+    id = DIDURL_NewByDid(subject, "primary");
+    rc = import_privatekey(id, storepass, "user2.id.primary.sk", 2);
+    DIDURL_Destroy(id);
+    if (rc)
+        return NULL;
+
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.user2doc, NULL, false, storepass))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.user2doc;
+}
+
+DIDDocument *TestData_LoadUser3Doc(void)
+{
+    DIDURL *id;
+    DID *subject;
+    int rc, status;
+    DIDDocument *doc;
+
+    if (!testdata.user3doc)
+        testdata.user3doc = store_document("user3.id.json", "User3", 2);
+
+    subject = DIDDocument_GetSubject(testdata.user3doc);
+    id = DIDURL_NewByDid(subject, "primary");
+    rc = import_privatekey(id, storepass, "user3.id.primary.sk", 2);
+    DIDURL_Destroy(id);
+    if (rc)
+        return NULL;
+
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.user3doc, NULL, false, storepass))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.user3doc;
+}
+
+DIDDocument *TestData_LoadIssuerIdDoc(void)
+{
+    DIDURL *id;
+    DID *subject;
+    int rc, status;
+    DIDDocument *doc;
+
+    if (!testdata.issuerIddoc)
+        testdata.issuerIddoc = store_document("issuer.id.json", "Issuer", 2);
+
+    subject = DIDDocument_GetSubject(testdata.issuerIddoc);
+    id = DIDURL_NewByDid(subject, "primary");
+    rc = import_privatekey(id, storepass, "issuer.id.primary.sk", 2);
+    DIDURL_Destroy(id);
+    if (rc)
+        return NULL;
+
+    doc = DID_Resolve(subject, &status, true);
+    if (!doc && !DIDDocument_PublishDID(testdata.issuerIddoc, NULL, false, storepass))
+        return NULL;
+    DIDDocument_Destroy(doc);
+
+    return testdata.issuerIddoc;
+}
+
 DIDDocument *TestData_LoadEmptyCtmDoc(void)
 {
     DIDDocument *doc;
@@ -846,7 +976,7 @@ DIDDocument *TestData_LoadEmptyCtmDoc(void)
     TestData_LoadDoc();
 
     if (!testdata.emptyctmdoc)
-        testdata.emptyctmdoc = store_document("customized-did-empty.json", "empty customized doc");
+        testdata.emptyctmdoc = store_document("customized-did-empty.json", "empty customized doc", 0);
 
     subject = DIDDocument_GetSubject(testdata.emptyctmdoc);
     if (!subject)
@@ -871,20 +1001,20 @@ DIDDocument *TestData_LoadCtmDoc(void)
     TestData_LoadDoc();
 
     if (!testdata.ctmdoc)
-        testdata.ctmdoc = store_document("customized-did.json", "customized doc");
+        testdata.ctmdoc = store_document("customized-did.json", "customized doc", 0);
 
     subject = DIDDocument_GetSubject(testdata.ctmdoc);
     if (!subject)
         return NULL;
 
     id = DIDURL_NewByDid(subject, "k1");
-    rc = import_privatekey(id, storepass, "customized.k1.sk");
+    rc = import_privatekey(id, storepass, "customized.k1.sk", 0);
     DIDURL_Destroy(id);
     if (rc)
         return NULL;
 
     id = DIDURL_NewByDid(subject, "k2");
-    rc = import_privatekey(id, storepass, "customized.k2.sk");
+    rc = import_privatekey(id, storepass, "customized.k2.sk", 0);
     DIDURL_Destroy(id);
     if (rc)
         return NULL;
@@ -906,13 +1036,13 @@ static int import_ctmdid_privatekey(DID *did, const char *storepass)
     assert(did);
 
     id = DIDURL_NewByDid(did, "k1");
-    rc = import_privatekey(id, storepass, "customized.k1.sk");
+    rc = import_privatekey(id, storepass, "customized.k1.sk", 0);
     DIDURL_Destroy(id);
     if (rc)
         return -1;
 
     id = DIDURL_NewByDid(did, "k2");
-    rc = import_privatekey(id, storepass, "customized.k2.sk");
+    rc = import_privatekey(id, storepass, "customized.k2.sk", 0);
     DIDURL_Destroy(id);
     if (rc)
         return -1;
@@ -935,7 +1065,7 @@ DIDDocument *TestData_LoadEmptyCtmDoc_MultisigOne(void)
         return NULL;
 
     if (!testdata.emptyctmdoc_multisigone)
-        testdata.emptyctmdoc_multisigone = store_document("customized-multisigone-empty.json", "empty ctmdoc_1:3");
+        testdata.emptyctmdoc_multisigone = store_document("customized-multisigone-empty.json", "empty ctmdoc_1:3", 0);
 
     subject = DIDDocument_GetSubject(testdata.emptyctmdoc_multisigone);
     if (!subject)
@@ -968,7 +1098,7 @@ DIDDocument *TestData_LoadCtmDoc_MultisigOne(void)
         return NULL;
 
     if (!testdata.ctmdoc_multisigone)
-        testdata.ctmdoc_multisigone = store_document("customized-multisigone.json", "ctmdoc_1:3");
+        testdata.ctmdoc_multisigone = store_document("customized-multisigone.json", "ctmdoc_1:3", 0);
 
     subject = DIDDocument_GetSubject(testdata.ctmdoc_multisigone);
     if (!subject)
@@ -1004,7 +1134,7 @@ DIDDocument *TestData_LoadEmptyCtmDoc_MultisigTwo(void)
         return NULL;
 
     if (!testdata.emptyctmdoc_multisigtwo)
-        testdata.emptyctmdoc_multisigtwo = store_document("customized-multisigtwo-empty.json", "empty ctmdoc_2:3");
+        testdata.emptyctmdoc_multisigtwo = store_document("customized-multisigtwo-empty.json", "empty ctmdoc_2:3", 0);
 
     subject = DIDDocument_GetSubject(testdata.emptyctmdoc_multisigtwo);
     if (!subject)
@@ -1037,7 +1167,7 @@ DIDDocument *TestData_LoadCtmDoc_MultisigTwo(void)
         return NULL;
 
     if (!testdata.ctmdoc_multisigtwo)
-        testdata.ctmdoc_multisigtwo = store_document("customized-multisigtwo.json", "ctmdoc_2:3");
+        testdata.ctmdoc_multisigtwo = store_document("customized-multisigtwo.json", "ctmdoc_2:3", 0);
 
     subject = DIDDocument_GetSubject(testdata.ctmdoc_multisigtwo);
     if (!subject)
@@ -1073,7 +1203,7 @@ DIDDocument *TestData_LoadEmptyCtmDoc_MultisigThree(void)
         return NULL;
 
     if (!testdata.emptyctmdoc_multisigthree)
-        testdata.emptyctmdoc_multisigthree = store_document("customized-multisigthree-empty.json", "empty ctmdoc_3:3");
+        testdata.emptyctmdoc_multisigthree = store_document("customized-multisigthree-empty.json", "empty ctmdoc_3:3", 0);
 
     subject = DIDDocument_GetSubject(testdata.emptyctmdoc_multisigthree);
     if (!subject)
@@ -1106,7 +1236,7 @@ DIDDocument *TestData_LoadCtmDoc_MultisigThree(void)
         return NULL;
 
     if (!testdata.ctmdoc_multisigthree)
-        testdata.ctmdoc_multisigthree = store_document("customized-multisigthree.json", "ctmdoc_3:3");
+        testdata.ctmdoc_multisigthree = store_document("customized-multisigthree.json", "ctmdoc_3:3", 0);
 
     subject = DIDDocument_GetSubject(testdata.ctmdoc_multisigthree);
     if (!subject)
@@ -1130,7 +1260,7 @@ DIDDocument *TestData_LoadCtmDoc_MultisigThree(void)
 const char *TestData_LoadRestoreMnemonic(void)
 {
     if (!testdata.restoreMnemonic)
-        testdata.restoreMnemonic = load_testdata_file("mnemonic.restore");
+        testdata.restoreMnemonic = load_testdata_file("mnemonic.restore", 0);
 
     return testdata.restoreMnemonic;
 }
@@ -1138,6 +1268,9 @@ const char *TestData_LoadRestoreMnemonic(void)
 void TestData_Free(void)
 {
     DIDStore_Close(testdata.store);
+
+    if (testdata.rootidentity)
+        RootIdentity_Destroy(testdata.rootidentity);
 
     if (testdata.issuerdoc)
         DIDDocument_Destroy(testdata.issuerdoc);
@@ -1159,6 +1292,14 @@ void TestData_Free(void)
 
     if (testdata.controllerdoc)
         DIDDocument_Destroy(testdata.controllerdoc);
+    if (testdata.user1doc)
+        DIDDocument_Destroy(testdata.user1doc);
+    if (testdata.user2doc)
+        DIDDocument_Destroy(testdata.user2doc);
+    if (testdata.user3doc)
+        DIDDocument_Destroy(testdata.user3doc);
+    if (testdata.issuerIddoc)
+        DIDDocument_Destroy(testdata.issuerIddoc);
 
     if (testdata.emptyctmdoc)
         DIDDocument_Destroy(testdata.emptyctmdoc);

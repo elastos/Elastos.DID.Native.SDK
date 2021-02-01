@@ -138,7 +138,7 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
     }
 
     if (type == RequestType_Update) {
-        prevtxid = DIDMetaData_GetTxid(&document->metadata);
+        prevtxid = DIDMetadata_GetTxid(&document->metadata);
         if (!prevtxid) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "Can not determine the previous transaction ID.");
             return NULL;

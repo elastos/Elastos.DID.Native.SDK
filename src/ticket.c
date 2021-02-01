@@ -168,12 +168,12 @@ TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
         goto errorExit;
     }
 
-    if (!Is_CustomizedDID(ticket->doc)) {
+    if (!DIDDocument_IsCustomizedDID(ticket->doc)) {
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Ticket supports only for customized did.");
         goto errorExit;
     }
 
-    txid = DIDMetaData_GetTxid(&ticket->doc->metadata);
+    txid = DIDMetadata_GetTxid(&ticket->doc->metadata);
     if (!txid) {
         DIDError_Set(DIDERR_MALFORMED_META, "No transaction id from resolving.");
         goto errorExit;
@@ -240,7 +240,7 @@ int TransferTicket_Seal(TransferTicket *ticket, DIDDocument *controllerdoc,
         return -1;
     }
 
-    if (Is_CustomizedDID(controllerdoc)) {
+    if (DIDDocument_IsCustomizedDID(controllerdoc)) {
         DIDError_Set(DIDERR_INVALID_CONTROLLER, "The signer is not customized DID.");
         return -1;
     }
@@ -250,7 +250,7 @@ int TransferTicket_Seal(TransferTicket *ticket, DIDDocument *controllerdoc,
         return -1;
     }
 
-    if (!DIDMetaData_AttachedStore(&controllerdoc->metadata)) {
+    if (!DIDMetadata_AttachedStore(&controllerdoc->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Not attached with DID store.");
         return -1;
     }
@@ -510,7 +510,7 @@ bool TransferTicket_IsValid(TransferTicket *ticket)
     if (!TransferTicket_IsGenuine(ticket))
         return false;
 
-    if (strcmp(ticket->txid, DIDMetaData_GetTxid(&ticket->doc->metadata))) {
+    if (strcmp(ticket->txid, DIDMetadata_GetTxid(&ticket->doc->metadata))) {
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "The ticket doesn't have the lastest transaction id.");
         return false;
     }

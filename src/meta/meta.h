@@ -33,37 +33,47 @@
 extern "C" {
 #endif
 
-typedef struct MetaData {
+typedef struct Metadata {
     json_t *data;
     DIDStore *store;
-} MetaData;
+} Metadata;
 
-const char *MetaData_ToJson(MetaData *metadata);
+const char *Metadata_ToJson(Metadata *metadata);
 
-int MetaData_ToJson_Internal(MetaData *metadata, JsonGenerator *gen);
+int Metadata_ToJson_Internal(Metadata *metadata, JsonGenerator *gen);
 
-int MetaData_FromJson(MetaData *metadata, const char *data);
-int MetaData_FromJson_Internal(MetaData *metadata, json_t *json);
+int Metadata_FromJson(Metadata *metadata, const char *data);
+int Metadata_FromJson_Internal(Metadata *metadata, json_t *json);
 
-const char *MetaData_ToString(MetaData *metadata);
+const char *Metadata_ToString(Metadata *metadata);
 
-void MetaData_Free(MetaData *metadata);
-int MetaData_Merge(MetaData *tometa, MetaData *frommeta);
-int MetaData_Copy(MetaData *metadata, MetaData *frommeta);
+void Metadata_Free(Metadata *metadata);
+int Metadata_Merge(Metadata *tometa, Metadata *frommeta);
+int Metadata_Copy(Metadata *metadata, Metadata *frommeta);
 
-int MetaData_SetExtra(MetaData *metadata, const char* key, const char *value);
-int MetaData_SetExtraWithBoolean(MetaData *metadata, const char *key, bool value);
-int MetaData_SetExtraWithDouble(MetaData *metadata, const char *key, double value);
-int MetaData_SetExtraWithInteger(MetaData *metadata, const char *key, int value);
+int Metadata_SetExtra(Metadata *metadata, const char* key, const char *value);
+int Metadata_SetExtraWithBoolean(Metadata *metadata, const char *key, bool value);
+int Metadata_SetExtraWithDouble(Metadata *metadata, const char *key, double value);
+int Metadata_SetExtraWithInteger(Metadata *metadata, const char *key, int value);
 
-const char *MetaData_GetExtra(MetaData *metadata, const char *key);
-bool MetaData_GetExtraAsBoolean(MetaData *metadata, const char *key);
-double MetaData_GetExtraAsDouble(MetaData *metadata, const char *key);
-int MetaData_GetExtraAsInteger(MetaData *metadata, const char *key);
+const char *Metadata_GetExtra(Metadata *metadata, const char *key);
+bool Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key);
+double Metadata_GetExtraAsDouble(Metadata *metadata, const char *key);
+int Metadata_GetExtraAsInteger(Metadata *metadata, const char *key);
 
-void MetaData_SetStore(MetaData *metadata, DIDStore *store);
-DIDStore *MetaData_GetStore(MetaData *metadata);
-bool MetaData_AttachedStore(MetaData *metadata);
+int Metadata_SetDefaultExtra(Metadata *metadata, const char* key, const char *value);
+int Metadata_SetDefaultExtraWithBoolean(Metadata *metadata, const char *key, bool value);
+int Metadata_SetDefaultExtraWithDouble(Metadata *metadata, const char *key, double value);
+int Metadata_SetDefaultExtraWithInteger(Metadata *metadata, const char *key, int value);
+
+const char *Metadata_GetDefaultExtra(Metadata *metadata, const char *key);
+bool Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key);
+double Metadata_GetDefaultExtraAsDouble(Metadata *metadata, const char *key);
+int Metadata_GetDefaultExtraAsInteger(Metadata *metadata, const char *key);
+
+void Metadata_SetStore(Metadata *metadata, DIDStore *store);
+DIDStore *Metadata_GetStore(Metadata *metadata);
+bool Metadata_AttachedStore(Metadata *metadata);
 
 #ifdef __cplusplus
 }

@@ -240,9 +240,10 @@ static int Proof_ToJson(JsonGenerator *gen, DocumentProof *proof, DIDDocument *d
         CHECK(JsonGenerator_WriteStringField(gen, "type", proof->type));
     CHECK(JsonGenerator_WriteStringField(gen, "created",
             get_time_string(_timestring, sizeof(_timestring), &proof->created)));
-    if (!compact || !DID_Equals(&document->did, &proof->creater.did))
+    if (!compact || !DID_Equals(&document->did, &proof->creater.did)) {
         CHECK(JsonGenerator_WriteStringField(gen, "creator",
                 DIDURL_ToString(&proof->creater, id, sizeof(id), false)));
+    }
 
     CHECK(JsonGenerator_WriteStringField(gen, "signatureValue", proof->signatureValue));
     CHECK(JsonGenerator_WriteEndObject(gen));
@@ -702,7 +703,7 @@ static int remove_publickey(DIDDocument *document, DIDURL *keyid)
     size = document->publickeys.size;
     pks = document->publickeys.pks;
 
-    if (!Is_CustomizedDID(document) && size == 1) {
+    if (!DIDDocument_IsCustomizedDID(document) && size == 1) {
         DIDError_Set(DIDERR_INVALID_KEY, "Can't remove the last publickey.");
         return -1;
     }
@@ -722,7 +723,7 @@ static int remove_publickey(DIDDocument *document, DIDURL *keyid)
             document->publickeys.pks = NULL;
         }
 
-        if (DIDMetaData_AttachedStore(&document->metadata))
+        if (DIDMetadata_AttachedStore(&document->metadata))
             DIDStore_DeletePrivateKey(document->metadata.base.store, &document->did, keyid);
 
         return 0;
@@ -773,7 +774,7 @@ int DIDDocument_SetStore(DIDDocument *document, DIDStore *store)
     return 0;
 }
 
-static size_t get_self_authentication_count(DIDDocument *document)
+size_t DIDDocument_GetSelfAuthenticationKeyCount(DIDDocument *document)
 {
     size_t size = 0, i;
 
@@ -801,7 +802,7 @@ static size_t get_self_authorization_count(DIDDocument *document)
     return size;
 }
 
-bool Is_CustomizedDID(DIDDocument *document)
+bool DIDDocument_IsCustomizedDID(DIDDocument *document)
 {
     DIDURL *signkey;
 
@@ -822,19 +823,19 @@ bool controllers_check(DIDDocument *document)
     assert((document->controllers.size > 0 && document->controllers.docs) ||
             (document->controllers.size == 0 && !document->controllers.docs));
 
-    if (!Is_CustomizedDID(document) && document->controllers.size > 0) {
+    if (!DIDDocument_IsCustomizedDID(document) && document->controllers.size > 0) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Normal DID should not have controller.");
         return false;
     }
 
-    if (Is_CustomizedDID(document)) {
+    if (DIDDocument_IsCustomizedDID(document)) {
         if (document->controllers.size == 0) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Customized DID must have one controller at least.");
             return false;
         }
 
         for (i = 0; i < document->controllers.size; i++) {
-            if (Is_CustomizedDID(document->controllers.docs[i])) {
+            if (DIDDocument_IsCustomizedDID(document->controllers.docs[i])) {
                 DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "The controller must be normal DID.");
                 return false;
             }
@@ -1074,7 +1075,7 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
         CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
                 compact, KeyType_PublicKey));
 
-        if (get_self_authentication_count(doc) > 0) {
+        if (DIDDocument_GetSelfAuthenticationKeyCount(doc) > 0) {
             CHECK(JsonGenerator_WriteFieldName(gen, "authentication"));
             CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
                     compact, KeyType_Authentication));
@@ -1198,19 +1199,19 @@ void DIDDocument_Destroy(DIDDocument *document)
     if (document->proofs.proofs)
         free((void*)document->proofs.proofs);
 
-    DIDMetaData_Free(&document->metadata);
+    DIDMetadata_Free(&document->metadata);
     free(document);
 }
 
-int DIDDocument_SaveMetaData(DIDDocument *document)
+int DIDDocument_SaveMetadata(DIDDocument *document)
 {
-    if (document && DIDMetaData_AttachedStore(&document->metadata))
-        return DIDStore_StoreDIDMetaData(document->metadata.base.store, &document->metadata, &document->did);
+    if (document && DIDMetadata_AttachedStore(&document->metadata))
+        return DIDStore_StoreDIDMetadata(document->metadata.base.store, &document->metadata, &document->did);
 
     return 0;
 }
 
-DIDMetaData *DIDDocument_GetMetaData(DIDDocument *document)
+DIDMetadata *DIDDocument_GetMetadata(DIDDocument *document)
 {
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1301,7 +1302,7 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
         return true;
     }
 
-    isdeactived = DIDMetaData_GetDeactivated(&document->metadata);
+    isdeactived = DIDMetadata_GetDeactivated(&document->metadata);
     if (isdeactived)
         return isdeactived;
 
@@ -1309,7 +1310,7 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
     if (!resolvedoc)
         return false;
 
-    isdeactived = DIDMetaData_GetDeactivated(&resolvedoc->metadata);
+    isdeactived = DIDMetadata_GetDeactivated(&resolvedoc->metadata);
     if (isdeactived)
         goto storeexit;
 
@@ -1325,15 +1326,15 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
             DIDDocument_Destroy(document->controllerdoc);
         document->controllerdoc = controller_doc;
 
-        isdeactived = DIDMetaData_GetDeactivated(&controller_doc->metadata);
+        isdeactived = DIDMetadata_GetDeactivated(&controller_doc->metadata);
         if (isdeactived)
             goto storeexit;
     }*/
 
 storeexit:
     if (isdeactived) {
-        DIDMetaData_SetDeactivated(&resolvedoc->metadata, true);
-        DIDDocument_SaveMetaData(resolvedoc);
+        DIDMetadata_SetDeactivated(&resolvedoc->metadata, true);
+        DIDDocument_SaveMetadata(resolvedoc);
     }
 
     DIDDocument_Destroy(resolvedoc);
@@ -1672,9 +1673,8 @@ int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc)
 
     destdoc->multisig = srcdoc->multisig;
     destdoc->expires = srcdoc->expires;
-    DIDMetaData_Copy(&destdoc->metadata, &srcdoc->metadata);
-    DIDMetaData_SetLastModified(&destdoc->metadata, 0);
-    memcpy(&destdoc->did.metadata, &destdoc->metadata, sizeof(DIDMetaData));
+    DIDMetadata_Copy(&destdoc->metadata, &srcdoc->metadata);
+    memcpy(&destdoc->did.metadata, &destdoc->metadata, sizeof(DIDMetadata));
     return 0;
 }
 
@@ -1687,12 +1687,12 @@ DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document, DIDDocument *control
         return NULL;
     }
 
-    if (Is_CustomizedDID(document) && document->controllers.size > 1 && !controllerdoc) {
+    if (DIDDocument_IsCustomizedDID(document) && document->controllers.size > 1 && !controllerdoc) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Specify the controller to edit multi-controller customized DID.");
         return NULL;
     }
 
-    if (!Is_CustomizedDID(document) && controllerdoc) {
+    if (!DIDDocument_IsCustomizedDID(document) && controllerdoc) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Don't specify the controller to edit normal DID.");
         return NULL;
     }
@@ -1717,18 +1717,13 @@ DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document, DIDDocument *control
     }
 
     if (controllerdoc) {
-        builder->controllerdoc = (DIDDocument*)calloc(1, sizeof(DIDDocument));
+        builder->controllerdoc = DIDDocument_GetControllerDocument(builder->document, &controllerdoc->did);
         if (!builder->controllerdoc) {
-            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for controller document failed.");
+            DIDError_Set(DIDERR_INVALID_ARGS, "DIDDocument has no this controller.");
             DIDDocumentBuilder_Destroy(builder);
             return NULL;
         }
-
-        if (DIDDocument_Copy(builder->controllerdoc, controllerdoc) == -1) {
-            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Controller document copy failed.");
-            DIDDocumentBuilder_Destroy(builder);
-            return NULL;
-        }
+        DIDMetadata_SetStore(&builder->controllerdoc->metadata, controllerdoc->metadata.base.store);
     }
 
     return builder;
@@ -1741,8 +1736,6 @@ void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder)
 
     if (builder->document)
         DIDDocument_Destroy(builder->document);
-    if (builder->controllerdoc)
-        DIDDocument_Destroy(builder->controllerdoc);
 
     free(builder);
 }
@@ -1823,7 +1816,7 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
             (doc->controllers.size == 0 && !doc->controllers.docs));
 
     //check controller document and multisig
-    if (!Is_CustomizedDID(doc)) {
+    if (!DIDDocument_IsCustomizedDID(doc)) {
         if (controllerdoc) {
             DIDError_Set(DIDERR_INVALID_CONTROLLER, "Don't specify the controller to seal normal DID.");
             return NULL;
@@ -1840,7 +1833,7 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
                 return NULL;
             } else {
                 controllerdoc = doc->controllers.docs[0];
-                DIDMetaData_SetStore(&controllerdoc->metadata, doc->metadata.base.store);
+                DIDMetadata_SetStore(&controllerdoc->metadata, doc->metadata.base.store);
             }
         } else {
             if (!DIDDocument_GetControllerDocument(doc, &controllerdoc->did)) {
@@ -2177,7 +2170,7 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
     }
 
     document = builder->document;
-    if (Is_CustomizedDID(document)) {
+    if (DIDDocument_IsCustomizedDID(document)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "The customized did doesn't support authorization key.");
         return -1;
     }
@@ -2333,6 +2326,32 @@ static int diddocument_addcredential(DIDDocument *document, Credential *credenti
     return 0;
 }
 
+int DIDDocumentBuilder_AddController_Internal(DIDDocument *customizedoc, DIDDocument *document)
+{
+    DIDDocument *doc;
+    DIDDocument **docs;
+
+    assert(customizedoc);
+    assert(document);
+
+    if (DIDDocument_IsCustomizedDID(document)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport adding the customized did as a controller.");
+        return -1;
+    }
+
+    docs = (DIDDocument**)realloc(customizedoc->controllers.docs,
+                (customizedoc->controllers.size + 1) * sizeof(DIDDocument*));
+    if (!docs) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for controllers failed.");
+        return -1;
+    }
+
+    docs[customizedoc->controllers.size++] = document;
+    customizedoc->controllers.docs = docs;
+
+    return 0;
+}
+
 int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controller)
 {
     DIDDocument **docs;
@@ -2346,7 +2365,7 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
 
     document = builder->document;
     //check the normal DID or customized DID
-    if (!Is_CustomizedDID(document)) {
+    if (!DIDDocument_IsCustomizedDID(document)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Unsupported add controller into normal DID.");
         return -1;
     }
@@ -2367,23 +2386,8 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
     if (!controllerdoc)
         return -1;
 
-    if (Is_CustomizedDID(controllerdoc)) {
-        DIDDocument_Destroy(controllerdoc);
-        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport adding the customized did as a controller.");
+    if (DIDDocumentBuilder_AddController_Internal(document, controllerdoc) < 0)
         return -1;
-    }
-
-    docs = (DIDDocument**)realloc(document->controllers.docs,
-                (document->controllers.size + 1) * sizeof(DIDDocument*));
-
-    if (!docs) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for controllers failed.");
-        DIDDocument_Destroy(controllerdoc);
-        return -1;
-    }
-
-    docs[document->controllers.size++] = controllerdoc;
-    document->controllers.docs = docs;
 
     document->multisig = 0;
     clean_proofs(document);
@@ -2403,7 +2407,7 @@ int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *contro
     }
 
     document = builder->document;
-    if (!Is_CustomizedDID(document)) {
+    if (!DIDDocument_IsCustomizedDID(document)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Normal DID is no controller.");
         return -1;
     }
@@ -2587,7 +2591,7 @@ int DIDDocumentBuilder_RenewSelfProclaimedCredential(DIDDocumentBuilder *builder
     }
 
     document = builder->document;
-    if (!Is_CustomizedDID(document)) {
+    if (!DIDDocument_IsCustomizedDID(document)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport renew self-proclaimed Credential owned by normal DID.");
         return -1;
     }
@@ -2635,7 +2639,7 @@ int DIDDocumentBuilder_RemoveSelfProclaimedCredential(DIDDocumentBuilder *builde
     }
 
     document = builder->document;
-    if (!Is_CustomizedDID(document)) {
+    if (!DIDDocument_IsCustomizedDID(document)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport renew self-proclaimed Credential owned by normal DID.");
         return -1;
     }
@@ -2819,7 +2823,7 @@ int DIDDocumentBuilder_RemoveProof(DIDDocumentBuilder *builder, DID *controller)
     document = builder->document;
     size = document->proofs.size;
 
-    if (Is_CustomizedDID(document)) {
+    if (DIDDocument_IsCustomizedDID(document)) {
         if (!controller) {
             DIDError_Set(DIDERR_INVALID_ARGS, "Must be specified the controller to remove proof of customized did.");
             return -1;
@@ -2835,7 +2839,7 @@ int DIDDocumentBuilder_RemoveProof(DIDDocumentBuilder *builder, DID *controller)
         }
     }
 
-    if (!Is_CustomizedDID(document)) {
+    if (!DIDDocument_IsCustomizedDID(document)) {
         if (controller) {
             DIDError_Set(DIDERR_INVALID_CONTROLLER, "Unsupport the specified controller to remove proof.");
             return -1;
@@ -2912,7 +2916,7 @@ int DIDDocumentBuilder_SetMultisig(DIDDocumentBuilder *builder, int multisig)
         return -1;
     }
 
-    if (!Is_CustomizedDID(document)) {
+    if (!DIDDocument_IsCustomizedDID(document)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport setting multisig for normal DID.");
         return -1;
     }
@@ -2945,7 +2949,7 @@ int DIDDocument_GetMultisig(DIDDocument *document)
         return -1;
     }
 
-    if (!Is_CustomizedDID(document))
+    if (!DIDDocument_IsCustomizedDID(document))
         return 0;
 
     if (document->controllers.size == 1)
@@ -3197,11 +3201,11 @@ ssize_t DIDDocument_GetAuthenticationCount(DIDDocument *document)
         return -1;
     }
 
-    size = get_self_authentication_count(document);
+    size = DIDDocument_GetSelfAuthenticationKeyCount(document);
     if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
-            pk_size = get_self_authentication_count(doc);
+            pk_size = DIDDocument_GetSelfAuthenticationKeyCount(doc);
             if (pk_size > 0)
                 size += pk_size;
         }
@@ -3754,7 +3758,7 @@ int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
         return -1;
     }
 
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DID, "Not attached with DID store.");
         return -1;
     }
@@ -3973,7 +3977,7 @@ const char *DIDDocument_Derive(DIDDocument *document, const char *identifier,
         return NULL;
     }
 
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
         return NULL;
     }
@@ -4141,6 +4145,35 @@ int DIDDocument_SignTransferTicket(DIDDocument *controllerdoc,
     return TransferTicket_Seal(ticket, controllerdoc, storepass);
 }
 
+static bool controllers_equal(DIDDocument **docs1, size_t size1, DIDDocument **docs2, size_t size2)
+{
+    DIDDocument *doc1, *doc2;
+    int i, j;
+    bool bequals = false;
+
+    assert(docs1);
+    assert(docs2);
+
+    if (size1 != size2)
+        return false;
+
+    for(i = 0; i < size2; i++) {
+        doc2 = docs2[i];
+        for (j = 0; j < size1; j++) {
+            doc1 = docs1[j];
+            if (DID_Equals(&doc1->did, &doc2->did)) {
+                bequals = true;
+                break;
+            }
+        }
+
+        if (!bequals)
+            return false;
+    }
+
+    return true;
+}
+
 bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
         const char *storepass)
 {
@@ -4155,13 +4188,13 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
         return false;
     }
 
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
         return false;
     }
 
     store = document->metadata.base.store;
-    if (Is_CustomizedDID(document) && document->controllers.size > 1 && !signkey) {
+    if (DIDDocument_IsCustomizedDID(document) && document->controllers.size > 1 && !signkey) {
         DIDError_Set(DIDERR_INVALID_KEY, "Multi-controller customized DID must have sign key to publish.");
         return false;
     }
@@ -4207,9 +4240,12 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
             goto errorExit;
         }
 
-        if (Is_CustomizedDID(document) && document->controllers.size != resolve_doc->controllers.size) {
-            DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport publishing DID which is changed controller, please transfer it.");
-            goto errorExit;
+        if (DIDDocument_IsCustomizedDID(document)) {
+            if (!controllers_equal(document->controllers.docs, document->controllers.size,
+                   resolve_doc->controllers.docs, resolve_doc->controllers.size)) {
+                DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport publishing DID which is changed controller, please transfer it.");
+                goto errorExit;
+            }
         }
 
         resolve_signature = resolve_doc->proofs.proofs[0].signatureValue;
@@ -4217,11 +4253,11 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
             DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing resolve signature.");
             goto errorExit;
         }
-        last_txid = DIDMetaData_GetTxid(&resolve_doc->metadata);
+        last_txid = DIDMetadata_GetTxid(&resolve_doc->metadata);
 
         if (!force) {
-            local_signature = DIDMetaData_GetSignature(&document->metadata);
-            local_prevsignature = DIDMetaData_GetPrevSignature(&document->metadata);
+            local_signature = DIDMetadata_GetSignature(&document->metadata);
+            local_prevsignature = DIDMetadata_GetPrevSignature(&document->metadata);
             if ((!local_signature || !*local_signature) && (!local_prevsignature || !*local_prevsignature)) {
                 DIDError_Set(DIDERR_DIDSTORE_ERROR,
                         "Missing signatures information, DID SDK dosen't know how to handle it, use force mode to ignore checks.");
@@ -4240,11 +4276,10 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
                             "Current copy not based on the lastest on-chain copy.");
                     goto errorExit;
                 }
-
             }
         }
 
-        DIDMetaData_SetTxid(&document->metadata, last_txid);
+        DIDMetadata_SetTxid(&document->metadata, last_txid);
         successed = DIDBackend_UpdateDID(document, signkey, storepass);
     }
 
@@ -4253,10 +4288,10 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
 
     ResolveCache_InvalidateDID(&document->did);
     //Meta stores the resolved txid and local signature.
-    DIDMetaData_SetSignature(&document->metadata, DIDDocument_GetProofSignature(document, 0));
+    DIDMetadata_SetSignature(&document->metadata, DIDDocument_GetProofSignature(document, 0));
     if (resolve_signature)
-        DIDMetaData_SetPrevSignature(&document->metadata, resolve_signature);
-    rc = DIDStore_WriteDIDMetaData(store, &document->metadata, &document->did);
+        DIDMetadata_SetPrevSignature(&document->metadata, resolve_signature);
+    rc = DIDStore_WriteDIDMetadata(store, &document->metadata, &document->did);
 
 errorExit:
     DIDDocument_Destroy(resolve_doc);
@@ -4277,7 +4312,7 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
         return false;
     }
 
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
         return false;
     }
@@ -4290,7 +4325,7 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
         return false;
     }
 
-    if (!Is_CustomizedDID(resolve_doc)) {
+    if (!DIDDocument_IsCustomizedDID(resolve_doc)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport transfering normal DID.");
         goto errorExit;
     }
@@ -4298,7 +4333,7 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
     if (!TransferTicket_IsValid(ticket))
        goto errorExit;
 
-    if (strcmp(ticket->txid, DIDMetaData_GetTxid(&resolve_doc->metadata))) {
+    if (strcmp(ticket->txid, DIDMetadata_GetTxid(&resolve_doc->metadata))) {
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Transaction id of ticket mismatches with the chain one.");
         goto errorExit;
     }
@@ -4320,16 +4355,16 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
     if (!DIDDocument_IsAuthenticationKey(document, signkey))
         goto errorExit;
 
-    DIDMetaData_SetTxid(&document->metadata, DIDMetaData_GetTxid(&resolve_doc->metadata));
+    DIDMetadata_SetTxid(&document->metadata, DIDMetadata_GetTxid(&resolve_doc->metadata));
     if (!DIDBackend_TransferDID(document, ticket, signkey, storepass))
         goto errorExit;
 
     ResolveCache_InvalidateDID(&document->did);
     //Meta stores the resolved txid and local signature.
-    DIDMetaData_SetSignature(&document->metadata, DIDDocument_GetProofSignature(document, 0));
+    DIDMetadata_SetSignature(&document->metadata, DIDDocument_GetProofSignature(document, 0));
     if (*resolve_doc->proofs.proofs[0].signatureValue)
-        DIDMetaData_SetPrevSignature(&document->metadata, resolve_doc->proofs.proofs[0].signatureValue);
-    rc = DIDStore_WriteDIDMetaData(store, &document->metadata, &document->did);
+        DIDMetadata_SetPrevSignature(&document->metadata, resolve_doc->proofs.proofs[0].signatureValue);
+    rc = DIDStore_WriteDIDMetadata(store, &document->metadata, &document->did);
 
 errorExit:
     DIDDocument_Destroy(resolve_doc);
@@ -4356,13 +4391,13 @@ bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const cha
         return false;
     }
 
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
         return false;
     }
 
     store = document->metadata.base.store;
-    DIDMetaData_SetStore(&resolve_doc->metadata, store);
+    DIDMetadata_SetStore(&resolve_doc->metadata, store);
 
     if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(resolve_doc);
@@ -4410,7 +4445,7 @@ bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
         return false;
     }
 
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
         goto errorExit;
     }
@@ -4461,6 +4496,192 @@ bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
 errorExit:
     DIDDocument_Destroy(targetdoc);
     return successed;
+}
+
+DIDDocumentBuilder* DIDDocument_CreateBuilder(DID *did, DIDDocument *controllerdoc, DIDStore *store)
+{
+    DIDDocumentBuilder *builder;
+    DIDDocument *controller_doc = NULL;
+
+    assert(did);
+    assert(store);
+
+    builder = (DIDDocumentBuilder*)calloc(1, sizeof(DIDDocumentBuilder));
+    if (!builder) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for document builder failed.");
+        return NULL;
+    }
+
+    builder->document = (DIDDocument*)calloc(1, sizeof(DIDDocument));
+    if (!builder->document) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for document failed.");
+        goto errorExit;
+    }
+
+    if (!DID_Copy(&builder->document->did, did))
+        goto errorExit;
+
+    if (controllerdoc) {
+        builder->controllerdoc = (DIDDocument*)calloc(1, sizeof(DIDDocument));
+        if (!builder->controllerdoc) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for controller document failed.");
+            goto errorExit;
+        }
+
+        if (DIDDocument_Copy(builder->controllerdoc, controllerdoc) < 0) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Copy controller document failed.");
+            free((void*)builder->controllerdoc);
+            goto errorExit;
+        }
+
+        if (DIDDocumentBuilder_AddController_Internal(builder->document, builder->controllerdoc) < 0)
+            goto errorExit;
+    }
+
+    DIDDocument_SetStore(builder->document, store);
+    return builder;
+
+errorExit:
+    DIDDocumentBuilder_Destroy(builder);
+    return NULL;
+}
+
+static DIDDocument *create_customized_document(DIDStore *store, const char *storepass,
+        DID *did, DID **controllers, size_t size, DIDDocument *controllerdoc, int multisig)
+{
+    DIDDocument *document;
+    DIDDocumentBuilder *builder;
+    int i;
+
+    assert(store);
+    assert(storepass && *storepass);
+    assert(did);
+    assert(controllerdoc);
+
+    builder = DIDDocument_CreateBuilder(did, controllerdoc, store);
+    if (!builder)
+        return NULL;
+
+    for (i = 0; i < size; i++) {
+        if (DIDDocumentBuilder_AddController(builder, controllers[i]) == -1) {
+            DIDDocumentBuilder_Destroy(builder);
+            return NULL;
+        }
+    }
+
+    builder->document->multisig = multisig;
+
+    if (DIDDocumentBuilder_SetExpires(builder, 0) == -1) {
+        DIDDocumentBuilder_Destroy(builder);
+        return NULL;
+    }
+
+    document = DIDDocumentBuilder_Seal(builder, storepass);
+    DIDDocumentBuilder_Destroy(builder);
+    if (!document)
+        return NULL;
+
+    DIDMetadata_SetDeactivated(&document->metadata, false);
+    memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetadata));
+    return document;
+}
+
+DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *controllerdoc,
+        const char *customizeddid, DID **controllers, size_t size, int multisig,
+        const char *storepass)
+{
+    DIDDocument *doc;
+    DIDStore *store;
+    DIDURL *key;
+    DID **checkcontrollers = NULL, did;
+    bool iscontain;
+    int status, i, checksize = 0;
+
+    if (!controllerdoc || !customizeddid || !*customizeddid || multisig < 0 ||
+            !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    if (!DIDMetadata_AttachedStore(&controllerdoc->metadata)) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
+        return NULL;
+    }
+
+    store = controllerdoc->metadata.base.store;
+    if (!controllers && size != 0) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Please check the size of controlle array.");
+        return NULL;
+    }
+
+    if (DIDDocument_IsCustomizedDID(controllerdoc)) {
+        DIDError_Set(DIDERR_INVALID_CONTROLLER, "The controller must be normal DID.");
+        return NULL;
+    }
+
+    if (Init_DID(&did, customizeddid) == -1)
+        return NULL;
+
+    //check the controllers if it has the same DID and the controller is include in the contrllers.
+    if (controllers && size > 0) {
+        checkcontrollers = (DID**)alloca(size * sizeof(DID*));
+        if (!checkcontrollers) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for check controllers failed.");
+            return NULL;
+        }
+
+        for (i = 0; i < size; i++) {
+            if (DID_Equals(controllers[i], &controllerdoc->did) ||
+                    Contains_DID(checkcontrollers, checksize, controllers[i]))
+               continue;
+
+            checkcontrollers[checksize++] = controllers[i];
+        }
+    }
+
+    if (checksize == 0) {
+        checkcontrollers = NULL;
+    } else {
+        if (multisig > checksize + 1) {
+            DIDError_Set(DIDERR_INVALID_ARGS, "Please specify multisig.");
+            return NULL;
+        }
+    }
+
+    //check the DID
+    doc = DIDStore_LoadDID(store, &did);
+    if (doc) {
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exist.");
+        DIDDocument_Destroy(doc);
+        return NULL;
+    }
+
+    doc = DID_Resolve(&did, &status, true);
+    if (doc) {
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exist.");
+        DIDDocument_Destroy(doc);
+        return NULL;
+    }
+
+    key = DIDDocument_GetDefaultPublicKey(controllerdoc);
+    if (!key)
+        return NULL;
+
+    if (!DIDStore_ContainsPrivateKey(store, &controllerdoc->did, key))
+        return NULL;
+
+    doc = create_customized_document(store, storepass, &did, checkcontrollers, checksize,
+            controllerdoc, multisig);
+    if (!doc)
+        return NULL;
+
+    if (DIDStore_StoreDID(store, doc) == -1) {
+        DIDDocument_Destroy(doc);
+        return NULL;
+    }
+
+    DIDDocument_SetStore(doc, store);
+    return doc;
 }
 
 DIDURL *PublicKey_GetId(PublicKey *publickey)

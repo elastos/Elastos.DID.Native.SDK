@@ -44,15 +44,15 @@ struct DIDStore {
     char root[PATH_MAX];
 };
 
-int DIDStore_StoreDIDMetaData(DIDStore *store, DIDMetaData *meta, DID *did);
+int DIDStore_StoreDIDMetadata(DIDStore *store, DIDMetadata *meta, DID *did);
 
-int DIDStore_LoadDIDMeta(DIDStore *store, DIDMetaData *meta, DID *did);
+int DIDStore_LoadDIDMeta(DIDStore *store, DIDMetadata *meta, DID *did);
 
-int DIDStore_WriteDIDMetaData(DIDStore *store, DIDMetaData *meta, DID *did);
+int DIDStore_WriteDIDMetadata(DIDStore *store, DIDMetadata *meta, DID *did);
 
-int DIDStore_StoreCredMeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id);
+int DIDStore_StoreCredMeta(DIDStore *store, CredentialMetadata *meta, DIDURL *id);
 
-int DIDStore_LoadCredMeta(DIDStore *store, CredentialMetaData *meta, DIDURL *id);
+int DIDStore_LoadCredMeta(DIDStore *store, CredentialMetadata *meta, DIDURL *id);
 
 int DIDStore_Sign(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, char *sig, uint8_t *digest, size_t size);
@@ -60,10 +60,27 @@ int DIDStore_Sign(DIDStore *store, const char *storepass, DID *did,
 ssize_t DIDStore_LoadPrivateKey(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, uint8_t *privatekey, size_t size);
 
-int DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass, DID *did,
+ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, uint8_t *extendedkey, size_t size);
 
 int DIDStore_StorePrivateKey_Internal(DIDStore *store, DID *did, DIDURL *id, const char *prvkey);
+
+///////////////
+int DIDStore_StoreRootIdentity(DIDStore *store, const char *storepass, RootIdentity *rootidentity);
+
+DIDDocument *DIDStore_NewDIDByIndex(DIDStore *store, const char *storepass,
+        const char *id, int index, const char *alias);
+
+int DIDStore_StoreIndex(DIDStore *store, const char *id, int index);
+
+int DIDStore_LoadIndex(DIDStore *store, const char *id);
+
+DID *DIDStore_GetDIDByIndex(DIDStore *store, int index);
+
+int DIDStore_StoreRootIdentityWithElem(DIDStore *store, const char *storepass, const char *id,
+        const char *mnemonic, uint8_t *rootPrivatekey, size_t rootsize,
+        uint8_t *preDerivedPublicKey, size_t keysize, int index);
+
 
 #ifdef __cplusplus
 }
