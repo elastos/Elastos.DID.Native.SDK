@@ -180,7 +180,6 @@ static bool controllers_equals(DIDDocument *doc1, DIDDocument *doc2)
 static bool create_didtransaction(json_t *json)
 {
     DIDTransaction *info = NULL, *lastinfo;
-    DIDDocument *doc;
 
     assert(json);
 

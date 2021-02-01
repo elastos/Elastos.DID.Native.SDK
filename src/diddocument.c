@@ -2328,7 +2328,6 @@ static int diddocument_addcredential(DIDDocument *document, Credential *credenti
 
 int DIDDocumentBuilder_AddController_Internal(DIDDocument *customizedoc, DIDDocument *document)
 {
-    DIDDocument *doc;
     DIDDocument **docs;
 
     assert(customizedoc);
@@ -2354,7 +2353,6 @@ int DIDDocumentBuilder_AddController_Internal(DIDDocument *customizedoc, DIDDocu
 
 int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controller)
 {
-    DIDDocument **docs;
     DIDDocument *controllerdoc, *document;
     int i, status;
 
@@ -4594,7 +4592,6 @@ DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *controllerdoc,
     DIDStore *store;
     DIDURL *key;
     DID **checkcontrollers = NULL, did;
-    bool iscontain;
     int status, i, checksize = 0;
 
     if (!controllerdoc || !customizeddid || !*customizeddid || multisig < 0 ||

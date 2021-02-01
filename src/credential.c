@@ -1124,7 +1124,7 @@ bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *stor
 {
     DIDDocument *doc = NULL;
     DIDStore *store;
-    bool successed = false, brevoked;
+    bool successed = false;
     DID *signer;
     int status;
 
@@ -1198,8 +1198,6 @@ bool Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
     DIDStore *store;
     Credential *local_vc;
     bool successed = false, brevoked;
-    DID *signer;
-    int status;
 
     if (!id || !document || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");

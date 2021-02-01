@@ -40,7 +40,6 @@ int StoreMetadata_Init(StoreMetadata *metadata, const char *type, const char *ve
         const char *fingerprint, const char *defaultrootidentity)
 {
     char string[32];
-    int len;
 
     assert(metadata);
     assert(type);
