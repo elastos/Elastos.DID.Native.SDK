@@ -12,36 +12,31 @@
 #include "constant.h"
 #include "ela_did.h"
 #include "did.h"
+#include "diddocument.h"
+#include "credential.h"
 
 static const char *password = "passwd";
 
 static DIDStore *store;
 
-static int get_issuer_cred(DIDURL *id, void *context)
+static int get_user1_cred(DIDURL *id, void *context)
 {
+    int *count = (int*)context;
+
     Credential *cred;
-    const char *alias;
-    DID *creddid;
-    CredentialMetaData *metadata;
 
     if (!id) {
         return 0;
     }
 
-    creddid = DIDURL_GetDid(id);
-    if (!creddid)
-        return -1;
+    if (!strcmp("email", id->fragment) || !strcmp("json", id->fragment) ||
+            !strcmp("passport", id->fragment) || !strcmp("twitter", id->fragment) ||
+            !strcmp("profile", id->fragment)) {
+        cred = DIDStore_LoadCredential(store, &id->did, id);
+        if (!cred)
+            return -1;
 
-    metadata = DIDURL_GetMetaData(id);
-    if (!metadata)
-        return -1;
-
-    alias = CredentialMetaData_GetAlias(metadata);
-    CU_ASSERT_PTR_NOT_NULL(alias);
-
-    if (strcmp(alias, "Profile") == 0) {
-        cred = DIDStore_LoadCredential(store, creddid, id);
-        CU_ASSERT_PTR_NOT_NULL(cred);
+        (*count)++;
         Credential_Destroy(cred);
         return 0;
     }
@@ -49,31 +44,20 @@ static int get_issuer_cred(DIDURL *id, void *context)
     return -1;
 }
 
-static int get_test_cred(DIDURL *id, void *context)
+static int get_user2_cred(DIDURL *id, void *context)
 {
+    int *count = (int*)context;
     Credential *cred;
-    const char *alias;
-    DID *creddid;
-    CredentialMetaData *metadata;
 
     if (!id)
         return 0;
 
-    creddid = DIDURL_GetDid(id);
-    if (!creddid)
-        return -1;
+    if (!strcmp("profile", id->fragment)) {
+        cred = DIDStore_LoadCredential(store, &id->did, id);
+        if (!cred)
+            return -1;
 
-    metadata = DIDURL_GetMetaData(id);
-    if (!metadata)
-        return -1;
-
-    alias = CredentialMetaData_GetAlias(metadata);
-    CU_ASSERT_PTR_NOT_NULL(alias);
-
-    if (strcmp(alias, "Profile") == 0 || strcmp(alias, "Email") == 0 ||
-            strcmp(alias, "Twitter") == 0 || strcmp(alias, "Passport") == 0) {
-        cred = DIDStore_LoadCredential(store, creddid, id);
-        CU_ASSERT_PTR_NOT_NULL(cred);
+        (*count)++;
         Credential_Destroy(cred);
         return 0;
     }
@@ -83,103 +67,125 @@ static int get_test_cred(DIDURL *id, void *context)
 
 static int get_did(DID *did, void *context)
 {
+    int *count = (int*)context;
+
+    DIDDocument *doc;
     const char *alias;
-    DIDDocument *doc = NULL;
-    DIDMetaData *metadata;
-    int rc;
+    char id[ELA_MAX_DID_LEN];
+    int rc, vc_count;
 
     if (!did)
         return 0;
 
-    metadata = DID_GetMetaData(did);
-    if (!metadata)
-        return -1;
+    if (!strcmp("bar", did->idstring) || !strcmp("baz", did->idstring) ||
+            !strcmp("example", did->idstring) || !strcmp("foo", did->idstring) ||
+            !strcmp("foobar", did->idstring)) {
+            (*count)++;
+            return 0;
+    } else {
+        alias = DIDMetadata_GetAlias(&did->metadata);
+        if (!alias)
+            return -1;
 
-    alias = DIDMetaData_GetAlias(metadata);
-    if (!alias)
-        return -1;
+       if (!strcmp("User1", alias)) {
+            vc_count = 0;
+            CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store, did, get_user1_cred, (void*)&vc_count));
+            CU_ASSERT_EQUAL(5, vc_count);
+            (*count)++;
+            return 0;
+        }
 
-   if (strcmp(alias, "Issuer") == 0) {
-        doc = DIDStore_LoadDID(store, did);
-        CU_ASSERT_PTR_NOT_NULL(doc);
-        DIDDocument_Destroy(doc);
+        if (!strcmp("User2", alias) || !strcmp("Issuer", alias)) {
+            vc_count = 0;
+            CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store, did, get_user2_cred, (void*)&vc_count));
+            CU_ASSERT_EQUAL(1, vc_count);
+            (*count)++;
+            return 0;
+        }
 
-        rc = DIDStore_ListCredentials(store, did, get_issuer_cred, NULL);
-        CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
-        return 0;
-    }
-
-    if (strcmp(alias, "Test") == 0) {
-        doc = DIDStore_LoadDID(store, did);
-        CU_ASSERT_PTR_NOT_NULL(doc);
-        DIDDocument_Destroy(doc);
-
-        rc = DIDStore_ListCredentials(store, did, get_test_cred, NULL);
-        CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
-        return 0;
+        if (!strcmp("User3", alias) || !strcmp("User4", alias)) {
+            vc_count = 0;
+            CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store, did, get_user2_cred, (void*)&vc_count));
+            CU_ASSERT_EQUAL(0, vc_count);
+            (*count)++;
+            return 0;
+        }
     }
 
     return -1;
 }
 
-static const char *getpassword(const char *walletDir, const char *walletId)
+static int get_identity(RootIdentity *identity, void *context)
 {
-    return walletpass;
+    int *count = (int*)context;
+    DIDStore *store;
+    const char *id;
+
+    if (!identity)
+        return 0;
+
+    (*count)++;
+    return 0;
 }
 
 static void test_openstore_file_exist(void)
 {
     char _path[PATH_MAX], mnemonic[ELA_MAX_MNEMONIC_LEN];
+    const char *defaultIdentity;
+    RootIdentity *rootidentity;
     char *path;
-    bool hasidentity;
-    int rc;
+    int rc, count = 0;
 
-    hasidentity = DIDStore_ContainsPrivateIdentity(store);
-    CU_ASSERT_TRUE(hasidentity);
-
-    path = get_file_path(_path, PATH_MAX, 13, "..", PATH_STEP, "etc", PATH_STEP,
-            "did", PATH_STEP, "resources", PATH_STEP, "teststore", PATH_STEP,
-            PRIVATE_DIR, PATH_STEP, INDEX_FILE);
+    path = get_file_path(_path, PATH_MAX, 15, "..", PATH_STEP, "etc", PATH_STEP,
+            "did", PATH_STEP, "resources", PATH_STEP, "v2", PATH_STEP, "teststore", PATH_STEP,
+            DATA_DIR, PATH_STEP, META_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
-    rc = DIDStore_ExportMnemonic(store, password, mnemonic, sizeof(mnemonic));
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store, get_identity, (void*)&count));
+    CU_ASSERT_EQUAL(1, count);
 
-    rc = DIDStore_ListDIDs(store, 0, get_did, NULL);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    count = 0;
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&count));
+    CU_ASSERT_EQUAL(10, count);
 }
 
 static void test_openstore_newdid(void)
 {
+    RootIdentity *rootidentity;
     DIDDocument *doc;
-    DID *did;
-    bool isDeleted;
+    const char *id;
 
-    doc = DIDStore_NewDID(store, password, "");
-    CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
+    id = DIDStore_GetDefaultRootIdentity(store);
+    CU_ASSERT_PTR_NOT_NULL(id);
 
-    did = DIDDocument_GetSubject(doc);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(did);
+    rootidentity = DIDStore_LoadRootIdentity(store, id);
+    free((void*)id);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    isDeleted = DIDStore_DeleteDID(store, did);
-    CU_ASSERT_TRUE(isDeleted);
+    doc = RootIdentity_NewDID(rootidentity, password, "");
+    CU_ASSERT_PTR_NOT_NULL(doc);
+    CU_ASSERT_TRUE(DIDStore_DeleteDID(store, &doc->did));
 
+    RootIdentity_Destroy(rootidentity);
     DIDDocument_Destroy(doc);
 }
 
 static void test_openstore_newdid_with_wrongpw(void)
 {
+    RootIdentity *rootidentity;
     DIDDocument *doc;
-    DID *did;
-    bool isDeleted;
+    const char *id;
 
-    doc = DIDStore_NewDID(store, "1234", "");
+    id = DIDStore_GetDefaultRootIdentity(store);
+    CU_ASSERT_PTR_NOT_NULL(id);
+
+    rootidentity = DIDStore_LoadRootIdentity(store, id);
+    free((void*)id);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
+
+    doc = RootIdentity_NewDID(rootidentity, "1234", "");
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NULL(doc);
-
-    did = DIDDocument_GetSubject(doc);
-    isDeleted = DIDStore_DeleteDID(store, did);
-    CU_ASSERT_FALSE(isDeleted);
-
     DIDDocument_Destroy(doc);
 }
 

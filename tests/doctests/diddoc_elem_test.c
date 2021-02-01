@@ -1194,12 +1194,6 @@ static int diddoc_elem_test_suite_init(void)
     if (!store)
         return -1;
 
-    rc = TestData_InitIdentity(store);
-    if (rc) {
-        TestData_Free();
-        return -1;
-    }
-
     doc = TestData_LoadDoc();
     if (!doc || !DIDDocument_IsValid(doc)) {
         TestData_Free();

@@ -80,6 +80,10 @@ int ecdsa_verify(uint8_t *sig, uint8_t *publickey, uint8_t *digest, size_t size)
 
 int ecdsa_verify_base64(char *sig, uint8_t *publickey, uint8_t *digest, size_t size);
 
+int md5(uint8_t *md5, size_t size, uint8_t *data, size_t datasize);
+
+ssize_t _encrypt(uint8_t *cipher, const char *passwd, const uint8_t *input, size_t len);
+
 #ifdef __cplusplus
 }
 #endif

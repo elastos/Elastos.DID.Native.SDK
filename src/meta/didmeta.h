@@ -33,52 +33,56 @@
 extern "C" {
 #endif
 
-struct DIDMetaData {
-    MetaData base;
+struct DIDMetadata {
+    Metadata base;
 };
 
-const char *DIDMetaData_ToJson(DIDMetaData *metadata);
+const char *DIDMetadata_ToJson(DIDMetadata *metadata);
 
-int DIDMetaData_ToJson_Internal(DIDMetaData *metadata, JsonGenerator *gen);
+int DIDMetadata_ToJson_Internal(DIDMetadata *metadata, JsonGenerator *gen);
 
-int DIDMetaData_FromJson(DIDMetaData *metadata, const char *data);
+int DIDMetadata_FromJson(DIDMetadata *metadata, const char *data);
 
-int DIDMetaData_FromJson_Internal(DIDMetaData *metadata, json_t *json);
+int DIDMetadata_FromJson_Internal(DIDMetadata *metadata, json_t *json);
 
-const char *DIDMetaData_ToString(DIDMetaData *metadata);
+const char *DIDMetadata_ToString(DIDMetadata *metadata);
 
-void DIDMetaData_Free(DIDMetaData *metadata);
+void DIDMetadata_Free(DIDMetadata *metadata);
 
-int DIDMetaData_SetDeactivated(DIDMetaData *metadata, bool deactived);
+int DIDMetadata_SetDeactivated(DIDMetadata *metadata, bool deactived);
 
-int DIDMetaData_SetPublished(DIDMetaData *metadata, time_t time);
+int DIDMetadata_SetPublished(DIDMetadata *metadata, time_t time);
 
-int DIDMetaData_SetLastModified(DIDMetaData *metadata, time_t time);
+int DIDMetadata_SetRootIdentity(DIDMetadata *metadata, const char *rootidentity);
 
-time_t DIDMetaData_GetLastModified(DIDMetaData *metadata);
+int DIDMetadata_SetIndex(DIDMetadata *metadata, int index);
 
-const char *DIDMetaData_GetSignature(DIDMetaData *metadata);
+const char *DIDMetadata_GetSignature(DIDMetadata *metadata);
 
-int DIDMetaData_Merge(DIDMetaData *metadata, DIDMetaData *frommeta);
+const char *DIDMetadata_GetRootIdentity(DIDMetadata *metadata);
 
-int DIDMetaData_Copy(DIDMetaData *metadata, DIDMetaData *frommeta);
+int DIDMetadata_GetIndex(DIDMetadata *metadata);
 
-void DIDMetaData_SetStore(DIDMetaData *metadata, DIDStore *store);
+int DIDMetadata_Merge(DIDMetadata *metadata, DIDMetadata *frommeta);
 
-DIDStore *DIDMetaData_GetStore(DIDMetaData *metadata);
+int DIDMetadata_Copy(DIDMetadata *metadata, DIDMetadata *frommeta);
 
-bool DIDMetaData_AttachedStore(DIDMetaData *metadata);
+void DIDMetadata_SetStore(DIDMetadata *metadata, DIDStore *store);
+
+DIDStore *DIDMetadata_GetStore(DIDMetadata *metadata);
+
+bool DIDMetadata_AttachedStore(DIDMetadata *metadata);
 
 //for DID_API
-DID_API const char *DIDMetaData_GetPrevSignature(DIDMetaData *metadata);
+DID_API const char *DIDMetadata_GetPrevSignature(DIDMetadata *metadata);
 
-DID_API int DIDMetaData_SetTxid(DIDMetaData *metadata, const char *txid);
+DID_API int DIDMetadata_SetTxid(DIDMetadata *metadata, const char *txid);
 
-DID_API int DIDMetaData_SetSignature(DIDMetaData *metadata, const char *signature);
+DID_API int DIDMetadata_SetSignature(DIDMetadata *metadata, const char *signature);
 
-DID_API int DIDMetaData_SetPrevSignature(DIDMetaData *metadata, const char *signature);
+DID_API int DIDMetadata_SetPrevSignature(DIDMetadata *metadata, const char *signature);
 
-DID_API const char *DIDMetaData_GetTxid(DIDMetaData *metadata);
+DID_API const char *DIDMetadata_GetTxid(DIDMetadata *metadata);
 
 #ifdef __cplusplus
 }

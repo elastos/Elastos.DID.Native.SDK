@@ -211,6 +211,18 @@ typedef struct DID                     DID;
 typedef struct DIDURL                   DIDURL;
 /**
  * \~English
+ * Root Identity records mnemonic, extended private key, extended public key and
+ * index for the private identity.
+ */
+typedef struct RootIdentity             RootIdentity;
+/**
+ * \~English
+ * Identity Metadata records alias string for Root identity and default DID derived
+ * from Root Identity.
+ **/
+typedef struct IdentityMetadata         IdentityMetadata;
+/**
+ * \~English
  * Public keys are used for digital signatures, encryption and
  * other cryptographic operations, which are the basis for purposes such as
  * authentication or establishing secure communication with service endpoints.
@@ -255,14 +267,14 @@ typedef struct DIDDocument              DIDDocument;
 typedef struct DIDDocumentBuilder       DIDDocumentBuilder;
 /**
  * \~English
- DIDMetaData is store for other information about DID except DIDDocument information.
+ DIDMetadata is store for other information about DID except DIDDocument information.
  */
-typedef struct DIDMetaData              DIDMetaData;
+typedef struct DIDMetadata              DIDMetadata;
 /**
  * \~English
- * CredentialMetaData stores information about Credential except information in Credential.
+ * CredentialMetadata stores information about Credential except information in Credential.
  */
-typedef struct CredentialMetaData       CredentialMetaData;
+typedef struct CredentialMetadata       CredentialMetadata;
 /**
  * \~English
  DIDBiography stores all did transactions from chain.
@@ -312,7 +324,7 @@ typedef struct DIDStore                 DIDStore;
 
 /**
  * \~English
- * DID list callbacks, return alias about did.
+ * DID list callbacks, which is realized by user.
  * @param
  *      did               [in] A handle to DID.
  * @param
@@ -323,15 +335,26 @@ typedef struct DIDStore                 DIDStore;
 typedef int DIDStore_DIDsCallback(DID *did, void *context);
 /**
  * \~English
- * Credential list callbacks, return alias about credential.
+ * Credential list callbacks, which is realized by user.
  * @param
- *      did               [in] A handle to DID.
+ *      id                [in] A handle to DIDURL.
  * @param
  *      context           [in] The application defined context data.
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */
 typedef int DIDStore_CredentialsCallback(DIDURL *id, void *context);
+/**
+ * \~English
+ * Root Identity list callbacks, which is realized by user.
+ * @param
+ *      rootidentity      [in] A handle to RootIdentity.
+ * @param
+ *      context           [in] The application defined context data.
+ * @return
+ *      If no error occurs, return 0. Otherwise, return -1.
+ */
+typedef int DIDStore_RootIdentitiesCallback(RootIdentity *rootidentity, void *context);
 /**
  * \~English
  * The function indicate how to resolve the confict, if the local document is different
@@ -343,7 +366,7 @@ typedef int DIDStore_CredentialsCallback(DIDURL *id, void *context);
  * @return
  *      If no error occurs, return merged document. Otherwise, return NULL.
  */
-typedef DIDDocument* DIDStore_MergeCallback(DIDDocument *chaincopy, DIDDocument *localcopy);
+typedef DIDDocument* DIDDocument_ConflictHandle(DIDDocument *chaincopy, DIDDocument *localcopy);
 /**
  * \~English
  * The function indicate how to get local did document, if this did is not published to chain.
@@ -581,19 +604,19 @@ DID_API DIDBiography *DID_ResolveBiography(DID *did);
 
 /**
  * \~English
- * Get DID MetaData from did.
+ * Get DID metadata from did.
  *
  * @param
  *      did                      [in] The handle of DID.
  * @return
- *      If no error occurs, return the handle to DIDMetaData.
+ *      If no error occurs, return the handle to DIDMetadata.
  *      Otherwise, return -1.
  */
-DID_API DIDMetaData *DID_GetMetaData(DID *did);
+DID_API DIDMetadata *DID_GetMetadata(DID *did);
 
 /**
  * \~English
- * Save DID MetaData.
+ * Save DID metadata.
  *
  * @param
  *      did                      [in] The handle of DID.
@@ -601,63 +624,63 @@ DID_API DIDMetaData *DID_GetMetaData(DID *did);
  *      If no error occurs, return 0.
  *      Otherwise, return -1.
  */
-DID_API int DID_SaveMetaData(DID *did);
+DID_API int DID_SaveMetadata(DID *did);
 
 /**
  * \~English
  * Get alias for did.
  *
  * @param
- *      metadata                        [in] The handle of DIDMetaData.
+ *      metadata                        [in] The handle of DIDMetadata.
  * @return
  *      If no error occurs, return alias string.
  *      Otherwise, return NULL.
  */
-DID_API const char *DIDMetaData_GetAlias(DIDMetaData *metadata);
+DID_API const char *DIDMetadata_GetAlias(DIDMetadata *metadata);
 
 /**
  * \~English
  * Get did status, deactived or not.
  *
  * @param
- *      metadata                        [in] The handle of DIDMetaData.
+ *      metadata                        [in] The handle of DIDMetadata.
  * @return
  *      If no error occurs, return status.
  *      Otherwise, return false.
  */
-DID_API bool DIDMetaData_GetDeactivated(DIDMetaData *metadata);
+DID_API bool DIDMetadata_GetDeactivated(DIDMetadata *metadata);
 
 /**
  * \~English
  * Get the time of transaction id for did.
  *
  * @param
- *      metadata                        [in] The handle of DIDMetaData.
+ *      metadata                        [in] The handle of DIDMetadata.
  * @return
  *      If no error occurs, return time stamp.
  *      Otherwise, return 0.
  */
-DID_API time_t DIDMetaData_GetPublished(DIDMetaData *metadata);
+DID_API time_t DIDMetadata_GetPublished(DIDMetadata *metadata);
 
 /**
  * \~English
  * Set alias for did.
  *
  * @param
- *      metadata                        [in] The handle of DIDMetaData.
+ *      metadata                        [in] The handle of DIDMetadata.
  * @param
  *      alias                           [in] The ailas string.
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */
-DID_API int DIDMetaData_SetAlias(DIDMetaData *metadata, const char *alias);
+DID_API int DIDMetadata_SetAlias(DIDMetadata *metadata, const char *alias);
 
 /**
  * \~English
  * Set 'string' extra elemfor did.
  *
  * @param
- *      metadata                        [in] The handle of DIDMetaData.
+ *      metadata                        [in] The handle of DIDMetadata.
  * @param
  *      key                             [in] The key string.
  * @param
@@ -665,14 +688,14 @@ DID_API int DIDMetaData_SetAlias(DIDMetaData *metadata, const char *alias);
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */
-DID_API int DIDMetaData_SetExtra(DIDMetaData *metadata, const char* key, const char *value);
+DID_API int DIDMetadata_SetExtra(DIDMetadata *metadata, const char* key, const char *value);
 
 /**
  * \~English
  * Set 'boolean' extra elem for did.
  *
  * @param
- *      metadata                        [in] The handle of DIDMetaData.
+ *      metadata                        [in] The handle of DIDMetadata.
  * @param
  *      key                             [in] The key string.
  * @param
@@ -680,14 +703,14 @@ DID_API int DIDMetaData_SetExtra(DIDMetaData *metadata, const char* key, const c
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */
-DID_API int DIDMetaData_SetExtraWithBoolean(DIDMetaData *metadata, const char *key, bool value);
+DID_API int DIDMetadata_SetExtraWithBoolean(DIDMetadata *metadata, const char *key, bool value);
 
 /**
  * \~English
  * Set 'double' extra elem for did.
  *
  * @param
- *      metadata                        [in] The handle of DIDMetaData.
+ *      metadata                        [in] The handle of DIDMetadata.
  * @param
  *      key                             [in] The key string.
  * @param
@@ -695,46 +718,46 @@ DID_API int DIDMetaData_SetExtraWithBoolean(DIDMetaData *metadata, const char *k
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */
-DID_API int DIDMetaData_SetExtraWithDouble(DIDMetaData *metadata, const char *key, double value);
+DID_API int DIDMetadata_SetExtraWithDouble(DIDMetadata *metadata, const char *key, double value);
 
 /**
  * \~English
  * Get 'string' extra elem from DID.
  *
  * @param
- *      metadata                       [in] The handle of CredentialMetaData.
+ *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      key                            [in] The key string.
  * @return
  *      If no error occurs, return the elem string. Otherwise, return NULL.
  */
-DID_API const char *DIDMetaData_GetExtra(DIDMetaData *metadata, const char *key);
+DID_API const char *DIDMetadata_GetExtra(DIDMetadata *metadata, const char *key);
 
 /**
  * \~English
  * Get 'boolean' extra elem from DID.
  *
  * @param
- *      metadata                       [in] The handle of CredentialMetaData.
+ *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      key                            [in] The key string.
  * @return
  *      'boolean' elem value.
  */
-DID_API bool DIDMetaData_GetExtraAsBoolean(DIDMetaData *metadata, const char *key);
+DID_API bool DIDMetadata_GetExtraAsBoolean(DIDMetadata *metadata, const char *key);
 
 /**
  * \~English
  * Get 'double' extra elem from DID.
  *
  * @param
- *      metadata                       [in] The handle of CredentialMetaData.
+ *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      key                            [in] The key string.
  * @return
  *      'double' elem value.
  */
-DID_API double DIDMetaData_GetExtraAsDouble(DIDMetaData *metadata, const char *key);
+DID_API double DIDMetadata_GetExtraAsDouble(DIDMetadata *metadata, const char *key);
 
 /******************************************************************************
  * DIDURL
@@ -870,18 +893,18 @@ DID_API void DIDURL_Destroy(DIDURL *id);
 
 /**
  * \~English
- * Get CredentialMetaData from Credential.
+ * Get CredentialMetadata from Credential.
  *
  * @param
  *      id                       [in] The handle of DIDURL.
  * @return
- *      If no error occurs, return the handle to CredentialMetaData. Otherwise, return NULL.
+ *      If no error occurs, return the handle to CredentialMetadata. Otherwise, return NULL.
  */
-DID_API CredentialMetaData *DIDURL_GetMetaData(DIDURL *id);
+DID_API CredentialMetadata *DIDURL_GetMetadata(DIDURL *id);
 
 /**
  * \~English
- * Save Credential(DIDURL) MetaData.
+ * Save Credential(DIDURL) metadata.
  *
  * @param
  *      id                      [in] The handle of DIDURL.
@@ -889,27 +912,27 @@ DID_API CredentialMetaData *DIDURL_GetMetaData(DIDURL *id);
  *      If no error occurs, return 0.
  *      Otherwise, return -1.
  */
-DID_API int DIDURL_SaveMetaData(DIDURL *id);
+DID_API int DIDURL_SaveMetadata(DIDURL *id);
 
 /**
  * \~English
  * Set alias for Credential.
  *
  * @param
- *      metadata                       [in] The handle of CredentialMetaData.
+ *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      alias                          [in] The alias string.
  * @return
  *      If no error occurs, return the 0. Otherwise, return -1.
  */
-DID_API int CredentialMetaData_SetAlias(CredentialMetaData *metadata, const char *alias);
+DID_API int CredentialMetadata_SetAlias(CredentialMetadata *metadata, const char *alias);
 
 /**
  * \~English
  * Set 'string' extra elem for Credential.
  *
  * @param
- *      metadata                       [in] The handle of CredentialMetaData.
+ *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      key                            [in] The key string.
  * @param
@@ -917,7 +940,7 @@ DID_API int CredentialMetaData_SetAlias(CredentialMetaData *metadata, const char
  * @return
  *      If no error occurs, return the 0. Otherwise, return -1.
  */
-DID_API int CredentialMetaData_SetExtra(CredentialMetaData *metadata,
+DID_API int CredentialMetadata_SetExtra(CredentialMetadata *metadata,
         const char* key, const char *value);
 
 /**
@@ -925,7 +948,7 @@ DID_API int CredentialMetaData_SetExtra(CredentialMetaData *metadata,
  * Set 'boolean' extra elem for Credential.
  *
  * @param
- *      metadata                       [in] The handle of CredentialMetaData.
+ *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      key                            [in] The key string.
  * @param
@@ -933,7 +956,7 @@ DID_API int CredentialMetaData_SetExtra(CredentialMetaData *metadata,
  * @return
  *      If no error occurs, return the 0. Otherwise, return -1.
  */
-DID_API int CredentialMetaData_SetExtraWithBoolean(CredentialMetaData *metadata,
+DID_API int CredentialMetadata_SetExtraWithBoolean(CredentialMetadata *metadata,
         const char *key, bool value);
 
 /**
@@ -941,7 +964,7 @@ DID_API int CredentialMetaData_SetExtraWithBoolean(CredentialMetaData *metadata,
  * Set 'double' extra elem for Credential.
  *
  * @param
- *      metadata                       [in] The handle of CredentialMetaData.
+ *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      key                            [in] The key string.
  * @param
@@ -949,7 +972,7 @@ DID_API int CredentialMetaData_SetExtraWithBoolean(CredentialMetaData *metadata,
  * @return
  *      If no error occurs, return the 0. Otherwise, return -1.
  */
-DID_API int CredentialMetaData_SetExtraWithDouble(CredentialMetaData *metadata,
+DID_API int CredentialMetadata_SetExtraWithDouble(CredentialMetadata *metadata,
         const char *key, double value);
 
 /**
@@ -957,46 +980,46 @@ DID_API int CredentialMetaData_SetExtraWithDouble(CredentialMetaData *metadata,
  * Get alias from credential by meta data.
  *
  * @param
- *      metadata                     [in] The handle of CredentialMetaData.
+ *      metadata                     [in] The handle of CredentialMetadata.
  * @return
  *      If no error occurs, return alias string. Otherwise, return NULL.
  */
-DID_API const char *CredentialMetaData_GetAlias(CredentialMetaData *metadata);
+DID_API const char *CredentialMetadata_GetAlias(CredentialMetadata *metadata);
 
 /**
  * \~English
  * Get alias from credential by meta data.
  *
  * @param
- *      metadata                     [in] The handle of CredentialMetaData.
+ *      metadata                     [in] The handle of CredentialMetadata.
  * @return
  *      If no error occurs, return published time. Otherwise, return 0.
  */
-DID_API time_t CredentialMetaData_GetPublished(CredentialMetaData *metadata);
+DID_API time_t CredentialMetadata_GetPublished(CredentialMetadata *metadata);
 
 /**
  * \~English
  * Get revoked status from credential by meta data.
  *
  * @param
- *      metadata                     [in] The handle of CredentialMetaData.
+ *      metadata                     [in] The handle of CredentialMetadata.
  * @return
  *      If credential is revoked, return true. Otherwise, return false.
  */
-DID_API bool CredentialMetaData_GetRevoke(CredentialMetaData *metadata);
+DID_API bool CredentialMetadata_GetRevoke(CredentialMetadata *metadata);
 
 /**
  * \~English
  * Get 'string' extra elem from Credential.
  *
  * @param
- *      metadata                       [in] The handle of CredentialMetaData.
+ *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      key                            [in] The key string.
  * @return
  *      If no error occurs, return the elem string. Otherwise, return NULL.
  */
-DID_API const char *CredentialMetaData_GetExtra(CredentialMetaData *metadata,
+DID_API const char *CredentialMetadata_GetExtra(CredentialMetadata *metadata,
         const char *key);
 
 /**
@@ -1004,13 +1027,13 @@ DID_API const char *CredentialMetaData_GetExtra(CredentialMetaData *metadata,
  * Get 'boolean' extra elem from Credential.
  *
  * @param
- *      metadata                       [in] The handle of CredentialMetaData.
+ *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      key                            [in] The key string.
  * @return
  *      'boolean' elem value.
  */
-DID_API bool CredentialMetaData_GetExtraAsBoolean(CredentialMetaData *metadata,
+DID_API bool CredentialMetadata_GetExtraAsBoolean(CredentialMetadata *metadata,
         const char *key);
 
 /**
@@ -1018,13 +1041,13 @@ DID_API bool CredentialMetaData_GetExtraAsBoolean(CredentialMetaData *metadata,
  * Get 'double' extra elem from Credential.
  *
  * @param
- *      metadata                       [in] The handle of CredentialMetaData.
+ *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      key                            [in] The key string.
  * @return
  *      'double' elem value.
  */
-DID_API double CredentialMetaData_GetExtraAsDouble(CredentialMetaData *metadata,
+DID_API double CredentialMetadata_GetExtraAsDouble(CredentialMetadata *metadata,
         const char *key);
 
 /******************************************************************************
@@ -1256,6 +1279,218 @@ DID_API DIDURL *CredentialBiography_GetTransactionSignkeyByIndex(CredentialBiogr
 DID_API void CredentialBiography_Destroy(CredentialBiography *biography);
 
 /******************************************************************************
+ * RootIdentity
+ *****************************************************************************/
+
+/**
+ * \~English
+ * Initial root identity by mnemonic.
+ *
+ * @param
+ *      mnemonic          [in] Mnemonic for generate key.
+ * @param
+ *      passphrase        [in] The pass word to generate private identity.
+ * @param
+ *      language          [in] The language for DID.
+ *                        support language string: "chinese_simplified",
+ *                        "chinese_traditional", "czech", "english", "french",
+ *                        "italian", "japanese", "korean", "spanish".
+ * @param
+ *      overwrite         [in] If private identity exist, remove or remain it.
+ *                        If force is true, then will choose to create a new identity
+ *                        even if the private identity already exists and
+ *                        the new private key will replace the original one in DIDStore.
+ *                        If force is false, then will choose to remain the old
+ *                        private key if the private identity exists, and return error code.
+ * @param
+ *      store             [in] THe handle to DIDStore.
+ * @param
+ *      storepass         [in] The password for DIDStore.
+ * @return
+ *      the handle to RootIdentity, otherwise, return NULL.
+ */
+DID_API RootIdentity *RootIdentity_Create(const char *mnemonic, const char *passphrase,
+        const char *language, bool overwrite, DIDStore *store, const char *storepass);
+
+/**
+ * \~English
+ * Initial root identity by extened private key.
+ *
+ * @param
+ *      extendedprvkey     [in] Extendedkey string.
+ * @param
+ *      overwrite         [in] If private identity exist, remove or remain it.
+ *                        If force is true, then will choose to create a new identity
+ *                        even if the private identity already exists and
+ *                        the new private key will replace the original one in DIDStore.
+ *                        If force is false, then will choose to remain the old
+ *                        private key if the private identity exists, and return error code.
+ * @param
+ *      store             [in] The handle to DIDStore.
+ * @param
+ *      storepass         [in] The password for DIDStore.
+ * @return
+ *      the handle to RootIdentity, otherwise, return NULL.
+ */
+DID_API RootIdentity *RootIdentity_CreateByFromRootKey(const char *extendedprvkey,
+        bool overwrite, DIDStore *store, const char *storepass);
+
+/**
+ * \~English
+ * Destroy RootIdentity.
+ *
+ * @param
+ *      rootidentity               [in] A handle to RootIdentity.
+ */
+DID_API void RootIdentity_Destroy(RootIdentity *rootidentity);
+
+/**
+ * \~English
+ * Get RootIdentity's id (id is on behalf of RootIdentity).
+ *
+ * @param
+ *      rootidentity               [in] A handle to RootIdentity.
+ * @return
+ *      the id string, otherwise, return NULL.
+ *      Notice that user need to free the returned value that it's memory.
+ */
+DID_API const char *RootIdentity_GetId(RootIdentity *rootidentity);
+
+/**
+ * \~English
+ * Get RootIdentity's alias.
+ *
+ * @param
+ *      rootidentity               [in] A handle to RootIdentity.
+ * @return
+ *      the alias string, otherwise, return NULL.
+ */
+DID_API const char *RootIdentity_GetAlias(RootIdentity *rootidentity);
+
+/**
+ * \~English
+ * Set RootIdentity's alias.
+ *
+ * @param
+ *      rootidentity        [in] A handle to RootIdentity.
+ * @param
+ *      alias               [in] The alias string.
+ * @return
+ *      0 on success, -1 if an error occurred.
+ */
+DID_API int RootIdentity_SetAlias(RootIdentity *rootidentity, const char *alias);
+
+/**
+ * \~English
+ * Set default DID derived from RootIdentity.
+ *
+ * @param
+ *      rootidentity        [in] A handle to RootIdentity.
+ * @param
+ *      did                 [in] A handle to default DID.
+ * @return
+ *      0 on success, -1 if an error occurred.
+ */
+DID_API int RootIdentity_SetDefaultDID(RootIdentity *rootidentity, DID *did);
+
+/**
+ * \~English
+ * Get default DID derived from RootIdentity.
+ *
+ * @param
+ *      rootidentity        [in] A handle to RootIdentity.
+ * @return
+ *      the handle to DID on success, NULL if an error occurred.
+ *      Notice that user need to free the returned value that it's memory.
+ */
+DID_API DID *RootIdentity_GetDefaultDID(RootIdentity *rootidentity);
+
+/**
+ * \~English
+ * Create new DID Document.
+ *
+ * @param
+ *      rootidentity              [in] THe handle to RootIdentity.
+ * @param
+ *      storepass                 [in] Password for DIDStore.
+ * @param
+ *      alias                     [in] The nickname of DID.
+ *                                     ‘alias' supports NULL.
+ * @return
+ *      If no error occurs, return the handle to DID Document.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity,
+        const char *storepass, const char *alias);
+
+/**
+ * \~English
+ * Create new DID Document by specified index.
+ *
+ * @param
+ *      rootidentity              [in] The handle to RootIdentity.
+ * @param
+ *      index                     [in] Index number.
+ * @param
+ *      storepass                 [in] Password for DIDStore.
+ * @param
+ *      alias                     [in] The nickname of DID.
+ *                                     ‘alias' supports NULL.
+ * @return
+ *      If no error occurs, return the handle to DID Document.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
+        const char *storepass, const char *alias);
+
+/**
+ * \~English
+ * Only get DID object by index, not create document and so on.
+ *
+ * @param
+ *      rootidentity              [in] The handle to RootIdentity.
+ * @param
+ *      index                     [int] The index of DerivedKey from HDKey.
+ * @return
+ *      If no error occurs, return DID object. Free DID after use it.
+ *      Otherwise, return NULL.
+ */
+DID_API DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index);
+
+/**
+ * \~English
+ * Synchronize all DID from RootIdentity.
+ *
+ * @param
+ *      rootidentity           [in] The handle to RootIdentity.
+ * @param
+ *      callback               [in] The method to merge document.
+ *                              callback == NULL, use default method supported by sdk.
+ * @return
+ *      true on success, false if an error occurred.
+ */
+DID_API bool RootIdentity_Synchronize(RootIdentity *rootidentity, DIDDocument_ConflictHandle *handle);
+
+/**
+ * \~English
+ * Synchronize the specified DID from RootIdentity.
+ *
+ * @param
+ *      rootidentity           [in] The handle to RootIdentity.
+ * @param
+ *      index                  [in] The index number.
+ * @param
+ *      callback               [in] The method to merge document.
+ *                              callback == NULL, use default method supported by sdk.
+ * @return
+ *      true on success, false if an error occurred.
+ */
+DID_API bool RootIdentity_SynchronizeByIndex(RootIdentity *rootidentity, int index,
+        DIDDocument_ConflictHandle *handle);
+
+/******************************************************************************
  * DIDDocument
  *****************************************************************************/
 /**
@@ -1310,6 +1545,16 @@ DID_API const char *DIDDocument_ToString(DIDDocument *document, bool normalized)
  */
 DID_API void DIDDocument_Destroy(DIDDocument *document);
 
+/**
+ * \~English
+ * Check that document is owned to customized DID or not.
+ *
+ * @param
+ *      document             [in] A handle to DID Document.
+ * @return
+ *      true if document owned to customized DID, otherwise false.
+*/
+DID_API bool DIDDocument_IsCustomizedDID(DIDDocument *document);
 /**
  * \~English
  * Check that document is deactivated or not.
@@ -2161,6 +2406,35 @@ DID_API time_t DIDDocument_GetExpires(DIDDocument *document);
 
 /**
  * \~English
+ * Create a new DID Document and store in the DID Store by customized string.
+ *
+ * @param
+ *      document                  [in] The controller document.
+ *                                the first signer for customized did.
+ * @param
+ *      customizeddid              [in] The nickname of DID.
+ *                                     'customizeddid' supports NULL.
+ * @param
+ *      controllers               [in] The controllers for customized DID.
+ * @param
+ *      size                      [in] The count of controllers.
+ * @param
+ *      multisig                  [in] Multisig number.
+ * @param
+ *      storepass                 [in] Password for DIDStore stored controller's document.
+ * tip: if the count of controllers is one, 'controller' supports NULL. Otherwise,
+ * the error occures.
+ * @return
+ *      If no error occurs, return the handle to customized DID Document.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *document,
+        const char *customizeddid, DID **controllers, size_t size, int multisig,
+        const char *storepass);
+
+/**
+ * \~English
  * Sign data by DID.
  *
  * @param
@@ -2248,7 +2522,7 @@ DID_API int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
 
 /**
  * \~English
- * Get DIDMetaData from DID.
+ * Get DIDMetadata from DID.
  *
  * @param
  *      document                 [in] The handle to DIDDocument.
@@ -2256,18 +2530,18 @@ DID_API int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
  *      If no error occurs, return the handle to DIDMetadata.
  *      Otherwise, return NULL.
  */
-DID_API DIDMetaData *DIDDocument_GetMetaData(DIDDocument *document);
+DID_API DIDMetadata *DIDDocument_GetMetadata(DIDDocument *document);
 
 /**
  * \~English
- * Save DIDMetaData of document.
+ * Save DIDMetadata of document.
  *
  * @param
  *      document                    [in] The handle to DIDDocument.
  * @return
  *      0 on success, -1 if an error occurred.
  */
-DID_API int DIDDocument_SaveMetaData(DIDDocument *document);
+DID_API int DIDDocument_SaveMetadata(DIDDocument *document);
 
 /**
  * \~English
@@ -2827,6 +3101,16 @@ DID_API const char *Credential_GetProperty(Credential *cred, const char *name);
 
 /**
  * \~English
+ * Get created time of credential.
+ *
+ * @param
+ *      cred                 [in] A handle to Credential.
+ * @return
+ *      If no error occurs, return created time. otherwise, return 0.
+ */
+DID_API time_t Credential_GetProofCreatedTime(Credential *cred);
+/**
+ * \~English
  * Get verification method identifier of Credential.
  * The verification Method property specifies the public key
  * that can be used to verify the digital signature.
@@ -2910,7 +3194,7 @@ DID_API bool Credential_IsValid(Credential *cred);
  * @return
  *      0 on success, -1 if an error occurred.
  */
-DID_API int Credential_SaveMetaData(Credential *cred);
+DID_API int Credential_SaveMetadata(Credential *cred);
 
 /**
  * \~English
@@ -3064,7 +3348,7 @@ DID_API ssize_t Credential_List(DID *did, DIDURL **buffer, size_t size, int skip
  *      If no error occurs, return alias string.
  *      Otherwise, return NULL.
  */
-DID_API CredentialMetaData *Credential_GetMetaData(Credential *cred);
+DID_API CredentialMetadata *Credential_GetMetadata(Credential *cred);
 
 /******************************************************************************
  * Issuer
@@ -3212,170 +3496,98 @@ DID_API void DIDStore_Close(DIDStore *store);
  * @return
  *      ture if it has identity, false if it has not.
  */
-DID_API bool DIDStore_ContainsPrivateIdentity(DIDStore *store);
+DID_API bool DIDStore_ContainsRootIdentity(DIDStore *store, const char *id);
 
 /**
  * \~English
- * Initial user's private identity by mnemonic.
+ * Load the specified RootIdentity.
  *
-  * @param
- *      store             [in] THe handle to DIDStore.
  * @param
- *      storepass         [in] The password for DIDStore.
+ *      store                 [in] The handle to DIDStore.
  * @param
- *      mnemonic          [in] Mnemonic for generate key.
+ *      id                    [in] The id string.
+ * @return
+ *      the handle to RootIdentity if successed, NULL if failed.
+ */
+DID_API RootIdentity *DIDStore_LoadRootIdentity(DIDStore *store, const char *id);
+
+/**
+ * \~English
+ * Delete the specified RootIdentity.
+ *
  * @param
- *      passphrase        [in] The pass word to generate private identity.
+ *      store                 [in] The handle to DIDStore.
  * @param
- *      language          [in] The language for DID.
- *                        support language string: "chinese_simplified",
- *                        "chinese_traditional", "czech", "english", "french",
- *                        "italian", "japanese", "korean", "spanish".
+ *      id                    [in] The id string.
+ * @return
+ *      ture if delete rootidentity is successfully, false if failed.
+ */
+DID_API bool DIDStore_DeleteRootIdentity(DIDStore *store, const char *id);
+
+/**
+ * \~English
+ * Check if contain specific RootIdentity's mnemonic or not.
+ *
  * @param
- *      force             [in] If private identity exist, remove or remain it.
- *                        If force is true, then will choose to create a new identity
- *                        even if the private identity already exists and
- *                        the new private key will replace the original one in DIDStore.
- *                        If force is false, then will choose to remain the old
- *                        private key if the private identity exists, and return error code.
+ *      store                 [in] The handle to DIDStore.
+ * @param
+ *      id                    [in] The id string.
+ * @return
+ *      ture if there is mnemonic of Rootidentity, false if it has not.
+ */
+DID_API bool DIDStore_ContainsRootIdentityMnemonic(DIDStore *store, const char *id);
+
+/**
+ * \~English
+ * List all root identities in DIDStore.
+ *
+ * @param
+ *      store                 [in] The handle to DIDStore.
+ * @param
+ *      callback              [in] A pointer to DIDStore_RootIdentitiesCallback function.
+ * @param
+ *      context               [in] The application defined context data.
+ * @return
+ *      the count of root identities if success, -1 if an error occurred
+ */
+DID_API ssize_t DIDStore_ListRootIdentities(DIDStore *store,
+        DIDStore_RootIdentitiesCallback *callback, void *context);
+
+/**
+ * \~English
+ * Set default rootidentity to DIDStore.
+ *
+ * @param
+ *      store                [in] The handle to DIDStore.
+ * @param
+ *      id                   [in] The root identity's id string.
  * @return
  *      0 on success, -1 if an error occurred.
  */
-DID_API int DIDStore_InitPrivateIdentity(DIDStore *store, const char *storepass,
-        const char *mnemonic, const char *passphrase, const char *language, bool force);
+DID_API int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id);
 
 /**
  * \~English
- * Initial user's identity by e.
+ * Get default rootidentity from DIDStore.
  *
-  * @param
- *      store             [in] The handle to DIDStore.
  * @param
- *      storepass         [in] The password for DIDStore.
- * @param
- *      extendedkey       [in] Extendedkey string.
- * @param
- *      force             [in] If private identity exist, remove or remain it.
- *                        If force is true, then will choose to create a new identity
- *                        even if the private identity already exists and
- *                        the new private key will replace the original one in DIDStore.
- *                        If force is false, then will choose to remain the old
- *                        private key if the private identity exists, and return error code.
+ *      store                [in] The handle to DIDStore.
  * @return
- *      0 on success, -1 if an error occurred.
+ *      root identity's id string on success, NULL if an error occurred.
+ *      Notice that user need to free the returned value.
  */
-DID_API int DIDStore_InitPrivateIdentityFromRootKey(DIDStore *store,
-        const char *storepass, const char *extendedkey, bool force);
+DID_API const char *DIDStore_GetDefaultRootIdentity(DIDStore *store);
 
 /**
  * \~English
- * Synchronize DIDStore.
- *
-  * @param
- *      store                  [in] THe handle to DIDStore.
- * @param
- *      storepass              [in] The pass word of DID holder.
- * @param
- *      callback               [in] The method to merge document.
- *                              callback == NULL, use default method supported by sdk.
- * @return
- *      0 on success, -1 if an error occurred.
- */
-DID_API int DIDStore_Synchronize(DIDStore *store, const char *storepass,
-        DIDStore_MergeCallback *callback);
-
-/**
- * \~English
- * Create new DID Document and store in the DID Store.
- *
- * @param
- *      store                     [in] THe handle to DIDStore.
- * @param
- *      storepass                 [in] Password for DIDStore.
- * @param
- *      alias                     [in] The nickname of DID.
- *                                     ‘alias' supports NULL.
- * @return
- *      If no error occurs, return the handle to DID Document.
- *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
- */
-DID_API DIDDocument *DIDStore_NewDID(DIDStore *store, const char *storepass,
-        const char *alias);
-
-/**
- * \~English
- * Create a new DID Document and store in the DID Store by customized string.
- *
- * @param
- *      store                     [in] THe handle to DIDStore.
- * @param
- *      storepass                 [in] Password for DIDStore.
- * @param
- *      customizeddid              [in] The nickname of DID.
- *                                     'customizeddid' supports NULL.
- * @param
- *      controllers               [in] The controllers for customized DID.
- * @param
- *      size                      [in] The count of controllers.
- * @param
- *      controller                [in] The controller for customized DID.
- *                                     'customizeddid' supports NULL.
- * @param
- *      multisig                  [in] Multisig number.
- * tip: if the count of controllers is one, 'controller' supports NULL. Otherwise,
- * the error occures.
- * @return
- *      If no error occurs, return the handle to DID Document.
- *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
- */
-DID_API DIDDocument *DIDStore_NewCustomizedDID(DIDStore *store, const char *storepass,
-        const char *customizeddid, DID *controller, DID **controllers, size_t size,
-        int multisig);
-
-/**
- * \~English
- * Create new DID document and store it in the DID store with given index.
- *
- * @param
- *      store                     [in] THe handle to DIDStore.
- * @param
- *      storepass                 [in] Password for DIDStore.
- * @param
- *      index                     [in] The index to create new did.
- * @param
- *      alias                     [in] The nickname of DID.
- *                                     'alias' supports NULL.
- * @return
- *      If no error occurs, return the handle to DID Document.
- *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
- */
-DID_API DIDDocument *DIDStore_NewDIDByIndex(DIDStore *store, const char *storepass,
-        int index, const char *alias);
-
-/**
- * \~English
- * Only get DID object by index, not create document and so on.
- *
- * @param
- *      store                     [in] THe handle to DIDStore.
- * @param
- *      index                     [int] The index of DerivedKey from HDKey.
- * @return
- *      If no error occurs, return DID object. Free DID after use it.
- *      Otherwise, return NULL.
- */
-DID_API DID *DIDStore_GetDIDByIndex(DIDStore *store, int index);
-/**
- * \~English
- * Create new DID Document and store in the DID Store.
+ * Export mnemonic of the specific root identity.
  *
  * @param
  *      store              [in] THe handle to DIDStore.
  * @param
  *      storepass          [in] The password of DIDStore.
+ * @param
+ *      id                 [in] The string for root identity.
  * @param
  *      mnemonic           [out] The buffer that will receive the mnemonic.
  *                               The buffer size should at least
@@ -3383,11 +3595,10 @@ DID_API DID *DIDStore_GetDIDByIndex(DIDStore *store, int index);
  * @param
  *      size               [in] The buffter size.
  * @return
- *      If no error occurs, return the handle to DID Document.
- *      Otherwise, return NULL.
+ *      0 on success, -1 if an error occurred.
  */
-DID_API int DIDStore_ExportMnemonic(DIDStore *store, const char *storepass,
-        char *mnemonic, size_t size);
+DID_API int DIDStore_ExportRootIdentityMnemonic(DIDStore *store, const char *storepass,
+        const char *id, char *mnemonic, size_t size);
 
 /**
  * \~English
@@ -3544,9 +3755,9 @@ DID_API bool DIDStore_DeleteCredential(DIDStore *store, DID *did, DIDURL *id);
  * @param
  *      did         [in] The handle to DID.
  * @param
- *      callback    [in] a pointer to DIDStore_CredentialsCallback function.
+ *      callback    [in] A pointer to DIDStore_CredentialsCallback function.
  * @param
- *      context     [in] the application defined context data.
+ *      context     [in] The application defined context data.
  * @return
  *      0 on success, -1 if an error occurred.
  */
@@ -3703,14 +3914,16 @@ DID_API int DIDStore_ImportDID(DIDStore *store, const char *storepass,
  * @param
  *      storepass               [in] Password for DIDStore.
  * @param
+ *      id                      [in] RootIdentity's id string.
+ * @param
  *      file                    [in] Export file.
  * @param
  *      password                [in] Password to encrypt.
  * @return
  *      0 on success, -1 if an error occurred.
  */
-DID_API int DIDStore_ExportPrivateIdentity(DIDStore *store, const char *storepass,
-        const char *file, const char *password);
+DID_API int DIDStore_ExportRootIdentity(DIDStore *store, const char *storepass,
+        const char *id, const char *file, const char *password);
 
 /**
  * \~English
@@ -3727,8 +3940,9 @@ DID_API int DIDStore_ExportPrivateIdentity(DIDStore *store, const char *storepas
  * @return
  *      0 on success, -1 if an error occurred.
  */
-DID_API int DIDStore_ImportPrivateIdentity(DIDStore *store, const char *storepass,
+DID_API int DIDStore_ImportRootIdentity(DIDStore *store, const char *storepass,
         const char *file, const char *password);
+
 /**
  * \~English
  * Export whole store information into zip file.
@@ -4282,7 +4496,7 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
 #define DIDERR_MALFORMED_PRESENTATION               0x8D000008
 /**
  * \~English
- * Meta(DIDMetaData/CredMetaData) is malformed.
+ * Metadata is malformed.
  */
 #define DIDERR_MALFORMED_META                       0x8D000009
 /**
@@ -4378,6 +4592,11 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
  * Transfer ticket error.
  */
 #define DIDERR_MALFORMED_TRANSFERTICKET             0x8D00001B
+/**
+ * \~English
+ * RootIdentity error.
+ */
+#define DIDERR_MALFORMED_ROOTIDENTITY               0x8D00001C
 /**
  * \~English
  * Unknown error.

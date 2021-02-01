@@ -21,8 +21,9 @@ const char *network = "TestNet";
 const char *resolver = "http://api.elastos.io:21606";
 const char *walletpass = "12345678";
 
-const char *storepass = "123456";
-const char *passphase = "";
+//const char *storepass = "123456";
+const char *storepass = "passwd";
+const char *passphrase = "";
 const char *default_type = "ECDSAsecp256r1";
 const char *service_type = "CarrierAddress";
 
@@ -41,15 +42,18 @@ const char *compact_idstring = "#default";
     const char *PATH_STEP = "/";
 #endif
 
-const char *PRIVATE_DIR = "private";
-const char *HDKEY_FILE = "key";
-const char *HDPUBKEY_FILE = "key.pub";
+const char *DATA_DIR = "data";
+const char *ROOTS_DIR = "roots";
 const char *INDEX_FILE = "index";
 const char *MNEMONIC_FILE = "mnemonic";
+const char *PRIVATE_FILE = "private";
+const char *PUBLIC_FILE = "public";
+const char *HDKEY_FILE = "key";
+const char *HDPUBKEY_FILE = "key.pub";
 
-const char *DID_DIR = "ids";
+const char *IDS_DIR = "ids";
 const char *DOCUMENT_FILE = "document";
 const char *CREDENTIALS_DIR = "credentials";
 const char *CREDENTIAL_FILE = "credential";
 const char *PRIVATEKEYS_DIR = "privatekeys";
-const char *META_FILE = ".meta";
+const char *META_FILE = ".metadata";

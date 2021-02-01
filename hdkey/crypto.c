@@ -73,7 +73,7 @@ static void generateKeyAndIv(const char *passwd, uint8_t *key, uint8_t *iv)
 }
 
 /* Caller should provide enough buffer for cipher */
-static ssize_t encrypt( uint8_t *cipher, const char *passwd,
+ssize_t _encrypt( uint8_t *cipher, const char *passwd,
         const uint8_t *input, size_t len)
 {
     EVP_CIPHER_CTX *ctx;
@@ -179,7 +179,7 @@ ssize_t encrypt_to_base64(char *base64, const char *passwd,
         const uint8_t *input, size_t len)
 {
     unsigned char *cipher = (unsigned char *)alloca(len * 2);
-    len = encrypt(cipher, passwd, input, len);
+    len = _encrypt(cipher, passwd, input, len);
     return base64_url_encode(base64, cipher, len);
 }
 
@@ -473,7 +473,11 @@ int ecdsa_verify_base64(char *sig, uint8_t *publickey, uint8_t *digest, size_t s
     return ecdsa_verify(binsig, publickey, digest, size);
 }
 
+int md5(uint8_t *md5, size_t size, uint8_t *data, size_t datasize)
+{
+    if (!md5 || size < 16 || !data || datasize == 0)
+        return -1;
 
-
-
-
+    BRMD5(md5, data, datasize);
+    return 0;
+}

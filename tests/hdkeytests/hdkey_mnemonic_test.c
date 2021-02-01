@@ -16,7 +16,8 @@ static const char *languagelists[] = {"chinese_simplified", "chinese_traditional
 
 static void test_build_wordlist(void)
 {
-    int rc, i;
+    RootIdentity *rootidentity;
+    int i;
 
     for (i = 0; i < 9; i++) {
         char wmnemonic[256];
@@ -25,14 +26,15 @@ static void test_build_wordlist(void)
         CU_ASSERT_PTR_NOT_NULL(mnemonic);
         CU_ASSERT_TRUE(Mnemonic_IsValid(mnemonic, lang));
 
-        rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", lang, true);
-        CU_ASSERT_NOT_EQUAL(rc, -1);
+        rootidentity = RootIdentity_Create(mnemonic, "", lang, true, store, storepass);
+        CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
         strcpy(wmnemonic, mnemonic);
         strcat(wmnemonic, "z");
         CU_ASSERT_FALSE(Mnemonic_IsValid(wmnemonic, lang));
 
         Mnemonic_Free((void*)mnemonic);
+        RootIdentity_Destroy(rootidentity);
     }
 }
 

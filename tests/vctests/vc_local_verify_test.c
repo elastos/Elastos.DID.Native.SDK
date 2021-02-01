@@ -23,6 +23,7 @@ static DIDDocument *local_doc(DID *did)
 
 static void test_vc_local_verify(void)
 {
+    RootIdentity *rootidentity;
     DIDDocument *doc;
     DID owner, kyc;
     time_t expires;
@@ -32,18 +33,19 @@ static void test_vc_local_verify(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     const char *newmnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, newmnemonic, "", language, false);
+    rootidentity = RootIdentity_Create(mnemonic, "", language, false, store, storepass);
     Mnemonic_Free((void*)newmnemonic);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    doc = DIDStore_NewDID(store, storepass, alias);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    CU_ASSERT_PTR_NOT_NULL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
     DID_Copy(&owner, DIDDocument_GetSubject(doc));
     DIDDocument_Destroy(doc);
 
-    doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 

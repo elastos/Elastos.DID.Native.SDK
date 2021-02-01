@@ -32,7 +32,7 @@ extern "C" {
 
 const char *get_store_path(char* path, const char *dir);
 
-char *get_path(char *path, const char *file);
+char *get_path(char *path, const char *file, int version);
 
 char *get_file_path(char *path, size_t size, int count, ...);
 
@@ -67,7 +67,7 @@ DIDStore *TestData_SetupTestStore(bool dummybackend);
 
 void TestData_Free(void);
 
-int TestData_InitIdentity(DIDStore *store);
+RootIdentity *TestData_InitIdentity(DIDStore *store);
 
 const char *TestData_LoadIssuerJson(void);
 
@@ -139,6 +139,15 @@ DIDDocument *TestData_LoadEmptyCtmDoc_MultisigThree(void);
 DIDDocument *TestData_LoadCtmDoc_MultisigThree(void);
 
 const char *TestData_LoadRestoreMnemonic(void);
+
+//v2
+DIDDocument *TestData_LoadUser1Doc(void);
+
+DIDDocument *TestData_LoadUser2Doc(void);
+
+DIDDocument *TestData_LoadUser3Doc(void);
+
+DIDDocument *TestData_LoadIssuerIdDoc(void);
 
 #ifdef __cplusplus
 }

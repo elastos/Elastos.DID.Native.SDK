@@ -42,18 +42,21 @@ static void test_idchain_publishdid(void)
     char publickeybase58[MAX_PUBLICKEY_BASE58];
     char *signs[3];
     DIDDocument *resolvedoc = NULL, *doc;
+    RootIdentity *rootidentity;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish", *sign;
     bool successed;
     DID did;
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     signkey = DIDDocument_GetDefaultPublicKey(doc);
@@ -72,10 +75,10 @@ static void test_idchain_publishdid(void)
     rc = DIDStore_StoreDID(store, resolvedoc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    DIDMetaData *metadata = DIDDocument_GetMetaData(resolvedoc);
+    DIDMetadata *metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
 
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     sign = DIDDocument_GetProofSignature(doc, 0);
@@ -92,10 +95,10 @@ static void test_idchain_publishdid(void)
     doc = DIDStore_LoadDID(store, &did);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
-    metadata = DIDDocument_GetMetaData(doc);
+    metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
 
-    const char *nalias = DIDMetaData_GetAlias(metadata);
+    const char *nalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(nalias);
     CU_ASSERT_STRING_EQUAL(alias, nalias);
 
@@ -120,9 +123,9 @@ static void test_idchain_publishdid(void)
     rc = DIDStore_StoreDID(store, doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    metadata = DIDDocument_GetMetaData(doc);
+    metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    nalias = DIDMetaData_GetAlias(metadata);
+    nalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(nalias);
     CU_ASSERT_STRING_EQUAL(alias, nalias);
 
@@ -138,9 +141,9 @@ static void test_idchain_publishdid(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -188,9 +191,9 @@ static void test_idchain_publishdid(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -225,20 +228,22 @@ static void test_idchain_publishdid_without_txid(void)
 {
     DIDURL *signkey;
     char publickeybase58[MAX_PUBLICKEY_BASE58];
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
     DID did;
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     signkey = DIDDocument_GetDefaultPublicKey(doc);
@@ -255,14 +260,14 @@ static void test_idchain_publishdid_without_txid(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     printf("\n   txid = %s\n-- resolve result: successfully!\n-- publish begin(update), waiting...\n", txid);
 
-    rc = DIDMetaData_SetTxid(metadata, "");
+    rc = DIDMetadata_SetTxid(metadata, "");
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -296,12 +301,12 @@ static void test_idchain_publishdid_without_txid(void)
     rc = DIDStore_StoreDID(store, doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    metadata = DIDDocument_GetMetaData(doc);
+    metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    const char *nalias = DIDMetaData_GetAlias(metadata);
+    const char *nalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(nalias);
     CU_ASSERT_STRING_EQUAL(alias, nalias);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_STRING_EQUAL(txid, "");
 
     successed = DIDDocument_PublishDID(doc, NULL, false, storepass);
@@ -312,14 +317,14 @@ static void test_idchain_publishdid_without_txid(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     printf("\n   txid = %s\n-- resolve result: successfully!\n-- publish begin(update) again, waiting...\n", txid);
-    metadata = DIDDocument_GetMetaData(resolvedoc);
-    rc = DIDMetaData_SetTxid(metadata, "");
+    metadata = DIDDocument_GetMetadata(resolvedoc);
+    rc = DIDMetadata_SetTxid(metadata, "");
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -353,9 +358,9 @@ static void test_idchain_publishdid_without_txid(void)
     rc = DIDStore_StoreDID(store, doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    metadata = DIDDocument_GetMetaData(doc);
+    metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    nalias = DIDMetaData_GetAlias(metadata);
+    nalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(nalias);
     CU_ASSERT_STRING_EQUAL(alias, nalias);
 
@@ -367,9 +372,9 @@ static void test_idchain_publishdid_without_txid(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -385,20 +390,22 @@ static void test_idchain_publishdid_without_signature(void)
 {
     DIDURL *signkey;
     char publickeybase58[MAX_PUBLICKEY_BASE58];
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
     DID did;
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     signkey = DIDDocument_GetDefaultPublicKey(doc);
@@ -416,9 +423,9 @@ static void test_idchain_publishdid_without_signature(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -453,9 +460,9 @@ static void test_idchain_publishdid_without_signature(void)
     rc = DIDStore_StoreDID(store, doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    metadata = DIDDocument_GetMetaData(doc);
+    metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    const char *nalias = DIDMetaData_GetAlias(metadata);
+    const char *nalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(nalias);
     CU_ASSERT_STRING_EQUAL(alias, nalias);
 
@@ -467,14 +474,14 @@ static void test_idchain_publishdid_without_signature(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDMetaData_SetPrevSignature(metadata, resolvedoc->proofs.proofs[0].signatureValue);
+    rc = DIDMetadata_SetPrevSignature(metadata, resolvedoc->proofs.proofs[0].signatureValue);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDMetaData_SetSignature(metadata, "");
+    rc = DIDMetadata_SetSignature(metadata, "");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = DIDStore_StoreDID(store, resolvedoc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
@@ -508,9 +515,9 @@ static void test_idchain_publishdid_without_signature(void)
     rc = DIDStore_StoreDID(store, doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    metadata = DIDDocument_GetMetaData(doc);
+    metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    nalias = DIDMetaData_GetAlias(metadata);
+    nalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(nalias);
     CU_ASSERT_STRING_EQUAL(alias, nalias);
 
@@ -522,9 +529,9 @@ static void test_idchain_publishdid_without_signature(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -540,20 +547,23 @@ static void test_idchain_publishdid_without_prevsignature(void)
 {
     DIDURL *signkey;
     char publickeybase58[MAX_PUBLICKEY_BASE58];
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
     DID did;
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     signkey = DIDDocument_GetDefaultPublicKey(doc);
@@ -571,9 +581,9 @@ static void test_idchain_publishdid_without_prevsignature(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -608,9 +618,9 @@ static void test_idchain_publishdid_without_prevsignature(void)
     rc = DIDStore_StoreDID(store, doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    metadata = DIDDocument_GetMetaData(doc);
+    metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    const char *nalias = DIDMetaData_GetAlias(metadata);
+    const char *nalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(nalias);
     CU_ASSERT_STRING_EQUAL(alias, nalias);
 
@@ -622,12 +632,12 @@ static void test_idchain_publishdid_without_prevsignature(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDMetaData_SetPrevSignature(metadata, "");
+    rc = DIDMetadata_SetPrevSignature(metadata, "");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = DIDStore_StoreDID(store, resolvedoc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
@@ -661,12 +671,12 @@ static void test_idchain_publishdid_without_prevsignature(void)
     rc = DIDStore_StoreDID(store, doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    metadata = DIDDocument_GetMetaData(doc);
+    metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    nalias = DIDMetaData_GetAlias(metadata);
+    nalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(nalias);
     CU_ASSERT_STRING_EQUAL(alias, nalias);
-    const char *signature = DIDMetaData_GetPrevSignature(metadata);
+    const char *signature = DIDMetadata_GetPrevSignature(metadata);
     CU_ASSERT_PTR_NOT_NULL(signature);
     CU_ASSERT_STRING_EQUAL(signature, "");
 
@@ -678,9 +688,9 @@ static void test_idchain_publishdid_without_prevsignature(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -695,20 +705,23 @@ static void test_idchain_publishdid_without_prevsignature(void)
 static void test_idchain_publishdid_without_prevsignature_and_signature(void)
 {
     char publickeybase58[MAX_PUBLICKEY_BASE58];
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
     DID did;
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     DID_Copy(&did, DIDDocument_GetSubject(doc));
@@ -722,14 +735,14 @@ static void test_idchain_publishdid_without_prevsignature_and_signature(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDMetaData_SetSignature(metadata, "");
+    rc = DIDMetadata_SetSignature(metadata, "");
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDMetaData_SetPrevSignature(metadata, "");
+    rc = DIDMetadata_SetPrevSignature(metadata, "");
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -774,20 +787,23 @@ static void test_idchain_publishdid_without_prevsignature_and_signature(void)
 static void test_force_updatedid_without_prevsignature_and_signature(void)
 {
     char publickeybase58[MAX_PUBLICKEY_BASE58];
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
     DID did;
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     DID_Copy(&did, DIDDocument_GetSubject(doc));
@@ -801,14 +817,14 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDMetaData_SetSignature(metadata, "");
+    rc = DIDMetadata_SetSignature(metadata, "");
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDMetaData_SetPrevSignature(metadata, "");
+    rc = DIDMetadata_SetPrevSignature(metadata, "");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = DIDStore_StoreDID(store, resolvedoc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
@@ -842,9 +858,9 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
     rc = DIDStore_StoreDID(store, doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    metadata = DIDDocument_GetMetaData(doc);
+    metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    const char *nalias = DIDMetaData_GetAlias(metadata);
+    const char *nalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(nalias);
     CU_ASSERT_STRING_EQUAL(alias, nalias);
 
@@ -856,9 +872,9 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -873,20 +889,23 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
 static void test_updatedid_with_diffprevsignature_only(void)
 {
     char publickeybase58[MAX_PUBLICKEY_BASE58];
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
     DID did;
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     DID_Copy(&did, DIDDocument_GetSubject(doc));
@@ -900,12 +919,12 @@ static void test_updatedid_with_diffprevsignature_only(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDMetaData_SetPrevSignature(metadata, "123456789");
+    rc = DIDMetadata_SetPrevSignature(metadata, "123456789");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = DIDStore_StoreDID(store, resolvedoc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
@@ -947,9 +966,9 @@ static void test_updatedid_with_diffprevsignature_only(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(resolvedoc));
@@ -961,20 +980,24 @@ static void test_updatedid_with_diffprevsignature_only(void)
 static void test_updatedid_with_diffsignature_only(void)
 {
     char publickeybase58[MAX_PUBLICKEY_BASE58];
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
     DID did;
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    RootIdentity_Destroy(rootidentity);
+    CU_ASSERT_PTR_NOT_NULL(doc);
 
     DID_Copy(&did, DIDDocument_GetSubject(doc));
 
@@ -987,9 +1010,9 @@ static void test_updatedid_with_diffsignature_only(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -1032,14 +1055,14 @@ static void test_updatedid_with_diffsignature_only(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDMetaData_SetPrevSignature(metadata, resolvedoc->proofs.proofs[0].signatureValue);
+    rc = DIDMetadata_SetPrevSignature(metadata, resolvedoc->proofs.proofs[0].signatureValue);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDMetaData_SetSignature(metadata, "123456789");
+    rc = DIDMetadata_SetSignature(metadata, "123456789");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = DIDStore_StoreDID(store, resolvedoc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
@@ -1073,9 +1096,9 @@ static void test_updatedid_with_diffsignature_only(void)
     rc = DIDStore_StoreDID(store, doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    metadata = DIDDocument_GetMetaData(doc);
+    metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    const char *nalias = DIDMetaData_GetAlias(metadata);
+    const char *nalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(nalias);
     CU_ASSERT_STRING_EQUAL(alias, nalias);
 
@@ -1087,9 +1110,9 @@ static void test_updatedid_with_diffsignature_only(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -1104,20 +1127,23 @@ static void test_updatedid_with_diffsignature_only(void)
 static void test_updatedid_with_diff_prevsignature_and_signature(void)
 {
     char publickeybase58[MAX_PUBLICKEY_BASE58];
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
     DID did;
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     DID_Copy(&did, DIDDocument_GetSubject(doc));
@@ -1131,14 +1157,14 @@ static void test_updatedid_with_diff_prevsignature_and_signature(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDMetaData_SetSignature(metadata, "12345678");
+    rc = DIDMetadata_SetSignature(metadata, "12345678");
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDMetaData_SetPrevSignature(metadata, "12345678");
+    rc = DIDMetadata_SetPrevSignature(metadata, "12345678");
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -1183,20 +1209,23 @@ static void test_updatedid_with_diff_prevsignature_and_signature(void)
 static void test_force_updatedid_with_wrongsignature(void)
 {
     char publickeybase58[MAX_PUBLICKEY_BASE58];
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
     DID did;
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     DID_Copy(&did, DIDDocument_GetSubject(doc));
@@ -1210,12 +1239,12 @@ static void test_force_updatedid_with_wrongsignature(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDMetaData_SetSignature(metadata, "12345678");
+    rc = DIDMetadata_SetSignature(metadata, "12345678");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = DIDStore_StoreDID(store, resolvedoc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
@@ -1249,9 +1278,9 @@ static void test_force_updatedid_with_wrongsignature(void)
     rc = DIDStore_StoreDID(store, doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    metadata = DIDDocument_GetMetaData(doc);
+    metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    const char *nalias = DIDMetaData_GetAlias(metadata);
+    const char *nalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(nalias);
     CU_ASSERT_STRING_EQUAL(alias, nalias);
 
@@ -1263,9 +1292,9 @@ static void test_force_updatedid_with_wrongsignature(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -1279,8 +1308,9 @@ static void test_force_updatedid_with_wrongsignature(void)
 
 static void test_idchain_publishdid_with_credential(void)
 {
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid;
     Credential *cred;
     bool successed;
@@ -1288,11 +1318,13 @@ static void test_idchain_publishdid_with_credential(void)
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
-    doc = DIDStore_NewDID(store, storepass, "littlefish");
+    doc = RootIdentity_NewDID(rootidentity, storepass, "littlefish");
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     DID_Copy(&did, DIDDocument_GetSubject(doc));
@@ -1306,9 +1338,9 @@ static void test_idchain_publishdid_with_credential(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -1366,19 +1398,22 @@ static void test_idchain_publishdid_with_credential(void)
 
 static void test_idchain_deactivedid_after_create(void)
 {
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid;
     bool successed;
     DID did;
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
-    doc = DIDStore_NewDID(store, storepass, "littlefish");
+    doc = RootIdentity_NewDID(rootidentity, storepass, "littlefish");
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     DID_Copy(&did, DIDDocument_GetSubject(doc));
@@ -1391,9 +1426,9 @@ static void test_idchain_deactivedid_after_create(void)
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     const char *data1 = DIDDocument_ToJson(doc, true);
@@ -1420,20 +1455,23 @@ static void test_idchain_deactivedid_after_update(void)
 {
     DIDURL *signkey;
     char publickeybase58[MAX_PUBLICKEY_BASE58];
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool successed;
     DID did;
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = DIDStore_NewDID(store, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     signkey = DIDDocument_GetDefaultPublicKey(doc);
@@ -1452,14 +1490,14 @@ static void test_idchain_deactivedid_after_update(void)
 
     rc = DIDStore_StoreDID(store, resolvedoc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    const char *nalias = DIDMetaData_GetAlias(metadata);
+    const char *nalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(nalias);
     CU_ASSERT_STRING_EQUAL(alias, nalias);
 
@@ -1495,9 +1533,9 @@ static void test_idchain_deactivedid_after_update(void)
     rc = DIDStore_StoreDID(store, doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    metadata = DIDDocument_GetMetaData(doc);
+    metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    nalias = DIDMetaData_GetAlias(metadata);
+    nalias = DIDMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(nalias);
     CU_ASSERT_STRING_EQUAL(alias, nalias);
 
@@ -1510,9 +1548,9 @@ static void test_idchain_deactivedid_after_update(void)
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
     CU_ASSERT_NOT_EQUAL(status, DIDStatus_Deactivated);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -1537,8 +1575,9 @@ static void test_idchain_deactivedid_after_update(void)
 
 static void test_idchain_deactivedid_with_authorization1(void)
 {
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc, *targetdoc, *authorizordoc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid, *alias = "littlefish";
     DID controller, did;
     PublicKey *pks[1];
@@ -1546,11 +1585,11 @@ static void test_idchain_deactivedid_with_authorization1(void)
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
-    authorizordoc = DIDStore_NewDID(store, storepass, alias);
+    authorizordoc = RootIdentity_NewDID(rootidentity, storepass, alias);
     CU_ASSERT_PTR_NOT_NULL(authorizordoc);
 
     DID_Copy(&controller, DIDDocument_GetSubject(authorizordoc));
@@ -1566,14 +1605,14 @@ static void test_idchain_deactivedid_with_authorization1(void)
     CU_ASSERT_NOT_EQUAL(status, DIDStatus_Deactivated);
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, authorizordoc));
 
-    metadata = DIDDocument_GetMetaData(authorizordoc);
+    metadata = DIDDocument_GetMetadata(authorizordoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     printf("\n   txid: %s\n-- resolve authorization result: successfully!\n", txid);
 
-    targetdoc = DIDStore_NewDID(store, storepass, alias);
+    targetdoc = RootIdentity_NewDID(rootidentity, storepass, alias);
     CU_ASSERT_PTR_NOT_NULL(targetdoc);
 
     DID_Copy(&did, DIDDocument_GetSubject(targetdoc));
@@ -1612,9 +1651,9 @@ static void test_idchain_deactivedid_with_authorization1(void)
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
     CU_ASSERT_NOT_EQUAL(status, DIDStatus_Deactivated);
 
-    metadata = DIDDocument_GetMetaData(resolvedoc);
+    metadata = DIDDocument_GetMetadata(resolvedoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     rc = DIDStore_StoreDID(store, resolvedoc);
@@ -1632,6 +1671,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     CU_ASSERT_EQUAL(status, DIDStatus_Deactivated);
 
     printf("\n-- resolve target result: successfully!\n------------------------------------------------------------\n");
+    RootIdentity_Destroy(rootidentity);
     DIDDocument_Destroy(resolvedoc);
     return;
 }
@@ -1639,8 +1679,9 @@ static void test_idchain_deactivedid_with_authorization1(void)
 static void test_idchain_deactivedid_with_authorization2(void)
 {
     char publickeybase58[MAX_PUBLICKEY_BASE58];
+    RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *authorizordoc, *targetdoc;
-    DIDMetaData *metadata;
+    DIDMetadata *metadata;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     HDKey _dkey, *dkey;
     DID controller, did;
@@ -1649,11 +1690,11 @@ static void test_idchain_deactivedid_with_authorization2(void)
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rc = DIDStore_InitPrivateIdentity(store, storepass, mnemonic, "", language, true);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
-    authorizordoc = DIDStore_NewDID(store, storepass, alias);
+    authorizordoc = RootIdentity_NewDID(rootidentity, storepass, alias);
     CU_ASSERT_PTR_NOT_NULL(authorizordoc);
 
     DID_Copy(&controller, DIDDocument_GetSubject(authorizordoc));
@@ -1696,14 +1737,14 @@ static void test_idchain_deactivedid_with_authorization2(void)
     CU_ASSERT_PTR_NOT_NULL(authorizordoc);
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, authorizordoc));
 
-    metadata = DIDDocument_GetMetaData(authorizordoc);
+    metadata = DIDDocument_GetMetadata(authorizordoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
     printf("\n   txid: %s\n-- resolve authorization result: successfully!\n", txid);
 
-    targetdoc = DIDStore_NewDID(store, storepass, alias);
+    targetdoc = RootIdentity_NewDID(rootidentity, storepass, alias);
     CU_ASSERT_PTR_NOT_NULL(targetdoc);
 
     builder = DIDDocument_Edit(targetdoc, NULL);
@@ -1741,9 +1782,9 @@ static void test_idchain_deactivedid_with_authorization2(void)
     CU_ASSERT_PTR_NOT_NULL(targetdoc);
     CU_ASSERT_NOT_EQUAL(status, DIDStatus_Deactivated);
 
-    metadata = DIDDocument_GetMetaData(targetdoc);
+    metadata = DIDDocument_GetMetadata(targetdoc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
-    txid = DIDMetaData_GetTxid(metadata);
+    txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
     printf("\n   txid: %s\n-- resolve target result: successfully!", txid);
     DIDDocument_Destroy(targetdoc);
@@ -1761,6 +1802,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     DIDDocument_Destroy(authorizordoc);
     DIDURL_Destroy(signkey);
     DIDURL_Destroy(keyid);
+    RootIdentity_Destroy(rootidentity);
     return;
 }
 
@@ -1895,6 +1937,7 @@ static void test_idchain_revokevc(void)
 static void test_idchain_listvc(void)
 {
     Credential *vc, *resolvevc;
+    RootIdentity *rootidentity;
     DIDDocument *document, *issuerdoc, *resolvedoc;
     DIDDocumentBuilder *builder;
     DIDURL *credid1, *credid2;
@@ -1905,17 +1948,18 @@ static void test_idchain_listvc(void)
     const char* provalue;
     int rc, i, status;
 
-    CU_ASSERT_NOT_EQUAL(TestData_InitIdentity(store), -1);
+    rootidentity = TestData_InitIdentity(store);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     //create owner document
-    document = DIDStore_NewDID(store, storepass, NULL);
+    document = RootIdentity_NewDID(rootidentity, storepass, NULL);
     CU_ASSERT_PTR_NOT_NULL(document);
     DID_Copy(&did, &document->did);
 
     expires = DIDDocument_GetExpires(document);
 
     //create issuer
-    issuerdoc = DIDStore_NewDID(store, storepass, NULL);
+    issuerdoc = RootIdentity_NewDID(rootidentity, storepass, NULL);
     CU_ASSERT_PTR_NOT_NULL(issuerdoc);
     DID_Copy(&issuerid, &issuerdoc->did);
     CU_ASSERT_TRUE(DIDDocument_PublishDID(issuerdoc, NULL, true, storepass));

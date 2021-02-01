@@ -113,12 +113,11 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
 
             DIDDocument *doc = txinfo->request.doc;
             if (doc) {
-                DIDMetaData_SetPublished(&doc->metadata, txinfo->timestamp);
-                DIDMetaData_SetLastModified(&doc->metadata, txinfo->timestamp);
-                DIDMetaData_SetTxid(&doc->metadata, txinfo->txid);
-                DIDMetaData_SetSignature(&doc->metadata, doc->proofs.proofs[0].signatureValue);
-                DIDMetaData_SetDeactivated(&doc->metadata, result->status);
-                memcpy(&doc->did.metadata, &doc->metadata, sizeof(DIDMetaData));
+                DIDMetadata_SetPublished(&doc->metadata, txinfo->timestamp);
+                DIDMetadata_SetTxid(&doc->metadata, txinfo->txid);
+                DIDMetadata_SetSignature(&doc->metadata, doc->proofs.proofs[0].signatureValue);
+                DIDMetadata_SetDeactivated(&doc->metadata, result->status);
+                memcpy(&doc->did.metadata, &doc->metadata, sizeof(DIDMetadata));
             }
             result->txs.size++;
         }

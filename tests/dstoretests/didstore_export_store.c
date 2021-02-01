@@ -40,144 +40,135 @@ static char *get_tmp_file(char *path, const char *filename)
 
 static void test_didstore_export_import_did(void)
 {
-    DID did;
-    char *file;
-    char _path[PATH_MAX], _path2[PATH_MAX], command[512];
+    DIDStore *store, *store2;
+    char _path[PATH_MAX], _path2[PATH_MAX], command[512], *file;
     const char *path, *path2;
-    int rc;
+    DID did;
 
-    DIDStore *store = TestData_SetupTestStore(false);
+    store = TestData_SetupTestStore(true);
     CU_ASSERT_PTR_NOT_NULL(store);
 
+    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser1Doc());
+    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser2Doc());
+    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser3Doc());
+
     memset(&did, 0, sizeof(did));
-    rc = DIDStore_ListDIDs(store, 0, get_did, (void*)&did);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&did));
 
     file = get_tmp_file(_path, "didexport.json");
     CU_ASSERT_PTR_NOT_NULL(file);
-
-    rc = DIDStore_ExportDID(store, password, &did, file, "1234");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ExportDID(store, password, &did, file, "1234"));
 
     //create new store
     path = get_store_path(_path2, "restore");
     CU_ASSERT_PTR_NOT_NULL(path);
     delete_file(path);
 
-    DIDStore *store2 = DIDStore_Open(path);
+    store2 = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL(store2);
 
-    rc = DIDStore_ImportDID(store2, password, file, "1234");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ImportDID(store2, password, file, "1234"));
     delete_file(file);
 
-    path = get_file_path(_path, PATH_MAX, 5, store->root, PATH_STEP, DID_DIR,
-            PATH_STEP, did.idstring);
+    path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP, DATA_DIR,
+            PATH_STEP, IDS_DIR, PATH_STEP, did.idstring);
     CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
-    path2 = get_file_path(_path2, PATH_MAX, 5, store2->root, PATH_STEP, DID_DIR,
-            PATH_STEP, did.idstring);
+    path2 = get_file_path(_path2, PATH_MAX, 7, store2->root, PATH_STEP, DATA_DIR,
+            PATH_STEP, IDS_DIR, PATH_STEP, did.idstring);
     CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
     // to diff directory
-    //sprintf(command, "diff -r %s %s", path, path2);
-    //CU_ASSERT_EQUAL(system(command), 0);
+    sprintf(command, "diff -r %s %s", path, path2);
+    CU_ASSERT_EQUAL(system(command), 0);
 
     DIDStore_Close(store2);
-
     TestData_Free();
 }
 
-static void test_didstore_export_import_privateidentity(void)
+static void test_didstore_export_import_rootidentity(void)
 {
-    char *file;
-    char _path[PATH_MAX], _path2[PATH_MAX], command[512];
-    const char *path, *path2;
-    int rc;
+    DIDStore *store, *store2;
+    char _path[PATH_MAX], _path2[PATH_MAX], command[512], *file;
+    const char *path, *path2, *defaultidentity;
 
-    DIDStore *store = TestData_SetupTestStore(false);
+    store = TestData_SetupTestStore(true);
     CU_ASSERT_PTR_NOT_NULL(store);
+
+    defaultidentity = DIDStore_GetDefaultRootIdentity(store);
+    CU_ASSERT_PTR_NOT_NULL(defaultidentity);
 
     file = get_tmp_file(_path, "idexport.json");
     CU_ASSERT_PTR_NOT_NULL(file);
 
-    rc = DIDStore_ExportPrivateIdentity(store, password, file, "1234");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ExportRootIdentity(store, password, defaultidentity, file, "1234"));
 
     //create new store
     path = get_store_path(_path2, "restore");
     CU_ASSERT_PTR_NOT_NULL(path);
-
     delete_file(path);
 
-    DIDStore *store2 = DIDStore_Open(path);
+    store2 = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL(store2);
 
-    rc = DIDStore_ImportPrivateIdentity(store2, password, file, "1234");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ImportRootIdentity(store2, password, file, "1234"));
     delete_file(file);
 
-    path = get_file_path(_path, PATH_MAX, 3, store->root, PATH_STEP, PRIVATE_DIR);
+    path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP, DATA_DIR,
+            PATH_STEP, ROOTS_DIR, PATH_STEP, defaultidentity);
     CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
-    path2 = get_file_path(_path2, PATH_MAX, 3, store2->root, PATH_STEP, PRIVATE_DIR);
+    path2 = get_file_path(_path2, PATH_MAX, 7, store2->root, PATH_STEP, DATA_DIR,
+            PATH_STEP, ROOTS_DIR, PATH_STEP, defaultidentity);
     CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
     // to diff directory
-    //sprintf(command, "diff -r %s %s", path, path2);
-    //CU_ASSERT_EQUAL(system(command), 0);
+    sprintf(command, "diff -r %s %s", path, path2);
+    CU_ASSERT_EQUAL(system(command), 0);
 
+    free((void*)defaultidentity);
     DIDStore_Close(store2);
     TestData_Free();
 }
 
 static void test_didstore_export_import_store(void)
 {
-    char *file;
-    char _path[PATH_MAX], _path2[PATH_MAX], command[512];
+    DIDStore *store, *store2;
+    char _path[PATH_MAX], _path2[PATH_MAX], command[512], *file;
     const char *path, *path2;
-    int rc;
 
-    DIDStore *store = TestData_SetupTestStore(false);
+    store = TestData_SetupTestStore(true);
     CU_ASSERT_PTR_NOT_NULL(store);
+
+    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser1Doc());
+    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser2Doc());
+    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser3Doc());
+    CU_ASSERT_PTR_NOT_NULL(TestData_LoadIssuerIdDoc());
 
     file = get_tmp_file(_path, "storeexport.zip");
     CU_ASSERT_PTR_NOT_NULL(file);
 
-    rc = DIDStore_ExportStore(store, password, file, "1234");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ExportStore(store, password, file, "1234"));
 
     //create new store
     path = get_store_path(_path2, "restore");
     CU_ASSERT_PTR_NOT_NULL(path);
-
     delete_file(path);
 
-    DIDStore *store2 = DIDStore_Open(path);
+    store2 = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL(store2);
 
-    rc = DIDStore_ImportStore(store2, password, file, "1234");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ImportStore(store2, password, file, "1234"));
 
-    path = get_file_path(_path, PATH_MAX, 3, store->root, PATH_STEP, DID_DIR);
+    path = get_file_path(_path, PATH_MAX, 3, store->root, PATH_STEP, DATA_DIR);
     CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
-    path2 = get_file_path(_path2, PATH_MAX, 3, store2->root, PATH_STEP, DID_DIR);
-    CU_ASSERT_TRUE_FATAL(dir_exist(path));
-
-    // to diff directory
-    //sprintf(command, "diff -r %s %s", path, path2);
-    //CU_ASSERT_EQUAL(system(command), 0);
-
-    path = get_file_path(_path, PATH_MAX, 3, store->root, PATH_STEP, PRIVATE_DIR);
-    CU_ASSERT_TRUE_FATAL(dir_exist(path));
-
-    path2 = get_file_path(_path2, PATH_MAX, 3, store2->root, PATH_STEP, PRIVATE_DIR);
+    path2 = get_file_path(_path2, PATH_MAX, 3, store2->root, PATH_STEP, DATA_DIR);
     CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
     // to diff directory
-    //sprintf(command, "diff -r %s %s", path, path2);
-    //CU_ASSERT_EQUAL(system(command), 0);
+    sprintf(command, "diff -r %s %s", path, path2);
+    CU_ASSERT_EQUAL(system(command), 0);
 
     DIDStore_Close(store2);
     TestData_Free();
@@ -195,7 +186,7 @@ static int didstore_export_store_test_suite_cleanup(void)
 
 static CU_TestInfo cases[] = {
     {  "test_didstore_export_import_did",              test_didstore_export_import_did              },
-    {  "test_didstore_export_import_privateidentity",  test_didstore_export_import_privateidentity  },
+    {  "test_didstore_export_import_rootidentity",     test_didstore_export_import_rootidentity     },
     {  "test_didstore_export_import_store",            test_didstore_export_import_store            },
     {  NULL,                                           NULL                                         }
 };

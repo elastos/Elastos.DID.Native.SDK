@@ -36,6 +36,7 @@ static void test_didstore_change_password(void)
     char alias[ELA_MAX_ALIAS_LEN], _path[PATH_MAX];
     const char *gAlias;
     DIDStore *store;
+    RootIdentity *rootidentity;
     int rc, i, count = 0;
     DIDDocument *newdoc;
     int status;
@@ -43,27 +44,27 @@ static void test_didstore_change_password(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    rc = TestData_InitIdentity(store);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    rootidentity = TestData_InitIdentity(store);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     for (i = 0; i < 10; i++) {
         int size = snprintf(alias, sizeof(alias), "my did %d", i);
         if (size < 0 || size > sizeof(alias))
             continue;
 
-        DIDDocument *doc = DIDStore_NewDID(store, storepass, alias);
+        DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias);
         if (!doc)
             continue;
 
         DID *did = DIDDocument_GetSubject(doc);
         CU_ASSERT_PTR_NOT_NULL(did);
 
-        char *path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP,
-                DID_DIR, PATH_STEP, did->idstring, PATH_STEP, DOCUMENT_FILE);
+        char *path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP,
+                DATA_DIR, PATH_STEP, IDS_DIR, PATH_STEP, did->idstring, PATH_STEP, DOCUMENT_FILE);
         CU_ASSERT_TRUE(file_exist(path));
 
-        path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP, DID_DIR,
-                PATH_STEP, did->idstring, PATH_STEP, META_FILE);
+        path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
+                PATH_STEP, IDS_DIR, PATH_STEP, did->idstring, PATH_STEP, META_FILE);
         CU_ASSERT_TRUE(file_exist(path));
 
         CU_ASSERT_TRUE_FATAL(DIDDocument_PublishDID(doc, NULL, false, storepass));
@@ -76,9 +77,9 @@ static void test_didstore_change_password(void)
         CU_ASSERT_PTR_NOT_NULL(loaddoc);
         CU_ASSERT_TRUE(DIDDocument_IsValid(loaddoc));
 
-        DIDMetaData *metadata = DIDDocument_GetMetaData(loaddoc);
+        DIDMetadata *metadata = DIDDocument_GetMetadata(loaddoc);
         CU_ASSERT_PTR_NOT_NULL(metadata);
-        gAlias = DIDMetaData_GetAlias(metadata);
+        gAlias = DIDMetadata_GetAlias(metadata);
         CU_ASSERT_PTR_NOT_NULL(gAlias);
 
         CU_ASSERT_STRING_EQUAL(alias, gAlias);
@@ -125,7 +126,7 @@ static void test_didstore_change_password(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     CU_ASSERT_EQUAL(count, 0);
 
-    newdoc = DIDStore_NewDID(store, "newpasswd", "new");
+    newdoc = RootIdentity_NewDID(rootidentity, "newpasswd", "new");
     CU_ASSERT_PTR_NOT_NULL(newdoc);
     DIDDocument_Destroy(newdoc);
 
@@ -135,6 +136,7 @@ static void test_didstore_change_password(void)
 static void test_didstore_change_with_wrongpassword(void)
 {
     char alias[ELA_MAX_ALIAS_LEN], _path[PATH_MAX];
+    RootIdentity *rootidentity;
     const char *gAlias;
     DIDStore *store;
     int rc, i, count = 0;
@@ -142,15 +144,15 @@ static void test_didstore_change_with_wrongpassword(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    rc = TestData_InitIdentity(store);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    rootidentity = TestData_InitIdentity(store);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     for (i = 0; i < 10; i++) {
         int size = snprintf(alias, sizeof(alias), "my did %d", i);
         if (size < 0 || size > sizeof(alias))
             continue;
 
-        DIDDocument *doc = DIDStore_NewDID(store, storepass, alias);
+        DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias);
         if (!doc)
             continue;
         CU_ASSERT_TRUE(DIDDocument_IsValid(doc));
@@ -158,21 +160,21 @@ static void test_didstore_change_with_wrongpassword(void)
         DID *did = DIDDocument_GetSubject(doc);
         CU_ASSERT_PTR_NOT_NULL(did);
 
-        char *path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP,
-                DID_DIR, PATH_STEP, did->idstring, PATH_STEP, DOCUMENT_FILE);
+        char *path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP,
+                DATA_DIR, PATH_STEP,IDS_DIR, PATH_STEP, did->idstring, PATH_STEP, DOCUMENT_FILE);
         CU_ASSERT_TRUE(file_exist(path));
 
-        path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP, DID_DIR,
-                PATH_STEP, did->idstring, PATH_STEP, META_FILE);
+        path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
+                PATH_STEP, IDS_DIR, PATH_STEP, did->idstring, PATH_STEP, META_FILE);
         CU_ASSERT_TRUE(file_exist(path));
 
         DIDDocument *loaddoc = DIDStore_LoadDID(store, did);
         CU_ASSERT_PTR_NOT_NULL(loaddoc);
         CU_ASSERT_TRUE(DIDDocument_IsValid(loaddoc));
 
-        DIDMetaData *metadata = DIDDocument_GetMetaData(loaddoc);
+        DIDMetadata *metadata = DIDDocument_GetMetadata(loaddoc);
         CU_ASSERT_PTR_NOT_NULL(metadata);
-        gAlias = DIDMetaData_GetAlias(metadata);
+        gAlias = DIDMetadata_GetAlias(metadata);
         CU_ASSERT_PTR_NOT_NULL(gAlias);
 
         CU_ASSERT_STRING_EQUAL(alias, gAlias);

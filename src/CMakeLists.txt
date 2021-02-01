@@ -73,6 +73,7 @@ set(SRC
     presentation.c
     issuer.c
     ticket.c
+    rootidentity.c
     ${utility-SOURCES}
     ${backend-SOURCES}
     ${meta-SOURCES})

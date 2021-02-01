@@ -42,7 +42,7 @@ static void test_publish_ctmdid_with_onecontroller(void)
     DID *controllers[1] = {0};
     controllers[0] = &controller1;
 
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customized_string, NULL, controllers, 1, 0);
+    customized_doc = DIDDocument_NewCustomizedDID(controller1_doc, customized_string, NULL, 0, 0, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
     DID_Copy(&customizedid, &customized_doc->did);
@@ -176,10 +176,10 @@ static void test_publish_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(signkey3);
 
     //create
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customized_string, &controller2, controllers, 3, 0);
+    customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string, controllers, 3, 0, storepass);
     CU_ASSERT_PTR_NULL(customized_doc);
 
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customized_string, &controller2, controllers, 3, 2);
+    customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string, controllers, 3, 2, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_FALSE(DIDDocument_IsValid(customized_doc));
     DID_Copy(&customizedid, &customized_doc->did);
@@ -345,7 +345,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     CU_ASSERT_PTR_NOT_NULL(signkey2);
 
     //create
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customized_string, NULL, controllers, 1, 0);
+    customized_doc = DIDDocument_NewCustomizedDID(controller1_doc, customized_string, controllers, 1, 0, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
     DID_Copy(&customizedid, &customized_doc->did);
@@ -570,10 +570,10 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(signkey3);
 
     //create -----------------------------------------
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customized_string, &controller2, controllers, 3, 0);
+    customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string, controllers, 3, 0, storepass);
     CU_ASSERT_PTR_NULL(customized_doc);
 
-    customized_doc = DIDStore_NewCustomizedDID(store, storepass, customized_string, &controller2, controllers, 3, 2);
+    customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string, controllers, 3, 2, storepass);
     CU_ASSERT_PTR_NOT_NULL(customized_doc);
     CU_ASSERT_FALSE(DIDDocument_IsValid(customized_doc));
     DID_Copy(&customizedid, &customized_doc->did);
@@ -783,12 +783,11 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     customized_doc = DIDStore_LoadDID(store, &customizedid);
     CU_ASSERT_PTR_NOT_NULL(customized_doc);
 
-    builder = DIDDocument_Edit(customized_doc, controller1_doc);
+    builder = DIDDocument_Edit(customized_doc, controller3_doc);
     CU_ASSERT_PTR_NOT_NULL(builder);
     DIDDocument_Destroy(customized_doc);
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, &controller1));
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, &controller3));
+    CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, &controller3));
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, &controller2));
     CU_ASSERT_STRING_EQUAL("There are self-proclaimed credentials signed by controller, please remove or renew these credentials at first.", DIDError_GetMessage());
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveSelfProclaimedCredential(builder,
@@ -808,7 +807,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customized_doc));
 
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
-    CU_ASSERT_EQUAL(4, DIDDocument_GetAuthenticationCount(customized_doc));
+    CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(customized_doc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetControllerCount(customized_doc));
     CU_ASSERT_EQUAL(0, DIDDocument_GetMultisig(customized_doc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetProofCount(customized_doc));
@@ -819,7 +818,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
 
     //create ticket
     ticket = DIDDocument_CreateTransferTicket(controller2_doc, &customizedid,
-            &controller1, storepass);
+            &controller3, storepass);
     CU_ASSERT_PTR_NOT_NULL(ticket);
 
     data = TransferTicket_ToJson(ticket);
@@ -844,7 +843,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(resolve_doc);
 
     CU_ASSERT_TRUE(DIDDocument_IsValid(resolve_doc));
-    CU_ASSERT_EQUAL(4, DIDDocument_GetAuthenticationCount(resolve_doc));
+    CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(resolve_doc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetControllerCount(resolve_doc));
     CU_ASSERT_EQUAL(0, DIDDocument_GetMultisig(resolve_doc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetProofCount(resolve_doc));

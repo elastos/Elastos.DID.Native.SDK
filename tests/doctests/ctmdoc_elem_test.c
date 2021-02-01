@@ -389,7 +389,6 @@ static void test_ctmdoc_get_authentication_key(void)
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
-    CU_ASSERT_NOT_EQUAL(TestData_InitIdentity(store), -1);
 
     doc = TestData_LoadCtmDoc();
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
@@ -410,12 +409,10 @@ static void test_ctmdoc_get_authentication_key(void)
         pk = pks[i];
         id = PublicKey_GetId(pk);
 
-        //isEquals = DID_Equals(did, &id->did);
         CU_ASSERT_TRUE(DID_Equals(did, &id->did) ||
                DID_Equals(controller, &id->did));
         CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
 
-        //isEquals = DID_Equals(did, PublicKey_GetController(pk));
         CU_ASSERT_TRUE(DID_Equals(did, PublicKey_GetController(pk)) ||
                DID_Equals(controller, PublicKey_GetController(pk)));
 
@@ -1232,7 +1229,6 @@ static void test_multictmdoc_get_authentication_key(void)
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
-    CU_ASSERT_NOT_EQUAL(TestData_InitIdentity(store), -1);
 
     customized_doc = TestData_LoadCtmDoc_MultisigTwo();
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
@@ -2001,7 +1997,7 @@ static void test_multictmdoc_add_controller(void)
 
     CU_ASSERT_EQUAL(1, DIDDocument_GetControllerCount(customized_doc));
 
-    builder = DIDDocument_Edit(customized_doc, controller3_doc);
+    builder = DIDDocument_Edit(customized_doc, controller1_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
 
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, controller1));
@@ -2026,7 +2022,7 @@ static void test_multictmdoc_add_controller(void)
     CU_ASSERT_PTR_NOT_NULL(data);
     DIDDocument_Destroy(sealeddoc);
 
-    sealeddoc = DIDDocument_SignDIDDocument(controller1_doc, data, storepass);
+    sealeddoc = DIDDocument_SignDIDDocument(controller2_doc, data, storepass);
     free((void*)data);
     CU_ASSERT_PTR_NOT_NULL(sealeddoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
@@ -2050,7 +2046,7 @@ static void test_multictmdoc_add_controller(void)
     for (i = 0; i < size; i++) {
         DIDURL *creater = DIDDocument_GetProofCreater(sealeddoc, i);
         CU_ASSERT_PTR_NOT_NULL(creater);
-        CU_ASSERT_TRUE(DID_Equals(&creater->did, controller1) || DID_Equals(&creater->did, controller3));
+        CU_ASSERT_TRUE(DID_Equals(&creater->did, controller1) || DID_Equals(&creater->did, controller2));
     }
 
     DIDDocument_Destroy(sealeddoc);

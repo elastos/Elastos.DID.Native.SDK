@@ -34,7 +34,9 @@
 #include "diddocument.h"
 #include "diderror.h"
 
-int MetaData_ToJson_Internal(MetaData *metadata, JsonGenerator *gen)
+static const char *PREFIX = "UX-";
+
+int Metadata_ToJson_Internal(Metadata *metadata, JsonGenerator *gen)
 {
     int rc = 0;
 
@@ -50,7 +52,7 @@ int MetaData_ToJson_Internal(MetaData *metadata, JsonGenerator *gen)
     return rc;
 }
 
-const char *MetaData_ToJson(MetaData *metadata)
+const char *Metadata_ToJson(Metadata *metadata)
 {
     JsonGenerator g, *gen;
 
@@ -63,7 +65,7 @@ const char *MetaData_ToJson(MetaData *metadata)
             return NULL;
         }
 
-        if (MetaData_ToJson_Internal(metadata, gen) == -1) {
+        if (Metadata_ToJson_Internal(metadata, gen) == -1) {
             JsonGenerator_Destroy(gen);
             return NULL;
         }
@@ -74,7 +76,7 @@ const char *MetaData_ToJson(MetaData *metadata)
     return NULL;
 }
 
-int MetaData_FromJson_Internal(MetaData *metadata, json_t *json)
+int Metadata_FromJson_Internal(Metadata *metadata, json_t *json)
 {
     json_t *copy;
 
@@ -93,13 +95,13 @@ int MetaData_FromJson_Internal(MetaData *metadata, json_t *json)
     return 0;
 }
 
-const char *MetaData_ToString(MetaData *metadata)
+const char *Metadata_ToString(Metadata *metadata)
 {
     assert(metadata);
     return metadata->data ? json_dumps(metadata->data, JSON_COMPACT) : NULL;
 }
 
-int MetaData_FromJson(MetaData *metadata, const char *data)
+int Metadata_FromJson(Metadata *metadata, const char *data)
 {
     json_t *root;
     json_error_t error;
@@ -114,12 +116,12 @@ int MetaData_FromJson(MetaData *metadata, const char *data)
         return -1;
     }
 
-    rc = MetaData_FromJson_Internal(metadata, root);
+    rc = Metadata_FromJson_Internal(metadata, root);
     json_decref(root);
     return rc;
 }
 
-void MetaData_Free(MetaData *metadata)
+void Metadata_Free(Metadata *metadata)
 {
     assert(metadata);
 
@@ -129,7 +131,7 @@ void MetaData_Free(MetaData *metadata)
     }
 }
 
-static int MetaData_Set(MetaData *metadata, const char* key, json_t *value)
+static int Metadata_Set(Metadata *metadata, const char* key, json_t *value)
 {
     assert(metadata);
     assert(key);
@@ -145,7 +147,32 @@ static int MetaData_Set(MetaData *metadata, const char* key, json_t *value)
     return 0;
 }
 
-int MetaData_SetExtra(MetaData *metadata, const char* key, const char *value)
+int Metadata_SetExtra(Metadata *metadata, const char* key, const char *value)
+{
+    char *uskey;
+    json_t *json;
+    int rc;
+
+    assert(metadata);
+    assert(key);
+
+    json = value ? json_string(value) : json_null();
+    if (!json)
+        return -1;
+
+    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
+    if (!uskey)
+        return -1;
+
+    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
+        return -1;
+
+    rc = Metadata_Set(metadata, uskey, json);
+    json_decref(json);
+    return rc;
+}
+
+int Metadata_SetDefaultExtra(Metadata *metadata, const char* key, const char *value)
 {
     json_t *json;
     int rc;
@@ -157,13 +184,14 @@ int MetaData_SetExtra(MetaData *metadata, const char* key, const char *value)
     if (!json)
         return -1;
 
-    rc = MetaData_Set(metadata, key, json);
+    rc = Metadata_Set(metadata, key, json);
     json_decref(json);
     return rc;
 }
 
-int MetaData_SetExtraWithBoolean(MetaData *metadata, const char *key, bool value)
+int Metadata_SetExtraWithBoolean(Metadata *metadata, const char *key, bool value)
 {
+    char *uskey;
     json_t *json;
     int rc;
 
@@ -174,13 +202,65 @@ int MetaData_SetExtraWithBoolean(MetaData *metadata, const char *key, bool value
     if (!json)
         return -1;
 
-    rc = MetaData_Set(metadata, key, json);
+    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
+    if (!uskey)
+        return -1;
+
+    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
+        return -1;
+
+    rc = Metadata_Set(metadata, uskey, json);
     json_decref(json);
 
     return rc;
 }
 
-int MetaData_SetExtraWithDouble(MetaData *metadata, const char *key, double value)
+int Metadata_SetDefaultExtraWithBoolean(Metadata *metadata, const char *key, bool value)
+{
+    char *uskey;
+    json_t *json;
+    int rc;
+
+    assert(metadata);
+    assert(key);
+
+    json = json_boolean(value);
+    if (!json)
+        return -1;
+
+    rc = Metadata_Set(metadata, key, json);
+    json_decref(json);
+
+    return rc;
+}
+
+int Metadata_SetExtraWithDouble(Metadata *metadata, const char *key, double value)
+{
+    char *uskey;
+    json_t *json;
+    int rc;
+
+    assert(metadata);
+    assert(key);
+
+    json = json_real(value);
+    if (!json)
+        return -1;
+
+    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
+    if (!uskey)
+        return -1;
+
+    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
+        return -1;
+
+    rc = Metadata_Set(metadata, uskey, json);
+    json_decref(json);
+
+    return rc;
+}
+
+int Metadata_SetDefaultExtraWithDouble(Metadata *metadata, const char *key, double value)
 {
     json_t *json;
     int rc;
@@ -192,13 +272,39 @@ int MetaData_SetExtraWithDouble(MetaData *metadata, const char *key, double valu
     if (!json)
         return -1;
 
-    rc = MetaData_Set(metadata, key, json);
+    rc = Metadata_Set(metadata, key, json);
     json_decref(json);
 
     return rc;
 }
 
-int MetaData_SetExtraWithInteger(MetaData *metadata, const char *key, int value)
+int Metadata_SetExtraWithInteger(Metadata *metadata, const char *key, int value)
+{
+    char *uskey;
+    json_t *json;
+    int rc;
+
+    assert(metadata);
+    assert(key);
+
+    json = json_integer(value);
+    if (!json)
+        return -1;
+
+    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
+    if (!uskey)
+        return -1;
+
+    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
+        return -1;
+
+    rc = Metadata_Set(metadata, uskey, json);
+    json_decref(json);
+
+    return rc;
+}
+
+int Metadata_SetDefaultExtraWithInteger(Metadata *metadata, const char *key, int value)
 {
     json_t *json;
     int rc;
@@ -210,13 +316,13 @@ int MetaData_SetExtraWithInteger(MetaData *metadata, const char *key, int value)
     if (!json)
         return -1;
 
-    rc = MetaData_Set(metadata, key, json);
+    rc = Metadata_Set(metadata, key, json);
     json_decref(json);
 
     return rc;
 }
 
-static json_t *MetaData_Get(MetaData *metadata, const char *key)
+static json_t *Metadata_Get(Metadata *metadata, const char *key)
 {
     json_t *json;
 
@@ -237,14 +343,22 @@ static json_t *MetaData_Get(MetaData *metadata, const char *key)
     return json;
 }
 
-const char *MetaData_GetExtra(MetaData *metadata, const char *key)
+const char *Metadata_GetExtra(Metadata *metadata, const char *key)
 {
+    char *uskey;
     json_t *json;
 
     assert(metadata);
     assert(key);
 
-    json = MetaData_Get(metadata, key);
+    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
+    if (!uskey)
+        return NULL;
+
+    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
+        return NULL;
+
+    json = Metadata_Get(metadata, uskey);
     if (!json)
         return NULL;
 
@@ -256,14 +370,41 @@ const char *MetaData_GetExtra(MetaData *metadata, const char *key)
     return json_string_value(json);
 }
 
-bool MetaData_GetExtraAsBoolean(MetaData *metadata, const char *key)
+const char *Metadata_GetDefaultExtra(Metadata *metadata, const char *key)
 {
     json_t *json;
 
     assert(metadata);
     assert(key);
 
-    json = MetaData_Get(metadata, key);
+    json = Metadata_Get(metadata, key);
+    if (!json)
+        return NULL;
+
+    if (!json_is_string(json)) {
+        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not string type.", key);
+        return NULL;
+    }
+
+    return json_string_value(json);
+}
+
+bool Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key)
+{
+    char *uskey;
+    json_t *json;
+
+    assert(metadata);
+    assert(key);
+
+    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
+    if (!uskey)
+        return false;
+
+    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
+        return false;
+
+    json = Metadata_Get(metadata, uskey);
     if (!json)
         return false;
 
@@ -275,14 +416,41 @@ bool MetaData_GetExtraAsBoolean(MetaData *metadata, const char *key)
     return json_is_true(json);
 }
 
-double MetaData_GetExtraAsDouble(MetaData *metadata, const char *key)
+bool Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key)
 {
     json_t *json;
 
     assert(metadata);
     assert(key);
 
-    json = MetaData_Get(metadata, key);
+    json = Metadata_Get(metadata, key);
+    if (!json)
+        return false;
+
+    if (!json_is_boolean(json)) {
+        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not boolean type.", key);
+        return false;
+    }
+
+    return json_is_true(json);
+}
+
+double Metadata_GetExtraAsDouble(Metadata *metadata, const char *key)
+{
+    char *uskey;
+    json_t *json;
+
+    assert(metadata);
+    assert(key);
+
+    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
+    if (!uskey)
+        return 0;
+
+    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
+        return 0;
+
+    json = Metadata_Get(metadata, uskey);
     if (!json)
         return 0;
 
@@ -294,14 +462,41 @@ double MetaData_GetExtraAsDouble(MetaData *metadata, const char *key)
     return json_real_value(json);
 }
 
-int MetaData_GetExtraAsInteger(MetaData *metadata, const char *key)
+double Metadata_GetDefaultExtraAsDouble(Metadata *metadata, const char *key)
 {
     json_t *json;
 
     assert(metadata);
     assert(key);
 
-    json = MetaData_Get(metadata, key);
+    json = Metadata_Get(metadata, key);
+    if (!json)
+        return 0;
+
+    if (!json_is_real(json)) {
+        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not double type.", key);
+        return 0;
+    }
+
+    return json_real_value(json);
+}
+
+int Metadata_GetExtraAsInteger(Metadata *metadata, const char *key)
+{
+    char *uskey;
+    json_t *json;
+
+    assert(metadata);
+    assert(key);
+
+    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
+    if (!uskey)
+        return 0;
+
+    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
+        return 0;
+
+    json = Metadata_Get(metadata, uskey);
     if (!json)
         return 0;
 
@@ -313,7 +508,26 @@ int MetaData_GetExtraAsInteger(MetaData *metadata, const char *key)
     return json_integer_value(json);
 }
 
-int MetaData_Merge(MetaData *tometa, MetaData *frommeta)
+int Metadata_GetDefaultExtraAsInteger(Metadata *metadata, const char *key)
+{
+    json_t *json;
+
+    assert(metadata);
+    assert(key);
+
+    json = Metadata_Get(metadata, key);
+    if (!json)
+        return 0;
+
+    if (!json_is_integer(json)) {
+        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not double type.", key);
+        return 0;
+    }
+
+    return json_integer_value(json);
+}
+
+int Metadata_Merge(Metadata *tometa, Metadata *frommeta)
 {
     json_t *value, *item, *json;
     const char *key;
@@ -333,7 +547,7 @@ int MetaData_Merge(MetaData *tometa, MetaData *frommeta)
                 DIDError_Set(DIDERR_MALFORMED_META, "Copy '%s' to metadata failed.", key);
                 return -1;
             }
-            rc = MetaData_Set(tometa, key, item);
+            rc = Metadata_Set(tometa, key, item);
             json_decref(item);
             if (rc < 0) {
                 DIDError_Set(DIDERR_MALFORMED_META, "Add '%s' to metadata failed.", key);
@@ -345,7 +559,7 @@ int MetaData_Merge(MetaData *tometa, MetaData *frommeta)
     return 0;
 }
 
-int MetaData_Copy(MetaData *dest, MetaData *src)
+int Metadata_Copy(Metadata *dest, Metadata *src)
 {
     json_t *data = NULL;
 
@@ -355,7 +569,7 @@ int MetaData_Copy(MetaData *dest, MetaData *src)
     if (src->data) {
         data = json_deep_copy(src->data);
         if (!data) {
-            DIDError_Set(DIDERR_MALFORMED_META, "MetaData duplication failed.");
+            DIDError_Set(DIDERR_MALFORMED_META, "metadata duplication failed.");
             return -1;
         }
     }
@@ -368,21 +582,21 @@ int MetaData_Copy(MetaData *dest, MetaData *src)
     return 0;
 }
 
-void MetaData_SetStore(MetaData *metadata, DIDStore *store)
+void Metadata_SetStore(Metadata *metadata, DIDStore *store)
 {
     assert(metadata);
 
     metadata->store = store;
 }
 
-DIDStore *MetaData_GetStore(MetaData *metadata)
+DIDStore *Metadata_GetStore(Metadata *metadata)
 {
     assert(metadata);
 
     return metadata->store;
 }
 
-bool MetaData_AttachedStore(MetaData *metadata)
+bool Metadata_AttachedStore(Metadata *metadata)
 {
     assert(metadata);
 

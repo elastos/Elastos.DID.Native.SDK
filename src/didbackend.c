@@ -116,7 +116,7 @@ bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *st
         return false;
     }
 
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
         return false;
     }
@@ -148,7 +148,7 @@ bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *st
         return false;
     }
 
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
         return false;
     }
@@ -182,7 +182,7 @@ bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
         return false;
     }
 
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
         return false;
     }
@@ -217,7 +217,7 @@ bool DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
         return false;
     }
 
-    if (!DIDMetaData_AttachedStore(&signerdoc->metadata)) {
+    if (!DIDMetadata_AttachedStore(&signerdoc->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
         return false;
     }
@@ -650,7 +650,7 @@ bool DIDBackend_DeclareCredential(Credential *vc, DIDURL *signkey,
         return false;
     }
 
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
         return false;
     }
@@ -684,7 +684,7 @@ bool DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey, DIDDocument *d
         return false;
     }
 
-    if (!DIDMetaData_AttachedStore(&document->metadata)) {
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
         return false;
     }
