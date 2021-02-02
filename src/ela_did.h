@@ -3507,7 +3507,7 @@ DID_API bool DIDStore_ContainsRootIdentity(DIDStore *store, const char *id);
  * @param
  *      id                    [in] The id string.
  * @return
- *      the handle to RootIdentity if successed, NULL if failed.
+ *      the handle to RootIdentity if success, NULL if failed.
  */
 DID_API RootIdentity *DIDStore_LoadRootIdentity(DIDStore *store, const char *id);
 

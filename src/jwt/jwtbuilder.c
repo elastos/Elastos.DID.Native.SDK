@@ -121,7 +121,7 @@ void JWTBuilder_Destroy(JWTBuilder *builder)
 bool JWTBuilder_SetHeader(JWTBuilder *builder, const char *attr, const char *value)
 {
     cjose_err err;
-    bool succussed;
+    bool succuss;
 
     if (!builder || !attr || !*attr || !value) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -138,18 +138,18 @@ bool JWTBuilder_SetHeader(JWTBuilder *builder, const char *attr, const char *val
         return false;
     }
 
-    succussed = cjose_header_set(builder->header, attr, value, &err);
-    if (!succussed)
+    succuss = cjose_header_set(builder->header, attr, value, &err);
+    if (!succuss)
         DIDError_Set(DIDERR_JWT, "Set header '%s' failed.", attr);
 
-    return succussed;
+    return succuss;
 }
 
 bool JWTBuilder_SetClaim(JWTBuilder *builder, const char *key, const char *value)
 {
     json_t *value_obj;
     int rc;
-    bool succussed;
+    bool succuss;
 
     if (!builder || !key || !*key || !value) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -163,18 +163,18 @@ bool JWTBuilder_SetClaim(JWTBuilder *builder, const char *key, const char *value
     }
 
     rc = json_object_set_new(builder->claims, key, value_obj);
-    succussed = (rc == -1) ? false : true;
-    if (!succussed)
+    succuss = (rc == -1) ? false : true;
+    if (!succuss)
         DIDError_Set(DIDERR_JWT, "Set claim '%s' failed.", key);
 
-    return succussed;
+    return succuss;
 }
 
 bool JWTBuilder_SetClaimWithJson(JWTBuilder *builder, const char *key, const char *json)
 {
     json_t *json_obj;
     int rc;
-    bool succussed;
+    bool succuss;
 
     if (!builder || !key || !*key || !json || !*json) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -188,18 +188,18 @@ bool JWTBuilder_SetClaimWithJson(JWTBuilder *builder, const char *key, const cha
     }
 
     rc = json_object_set_new(builder->claims, key, json_obj);
-    succussed = (rc == -1) ? false : true;
-    if (!succussed)
+    succuss = (rc == -1) ? false : true;
+    if (!succuss)
         DIDError_Set(DIDERR_JWT, "Set json claim '%s' failed.", key);
 
-    return succussed;
+    return succuss;
 }
 
 bool JWTBuilder_SetClaimWithIntegar(JWTBuilder *builder, const char *key, long value)
 {
     json_t *value_obj;
     int rc;
-    bool succussed;
+    bool succuss;
 
     if (!builder || !key || !*key || !value) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -213,18 +213,18 @@ bool JWTBuilder_SetClaimWithIntegar(JWTBuilder *builder, const char *key, long v
     }
 
     rc = json_object_set_new(builder->claims, key, value_obj);
-    succussed = (rc == -1) ? false : true;
-    if (!succussed)
+    succuss = (rc == -1) ? false : true;
+    if (!succuss)
         DIDError_Set(DIDERR_JWT, "Set claim '%s' failed.", key);
 
-    return succussed;
+    return succuss;
 }
 
 bool JWTBuilder_SetClaimWithBoolean(JWTBuilder *builder, const char *key, bool value)
 {
     json_t *value_obj;
     int rc;
-    bool succussed;
+    bool succuss;
 
     if (!builder || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -238,11 +238,11 @@ bool JWTBuilder_SetClaimWithBoolean(JWTBuilder *builder, const char *key, bool v
     }
 
     rc = json_object_set_new(builder->claims, key, value_obj);
-    succussed = (rc == -1) ? false : true;
-    if (!succussed)
+    succuss = (rc == -1) ? false : true;
+    if (!succuss)
         DIDError_Set(DIDERR_JWT, "Set claim '%s' failed.", key);
 
-    return succussed;
+    return succuss;
 }
 
 bool JWTBuilder_SetIssuer(JWTBuilder *builder, const char *issuer)
@@ -305,7 +305,7 @@ int JWTBuilder_Sign(JWTBuilder *builder, DIDURL *keyid, const char *storepass)
         DIDError_Set(DIDERR_NOT_EXISTS, "Key no exist.");
         return -1;
     }
-    base58_decode(pubkey, sizeof(pubkey), PublicKey_GetPublicKeyBase58(pk));
+    b58_decode(pubkey, sizeof(pubkey), PublicKey_GetPublicKeyBase58(pk));
 
     //get sk
     if (!DIDStore_ContainsPrivateKey(builder->doc->metadata.base.store, issuer, keyid))
@@ -400,7 +400,7 @@ static const char *jwt_export(JWTBuilder *builder)
         goto errorExit;
     }
 
-    len = base64_url_encode(token, (const uint8_t *)header, strlen(header));
+    len = b64_url_encode(token, (const uint8_t *)header, strlen(header));
     free((void*)header);
     if (len <= 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Encode jwt header failed");
@@ -409,7 +409,7 @@ static const char *jwt_export(JWTBuilder *builder)
     token_len += len;
     token[token_len++] = '.';
 
-    len = base64_url_encode(token + token_len, (const uint8_t *)claims, strlen(claims));
+    len = b64_url_encode(token + token_len, (const uint8_t *)claims, strlen(claims));
     free((void*)claims);
     if (len <= 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Encode jwt body failed");

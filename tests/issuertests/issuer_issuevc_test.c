@@ -40,7 +40,6 @@ static void test_issuer_issuevc(void)
     DID *vcdid;
     DIDURL *credid;
     time_t expires;
-    bool isEquals;
     ssize_t size;
     int rc;
     const char* provalue;
@@ -79,12 +78,9 @@ static void test_issuer_issuevc(void)
     CU_ASSERT_TRUE(Credential_IsValid(vc));
 
     vcdid = DIDURL_GetDid(Credential_GetId(vc));
-    isEquals = DID_Equals(vcdid, did);
-    CU_ASSERT_TRUE(isEquals);
-    isEquals = DID_Equals(Credential_GetOwner(vc), did);
-    CU_ASSERT_TRUE(isEquals);
-    isEquals = DID_Equals(Credential_GetIssuer(vc), issuerid);
-    CU_ASSERT_TRUE(isEquals);
+    CU_ASSERT_TRUE(DID_Equals(vcdid, did));
+    CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), did));
+    CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
     const char *tmptypes[2];
@@ -127,7 +123,6 @@ static void test_issuer_issueselfvc(void)
     DID *vcdid;
     DIDURL *credid;
     time_t expires;
-    bool isEquals;
     ssize_t size;
     const char* provalue;
     Issuer *issuer;
@@ -166,12 +161,9 @@ static void test_issuer_issueselfvc(void)
     CU_ASSERT_TRUE(Credential_IsValid(vc));
 
     vcdid = DIDURL_GetDid(Credential_GetId(vc));
-    isEquals = DID_Equals(vcdid, issuerid);
-    CU_ASSERT_TRUE(isEquals);
-    isEquals = DID_Equals(Credential_GetOwner(vc), issuerid);
-    CU_ASSERT_TRUE(isEquals);
-    isEquals = DID_Equals(Credential_GetIssuer(vc), issuerid);
-    CU_ASSERT_TRUE(isEquals);
+    CU_ASSERT_TRUE(DID_Equals(vcdid, issuerid));
+    CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), issuerid));
+    CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
     const char *tmptypes[3];
@@ -215,7 +207,6 @@ static void test_issuer_issuerbystring(void)
     DIDURL *credid;
     DID *vcdid;
     time_t expires;
-    bool isEquals;
     ssize_t size;
     const char *provalue;
     Issuer *issuer;
@@ -242,12 +233,9 @@ static void test_issuer_issuerbystring(void)
     CU_ASSERT_TRUE(Credential_IsValid(vc));
 
     vcdid = DIDURL_GetDid(Credential_GetId(vc));
-    isEquals = DID_Equals(vcdid, issuerid);
-    CU_ASSERT_TRUE(isEquals);
-    isEquals = DID_Equals(Credential_GetOwner(vc), issuerid);
-    CU_ASSERT_TRUE(isEquals);
-    isEquals = DID_Equals(Credential_GetIssuer(vc), issuerid);
-    CU_ASSERT_TRUE(isEquals);
+    CU_ASSERT_TRUE(DID_Equals(vcdid, issuerid));
+    CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), issuerid));
+    CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
     const char *tmptypes[2];
@@ -280,7 +268,6 @@ static void test_issuer_issuerbystring_with_ctrl_chars(void)
     DIDURL *credid;
     DID *vcdid;
     time_t expires;
-    bool isEquals;
     ssize_t size;
     const char *provalue;
     Issuer *issuer;
@@ -307,12 +294,9 @@ static void test_issuer_issuerbystring_with_ctrl_chars(void)
     CU_ASSERT_TRUE(Credential_IsValid(vc));
 
     vcdid = DIDURL_GetDid(Credential_GetId(vc));
-    isEquals = DID_Equals(vcdid, issuerid);
-    CU_ASSERT_TRUE(isEquals);
-    isEquals = DID_Equals(Credential_GetOwner(vc), issuerid);
-    CU_ASSERT_TRUE(isEquals);
-    isEquals = DID_Equals(Credential_GetIssuer(vc), issuerid);
-    CU_ASSERT_TRUE(isEquals);
+    CU_ASSERT_TRUE(DID_Equals(vcdid, issuerid));
+    CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), issuerid));
+    CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
     const char *tmptypes[2];

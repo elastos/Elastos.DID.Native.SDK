@@ -26,7 +26,7 @@ static void test_idchain_publishdid_and_resolve(void)
     char previous_txid[ELA_MAX_TXID_LEN];
     DIDDocument *resolvedoc = NULL, *doc;
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
-    bool successed;
+    bool success;
     DID did;
     int i = 0, rc, status;
 
@@ -46,8 +46,8 @@ static void test_idchain_publishdid_and_resolve(void)
     DID_Copy(&did, DIDDocument_GetSubject(doc));
 
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
-    successed = DIDDocument_PublishDID(doc, signkey, false, storepass);
-    CU_ASSERT_TRUE_FATAL(successed);
+    success = DIDDocument_PublishDID(doc, signkey, false, storepass);
+    CU_ASSERT_TRUE_FATAL(success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     while(!resolvedoc) {
@@ -100,9 +100,9 @@ static void test_idchain_publishdid_and_resolve(void)
     rc = DIDStore_StoreDID(store, doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    successed = DIDDocument_PublishDID(doc, NULL, false, storepass);
+    success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(successed);
+    CU_ASSERT_TRUE_FATAL(success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update)", did.idstring);
 
     i = 0;
@@ -160,9 +160,9 @@ static void test_idchain_publishdid_and_resolve(void)
     rc = DIDStore_StoreDID(store, doc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    successed = DIDDocument_PublishDID(doc, NULL, false, storepass);
+    success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(successed);
+    CU_ASSERT_TRUE_FATAL(success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update) again", did.idstring);
 
     i = 0;
@@ -201,7 +201,7 @@ static void test_idchain_publishdid_with_credential(void)
     char previous_txid[ELA_MAX_TXID_LEN];
     const char *mnemonic, *txid;
     Credential *cred;
-    bool successed;
+    bool success;
     DID did;
     int i = 0, rc, status;
 
@@ -217,9 +217,9 @@ static void test_idchain_publishdid_with_credential(void)
     DID_Copy(&did, DIDDocument_GetSubject(doc));
 
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
-    successed = DIDDocument_PublishDID(doc, NULL, false, storepass);
+    success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(successed);
+    CU_ASSERT_TRUE_FATAL(success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     while(!resolvedoc) {
@@ -274,9 +274,9 @@ static void test_idchain_publishdid_with_credential(void)
     cred = DIDDocument_GetCredential(doc, credid);
     CU_ASSERT_PTR_NOT_NULL(cred);
 
-    successed = DIDDocument_PublishDID(doc, NULL, true, storepass);
+    success = DIDDocument_PublishDID(doc, NULL, true, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(successed);
+    CU_ASSERT_TRUE_FATAL(success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update)", did.idstring);
 
     i = 0;

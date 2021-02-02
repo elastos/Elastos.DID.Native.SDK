@@ -79,7 +79,7 @@ static void test_diddoc_derive_fromidentifier(void)
         CU_ASSERT_PTR_NOT_NULL_FATAL(strkey);
 
         hdkey = HDKey_DeserializeBase58(&_hdkey, strkey, strlen(strkey) + 1);
-        size_t size = base58_decode(binkey, sizeof(binkey), strkey);
+        size_t size = b58_decode(binkey, sizeof(binkey), strkey);
         free((void*)strkey);
         CU_ASSERT_PTR_NOT_NULL_FATAL(hdkey);
         CU_ASSERT_EQUAL(size, EXTENDEDKEY_BYTES);

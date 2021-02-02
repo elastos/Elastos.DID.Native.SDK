@@ -35,7 +35,7 @@ static bool ticket_equals(TransferTicket *ticket1, TransferTicket *ticket2)
 {
     int i, j;
     TicketProof *proof1;
-    bool bequals;
+    bool equal;
 
     assert(ticket1);
     assert(ticket2);
@@ -55,11 +55,11 @@ static bool ticket_equals(TransferTicket *ticket1, TransferTicket *ticket2)
     for(i = 0; i < ticket1->proofs.size; i++) {
         proof1 = &ticket1->proofs.proofs[i];
         for(j = 0; j < ticket2->proofs.size; j++) {
-            bequals = proof_equals(proof1, &ticket2->proofs.proofs[j]);
-            if (bequals)
+            equal = proof_equals(proof1, &ticket2->proofs.proofs[j]);
+            if (equal)
                 break;
         }
-        if (!bequals)
+        if (!equal)
             return false;
     }
 

@@ -21,7 +21,6 @@ static DIDStore *store;
 static void test_vp_getelem(void)
 {
     Presentation *vp;
-    bool isEqual;
     ssize_t size;
     Credential *creds[4], **cred;
     DIDURL*id;
@@ -32,8 +31,7 @@ static void test_vp_getelem(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(vp);
 
     CU_ASSERT_NOT_EQUAL_FATAL(Presentation_GetType(vp), PresentationType);
-    isEqual = DID_Equals(DIDDocument_GetSubject(testdoc), Presentation_GetSigner(vp));
-    CU_ASSERT_TRUE(isEqual);
+    CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(testdoc), Presentation_GetSigner(vp)));
 
     size = Presentation_GetCredentialCount(vp);
     CU_ASSERT_EQUAL(size, 4);
@@ -43,8 +41,7 @@ static void test_vp_getelem(void)
 
     cred = creds;
     for (i = 0; i < size; i++, cred++) {
-        isEqual = DID_Equals(DIDDocument_GetSubject(testdoc), Credential_GetOwner(*cred));
-        CU_ASSERT_TRUE(isEqual);
+        CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(testdoc), Credential_GetOwner(*cred)));
 
         const char *fragment = DIDURL_GetFragment(Credential_GetId(*cred));
         CU_ASSERT_PTR_NOT_NULL(fragment);
@@ -115,7 +112,7 @@ static void test_vp_create(void)
     Presentation *vp;
     DID *did;
     Credential *creds[4], **cred;
-    bool isEqual;
+    bool equal;
     ssize_t size;
     DIDURL *id;
     DID *signer;
@@ -130,8 +127,8 @@ static void test_vp_create(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(vp);
 
     CU_ASSERT_NOT_EQUAL_FATAL(Presentation_GetType(vp), PresentationType);
-    isEqual = DID_Equals(did, Presentation_GetSigner(vp));
-    CU_ASSERT_TRUE(isEqual);
+    equal = DID_Equals(did, Presentation_GetSigner(vp));
+    CU_ASSERT_TRUE(equal);
 
     size = Presentation_GetCredentialCount(vp);
     CU_ASSERT_EQUAL(size, 4);
@@ -141,8 +138,8 @@ static void test_vp_create(void)
 
     cred = creds;
     for (i = 0; i < size; i++, cred++) {
-        isEqual = DID_Equals(DIDDocument_GetSubject(testdoc), Credential_GetOwner(*cred));
-        CU_ASSERT_TRUE(isEqual);
+        equal = DID_Equals(DIDDocument_GetSubject(testdoc), Credential_GetOwner(*cred));
+        CU_ASSERT_TRUE(equal);
 
         const char *fragment = DIDURL_GetFragment(Credential_GetId(*cred));
         CU_ASSERT_PTR_NOT_NULL(fragment);
@@ -190,7 +187,6 @@ static void test_vp_create_by_credarray(void)
     Presentation *vp;
     DID *did;
     Credential *creds[4], **cred, *vcs[4] = {0};
-    bool isEqual;
     ssize_t size;
     DIDURL *id;
     DID *signer;
@@ -208,8 +204,7 @@ static void test_vp_create_by_credarray(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(vp);
 
     CU_ASSERT_NOT_EQUAL_FATAL(Presentation_GetType(vp), PresentationType);
-    isEqual = DID_Equals(did, Presentation_GetSigner(vp));
-    CU_ASSERT_TRUE(isEqual);
+    CU_ASSERT_TRUE(DID_Equals(did, Presentation_GetSigner(vp)));
 
     size = Presentation_GetCredentialCount(vp);
     CU_ASSERT_EQUAL(size, 4);
@@ -219,8 +214,7 @@ static void test_vp_create_by_credarray(void)
 
     cred = creds;
     for (i = 0; i < size; i++, cred++) {
-        isEqual = DID_Equals(DIDDocument_GetSubject(testdoc), Credential_GetOwner(*cred));
-        CU_ASSERT_TRUE(isEqual);
+        CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(testdoc), Credential_GetOwner(*cred)));
 
         const char *fragment = DIDURL_GetFragment(Credential_GetId(*cred));
         CU_ASSERT_PTR_NOT_NULL(fragment);
@@ -268,7 +262,6 @@ static void test_vp_create_without_creds(void)
     Presentation *vp;
     DID *did;
     Credential *creds[4];
-    bool isEqual;
     ssize_t size;
     DID *signer;
 
@@ -280,8 +273,7 @@ static void test_vp_create_without_creds(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(vp);
 
     CU_ASSERT_NOT_EQUAL_FATAL(Presentation_GetType(vp), PresentationType);
-    isEqual = DID_Equals(did, Presentation_GetSigner(vp));
-    CU_ASSERT_TRUE(isEqual);
+    CU_ASSERT_TRUE(DID_Equals(did, Presentation_GetSigner(vp)));
 
     size = Presentation_GetCredentialCount(vp);
     CU_ASSERT_EQUAL(size, 0);

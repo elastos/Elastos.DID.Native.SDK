@@ -447,7 +447,7 @@ static int import_privatekey(DIDURL *id, const char *storepass, const char *file
     if (!skbase || !*skbase)
         return -1;
 
-    size = base58_decode(extendedkey, sizeof(extendedkey), skbase);
+    size = b58_decode(extendedkey, sizeof(extendedkey), skbase);
     free((void*)skbase);
     if (version != 0) {
         if (size != EXTENDEDKEY_BYTES)

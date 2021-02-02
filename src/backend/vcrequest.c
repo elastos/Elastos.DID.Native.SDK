@@ -133,7 +133,7 @@ const char *CredentialRequest_Sign(CredentialRequest_Type type, DIDURL *credid,
 
         len = strlen(data);
         payload = (char*)malloc(len * 4 / 3 + 16);
-        base64_url_encode((char*)payload, (const uint8_t *)data, len);
+        b64_url_encode((char*)payload, (const uint8_t *)data, len);
         free((void*)data);
     }
 
@@ -235,7 +235,7 @@ int CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
     if (!strcmp(request->header.op, operation[RequestType_Declare])) {
         len = strlen(request->payload) + 1;
         vcJson = (char*)malloc(len);
-        len = base64_url_decode((uint8_t *)vcJson, request->payload);
+        len = b64_url_decode((uint8_t *)vcJson, request->payload);
         if (len <= 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode the payload failed");
             free(vcJson);

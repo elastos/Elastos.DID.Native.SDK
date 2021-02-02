@@ -20,16 +20,12 @@ static DIDStore *store;
 static void test_issuer_create(void)
 {
     Issuer *issuer;
-    bool isequal;
 
     issuer = Issuer_Create(issuerid, signkey, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
 
-    isequal = DID_Equals(issuerid, Issuer_GetSigner(issuer));
-    CU_ASSERT_TRUE(isequal);
-
-    isequal = DIDURL_Equals(signkey, Issuer_GetSignKey(issuer));
-    CU_ASSERT_TRUE(isequal);
+    CU_ASSERT_TRUE(DID_Equals(issuerid, Issuer_GetSigner(issuer)));
+    CU_ASSERT_TRUE(DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
 
     Issuer_Destroy(issuer);
 }
@@ -37,16 +33,12 @@ static void test_issuer_create(void)
 static void test_issuer_create_without_key(void)
 {
     Issuer *issuer;
-    bool isequal;
 
     issuer = Issuer_Create(issuerid, NULL, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
 
-    isequal = DID_Equals(issuerid, Issuer_GetSigner(issuer));
-    CU_ASSERT_TRUE(isequal);
-
-    isequal = DIDURL_Equals(signkey, Issuer_GetSignKey(issuer));
-    CU_ASSERT_TRUE(isequal);
+    CU_ASSERT_TRUE(DID_Equals(issuerid, Issuer_GetSigner(issuer)));
+    CU_ASSERT_TRUE(DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
 
     Issuer_Destroy(issuer);
 }

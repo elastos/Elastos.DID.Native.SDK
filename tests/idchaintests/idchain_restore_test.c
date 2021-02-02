@@ -150,8 +150,7 @@ static void test_idchain_restore(void)
 
     for(i = 0; i < restore_dids.index; i++) {
         DID *did = &restore_dids.dids[i];
-        bool iscontain = contain_did(&dids, did);
-        CU_ASSERT_TRUE(iscontain);
+        CU_ASSERT_TRUE(contain_did(&dids, did));
 
         DIDDocument *doc = DIDStore_LoadDID(store, did);
         CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
@@ -241,8 +240,7 @@ static void test_sync_with_localmodification1(void)
 
     for(i = 0; i < dids.index; i++) {
         DID *did = &dids.dids[i];
-        bool iscontain = contain_did(&dids, did);
-        CU_ASSERT_TRUE(iscontain);
+        CU_ASSERT_TRUE(contain_did(&dids, did));
 
         DIDDocument *doc = DIDStore_LoadDID(store, did);
         CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
@@ -339,8 +337,7 @@ static void test_sync_with_localmodification2(void)
 
     for(i = 0; i < dids.index; i++) {
         DID *did = &dids.dids[i];
-        bool iscontain = contain_did(&dids, did);
-        CU_ASSERT_TRUE(iscontain);
+        CU_ASSERT_TRUE(contain_did(&dids, did));
 
         DIDDocument *doc = DIDStore_LoadDID(store, did);
         CU_ASSERT_PTR_NOT_NULL_FATAL(doc);

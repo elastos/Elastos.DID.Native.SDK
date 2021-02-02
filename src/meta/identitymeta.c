@@ -133,13 +133,13 @@ DIDStore *IdentityMetadata_GetStore(IdentityMetadata *metadata)
 
 bool IdentityMetadata_AttachedStore(IdentityMetadata *metadata)
 {
-    bool bAttached;
+    bool attached;
 
     assert(metadata);
 
-    bAttached = Metadata_AttachedStore(&metadata->base);
-    if (!bAttached)
+    attached = Metadata_AttachedStore(&metadata->base);
+    if (!attached)
         DIDError_Set(DIDERR_MALFORMED_META, "No attached did store.");
 
-    return bAttached;
+    return attached;
 }

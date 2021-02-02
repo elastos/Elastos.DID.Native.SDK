@@ -86,8 +86,7 @@ static void test_didstore_change_password(void)
         CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(doc, 0),
                 DIDDocument_GetProofSignature(loaddoc, 0));
 
-        bool isEquals = DID_Equals(did, DIDDocument_GetSubject(loaddoc));
-        CU_ASSERT_TRUE(isEquals);
+        CU_ASSERT_TRUE(DID_Equals(did, DIDDocument_GetSubject(loaddoc)));
 
         DIDDocument_Destroy(doc);
         DIDDocument_Destroy(loaddoc);
@@ -181,8 +180,7 @@ static void test_didstore_change_with_wrongpassword(void)
         CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(doc, 0),
                 DIDDocument_GetProofSignature(loaddoc, 0));
 
-        bool isEquals = DID_Equals(did, DIDDocument_GetSubject(loaddoc));
-        CU_ASSERT_TRUE(isEquals);
+        CU_ASSERT_TRUE(DID_Equals(did, DIDDocument_GetSubject(loaddoc)));
 
         DIDDocument_Destroy(doc);
         DIDDocument_Destroy(loaddoc);

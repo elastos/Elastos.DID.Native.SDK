@@ -45,18 +45,22 @@ typedef struct Sha256_Digest {
 
 // TODO: not a safe design, caller should provide large enough buffer
 //        to receive the result
-ssize_t encrypt_to_base64(char *base64, const char *passwd,
+ssize_t encrypt_to_b64(char *base64, const char *passwd,
         const uint8_t *input, size_t len);
 
-ssize_t decrypt_from_base64(uint8_t *plain, const char *passwd, const char *base64);
+ssize_t decrypt_from_b64(uint8_t *plain, const char *passwd, const char *base64);
 
-ssize_t base64_url_encode(char *base64, const uint8_t *input, size_t len);
+ssize_t aes256_encrypt(uint8_t *cipher, const char *passwd, const uint8_t *input, size_t len);
 
-ssize_t base64_url_decode(uint8_t *buffer, const char *base64);
+ssize_t aes256_decrypt(uint8_t *plain, const char *passwd, const uint8_t *input, size_t len);
 
-ssize_t base58_encode(char *base58, size_t base58_len, uint8_t *input, size_t len);
+ssize_t b64_url_encode(char *base64, const uint8_t *input, size_t len);
 
-ssize_t base58_decode(uint8_t *data, size_t len, const char *base58);
+ssize_t b64_url_decode(uint8_t *buffer, const char *base64);
+
+ssize_t b58_encode(char *base58, size_t base58_len, uint8_t *input, size_t len);
+
+ssize_t b58_decode(uint8_t *data, size_t len, const char *base58);
 
 int sha256_digest_init(Sha256_Digest *sha256_digest);
 
@@ -81,8 +85,6 @@ int ecdsa_verify(uint8_t *sig, uint8_t *publickey, uint8_t *digest, size_t size)
 int ecdsa_verify_base64(char *sig, uint8_t *publickey, uint8_t *digest, size_t size);
 
 int md5(uint8_t *md5, size_t size, uint8_t *data, size_t datasize);
-
-ssize_t _encrypt(uint8_t *cipher, const char *passwd, const uint8_t *input, size_t len);
 
 #ifdef __cplusplus
 }

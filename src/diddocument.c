@@ -1294,7 +1294,7 @@ const char *DIDDocument_GetProofSignature(DIDDocument *document, int index)
 bool DIDDocument_IsDeactivated(DIDDocument *document)
 {
     DIDDocument *resolvedoc;
-    bool isdeactived;
+    bool deactived;
     int status;
 
     if (!document) {
@@ -1302,16 +1302,16 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
         return true;
     }
 
-    isdeactived = DIDMetadata_GetDeactivated(&document->metadata);
-    if (isdeactived)
-        return isdeactived;
+    deactived = DIDMetadata_GetDeactivated(&document->metadata);
+    if (deactived)
+        return deactived;
 
     resolvedoc = DID_Resolve(&document->did, &status, true);
     if (!resolvedoc)
         return false;
 
-    isdeactived = DIDMetadata_GetDeactivated(&resolvedoc->metadata);
-    if (isdeactived)
+    deactived = DIDMetadata_GetDeactivated(&resolvedoc->metadata);
+    if (deactived)
         goto storeexit;
 
     //todo: check the controller deactivated or not ????
@@ -1332,28 +1332,28 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
     }*/
 
 storeexit:
-    if (isdeactived) {
+    if (deactived) {
         DIDMetadata_SetDeactivated(&resolvedoc->metadata, true);
         DIDDocument_SaveMetadata(resolvedoc);
     }
 
     DIDDocument_Destroy(resolvedoc);
-    return isdeactived;
+    return deactived;
 }
 
-static bool DIDDocument_IsGenuine_Internal(DIDDocument *document, bool isqualified)
+static bool DIDDocument_IsGenuine_Internal(DIDDocument *document, bool qualified)
 {
     DIDDocument *proof_doc;
     DocumentProof *proof;
     DID **checksigners;
     const char *data;
-    bool isgenuine = false;
+    bool isGenuine = false;
     size_t size;
     int i;
 
     assert(document);
 
-    if (isqualified && !DIDDocument_IsQualified(document)) {
+    if (qualified && !DIDDocument_IsQualified(document)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "The signers are less than multisig number.");
         return false;
     }
@@ -1412,11 +1412,11 @@ static bool DIDDocument_IsGenuine_Internal(DIDDocument *document, bool isqualifi
         checksigners[i] = &proof->creater.did;
     }
 
-    isgenuine = true;
+    isGenuine = true;
 
 errorExit:
     free((void*)data);
-    return isgenuine;
+    return isGenuine;
 }
 
 bool DIDDocument_IsGenuine(DIDDocument *document)
@@ -1951,7 +1951,7 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
         return -1;
     }
     //check base58 is valid
-    if (base58_decode(binkey, sizeof(binkey), key) != PUBLICKEY_BYTES) {
+    if (b58_decode(binkey, sizeof(binkey), key) != PUBLICKEY_BYTES) {
         DIDError_Set(DIDERR_INVALID_KEY, "Decode public key failed.");
         return -1;
     }
@@ -2041,7 +2041,7 @@ int DIDDocumentBuilder_AddAuthenticationKey(DIDDocumentBuilder *builder,
         return -1;
     }
 
-    if (key && base58_decode(binkey, sizeof(binkey), key) != PUBLICKEY_BYTES) {
+    if (key && b58_decode(binkey, sizeof(binkey), key) != PUBLICKEY_BYTES) {
         DIDError_Set(DIDERR_INVALID_KEY, "Decode authentication key failed.");
         return -1;
     }
@@ -2185,7 +2185,7 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
         return -1;
     }
 
-    if (key && base58_decode(binkey, sizeof(binkey), key) != PUBLICKEY_BYTES) {
+    if (key && b58_decode(binkey, sizeof(binkey), key) != PUBLICKEY_BYTES) {
         DIDError_Set(DIDERR_INVALID_KEY, "Decode public key failed.");
         return -1;
     }
@@ -2326,7 +2326,7 @@ static int diddocument_addcredential(DIDDocument *document, Credential *credenti
     return 0;
 }
 
-int DIDDocumentBuilder_AddController_Internal(DIDDocument *customizedoc, DIDDocument *document)
+static int diddocumentbuilder_addcontroller_internal(DIDDocument *customizedoc, DIDDocument *document)
 {
     DIDDocument **docs;
 
@@ -2384,7 +2384,7 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
     if (!controllerdoc)
         return -1;
 
-    if (DIDDocumentBuilder_AddController_Internal(document, controllerdoc) < 0)
+    if (diddocumentbuilder_addcontroller_internal(document, controllerdoc) < 0)
         return -1;
 
     document->multisig = 0;
@@ -3177,7 +3177,7 @@ DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
         if (DID_Equals(&pk->controller, &doc->did) == 0)
             continue;
 
-        base58_decode(binkey, sizeof(binkey), pk->publicKeyBase58);
+        b58_decode(binkey, sizeof(binkey), pk->publicKeyBase58);
         HDKey_PublicKey2Address(binkey, idstring, sizeof(idstring));
 
         if (!strcmp(idstring, pk->id.did.idstring))
@@ -3841,7 +3841,7 @@ int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
         return -1;
     }
 
-    base58_decode(binkey, sizeof(binkey), PublicKey_GetPublicKeyBase58(publickey));
+    b58_decode(binkey, sizeof(binkey), PublicKey_GetPublicKeyBase58(publickey));
 
     if (ecdsa_verify_base64(sig, binkey, digest, size) == -1) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Ecdsa verify failed.");
@@ -4147,7 +4147,7 @@ static bool controllers_equal(DIDDocument **docs1, size_t size1, DIDDocument **d
 {
     DIDDocument *doc1, *doc2;
     int i, j;
-    bool bequals = false;
+    bool equal = false;
 
     assert(docs1);
     assert(docs2);
@@ -4160,12 +4160,12 @@ static bool controllers_equal(DIDDocument **docs1, size_t size1, DIDDocument **d
         for (j = 0; j < size1; j++) {
             doc1 = docs1[j];
             if (DID_Equals(&doc1->did, &doc2->did)) {
-                bequals = true;
+                equal = true;
                 break;
             }
         }
 
-        if (!bequals)
+        if (!equal)
             return false;
     }
 
@@ -4178,7 +4178,7 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
     const char *last_txid, *local_signature, *local_prevsignature, *resolve_signature = NULL;
     DIDDocument *resolve_doc = NULL;
     DIDStore *store;
-    bool successed;
+    bool success;
     int rc = -1, status;
 
     if (!document || !storepass || !*storepass) {
@@ -4229,7 +4229,7 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
     resolve_doc = DID_Resolve(&document->did, &status, true);
     if (!resolve_doc) {
         if (status == DIDStatus_NotFound)
-            successed = DIDBackend_CreateDID(document, signkey, storepass);
+            success = DIDBackend_CreateDID(document, signkey, storepass);
         else
             return false;
     } else {
@@ -4278,10 +4278,10 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
         }
 
         DIDMetadata_SetTxid(&document->metadata, last_txid);
-        successed = DIDBackend_UpdateDID(document, signkey, storepass);
+        success = DIDBackend_UpdateDID(document, signkey, storepass);
     }
 
-    if (!successed)
+    if (!success)
         goto errorExit;
 
     ResolveCache_InvalidateDID(&document->did);
@@ -4302,7 +4302,7 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
     DIDDocument *resolve_doc = NULL;
     DocumentProof *proof;
     DIDStore *store;
-    bool bequals = false;
+    bool equal = false;
     int rc = -1, i, status;
 
     if (!document || !storepass || !*storepass || !ticket || !signkey) {
@@ -4340,12 +4340,12 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
     for (i = 0; i < document->proofs.size; i++) {
         proof = &document->proofs.proofs[i];
         if (DID_Equals(&ticket->to, &proof->creater.did)) {
-            bequals = true;
+            equal = true;
             break;
         }
     }
 
-    if (!bequals) {
+    if (!equal) {
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "The DID to receive ticket is not the document's signer.");
         goto errorExit;
     }
@@ -4375,7 +4375,7 @@ bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const cha
     DIDStore *store;
     bool localcopy = false;
     int rc = 0, status;
-    bool successed;
+    bool success;
 
     if (!document || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4412,12 +4412,12 @@ bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const cha
         }
     }
 
-    successed = DIDBackend_DeactivateDID(document, signkey, NULL, storepass);
+    success = DIDBackend_DeactivateDID(document, signkey, NULL, storepass);
     DIDDocument_Destroy(resolve_doc);
-    if (successed)
+    if (success)
         ResolveCache_InvalidateDID(&document->did);
 
-    return successed;
+    return success;
 }
 
 bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
@@ -4427,7 +4427,7 @@ bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
     DIDStore *store;
     PublicKey **candidatepks;
     PublicKey *candidatepk, *pk;
-    bool successed = false, bexist = false;
+    bool success = false, exist = false;
     size_t size;
     int i, j, status;
 
@@ -4475,25 +4475,25 @@ bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
                     strcmp(candidatepk->publicKeyBase58, pk->publicKeyBase58))
                 continue;
 
-            bexist = true;
+            exist = true;
             break;
         }
-        if (bexist)
+        if (exist)
             break;
     }
 
-    if (!bexist) {
+    if (!exist) {
         DIDError_Set(DIDERR_INVALID_KEY, "No invalid authorization key to deactivate did.");
         goto errorExit;
     }
 
-    successed = DIDBackend_DeactivateDID(document, &candidatepk->id, &pk->id, storepass);
-    if (successed)
+    success = DIDBackend_DeactivateDID(document, &candidatepk->id, &pk->id, storepass);
+    if (success)
         ResolveCache_InvalidateDID(&document->did);
 
 errorExit:
     DIDDocument_Destroy(targetdoc);
-    return successed;
+    return success;
 }
 
 DIDDocumentBuilder* DIDDocument_CreateBuilder(DID *did, DIDDocument *controllerdoc, DIDStore *store)
@@ -4532,7 +4532,7 @@ DIDDocumentBuilder* DIDDocument_CreateBuilder(DID *did, DIDDocument *controllerd
             goto errorExit;
         }
 
-        if (DIDDocumentBuilder_AddController_Internal(builder->document, builder->controllerdoc) < 0)
+        if (diddocumentbuilder_addcontroller_internal(builder->document, builder->controllerdoc) < 0)
             goto errorExit;
     }
 
@@ -4544,17 +4544,59 @@ errorExit:
     return NULL;
 }
 
-static DIDDocument *create_customized_document(DIDStore *store, const char *storepass,
-        DID *did, DID **controllers, size_t size, DIDDocument *controllerdoc, int multisig)
+DIDDocument *DIDDocument_Create(DID *did, const char *key, const char *alias,
+        DIDStore *store, const char *storepass)
+{
+    DIDDocument *document;
+    DIDDocumentBuilder *builder;
+    DIDURL id;
+
+    assert(did);
+    assert(key && *key);
+    assert(store);
+    assert(storepass && *storepass);
+
+    if (Init_DIDURL(&id, did, "primary") == -1)
+        return NULL;
+
+    builder = DIDDocument_CreateBuilder(did, NULL, store);
+    if (!builder)
+        return NULL;
+
+    if (DIDDocumentBuilder_AddPublicKey(builder, &id, did, key) == -1) {
+        DIDDocumentBuilder_Destroy(builder);
+        return NULL;
+    }
+
+    if (DIDDocumentBuilder_AddAuthenticationKey(builder, &id, key) == -1) {
+        DIDDocumentBuilder_Destroy(builder);
+        return NULL;
+    }
+
+    if (DIDDocumentBuilder_SetExpires(builder, 0) == -1) {
+        DIDDocumentBuilder_Destroy(builder);
+        return NULL;
+    }
+
+    document = DIDDocumentBuilder_Seal(builder, storepass);
+    DIDDocumentBuilder_Destroy(builder);
+    if (!document)
+        return NULL;
+
+    return document;
+}
+
+static DIDDocument *create_customized_document(DID *did, DID **controllers, size_t size,
+        DIDDocument *controllerdoc, int multisig, DIDStore *store, const char *storepass)
 {
     DIDDocument *document;
     DIDDocumentBuilder *builder;
     int i;
 
-    assert(store);
-    assert(storepass && *storepass);
     assert(did);
     assert(controllerdoc);
+    assert(store);
+    assert(storepass && *storepass);
 
     builder = DIDDocument_CreateBuilder(did, controllerdoc, store);
     if (!builder)
@@ -4667,8 +4709,8 @@ DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *controllerdoc,
     if (!DIDStore_ContainsPrivateKey(store, &controllerdoc->did, key))
         return NULL;
 
-    doc = create_customized_document(store, storepass, &did, checkcontrollers, checksize,
-            controllerdoc, multisig);
+    doc = create_customized_document(&did, checkcontrollers, checksize,
+            controllerdoc, multisig, store, storepass);
     if (!doc)
         return NULL;
 
