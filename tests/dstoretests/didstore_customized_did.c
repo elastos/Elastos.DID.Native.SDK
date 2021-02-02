@@ -89,7 +89,6 @@ static void test_new_customizedid_with_multicontrollers(void)
     DIDDocument *controller1_doc, *controller2_doc, *customized_doc, *resolve_doc;
     DID *controller1, *controller2, *_controller, *subject;
     DIDURL *signkey1, *signkey2;
-    bool bEquals, bsuccessed;
     int rc;
 
     DIDStore *store = TestData_SetupStore(true);
@@ -435,7 +434,7 @@ static void test_new_customizedid_with_existcontrollers2(void)
     CU_ASSERT_PTR_NOT_NULL(keybase1);
 
     //Don't remove
-    //base58_encode(privatekeybase58, sizeof(privatekeybase58), HDKey_GetPrivateKey(hdkey), PRIVATEKEY_BYTES);
+    //b58_encode(privatekeybase58, sizeof(privatekeybase58), HDKey_GetPrivateKey(hdkey), PRIVATEKEY_BYTES);
     //printf("k1 sk: %s\n", privatekeybase58);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddPublicKey(builder, id1, &customized_did, keybase1));
@@ -450,7 +449,7 @@ static void test_new_customizedid_with_existcontrollers2(void)
     CU_ASSERT_PTR_NOT_NULL(keybase2);
 
     //Don't remove
-    //base58_encode(privatekeybase58, sizeof(privatekeybase58), HDKey_GetPrivateKey(hdkey), PRIVATEKEY_BYTES);
+    //b58_encode(privatekeybase58, sizeof(privatekeybase58), HDKey_GetPrivateKey(hdkey), PRIVATEKEY_BYTES);
     //printf("k2 sk: %s\n", privatekeybase58);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id2, keybase2));

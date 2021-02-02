@@ -900,7 +900,7 @@ bool Credential_IsExpired(Credential *cred)
 bool Credential_IsGenuine_Internal(Credential *cred, DIDDocument *document)
 {
     DIDDocument *issuerdoc = NULL;
-    bool bgenuine = false;
+    bool genuine = false;
     const char *data;
     int rc, status;
 
@@ -931,11 +931,11 @@ bool Credential_IsGenuine_Internal(Credential *cred, DIDDocument *document)
             cred->proof.signatureValue, 1, data, strlen(data));
     free((void *)data);
 
-    bgenuine = (rc == -1 ? false : true);
+    genuine = (rc == -1 ? false : true);
 errorExit:
     if (issuerdoc != document)
         DIDDocument_Destroy(issuerdoc);
-    return bgenuine;
+    return genuine;
 }
 
 bool Credential_IsGenuine(Credential *cred)
@@ -1062,7 +1062,7 @@ bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *sto
 {
     DIDDocument *doc = NULL;
     DIDStore *store;
-    bool successed = false;
+    bool success = false;
     int status;
 
     if (!credential || !storepass || !*storepass) {
@@ -1113,18 +1113,18 @@ bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *sto
         }
     }
 
-    successed = DIDBackend_DeclareCredential(credential, signkey, doc, storepass);
+    success = DIDBackend_DeclareCredential(credential, signkey, doc, storepass);
 
 errorExit:
     DIDDocument_Destroy(doc);
-    return successed;
+    return success;
 }
 
 bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *storepass)
 {
     DIDDocument *doc = NULL;
     DIDStore *store;
-    bool successed = false;
+    bool success = false;
     DID *signer;
     int status;
 
@@ -1184,11 +1184,11 @@ bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *stor
         }
     }
 
-    successed = DIDBackend_RevokeCredential(&credential->id, signkey, doc, storepass);
+    success = DIDBackend_RevokeCredential(&credential->id, signkey, doc, storepass);
 
 errorExit:
     DIDDocument_Destroy(doc);
-    return successed;
+    return success;
 }
 
 bool Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
@@ -1197,7 +1197,7 @@ bool Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
     DIDDocument *doc = NULL;
     DIDStore *store;
     Credential *local_vc;
-    bool successed = false, brevoked;
+    bool success = false, brevoked;
 
     if (!id || !document || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");

@@ -109,9 +109,10 @@ DIDDocument *DIDDocument_GetControllerDocument(DIDDocument *doc, DID *controller
 
 size_t DIDDocument_GetSelfAuthenticationKeyCount(DIDDocument *document);
 
-int DIDDocumentBuilder_AddController_Internal(DIDDocument *customizedoc, DIDDocument *document);
-
 DIDDocumentBuilder* DIDDocument_CreateBuilder(DID *did, DIDDocument *controllerdoc, DIDStore *store);
+
+DIDDocument *DIDDocument_Create(DID *did, const char *key, const char *alias,
+        DIDStore *store, const char *storepass);
 
 bool DIDDocument_IsValid_Internal(DIDDocument *document, bool isqualified);
 

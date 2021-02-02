@@ -165,7 +165,7 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
 
         len = strlen(data);
         payload = (char*)malloc(len * 4 / 3 + 16);
-        base64_url_encode((char*)payload, (const uint8_t *)data, len);
+        b64_url_encode((char*)payload, (const uint8_t *)data, len);
         free((void*)data);
     }
 
@@ -176,7 +176,7 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
 
         len = strlen(data);
         ticket_data = (char*)malloc(len * 4 / 3 + 16);
-        base64_url_encode((char*)ticket_data, (const uint8_t *)data, len);
+        b64_url_encode((char*)ticket_data, (const uint8_t *)data, len);
         free((void*)data);
     }
 
@@ -317,7 +317,7 @@ static int parser_payload(DIDRequest *request, json_t *json)
     if (strcmp(request->header.op, operation[RequestType_Deactivate])) {
         len = strlen(request->payload) + 1;
         docJson = (char*)malloc(len);
-        len = base64_url_decode((uint8_t *)docJson, request->payload);
+        len = b64_url_decode((uint8_t *)docJson, request->payload);
         if (len <= 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode the payload failed");
             free(docJson);

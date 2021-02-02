@@ -49,7 +49,7 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
     KeySpec _spec, *spec;
     cjose_jwk_t *jwk = NULL;
     int rc = -1, status;
-    bool isresolved = false;
+    bool isResolved = false;
 
     assert(jwt);
     assert(jwt->header);
@@ -71,7 +71,7 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
 
     if (!doc) {
         doc = DID_Resolve(issuer, &status, false);
-        isresolved = true;
+        isResolved = true;
     }
 
     if (!JWT_GetKeyId(jwt)) {
@@ -90,7 +90,7 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
     if (!keybase58)
         goto errorExit;
 
-    base58_decode(binkey, sizeof(binkey), keybase58);
+    b58_decode(binkey, sizeof(binkey), keybase58);
 
     memset(&_spec, 0, sizeof(KeySpec));
     spec = KeySpec_Fill(&_spec, binkey, NULL);
@@ -108,7 +108,7 @@ static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
 errorExit:
     if (issuer)
         DID_Destroy(issuer);
-    if (isresolved && doc)
+    if (isResolved && doc)
         DIDDocument_Destroy(doc);
 
     return jwk;
@@ -143,7 +143,7 @@ static JWT *parse_jwt(const char *token)
     //get claims
     len = strlen(_token) - dot - 1;
     claims = (char*)alloca(len + 1);
-    len = base64_url_decode((uint8_t *)claims, _token + dot + 1);
+    len = b64_url_decode((uint8_t *)claims, _token + dot + 1);
     if (len <= 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode jwt claims failed");
         goto errorExit;
@@ -160,7 +160,7 @@ static JWT *parse_jwt(const char *token)
     _token[dot] = 0;
     len = dot;
     header = (char*)alloca(len + 1);
-    len = base64_url_decode((uint8_t *)header, _token);
+    len = b64_url_decode((uint8_t *)header, _token);
     if (len <= 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode jwt header failed");
         goto errorExit;
@@ -189,7 +189,7 @@ static JWT *parse_jws(JWSParser *parser, const char *token)
     cjose_jws_t *jws_t = NULL;
     char *payload = NULL;
     size_t payload_len = 0;
-    bool successed;
+    bool success;
     time_t current, exp, nbf;
 
     assert(token && *token);
@@ -221,8 +221,8 @@ static JWT *parse_jws(JWSParser *parser, const char *token)
     }
 
     //set claims(payload)
-    successed = cjose_jws_get_plaintext(jws_t, (uint8_t**)&payload, &payload_len, &err);
-    if (!successed) {
+    success = cjose_jws_get_plaintext(jws_t, (uint8_t**)&payload, &payload_len, &err);
+    if (!success) {
         DIDError_Set(DIDERR_JWT, "Get jwt body failed.");
         goto errorExit;
     }
@@ -240,10 +240,10 @@ static JWT *parse_jws(JWSParser *parser, const char *token)
         return NULL;
     }
 
-    successed = cjose_jws_verify(jws_t, jwk, &err);
+    success = cjose_jws_verify(jws_t, jwk, &err);
     cjose_jws_release(jws_t);
     cjose_jwk_release(jwk);
-    if (!successed) {
+    if (!success) {
         DIDError_Set(DIDERR_JWT, "Verify jwt failed.");
         JWT_Destroy(jwt);
         return NULL;

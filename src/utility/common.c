@@ -466,7 +466,7 @@ int to_hexstringfrombase58(char *id, size_t size, const char *base58)
     assert(size > 0);
     assert(base58);
 
-    len = base58_decode(binkey, sizeof(binkey), base58);
+    len = b58_decode(binkey, sizeof(binkey), base58);
     if (len != EXTENDEDKEY_BYTES)
         return -1;
 

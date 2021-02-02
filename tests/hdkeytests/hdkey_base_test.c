@@ -274,7 +274,7 @@ static void test_base64_compatible(void)
     for (i = 0; i < 256; i++) {
         intput[i] = i;
 
-        base64_url_encode(base64, (uint8_t *)intput, i+1);
+        b64_url_encode(base64, (uint8_t *)intput, i+1);
 
         CU_ASSERT_STRING_EQUAL(base64output[i], base64);
     }
@@ -288,10 +288,10 @@ static void test_encrypt_compatible(void)
     const char *base_compatible = "TBimuq42IyD6FsoZK0AoCOt75uiL_gEepZTpgu59RYSV-NR-fqxsYfx0cyyzGacX";
     uint8_t data[128];
 
-    encrypt_to_base64(base64, passwd, (uint8_t *)plain, strlen(plain));
+    encrypt_to_b64(base64, passwd, (uint8_t *)plain, strlen(plain));
     CU_ASSERT_STRING_EQUAL(base64, base_compatible);
 
-    decrypt_from_base64(data, passwd, base64);
+    decrypt_from_b64(data, passwd, base64);
     CU_ASSERT_NSTRING_EQUAL(data, plain, strlen(plain));
 }
 
@@ -302,8 +302,8 @@ static void test_encrypt_decrypt(void)
     char *plain = "brown bear what do you see";
     uint8_t data[128];
 
-    encrypt_to_base64(base64, passwd, (uint8_t *)plain, strlen(plain));
-    decrypt_from_base64(data, passwd, base64);
+    encrypt_to_b64(base64, passwd, (uint8_t *)plain, strlen(plain));
+    decrypt_from_b64(data, passwd, base64);
     CU_ASSERT_NSTRING_EQUAL(data, plain, strlen(plain));
 }
 
@@ -318,7 +318,7 @@ static void test_base64_decode_forpayload(void)
     buffer = alloca(len);
     CU_ASSERT_PTR_NOT_NULL(buffer);
 
-    len = base64_url_decode((uint8_t*)buffer, payload);
+    len = b64_url_decode((uint8_t*)buffer, payload);
     buffer[len] = 0;
     CU_ASSERT_NOT_EQUAL(len, -1);
 }

@@ -56,17 +56,13 @@ static void test_did_compare(void)
 
 static void test_did_equals(void)
 {
-    bool isEqual;
-
     DID *equaldid = DID_New(method_specific_string);
-    isEqual = DID_Equals(equaldid, did);
+    CU_ASSERT_TRUE(DID_Equals(equaldid, did));
     DID_Destroy(equaldid);
-    CU_ASSERT_TRUE(isEqual);
 
     equaldid = DID_New("abc");
-    isEqual = DID_Equals(equaldid, did);
+    CU_ASSERT_FALSE(DID_Equals(equaldid, did));
     DID_Destroy(equaldid);
-    CU_ASSERT_FALSE(isEqual);
 }
 
 static int did_test_operation_suite_init(void)

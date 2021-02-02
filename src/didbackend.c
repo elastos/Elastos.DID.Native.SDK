@@ -104,7 +104,7 @@ int DIDBackend_Initialize(CreateIdTransaction_Callback *createtransaction,
 bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
 {
     const char *reqstring;
-    bool successed;
+    bool success;
 
     assert(document);
     assert(signkey);
@@ -125,18 +125,18 @@ bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *st
     if (!reqstring)
         return false;
 
-    successed = gCreateIdTransaction(reqstring, "");
+    success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
-    if (!successed)
+    if (!success)
         DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction(create) failed.");
 
-    return successed;
+    return success;
 }
 
 bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
 {
     const char *reqstring;
-    bool successed;
+    bool success;
 
     assert(document);
     assert(signkey);
@@ -157,19 +157,19 @@ bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *st
     if (!reqstring)
         return false;
 
-    successed = gCreateIdTransaction(reqstring, "");
+    success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
-    if (!successed)
+    if (!success)
         DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction(update) failed.");
 
-    return successed;
+    return success;
 }
 
 bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
         DIDURL *signkey, const char *storepass)
 {
     const char *reqstring;
-    bool successed;
+    bool success;
 
     assert(document);
     assert(ticket);
@@ -191,12 +191,12 @@ bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
     if (!reqstring)
         return false;
 
-    successed = gCreateIdTransaction(reqstring, "");
+    success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
-    if (!successed)
+    if (!success)
         DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction(create) failed.");
 
-    return successed;
+    return success;
 }
 
 //signkey provides sk, creater is real key in proof. If did is deactivated by ownerself, signkey and
@@ -205,7 +205,7 @@ bool DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
         DIDURL *creater, const char *storepass)
 {
     const char *reqstring;
-    bool successed;
+    bool success;
 
     assert(signerdoc);
     assert(signkey);
@@ -226,12 +226,12 @@ bool DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
     if (!reqstring)
         return false;
 
-    successed = gCreateIdTransaction(reqstring, "");
+    success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
-    if (!successed)
+    if (!success)
         DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction(deactivated) failed.");
 
-    return successed;
+    return success;
 }
 
 static json_t *get_resolve_result(json_t *json)
@@ -637,7 +637,7 @@ bool DIDBackend_DeclareCredential(Credential *vc, DIDURL *signkey,
         DIDDocument *document, const char *storepass)
 {
     const char *reqstring;
-    bool successed;
+    bool success;
 
     assert(vc);
     assert(signkey);
@@ -659,19 +659,19 @@ bool DIDBackend_DeclareCredential(Credential *vc, DIDURL *signkey,
     if (!reqstring)
         return false;
 
-    successed = gCreateIdTransaction(reqstring, "");
+    success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
-    if (!successed)
+    if (!success)
         DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction(deactivated) failed.");
 
-    return successed;
+    return success;
 }
 
 bool DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey, DIDDocument *document,
         const char *storepass)
 {
     const char *reqstring;
-    bool successed;
+    bool success;
 
     assert(credid);
     assert(signkey);
@@ -693,12 +693,12 @@ bool DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey, DIDDocument *d
     if (!reqstring)
         return false;
 
-    successed = gCreateIdTransaction(reqstring, "");
+    success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
-    if (!successed)
+    if (!success)
         DIDError_Set(DIDERR_INVALID_BACKEND, "create Id transaction(deactivated) failed.");
 
-    return successed;
+    return success;
 }
 
 Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force)
@@ -802,7 +802,7 @@ bool DIDBackend_ResolveRevocation(DIDURL *id, DID *issuer)
 {
     CredentialBiography *biography;
 
-    bool isexist;
+    bool exist;
 
     assert(id);
     assert(issuer);
@@ -816,9 +816,9 @@ bool DIDBackend_ResolveRevocation(DIDURL *id, DID *issuer)
     if (!biography)
         return false;
 
-    isexist = (CredentialBiography_GetStatus(biography) == CredentialStatus_Revoked) ? true : false;
+    exist = (CredentialBiography_GetStatus(biography) == CredentialStatus_Revoked) ? true : false;
     CredentialBiography_Destroy(biography);
-    return isexist;
+    return exist;
 }
 
 CredentialBiography *DIDBackend_ResolveCredentialBiography(DIDURL *id, DID *issuer)

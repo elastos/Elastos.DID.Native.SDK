@@ -72,8 +72,7 @@ static void test_didstore_bulk_newdid(void)
         CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(doc, 0),
                 DIDDocument_GetProofSignature(loaddoc, 0));
 
-        bool isEquals = DID_Equals(did, DIDDocument_GetSubject(loaddoc));
-        CU_ASSERT_TRUE(isEquals);
+        CU_ASSERT_TRUE(DID_Equals(did, DIDDocument_GetSubject(loaddoc)));
 
         DIDDocument_Destroy(doc);
         DIDDocument_Destroy(loaddoc);
@@ -129,8 +128,7 @@ static void test_didstore_op_deletedid(void)
         if (i % 5 != 0)
             continue;
 
-        bool isDeleted = DIDStore_DeleteDID(store, &dids[i]);
-        CU_ASSERT_TRUE(isDeleted);
+        CU_ASSERT_TRUE(DIDStore_DeleteDID(store, &dids[i]));
 
         char *path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP,
                 DATA_DIR, PATH_STEP, IDS_DIR, PATH_STEP, dids[i].idstring);
@@ -159,7 +157,6 @@ static void test_didstore_op_store_load_did(void)
 {
     DIDDocument *issuerdoc, *doc, *loaddoc;
     DIDStore *store;
-    bool isEquals;
     int rc, count = 0;
 
     store = TestData_SetupStore(true);
@@ -169,15 +166,13 @@ static void test_didstore_op_store_load_did(void)
     doc = TestData_LoadDoc();
 
     loaddoc = DIDStore_LoadDID(store, DIDDocument_GetSubject(issuerdoc));
-    isEquals = DID_Equals(DIDDocument_GetSubject(issuerdoc), DIDDocument_GetSubject(loaddoc));
-    CU_ASSERT_TRUE(isEquals);
+    CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), DIDDocument_GetSubject(loaddoc)));
     CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(issuerdoc, 0), DIDDocument_GetProofSignature(loaddoc, 0));
     CU_ASSERT_TRUE(DIDDocument_IsValid(loaddoc));
     DIDDocument_Destroy(loaddoc);
 
     loaddoc = DIDStore_LoadDID(store, DIDDocument_GetSubject(doc));
-    isEquals = DID_Equals(DIDDocument_GetSubject(doc), DIDDocument_GetSubject(loaddoc));
-    CU_ASSERT_TRUE(isEquals);
+    CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(doc), DIDDocument_GetSubject(loaddoc)));
     CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(doc, 0), DIDDocument_GetProofSignature(loaddoc, 0));
     CU_ASSERT_TRUE(DIDDocument_IsValid(loaddoc));
     DIDDocument_Destroy(loaddoc);

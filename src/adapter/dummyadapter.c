@@ -133,13 +133,13 @@ static bool check_ticket(const char* data, DIDDocument *doc, char *txid)
     size_t len;
     char *ticketJson;
     TransferTicket *ticket;
-    bool bcheck = false;
+    bool check = false;
 
     assert(data);
 
     len = strlen(data) + 1;
     ticketJson = (char*)malloc(len);
-    len = base64_url_decode((uint8_t *)ticketJson, data);
+    len = b64_url_decode((uint8_t *)ticketJson, data);
     if (len <= 0) {
         free((void*)ticketJson);
         return false;
@@ -151,10 +151,10 @@ static bool check_ticket(const char* data, DIDDocument *doc, char *txid)
     if (!ticket)
         return false;
 
-    bcheck = (!strcmp(ticket->txid, txid)) && TransferTicket_IsValid(ticket) &&
+    check = (!strcmp(ticket->txid, txid)) && TransferTicket_IsValid(ticket) &&
             DIDDocument_GetControllerDocument(doc, &ticket->to);
     TransferTicket_Destroy(ticket);
-    return bcheck;
+    return check;
 }
 
 static bool controllers_equals(DIDDocument *doc1, DIDDocument *doc2)
@@ -345,7 +345,7 @@ static bool DummyAdapter_CreateIdTransaction(const char *payload, const char *me
 {
     json_t *root, *item, *field;
     json_error_t error;
-    bool bsuccessed = false;
+    bool success = false;
 
     assert(payload);
 
@@ -369,13 +369,13 @@ static bool DummyAdapter_CreateIdTransaction(const char *payload, const char *me
        goto errorExit;
 
     if (!strcmp(json_string_value(field), didspec))
-        bsuccessed = create_didtransaction(root);
+        success = create_didtransaction(root);
     if (!strcmp(json_string_value(field), vcspec))
-        bsuccessed = create_vctransaction(root);
+        success = create_vctransaction(root);
 
 errorExit:
     json_decref(root);
-    return bsuccessed;
+    return success;
 }
 
 static int didresult_tojson(JsonGenerator *gen, DID *did, bool all)
@@ -503,7 +503,7 @@ static int listvcs_result_tojson(JsonGenerator *gen, DID *did, int skip, int lim
     DIDURL *vcs, *vcid;
     DID *vcowner;
     int i, j, size = 0;
-    bool equals = false;
+    bool equal = false;
     char idstring[ELA_MAX_DIDURL_LEN];
 
     assert(gen);
@@ -525,16 +525,16 @@ static int listvcs_result_tojson(JsonGenerator *gen, DID *did, int skip, int lim
         if (!DID_Equals(did, vcowner))
             continue;
 
-        equals = false;
+        equal = false;
         for (j = 0; j < size; j++) {
             if (!DIDURL_Equals(vcid, &vcs[j]))
                continue;
 
-            equals = true;
+            equal = true;
             break;
         }
 
-        if (!equals && size < limit)
+        if (!equal && size < limit)
             DIDURL_Copy(&vcs[size++], vcid);
     }
 

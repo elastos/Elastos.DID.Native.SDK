@@ -31,7 +31,7 @@ static void test_rootkey_with_diff_method(void)
     size = HDKey_SerializePrv(hdkey, _extendedkey, sizeof(_extendedkey));
     CU_ASSERT_EQUAL(size, EXTENDEDKEY_BYTES);
 
-    size = base58_decode(extendedkey, sizeof(extendedkey), extendedprvbase58);
+    size = b58_decode(extendedkey, sizeof(extendedkey), extendedprvbase58);
     CU_ASSERT_EQUAL(size, EXTENDEDKEY_BYTES);
     CU_ASSERT_NSTRING_EQUAL(extendedkey, _extendedkey, EXTENDEDKEY_BYTES);
 
@@ -42,7 +42,7 @@ static void test_rootkey_with_diff_method(void)
     size = HDKey_SerializePub(prederivedkey, _extendedkey, sizeof(_extendedkey));
     CU_ASSERT_EQUAL(size, EXTENDEDKEY_BYTES);
 
-    size = base58_decode(extendedkey, sizeof(extendedkey), extendedpubbase58);
+    size = b58_decode(extendedkey, sizeof(extendedkey), extendedpubbase58);
     CU_ASSERT_EQUAL(size, EXTENDEDKEY_BYTES);
     CU_ASSERT_NSTRING_EQUAL(extendedkey, _extendedkey, EXTENDEDKEY_BYTES - 4);
 }

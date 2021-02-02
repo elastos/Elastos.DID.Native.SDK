@@ -239,14 +239,11 @@ static int load_didmeta(DIDStore *store, DIDMetadata *meta, const char *did)
 
 int DIDStore_LoadDIDMeta(DIDStore *store, DIDMetadata *meta, DID *did)
 {
-    bool iscontain;
-
     assert(store);
     assert(meta);
     assert(did);
 
-    iscontain = DIDStore_ContainsDID(store, did);
-    if (!iscontain) {
+    if (!DIDStore_ContainsDID(store, did)) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "No did: %s", did->idstring);
         return -1;
     }
@@ -256,14 +253,11 @@ int DIDStore_LoadDIDMeta(DIDStore *store, DIDMetadata *meta, DID *did)
 
 int DIDStore_StoreDIDMetadata(DIDStore *store, DIDMetadata *meta, DID *did)
 {
-    bool iscontain;
-
     assert(store);
     assert(meta);
     assert(did);
 
-    iscontain = DIDStore_ContainsDID(store, did);
-    if (!iscontain) {
+    if (!DIDStore_ContainsDID(store, did)) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "No DID: %s", did->idstring);
         return -1;
     }
@@ -464,14 +458,11 @@ static int load_identitymeta(DIDStore *store, const char *id, IdentityMetadata *
 
 int DIDStore_StoreCredMeta(DIDStore *store, CredentialMetadata *meta, DIDURL *id)
 {
-    bool iscontain;
-
     assert(store);
     assert(meta);
     assert(id);
 
-    iscontain = DIDStore_ContainsCredential(store, DIDURL_GetDid(id), id);
-    if (!iscontain) {
+    if (!DIDStore_ContainsCredential(store, DIDURL_GetDid(id), id)) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "No credential: %s#%s", id->did.idstring, id->fragment);
         return -1;
     }
@@ -481,14 +472,11 @@ int DIDStore_StoreCredMeta(DIDStore *store, CredentialMetadata *meta, DIDURL *id
 
 int DIDStore_LoadCredMeta(DIDStore *store, CredentialMetadata *meta, DIDURL *id)
 {
-    bool iscontain;
-
     assert(store);
     assert(meta);
     assert(id);
 
-    iscontain = DIDStore_ContainsCredential(store, DIDURL_GetDid(id), id);
-    if (!iscontain) {
+    if (!DIDStore_ContainsCredential(store, DIDURL_GetDid(id), id)) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "No credential: %s#%s", id->did.idstring, id->fragment);
         return -1;
     }
@@ -512,7 +500,7 @@ static int calc_fingerprint(char *fingerprint, size_t size, const char *storepas
 
     md5(buffer, sizeof(buffer), (unsigned char*)storepass, strlen(storepass));
     cipher = (unsigned char *)alloca(sizeof(buffer) * 4);
-    len = _encrypt(cipher, storepass, buffer, sizeof(buffer));
+    len = aes256_encrypt(cipher, storepass, buffer, sizeof(buffer));
     if (len < 0)
         return -1;
 
@@ -960,7 +948,7 @@ static int upgradeFromV2(DIDStore *store)
         goto errorExit;
     }
 
-    len = base58_decode(extendedkey, EXTENDEDKEY_BYTES, data);
+    len = b58_decode(extendedkey, EXTENDEDKEY_BYTES, data);
     if (len < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode extended public key failed.");
         free((void*)data);
@@ -1160,7 +1148,7 @@ static ssize_t didstore_encrypt(DIDStore *store, const char *storepass,
     assert(input);
     assert(len > 0);
 
-    length = _encrypt(cipher, storepass, input, len);
+    length = aes256_encrypt(cipher, storepass, input, len);
     if (length < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt DIDStore password failed.");
         return -1;
@@ -1182,7 +1170,7 @@ static ssize_t didstore_encrypt_to_base64(DIDStore *store, const char *storepass
     assert(base64);
     assert(input);
 
-    size = encrypt_to_base64(base64, storepass, input, len);
+    size = encrypt_to_b64(base64, storepass, input, len);
     if (!size) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt data failed.");
         return -1;
@@ -1204,7 +1192,7 @@ static ssize_t didstore_decrypt_from_base64(DIDStore *store, const char *storepa
     assert(plain);
     assert(base64);
 
-    len = decrypt_from_base64(plain, storepass, base64);
+    len = decrypt_from_b64(plain, storepass, base64);
     if (len < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt data failed.");
         return -1;
@@ -1311,7 +1299,7 @@ static int store_extendedpubkey(DIDStore *store, const char *id, uint8_t *extend
     assert(id);
     assert(extendedkey && size > 0);
 
-    if (base58_encode(publickeybase58, sizeof(publickeybase58), extendedkey, size) == -1) {
+    if (b58_encode(publickeybase58, sizeof(publickeybase58), extendedkey, size) == -1) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode extended public key failed.");
         return -1;
     }
@@ -1332,7 +1320,7 @@ static ssize_t load_extendedpubkey(DIDStore *store, const char *id, uint8_t *ext
     if (!string)
         return -1;
 
-    len = base58_decode(extendedkey, size, string);
+    len = b58_decode(extendedkey, size, string);
     free((void*)string);
     if (len < 0)
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode extended public key failed.");
@@ -1563,50 +1551,6 @@ static int list_credential_helper(const char *path, void *context)
     rc = ch->cb(&id, ch->context);
     CredentialMetadata_Free(&id.metadata);
     return rc;
-}
-
-
-static DIDDocument *create_document(DIDStore *store, DID *did, const char *key,
-        const char *storepass, const char *alias)
-{
-    DIDDocument *document;
-    DIDURL id;
-    DIDDocumentBuilder *builder;
-
-    assert(did);
-    assert(key);
-    assert(*key);
-    assert(storepass);
-    assert(*storepass);
-
-    if (Init_DIDURL(&id, did, "primary") == -1)
-        return NULL;
-
-    builder = DIDDocument_CreateBuilder(did, NULL, store);
-    if (!builder)
-        return NULL;
-
-    if (DIDDocumentBuilder_AddPublicKey(builder, &id, did, key) == -1) {
-        DIDDocumentBuilder_Destroy(builder);
-        return NULL;
-    }
-
-    if (DIDDocumentBuilder_AddAuthenticationKey(builder, &id, key) == -1) {
-        DIDDocumentBuilder_Destroy(builder);
-        return NULL;
-    }
-
-    if (DIDDocumentBuilder_SetExpires(builder, 0) == -1) {
-        DIDDocumentBuilder_Destroy(builder);
-        return NULL;
-    }
-
-    document = DIDDocumentBuilder_Seal(builder, storepass);
-    DIDDocumentBuilder_Destroy(builder);
-    if (!document)
-        return NULL;
-
-    return document;
 }
 
 static int store_credential(DIDStore *store, Credential *credential)
@@ -2734,9 +2678,9 @@ DIDDocument *DIDStore_NewDIDByIndex(DIDStore *store, const char *storepass,
         return NULL;
     }
 
-    document = create_document(store, &did,
+    document = DIDDocument_Create(&did,
             HDKey_GetPublicKeyBase58(derivedkey, publickeybase58, sizeof(publickeybase58)),
-            storepass, alias);
+            alias, store, storepass);
     HDKey_Wipe(derivedkey);
     if (!document) {
         DIDStore_DeleteDID(store, &did);
@@ -2796,7 +2740,7 @@ ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass,
     ssize_t len;
     const char *privatekey_str;
     char path[PATH_MAX], filename[128];
-    bool bsuccessed = false;
+    bool success = false;
     ssize_t rc = -1;
 
     assert(store);
@@ -2853,7 +2797,7 @@ static bool need_reencrypt(const char *path)
 {
     char file[PATH_MAX];
     char *token, *pos;
-    bool bprivates = false;
+    bool isPrivates = false;
     int i = -1;
 
     assert(path && *path);
@@ -2874,10 +2818,10 @@ static bool need_reencrypt(const char *path)
             i++;
         }
         if (i == 4 && !strcmp(token, PRIVATEKEYS_DIR)) {
-            bprivates = true;
+            isPrivates = true;
             i++;
         }
-        if (i == 5 && bprivates)
+        if (i == 5 && isPrivates)
             return true;
 
         token = strtok(NULL, PATH_SEP);
@@ -2962,14 +2906,14 @@ int dir_copy(const char *dst, const char *src, const char *newpw, const char *ol
     }
 
     //src is encrypted file.
-    size = decrypt_from_base64(plain, oldpw, string);
+    size = decrypt_from_b64(plain, oldpw, string);
     free((void*)string);
     if (size < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt %s failed.", src);
         return -1;
     }
 
-    size = encrypt_to_base64((char*)data, newpw, plain, size);
+    size = encrypt_to_b64((char*)data, newpw, plain, size);
     memset(plain, 0, sizeof(plain));
     if (size < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt %s with new pass word failed.", src);
@@ -3274,7 +3218,7 @@ static int export_privatekey(JsonGenerator *gen, DIDStore *store, const char *st
                 if (DIDStore_LoadPrivateKey_Internal(store, storepass, did, keyid, extendedkey, sizeof(extendedkey)) == -1)
                     return -1;
 
-                rc = encrypt_to_base64(base64, password, extendedkey, sizeof(extendedkey));
+                rc = encrypt_to_b64(base64, password, extendedkey, sizeof(extendedkey));
                 memset(extendedkey, 0, sizeof(extendedkey));
                 if (rc < 0)
                     return -1;
@@ -3331,7 +3275,7 @@ static int export_final(JsonGenerator *gen, Sha256_Digest *digest)
         return -1;
     }
 
-    CHECK_TO_MSG(base64_url_encode(base64, final_digest, size),
+    CHECK_TO_MSG(b64_url_encode(base64, final_digest, size),
             DIDERR_CRYPTO_ERROR, "Final sha256 digest failed.");
     CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "fingerprint", base64),
             DIDERR_OUT_OF_MEMORY, "Write 'fingerprint' failed.");
@@ -3801,13 +3745,13 @@ static ssize_t import_privatekey(json_t *json, const char *storepass, const char
             return -1;
         }
 
-        keysize = decrypt_from_base64(binkey, password, json_string_value(key_field));
+        keysize = decrypt_from_b64(binkey, password, json_string_value(key_field));
         if (keysize < 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt private key failed.");
             return -1;
         }
 
-        keysize = encrypt_to_base64(privatekey, storepass, binkey, keysize);
+        keysize = encrypt_to_b64(privatekey, storepass, binkey, keysize);
         memset(binkey, 0, sizeof(binkey));
         if (keysize < 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt private key failed.");
@@ -3850,7 +3794,7 @@ static int import_fingerprint(json_t *json, Sha256_Digest *digest)
         return -1;
     }
 
-    if (base64_url_encode(base64, final_digest, size) < 0) {
+    if (b64_url_encode(base64, final_digest, size) < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt digest failed.");
         return -1;
     }
@@ -4006,7 +3950,7 @@ static int export_mnemonic(JsonGenerator *gen, DIDStore *store, const char *stor
         return -1;
 
     if (size > 0) {
-        size = encrypt_to_base64(encryptedmnemonic, password, (uint8_t*)mnemonic, size - 1);
+        size = encrypt_to_b64(encryptedmnemonic, password, (uint8_t*)mnemonic, size - 1);
         memset(mnemonic, 0, sizeof(mnemonic));
         if (size < 0)
             return -1;
@@ -4038,7 +3982,7 @@ static int export_prvkey(JsonGenerator *gen, DIDStore *store, const char *storep
     if (size < 0)
         return -1;
 
-    size = encrypt_to_base64(encryptedKey, password, extendedkey, size);
+    size = encrypt_to_b64(encryptedKey, password, extendedkey, size);
     memset(extendedkey, 0, sizeof(extendedkey));
     if (size < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt extended private identity failed.");
@@ -4272,7 +4216,7 @@ static int import_prvkey(json_t *json, DIDStore *store, const char *storepass,
         return -1;
     }
     memset(extendedkey, 0, sizeof(extendedkey));
-    size = decrypt_from_base64(extendedkey, password, json_string_value(item));
+    size = decrypt_from_b64(extendedkey, password, json_string_value(item));
     if (size < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt 'privatekey' failed.");
         return -1;
@@ -4309,7 +4253,7 @@ static int import_mnemonic(json_t *json, DIDStore *store, const char *storepass,
         return -1;
     }
 
-    size = decrypt_from_base64(mnemonic, password, json_string_value(item));
+    size = decrypt_from_b64(mnemonic, password, json_string_value(item));
     if (size < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt mnemonic failed.");
         return -1;
@@ -4383,7 +4327,7 @@ int DIDStore_ImportRootIdentity(DIDStore *store, const char *storepass,
     char fingerprint[64] = {0};
     char id[MAX_ID_LEN] = {0}, path[PATH_MAX];
     Sha256_Digest digest;
-    bool isDefault, bdelete = true;
+    bool isDefault, toDelete = true;
     int rc = -1;
 
     if (!store || !storepass || !*storepass || !file || !*file ||
@@ -4438,13 +4382,13 @@ int DIDStore_ImportRootIdentity(DIDStore *store, const char *storepass,
     if (store_storemeta(store, &metadata) < 0)
         goto errorExit;
 
-    bdelete = false;
+    toDelete = false;
     rc = 0;
 
 errorExit:
     if (root)
        json_decref(root);
-    if (*id && bdelete) {
+    if (*id && toDelete) {
         get_dir(path, 0, 4, store->root, DATA_DIR, ROOTS_DIR, id);
         delete_file(path);
     }

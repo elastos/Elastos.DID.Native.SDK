@@ -62,7 +62,6 @@ static void test_didstore_load_vcs(void)
     DIDURL *id;
     DID *did;
     int rc;
-    bool isEquals;
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -105,10 +104,8 @@ static void test_didstore_load_vcs(void)
     alias = CredentialMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(alias);
     CU_ASSERT_STRING_EQUAL("MyProfile", alias);
-    isEquals = DID_Equals(did, Credential_GetOwner(vc));
-    CU_ASSERT_TRUE(isEquals);
-    isEquals = DIDURL_Equals(id, Credential_GetId(vc));
-    CU_ASSERT_TRUE(isEquals);
+    CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(vc)));
+    CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(vc)));
     CU_ASSERT_TRUE(Credential_IsValid(vc));
     CU_ASSERT_TRUE(DIDStore_ContainsCredential(store, did, id));
     Credential_Destroy(vc);
@@ -123,10 +120,8 @@ static void test_didstore_load_vcs(void)
     alias = CredentialMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(alias);
     CU_ASSERT_STRING_EQUAL("Twitter", alias);
-    isEquals = DID_Equals(did, Credential_GetOwner(vc));
-    CU_ASSERT_TRUE(isEquals);
-    isEquals = DIDURL_Equals(id, Credential_GetId(vc));
-    CU_ASSERT_TRUE(isEquals);
+    CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(vc)));
+    CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(vc)));
     CU_ASSERT_TRUE(Credential_IsValid(vc));
     CU_ASSERT_TRUE(DIDStore_ContainsCredential(store, did, id));
     Credential_Destroy(vc);
@@ -202,7 +197,6 @@ static void test_didstore_delete_vc(void)
     DIDURL *id;
     DID *did;
     int rc, count = 0;
-    bool isDeleted;
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -258,20 +252,17 @@ static void test_didstore_delete_vc(void)
 
     id = DIDURL_NewByDid(did, "twitter");
     CU_ASSERT_PTR_NOT_NULL(id);
-    isDeleted = DIDStore_DeleteCredential(store, did, id);
-    CU_ASSERT_TRUE(isDeleted);
+    CU_ASSERT_TRUE(DIDStore_DeleteCredential(store, did, id));
     DIDURL_Destroy(id);
 
     id = DIDURL_NewByDid(did, "passport");
     CU_ASSERT_PTR_NOT_NULL(id);
-    isDeleted = DIDStore_DeleteCredential(store, did, id);
-    CU_ASSERT_TRUE(isDeleted);
+    CU_ASSERT_TRUE(DIDStore_DeleteCredential(store, did, id));
     DIDURL_Destroy(id);
 
     id = DIDURL_NewByDid(did, "notExist");
     CU_ASSERT_PTR_NOT_NULL(id);
-    isDeleted = DIDStore_DeleteCredential(store, did, id);
-    CU_ASSERT_FALSE(isDeleted);
+    CU_ASSERT_FALSE(DIDStore_DeleteCredential(store, did, id));
     DIDURL_Destroy(id);
 
     path = get_file_path(_path, PATH_MAX, 11, store->root, PATH_STEP, DATA_DIR,

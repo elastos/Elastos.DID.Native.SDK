@@ -36,15 +36,15 @@ struct AgentCtx {
     DIDStore *store;
     char storepass[256];
     char *lang;
+    RootIdentity *rootidentity;
 };
 
 struct AgentCtx ctx = {
     NULL,
     {0},
-    "english"
+    "english",
+    NULL
 };
-
-RootIdentity *rootidentity;
 
 static void clean(char *input)
 {
@@ -76,7 +76,7 @@ static void newdid(int argc, char *argv[])
         return;
     }
 
-    doc = RootIdentity_NewDID(rootidentity, ctx.storepass, argv[1]);
+    doc = RootIdentity_NewDID(ctx.rootidentity, ctx.storepass, argv[1]);
     if (!doc) {
         printf("Error: new did document failed.\n");
         return;
@@ -492,8 +492,8 @@ static int gen_priv_identity(struct AgentCtx *ctx)
     fgets(passphrase, sizeof(passphrase), stdin);
     clean(passphrase);
 
-    rootidentity = RootIdentity_Create(mnemonic, passphrase, ctx->lang, false, ctx->store, ctx->storepass);
-    if (!rootidentity) {
+    ctx->rootidentity = RootIdentity_Create(mnemonic, passphrase, ctx->lang, false, ctx->store, ctx->storepass);
+    if (!ctx->rootidentity) {
         printf("Error: initialize private identity failed.\n");
         return -1;
     }
@@ -639,8 +639,8 @@ int main(int argc, char *argv[])
         run_cmd(argc, argv);
     }
 
-    if (rootidentity)
-        RootIdentity_Destroy(rootidentity);
+    if (ctx.rootidentity)
+        RootIdentity_Destroy(ctx.rootidentity);
 
     DIDStore_Close(store);
 }

@@ -401,7 +401,7 @@ bool RootIdentity_SynchronizeByIndex(RootIdentity *rootidentity, int index,
     DIDDocument *chaincopy = NULL, *localcopy = NULL, *finalcopy = NULL;
     const char *local_signature;
     int status;
-    bool bsuccessed = false;
+    bool success = false;
 
     if (!rootidentity || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -442,7 +442,7 @@ bool RootIdentity_SynchronizeByIndex(RootIdentity *rootidentity, int index,
     DIDMetadata_SetIndex(&finalcopy->metadata, index);
 
     if (DIDStore_StoreDID(store, finalcopy) == 0)
-        bsuccessed = true;
+        success = true;
 
 errorExit:
     if (finalcopy != chaincopy && finalcopy != localcopy)
@@ -450,6 +450,6 @@ errorExit:
     DIDDocument_Destroy(chaincopy);
     DIDDocument_Destroy(localcopy);
     DID_Destroy(did);
-    return bsuccessed;
+    return success;
 }
 

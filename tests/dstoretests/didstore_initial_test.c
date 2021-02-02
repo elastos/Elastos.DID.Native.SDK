@@ -39,7 +39,7 @@ static void test_didstore_newdid(void)
     DIDDocument *doc, *loaddoc;
     RootIdentity *rootidentity;
     DIDStore *store;
-    bool hasidentity, isEquals;
+    bool hasidentity;
     int rc;
 
     store = TestData_SetupStore(true);
@@ -98,11 +98,10 @@ static void test_didstore_newdid(void)
     loaddoc = DIDStore_LoadDID(store, did);
     CU_ASSERT_PTR_NOT_NULL_FATAL(loaddoc);
 
-    isEquals = DID_Equals(DIDDocument_GetSubject(doc), DIDDocument_GetSubject(loaddoc));
-    CU_ASSERT_TRUE(isEquals);
+    CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(doc), DIDDocument_GetSubject(loaddoc)));
 
     rc = strcmp(doc->proofs.proofs[0].signatureValue, loaddoc->proofs.proofs[0].signatureValue);
-    CU_ASSERT_NOT_EQUAL_FATAL(isEquals, 0);
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(loaddoc));
 
@@ -118,7 +117,6 @@ static void test_didstore_newdid_byindex(void)
     char *path, _path[PATH_MAX];
     DIDDocument *doc;
     DIDStore *store;
-    bool isEquals;
     DID did, *ndid;
     int rc;
 
@@ -140,8 +138,7 @@ static void test_didstore_newdid_byindex(void)
     ndid = RootIdentity_GetDIDByIndex(rootidentity, 0);
     CU_ASSERT_PTR_NOT_NULL(ndid);
 
-    isEquals = DID_Equals(&did, ndid);
-    CU_ASSERT_TRUE(isEquals);
+    CU_ASSERT_TRUE(DID_Equals(&did, ndid));
     DIDDocument_Destroy(doc);
 
     doc = DIDStore_LoadDID(store, ndid);
@@ -157,8 +154,7 @@ static void test_didstore_newdid_byindex(void)
     doc = RootIdentity_NewDID(rootidentity, storepass, "did0");
     CU_ASSERT_PTR_NOT_NULL(doc);
 
-    isEquals = DID_Equals(&did, DIDDocument_GetSubject(doc));
-    CU_ASSERT_TRUE(isEquals);
+    CU_ASSERT_TRUE(DID_Equals(&did, DIDDocument_GetSubject(doc)));
     DIDDocument_Destroy(doc);
 
     RootIdentity_Destroy(rootidentity);
@@ -173,7 +169,6 @@ static void test_didstore_newdid_withouAlias(void)
     char *path;
     DIDDocument *doc, *loaddoc;
     DIDStore *store;
-    bool hasidentity;
     int rc;
 
     store = TestData_SetupStore(true);
@@ -190,8 +185,7 @@ static void test_didstore_newdid_withouAlias(void)
     id = RootIdentity_GetId(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(id);
 
-    hasidentity = DIDStore_ContainsRootIdentity(store, id);
-    CU_ASSERT_TRUE_FATAL(hasidentity);
+    CU_ASSERT_TRUE_FATAL(DIDStore_ContainsRootIdentity(store, id));
 
     path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
             PATH_STEP, ROOTS_DIR, PATH_STEP, id, PATH_STEP, INDEX_FILE);
@@ -282,7 +276,6 @@ static void test_didstore_newdid_emptystore(void)
 {
     DIDStore *store;
     DIDDocument *doc;
-    bool hasidentity;
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -298,7 +291,6 @@ static void test_didstore_privateidentity_compatibility(void)
 {
     RootIdentity *rootidentity;
     DIDStore *store;
-    bool isEquals;
     DIDDocument *doc;
     DID did;
     int rc;
@@ -328,8 +320,7 @@ static void test_didstore_privateidentity_compatibility(void)
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
-    isEquals = DID_Equals(&did, &doc->did);
-    CU_ASSERT_TRUE(isEquals);
+    CU_ASSERT_TRUE(DID_Equals(&did, &doc->did));
     DIDDocument_Destroy(doc);
 
     TestData_Free();

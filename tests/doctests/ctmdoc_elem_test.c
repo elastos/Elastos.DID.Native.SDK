@@ -38,8 +38,8 @@ static void test_emptyctmdoc_get_publickey(void)
     DIDURL *id, *defaultkey, *primaryid;
     DID *did, *controller;
     ssize_t size;
+    bool equal;
     int i;
-    bool isEquals;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -67,11 +67,11 @@ static void test_emptyctmdoc_get_publickey(void)
         CU_ASSERT_TRUE(DID_Equals(controller, &(id->did)));
         CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
 
-        isEquals = DID_Equals(controller, PublicKey_GetController(pk));
+        equal = DID_Equals(controller, PublicKey_GetController(pk));
         if (!strcmp(id->fragment, "recovery")) {
-            CU_ASSERT_FALSE(isEquals);
+            CU_ASSERT_FALSE(equal);
         } else {
-            CU_ASSERT_TRUE(isEquals);
+            CU_ASSERT_TRUE(equal);
         }
 
         CU_ASSERT_TRUE(!strcmp(id->fragment, "primary") ||
@@ -160,12 +160,11 @@ static void test_ctmdoc_get_publickey(void)
         pk = pks[i];
         id = PublicKey_GetId(pk);
 
-        //isEquals = DID_Equals(doc->controller, &(id->did));
         CU_ASSERT_TRUE(DID_Equals(controller, &(id->did)) ||
                 DID_Equals(&doc->did, &(id->did)));
         CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
 
-        //isEquals = DID_Equals(doc->controller, PublicKey_GetController(pk));
+        //equal = DID_Equals(doc->controller, PublicKey_GetController(pk));
         if (!strcmp(id->fragment, "recovery")) {
             CU_ASSERT_FALSE(DID_Equals(controller, PublicKey_GetController(pk)));
         } else {
@@ -1224,7 +1223,7 @@ static void test_multictmdoc_get_authentication_key(void)
     PublicKey *pk;
     DIDURL *keyid1, *keyid2, *keyid3, *keyid, *primaryid1;
     DID *customized_did, controller1, controller2, controller3;
-    bool isEquals;
+    bool equal;
     int i;
 
     DIDStore *store = TestData_SetupStore(true);
@@ -1328,7 +1327,6 @@ static void test_multictmdoc_add_authentication_key(void)
     char publickeybase58[MAX_PUBLICKEY_BASE58];
     DIDURL *keyid1, *keyid2, *keyid3, *keyid4, *keyid;
     const char *keybase, *data;
-    bool isEquals;
     ssize_t size;
     int rc;
 

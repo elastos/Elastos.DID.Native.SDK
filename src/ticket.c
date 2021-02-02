@@ -137,7 +137,7 @@ TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
     TransferTicket *ticket = NULL;
     DIDDocument *document = NULL;
     const char *txid;
-    bool bvalid;
+    bool valid;
     int status;
 
     assert(owner);
@@ -156,9 +156,9 @@ TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
         goto errorExit;
     }
 
-    bvalid = DIDDocument_IsValid(document);
+    valid = DIDDocument_IsValid(document);
     DIDDocument_Destroy(document);
-    if (!bvalid)
+    if (!valid)
         goto errorExit;
 
     ticket->doc = DID_Resolve(owner, &status, false);
