@@ -4544,48 +4544,6 @@ errorExit:
     return NULL;
 }
 
-DIDDocument *DIDDocument_Create(DID *did, const char *key, const char *alias,
-        DIDStore *store, const char *storepass)
-{
-    DIDDocument *document;
-    DIDDocumentBuilder *builder;
-    DIDURL id;
-
-    assert(did);
-    assert(key && *key);
-    assert(store);
-    assert(storepass && *storepass);
-
-    if (Init_DIDURL(&id, did, "primary") == -1)
-        return NULL;
-
-    builder = DIDDocument_CreateBuilder(did, NULL, store);
-    if (!builder)
-        return NULL;
-
-    if (DIDDocumentBuilder_AddPublicKey(builder, &id, did, key) == -1) {
-        DIDDocumentBuilder_Destroy(builder);
-        return NULL;
-    }
-
-    if (DIDDocumentBuilder_AddAuthenticationKey(builder, &id, key) == -1) {
-        DIDDocumentBuilder_Destroy(builder);
-        return NULL;
-    }
-
-    if (DIDDocumentBuilder_SetExpires(builder, 0) == -1) {
-        DIDDocumentBuilder_Destroy(builder);
-        return NULL;
-    }
-
-    document = DIDDocumentBuilder_Seal(builder, storepass);
-    DIDDocumentBuilder_Destroy(builder);
-    if (!document)
-        return NULL;
-
-    return document;
-}
-
 static DIDDocument *create_customized_document(DID *did, DID **controllers, size_t size,
         DIDDocument *controllerdoc, int multisig, DIDStore *store, const char *storepass)
 {

@@ -111,9 +111,6 @@ size_t DIDDocument_GetSelfAuthenticationKeyCount(DIDDocument *document);
 
 DIDDocumentBuilder* DIDDocument_CreateBuilder(DID *did, DIDDocument *controllerdoc, DIDStore *store);
 
-DIDDocument *DIDDocument_Create(DID *did, const char *key, const char *alias,
-        DIDStore *store, const char *storepass);
-
 bool DIDDocument_IsValid_Internal(DIDDocument *document, bool isqualified);
 
 int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc);
