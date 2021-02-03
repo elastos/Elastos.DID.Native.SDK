@@ -256,6 +256,158 @@ DID *RootIdentity_GetDefaultDID(RootIdentity *rootidentity)
     return DID_FromString(idstring);
 }
 
+static HDKey *get_derive(RootIdentity *rootidentity, int index, DIDStore *store,
+        const char *storepass, HDKey *derivedkey)
+{
+    ssize_t size;
+    uint8_t extendedkey[EXTENDEDKEY_BYTES];
+    HDKey _identity, *identity, *dkey;
+
+    assert(rootidentity);
+    assert(index >= 0);
+    assert(derivedkey);
+    assert(store);
+
+    if (storepass) {
+        size = DIDStore_LoadRootIdentityPrvkey(store, storepass, rootidentity->id, extendedkey, sizeof(extendedkey));
+        if (size < 0) {
+            memset(extendedkey, 0, sizeof(extendedkey));
+            return NULL;
+        }
+    } else {
+        memcpy(extendedkey, rootidentity->preDerivedPublicKey, sizeof(extendedkey));
+    }
+
+    identity = HDKey_FromExtendedKey(extendedkey, sizeof(extendedkey), &_identity);
+    memset(extendedkey, 0, sizeof(extendedkey));
+    if (!identity) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial private identity failed.");
+        return NULL;
+    }
+
+    dkey = HDKey_GetDerivedKey(identity, derivedkey, 5, 44 | HARDENED, 0 | HARDENED,
+            0 | HARDENED, 0, index);
+    HDKey_Wipe(identity);
+    if (!dkey)
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial derived private identity failed.");
+
+    return dkey;
+}
+
+static DIDDocument *create_document(DID *did, const char *key, const char *alias,
+        DIDStore *store, const char *storepass)
+{
+    DIDDocument *document;
+    DIDDocumentBuilder *builder;
+    DIDURL id;
+
+    assert(did);
+    assert(key && *key);
+    assert(store);
+    assert(storepass && *storepass);
+
+    if (Init_DIDURL(&id, did, "primary") == -1)
+        return NULL;
+
+    builder = DIDDocument_CreateBuilder(did, NULL, store);
+    if (!builder)
+        return NULL;
+
+    if (DIDDocumentBuilder_AddPublicKey(builder, &id, did, key) == -1) {
+        DIDDocumentBuilder_Destroy(builder);
+        return NULL;
+    }
+
+    if (DIDDocumentBuilder_AddAuthenticationKey(builder, &id, key) == -1) {
+        DIDDocumentBuilder_Destroy(builder);
+        return NULL;
+    }
+
+    if (DIDDocumentBuilder_SetExpires(builder, 0) == -1) {
+        DIDDocumentBuilder_Destroy(builder);
+        return NULL;
+    }
+
+    document = DIDDocumentBuilder_Seal(builder, storepass);
+    DIDDocumentBuilder_Destroy(builder);
+    if (!document)
+        return NULL;
+
+    return document;
+}
+
+static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index, const char *alias,
+        DIDStore *store, const char *storepass)
+{
+    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    uint8_t extendedkey[EXTENDEDKEY_BYTES];
+    HDKey _derivedkey, *derivedkey;
+    DIDDocument *document;
+    DID did;
+    int status;
+
+    assert(rootidentity);
+    assert(index >= 0);
+    assert(store);
+
+    derivedkey = get_derive(rootidentity, index, store, storepass, &_derivedkey);
+    if (!derivedkey)
+        return NULL;
+
+    Init_DID(&did, HDKey_GetAddress(derivedkey));
+
+    //check did is exist or not
+    document = DIDStore_LoadDID(store, &did);
+    if (document) {
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exists.");
+        HDKey_Wipe(derivedkey);
+        DIDDocument_Destroy(document);
+        return NULL;
+    }
+
+    document = DID_Resolve(&did, &status, true);
+    if (document) {
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exists.");
+        HDKey_Wipe(derivedkey);
+        DIDDocument_Destroy(document);
+        return NULL;
+    }
+
+    if (HDKey_SerializePrv(derivedkey, extendedkey, sizeof(extendedkey)) < 0) {
+        HDKey_Wipe(derivedkey);
+        return NULL;
+    }
+
+    if (DIDStore_StoreDefaultPrivateKey(store, storepass, did.idstring,
+            extendedkey, sizeof(extendedkey)) == -1) {
+        HDKey_Wipe(derivedkey);
+        return NULL;
+    }
+
+    document = create_document(&did,
+            HDKey_GetPublicKeyBase58(derivedkey, publickeybase58, sizeof(publickeybase58)),
+            alias, store, storepass);
+    HDKey_Wipe(derivedkey);
+    if (!document) {
+        DIDStore_DeleteDID(store, &did);
+        return NULL;
+    }
+
+    DIDMetadata_SetRootIdentity(&document->metadata, rootidentity->id);
+    DIDMetadata_SetAlias(&document->metadata, alias);
+    DIDMetadata_SetDeactivated(&document->metadata, false);
+    memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetadata));
+
+    if (DIDStore_StoreDID(store, document) == -1) {
+        DIDStore_DeleteDID(store, &did);
+        DIDDocument_Destroy(document);
+        return NULL;
+    }
+
+    DIDDocument_SetStore(document, store);
+    return document;
+}
+
 DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepass, const char *alias)
 {
     DIDDocument *document;
@@ -267,7 +419,7 @@ DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepa
         return NULL;
     }
 
-    store = IdentityMetadata_GetStore(&rootidentity->metadata);
+    store = rootidentity->metadata.base.store;
     if (!store) {
         DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "No store attached with root identity.");
         return NULL;
@@ -277,7 +429,7 @@ DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepa
     if (index < 0)
         return NULL;
 
-    document = DIDStore_NewDIDByIndex(store, storepass, rootidentity->id, index++, alias);
+    document = rootidentity_createdid(rootidentity, index++, alias, store, storepass);
     if (!document)
         return NULL;
 
@@ -300,13 +452,13 @@ DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
         return NULL;
     }
 
-    store = IdentityMetadata_GetStore(&rootidentity->metadata);
+    store = rootidentity->metadata.base.store;
     if (!store) {
         DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "No store attached with root identity.");
         return NULL;
     }
 
-    document = DIDStore_NewDIDByIndex(store, storepass, rootidentity->id, index, alias);
+    document = rootidentity_createdid(rootidentity, index, alias, store, storepass);
     if (!document)
         return NULL;
 
@@ -317,7 +469,6 @@ DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index)
 {
     DID *did;
     DIDStore *store;
-    HDKey _identity, *identity;
     HDKey _derivedkey, *derivedkey;
 
     if (!rootidentity || index < 0) {
@@ -325,21 +476,13 @@ DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index)
         return NULL;
     }
 
-    store = IdentityMetadata_GetStore(&rootidentity->metadata);
+    store = rootidentity->metadata.base.store;
     if (!store) {
         DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "No store attached with root identity.");
         return NULL;
     }
 
-    identity = HDKey_FromExtendedKey(rootidentity->preDerivedPublicKey, EXTENDEDKEY_BYTES, &_identity);
-    if (!identity) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial root identity failed.");
-        return NULL;
-    }
-
-    derivedkey = HDKey_GetDerivedKey(identity, &_derivedkey, 5, 44 | HARDENED, 0 | HARDENED,
-            0 | HARDENED, 0, index);
-    HDKey_Wipe(identity);
+    derivedkey = get_derive(rootidentity, index, store, NULL, &_derivedkey);
     if (!derivedkey)
         return NULL;
 
