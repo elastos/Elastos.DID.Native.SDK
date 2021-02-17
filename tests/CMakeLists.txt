@@ -41,6 +41,7 @@ endif()
 
 add_definitions(-DLIBCONFIG_STATIC)
 
+file(GLOB ADAPTER_SOURCE "testadapter/*.c")
 file(GLOB UTILITY_SOURCE "utility/*.c")
 file(GLOB VC-TESTS "vctests/*.c")
 file(GLOB DID-TESTS "didtests/*.c")
@@ -55,6 +56,7 @@ file(GLOB TICKET-TESTS "tickettests/*.c")
 
 set(SRC
     tests.c
+    ${ADAPTER_SOURCE}
     ${UTILITY_SOURCE}
     ${VC-TESTS}
     ${DID-TESTS}
@@ -67,15 +69,18 @@ set(SRC
     ${JWT-TESTS}
     ${TICKET-TESTS})
 
-if (NOT ENABLE_SHARED)
-    set(STATIC_LIBS
-        curl
-        ssl)
-endif()
+set(STATIC_LIBS
+    cjose
+    jansson
+    curl
+    ssl
+    crypto
+    zip
+    z)
 
 set(LIBS
     ${STATIC_LIBS}
-    eladid
+    eladid-static
     hdkey-static
     crypto
     cunit
@@ -87,11 +92,11 @@ set(DEPS
     hdkey)
 
 set(INCLUDE
+    testadapter
     utility
     .
     ../src
     ../src/utility
-    ../src/adapter
     ../src/jwt
     ../src/meta
     ../src/backend
@@ -108,11 +113,8 @@ if(WIN32)
         -D_CRT_SECURE_NO_WARNINGS
         -D_CRT_NONSTDC_NO_WARNINGS)
 
-    if(ENABLE_SHARED)
-        add_definitions(-DCRYSTAL_DYNAMIC)
-    else()
-        add_definitions(-DCRYSTAL_STATIC)
-    endif()
+
+    add_definitions(-DCRYSTAL_STATIC)
 
     # Force source code encoding to utf-8
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")

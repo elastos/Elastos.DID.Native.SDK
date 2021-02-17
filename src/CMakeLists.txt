@@ -90,23 +90,10 @@ if(ENABLE_JWT)
         ${jwt-SOURCES})
 endif()
 
-if(ENABLE_TESTS)
-    set(HEADERS
-        ${HEADERS}
-        adapter/dummyadapter.h)
-
-    set(SRC
-        ${SRC}
-        adapter/dummyadapter.c)
-
-    set(HEADER_FILTER
-        "*.h")
+if(ENABLE_JWT)
+    set(HEADER_FILTER "ela_*.h")
 else()
-    if(ENABLE_JWT)
-        set(HEADER_FILTER "ela_*.h")
-    else()
-        set(HEADER_FILTER "ela_did.h")
-    endif()
+    set(HEADER_FILTER "ela_did.h")
 endif()
 
 if(ENABLE_JWT)

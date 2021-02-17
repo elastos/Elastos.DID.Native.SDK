@@ -7,7 +7,7 @@
 
 #include "ela_did.h"
 #include "spvadapter.h"
-#include "didtest_adapter.h"
+#include "testadapter.h"
 
 static SpvDidAdapter *gSpvAdapter;
 static GetPasswordCallback *gPasswordCallback;
