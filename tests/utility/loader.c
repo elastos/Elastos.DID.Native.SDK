@@ -29,12 +29,11 @@
 #include "diddocument.h"
 #include "credential.h"
 #include "credmeta.h"
-#include "testadapter/didtest_adapter.h"
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <crystal.h>
 #else
-    #include "testadapter/didtest_adapter.h"
+    #include "testadapter.h"
 #endif
 
 #define HARDENED                       0x80000000
@@ -44,14 +43,14 @@ typedef struct TestData {
     RootIdentity *rootidentity;
 
     DIDDocument *issuerdoc;
-    char *issuerJson;
-    char *issuerCompactJson;
-    char *issuerNormalizedJson;
+    const char *issuerJson;
+    const char *issuerCompactJson;
+    const char *issuerNormalizedJson;
 
     DIDDocument *doc;
-    char *docJson;
-    char *docCompactJson;
-    char *docNormalizedJson;
+    const char *docJson;
+    const char *docCompactJson;
+    const char *docNormalizedJson;
 
     DIDDocument *controllerdoc;
     DIDDocument *user1doc;
@@ -72,30 +71,35 @@ typedef struct TestData {
     DIDDocument *ctmdoc_multisigthree;
 
     Credential *profileVc;
-    char *profileVcCompactJson;
-    char *profileVcNormalizedJson;
+    const char *profileVcCompactJson;
+    const char *profileVcNormalizedJson;
 
     Credential *emailVc;
-    char *emailVcCompactJson;
-    char *emailVcNormalizedJson;
+    const char *emailVcCompactJson;
+    const char *emailVcNormalizedJson;
 
     Credential *passportVc;
-    char *passportVcCompactJson;
-    char *passportVcNormalizedJson;
+    const char *passportVcCompactJson;
+    const char *passportVcNormalizedJson;
 
     Credential *twitterVc;
-    char *twitterVcCompactJson;
-    char *twitterVcNormalizedJson;
+    const char *twitterVcCompactJson;
+    const char *twitterVcNormalizedJson;
 
     Credential *Vc;
-    char *VcCompactJson;
-    char *VcNormalizedJson;
+    const char *VcCompactJson;
+    const char *VcNormalizedJson;
 
     Presentation *vp;
-    char *vpNormalizedJson;
+    const char *vpNormalizedJson;
 
-    char *restoreMnemonic;
+    const char *restoreMnemonic;
 } TestData;
+
+typedef struct Dir_Copy_Helper {
+    const char *srcpath;
+    const char *dstpath;
+} Dir_Copy_Helper;
 
 TestData testdata;
 
@@ -153,61 +157,7 @@ char *get_path(char *path, const char *file, int version)
     return path;
 }
 
-char *load_path(const char *file)
-{
-    char *readstring = NULL;
-    size_t reclen, bufferlen;
-    struct stat st;
-    int fd;
-
-    assert(file && *file);
-
-    fd = open(file, O_RDONLY);
-    if (fd == -1)
-        return NULL;
-
-    if (fstat(fd, &st) < 0) {
-        close(fd);
-        return NULL;
-    }
-
-    bufferlen = st.st_size;
-    readstring = calloc(1, bufferlen + 1);
-    if (!readstring)
-        return NULL;
-
-    reclen = read(fd, readstring, bufferlen);
-    if(reclen == 0 || reclen == -1)
-        return NULL;
-
-    close(fd);
-    return readstring;
-}
-
-int store_file(const char *path, const char *string)
-{
-    int fd;
-    size_t len, size;
-
-    if (!path || !*path || !string)
-        return -1;
-
-    fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-    if (fd == -1)
-        return -1;
-
-    len = strlen(string);
-    size = write(fd, string, len);
-    if (size < len) {
-        close(fd);
-        return -1;
-    }
-
-    close(fd);
-    return 0;
-}
-
-static char *load_testdata_file(const char *file, int version)
+static const char *load_testdata_file(const char *file, int version)
 {
     char _path[PATH_MAX];
     char *readstring = NULL, *path;
@@ -218,7 +168,7 @@ static char *load_testdata_file(const char *file, int version)
     if (!path)
         return NULL;
 
-    return load_path(path);
+    return load_file(path);
 }
 
 static const char *getpassword(const char *walletDir, const char *walletId)
@@ -251,107 +201,63 @@ char *get_file_path(char *path, size_t size, int count, ...)
     return path;
 }
 
-static int list_directory(const char *path, const char *pattern,
-        int (*callback)(const char *name, void *context), void *context)
+static int dir_copy(const char *dst, const char *src);
+
+static int dir_copy_helper(const char *path, void *context)
 {
-    char full_pattern[PATH_MAX];
-    size_t len;
+    char srcpath[PATH_MAX];
+    char dstpath[PATH_MAX];
 
-    assert(path);
-    assert(pattern);
-
-    len = snprintf(full_pattern, sizeof(full_pattern), "%s%s%s", path, PATH_STEP, pattern);
-    if (len == sizeof(full_pattern))
-        full_pattern[len-1] = 0;
-
-#if defined(_WIN32) || defined(_WIN64)
-    struct _finddata_t c_file;
-    intptr_t hFile;
-
-    if ((hFile = _findfirst(full_pattern, &c_file )) == -1L)
-        return -1;
-
-    do {
-        if(callback(c_file.name, context) < 0)
-            break;
-    } while (_findnext(hFile, &c_file) == 0);
-
-    _findclose(hFile);
-#else
-    glob_t gl;
-    size_t pos = strlen(path) + 1;
-
-    memset(&gl, 0, sizeof(gl));
-
-    glob(full_pattern, GLOB_DOOFFS, NULL, &gl);
-
-    for (int i = 0; i < gl.gl_pathc; i++) {
-        char *fn = gl.gl_pathv[i] + pos;
-        if(callback(fn, context) < 0)
-            break;
-    }
-
-    globfree(&gl);
-#endif
-
-    return 0;
-}
-
-static int test_paths(const char *path)
-{
-    struct stat s;
-
-    assert(path);
-
-    if (stat(path, &s) < 0)
-        return -1;
-
-    if (s.st_mode & S_IFDIR)
-        return S_IFDIR;
-    else if (s.st_mode & S_IFREG)
-        return S_IFREG;
-    else
-        return -1;
-}
-
-void delete_file(const char *path);
-
-static int delete_file_helper(const char *path, void *context)
-{
-    char fullpath[PATH_MAX];
-    int len;
+    Dir_Copy_Helper *dh = (Dir_Copy_Helper*)context;
 
     if (!path)
         return 0;
 
-    if (strcmp(path, ".") != 0 && strcmp(path, "..") != 0) {
-        len = snprintf(fullpath, sizeof(fullpath), "%s%s%s", (char *)context, PATH_STEP, path);
-        if (len < 0 || len > PATH_MAX)
-            return -1;
+    if (strcmp(path, ".") == 0 || strcmp(path, "..") == 0)
+        return 0;
 
-        delete_file(fullpath);
-    }
+    sprintf(srcpath, "%s%s%s", dh->srcpath, PATH_SEP, path);
+    sprintf(dstpath, "%s%s%s", dh->dstpath, PATH_SEP, path);
 
-    return 0;
+    return dir_copy(dstpath, srcpath);
 }
 
-void delete_file(const char *path)
+static int dir_copy(const char *dst, const char *src)
 {
+    Dir_Copy_Helper dh;
+    const char *string;
     int rc;
 
-    if (!path)
-        return;
+    assert(dst && *dst);
+    assert(src && *src);
 
-    rc = test_paths(path);
-    if (rc < 0)
-        return;
-    else if (rc == S_IFDIR) {
-        list_directory(path, ".*", delete_file_helper, (void *)path);
+    if (test_path(src) < 0)
+        return -1;
 
-        if (list_directory(path, "*", delete_file_helper, (void *)path) == 0)
-            rmdir(path);
-    } else
-        remove(path);
+    //src is directory.
+    if (test_path(src) == S_IFDIR) {
+        if (test_path(dst) < 0) {
+            rc = mkdirs(dst, S_IRWXU);
+            if (rc < 0)
+                return -1;
+        }
+
+        dh.srcpath = src;
+        dh.dstpath = dst;
+
+        if (list_dir(src, "*", dir_copy_helper, (void*)&dh) == -1)
+            return -1;
+        return 0;
+    }
+
+    //src is file
+    string = load_file(src);
+    if (!string || !*string)
+        return -1;
+
+    rc = store_file(dst, string);
+    free((void*)string);
+    return rc;
 }
 
 static Credential *store_credential(const char *file, const char *alias, bool version)
@@ -425,17 +331,17 @@ static DIDDocument *store_document(const char *file, const char *alias, int vers
 
 bool file_exist(const char *path)
 {
-    return test_paths(path) == S_IFREG;
+    return test_path(path) == S_IFREG;
 }
 
 bool dir_exist(const char* path)
 {
-    return test_paths(path) == S_IFDIR;
+    return test_path(path) == S_IFDIR;
 }
 
 static int import_privatekey(DIDURL *id, const char *storepass, const char *file, int version)
 {
-    char *skbase;
+    const char *skbase;
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
     ssize_t size;
     HDKey _hdkey, *hdkey;
@@ -459,28 +365,6 @@ static int import_privatekey(DIDURL *id, const char *storepass, const char *file
         return -1;
 
     return 0;
-}
-
-DID *DID_Copy(DID *dest, DID *src)
-{
-    if (!dest || !src) {
-        return NULL;
-    }
-
-    strcpy(dest->idstring, src->idstring);
-    return dest;
-}
-
-DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src)
-{
-    if (!dest || !src ) {
-        return NULL;
-    }
-
-    strcpy(dest->did.idstring, src->did.idstring);
-    strcpy(dest->fragment, src->fragment);
-
-    return dest;
 }
 
 /////////////////////////////////////
@@ -558,6 +442,27 @@ DIDStore *TestData_SetupTestStore(bool dummybackend)
         return NULL;
 
     return setup_store(dummybackend, path);
+}
+
+//only for v1
+DIDStore *TestData_SetupV1TestStore(bool dummybackend)
+{
+    char _path[PATH_MAX], _newpath[PATH_MAX];
+    const char *path, *newpath;
+
+    path = get_file_path(_path, PATH_MAX, 11, "..", PATH_STEP, "etc", PATH_STEP,
+        "did", PATH_STEP, "resources", PATH_STEP, "v1", PATH_STEP, "teststore");
+    if (!path)
+        return NULL;
+
+    newpath = get_file_path(_newpath, PATH_MAX, 11, "..", PATH_STEP, "etc", PATH_STEP,
+        "did", PATH_STEP, "resources", PATH_STEP, "v1-copy", PATH_STEP, "teststore");
+    if (!newpath)
+        return NULL;
+
+    delete_file(newpath);
+    dir_copy(newpath, path);
+    return setup_store(dummybackend, newpath);
 }
 
 RootIdentity *TestData_InitIdentity(DIDStore *store)
@@ -1275,20 +1180,20 @@ void TestData_Free(void)
     if (testdata.issuerdoc)
         DIDDocument_Destroy(testdata.issuerdoc);
     if (testdata.issuerJson)
-        free(testdata.issuerJson);
+        free((void*)testdata.issuerJson);
     if (testdata.issuerCompactJson)
-        free(testdata.issuerCompactJson);
+        free((void*)testdata.issuerCompactJson);
     if (testdata.issuerNormalizedJson)
-        free(testdata.issuerNormalizedJson);
+        free((void*)testdata.issuerNormalizedJson);
 
     if (testdata.doc)
         DIDDocument_Destroy(testdata.doc);
     if (testdata.docJson)
-        free(testdata.docJson);
+        free((void*)testdata.docJson);
     if (testdata.docCompactJson)
-        free(testdata.docCompactJson);
+        free((void*)testdata.docCompactJson);
     if (testdata.docNormalizedJson)
-        free(testdata.docNormalizedJson);
+        free((void*)testdata.docNormalizedJson);
 
     if (testdata.controllerdoc)
         DIDDocument_Destroy(testdata.controllerdoc);
@@ -1324,45 +1229,45 @@ void TestData_Free(void)
     if (testdata.profileVc)
         Credential_Destroy(testdata.profileVc);
     if (testdata.profileVcCompactJson)
-        free(testdata.profileVcCompactJson);
+        free((void*)testdata.profileVcCompactJson);
     if (testdata.profileVcNormalizedJson)
-        free(testdata.profileVcNormalizedJson);
+        free((void*)testdata.profileVcNormalizedJson);
 
     if (testdata.emailVc)
         Credential_Destroy(testdata.emailVc);
     if (testdata.emailVcCompactJson)
-        free(testdata.emailVcCompactJson);
+        free((void*)testdata.emailVcCompactJson);
     if (testdata.emailVcNormalizedJson)
-        free(testdata.emailVcNormalizedJson);
+        free((void*)testdata.emailVcNormalizedJson);
 
     if (testdata.passportVc)
         Credential_Destroy(testdata.passportVc);
     if (testdata.passportVcCompactJson)
-        free(testdata.passportVcCompactJson);
+        free((void*)testdata.passportVcCompactJson);
     if (testdata.passportVcNormalizedJson)
-        free(testdata.passportVcNormalizedJson);
+        free((void*)testdata.passportVcNormalizedJson);
 
     if (testdata.twitterVc)
         Credential_Destroy(testdata.twitterVc);
     if (testdata.twitterVcCompactJson)
-        free(testdata.twitterVcCompactJson);
+        free((void*)testdata.twitterVcCompactJson);
     if (testdata.twitterVcNormalizedJson)
-        free(testdata.twitterVcNormalizedJson);
+        free((void*)testdata.twitterVcNormalizedJson);
 
     if (testdata.Vc)
         Credential_Destroy(testdata.Vc);
     if (testdata.VcCompactJson)
-        free(testdata.VcCompactJson);
+        free((void*)testdata.VcCompactJson);
     if (testdata.VcNormalizedJson)
-        free(testdata.VcNormalizedJson);
+        free((void*)testdata.VcNormalizedJson);
 
     if (testdata.vp)
         Presentation_Destroy(testdata.vp);
     if (testdata.vpNormalizedJson)
-        free(testdata.vpNormalizedJson);
+        free((void*)testdata.vpNormalizedJson);
 
     if (testdata.restoreMnemonic)
-        free(testdata.restoreMnemonic);
+        free((void*)testdata.restoreMnemonic);
 
     memset(&testdata, 0, sizeof(testdata));
 }

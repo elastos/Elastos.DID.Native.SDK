@@ -42,19 +42,9 @@ bool file_exist(const char *path);
 
 bool dir_exist(const char* path);
 
-void delete_file(const char *path);
-
-char *load_path(const char *file);
-
-int store_file(const char *path, const char *string);
-
 const char *Generater_Publickey(char *publickeybase58, size_t size);
 
 HDKey *Generater_KeyPair(HDKey *hdkey);
-
-DID *DID_Copy(DID *dest, DID *src);
-
-DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src);
 
 ////////////////////////////////////////
 int TestData_Init(bool dummy);
@@ -64,6 +54,8 @@ void TestData_Deinit(void);
 DIDStore *TestData_SetupStore(bool dummybackend);
 
 DIDStore *TestData_SetupTestStore(bool dummybackend);
+
+DIDStore *TestData_SetupV1TestStore(bool dummybackend);
 
 void TestData_Free(void);
 

@@ -28,9 +28,9 @@ extern "C" {
 
 #include "ela_did.h"
 
-DID_API int DummyAdapter_Set(const char *cachedir);
+int DummyAdapter_Set(const char *cachedir);
 
-DID_API void DummyAdapter_Cleanup(void);
+void DummyAdapter_Cleanup(void);
 
 #ifdef __cplusplus
 }

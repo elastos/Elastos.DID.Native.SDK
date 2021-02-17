@@ -52,7 +52,7 @@ else()
     endif()
 endif()
 
-if(ENABLE_PYTHON)
+if(ENABLE_PYTHON OR ENABLE_TESTS)
     set(ENABLE_STATIC TRUE)
 endif()
 
