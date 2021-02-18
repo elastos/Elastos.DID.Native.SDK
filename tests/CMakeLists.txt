@@ -79,11 +79,10 @@ set(STATIC_LIBS
     z)
 
 set(LIBS
-    ${STATIC_LIBS}
     eladid-static
     hdkey-static
-    crypto
     cunit
+    ${STATIC_LIBS}
     pthread)
 
 set(DEPS

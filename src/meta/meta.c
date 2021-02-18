@@ -526,33 +526,67 @@ int Metadata_GetDefaultExtraAsInteger(Metadata *metadata, const char *key)
     return json_integer_value(json);
 }
 
-int Metadata_Merge(Metadata *tometa, Metadata *frommeta)
+int Metadata_Merge(Metadata *tometadata, Metadata *frommetadata)
 {
     json_t *value, *item, *json;
     const char *key;
     int rc;
 
-    assert(tometa && frommeta);
+    assert(tometadata && frommetadata);
 
-    json_object_foreach(frommeta->data, key, value) {
-        json = json_object_get(frommeta->data, key);
-        item = json_object_get(tometa->data, key);
+    json_object_foreach(frommetadata->data, key, value) {
+        json = json_object_get(frommetadata->data, key);
+        item = json_object_get(tometadata->data, key);
         if (item) {
             if (json_is_null(item) || json_is_null(json))
-                json_object_del(tometa->data, key);
+                json_object_del(tometadata->data, key);
         } else {
             item = json_deep_copy(json);
             if (!item) {
                 DIDError_Set(DIDERR_MALFORMED_META, "Copy '%s' to metadata failed.", key);
                 return -1;
             }
-            rc = Metadata_Set(tometa, key, item);
+            rc = Metadata_Set(tometadata, key, item);
             json_decref(item);
             if (rc < 0) {
                 DIDError_Set(DIDERR_MALFORMED_META, "Add '%s' to metadata failed.", key);
                 return -1;
             }
         }
+    }
+
+    return 0;
+}
+
+int Metadata_Upgrade(Metadata *newmetadata, Metadata *oldmetadata)
+{
+    json_t *value, *item, *json;
+    const char *key;
+    char *uskey;
+
+    assert(newmetadata);
+    assert(oldmetadata);
+
+    memset(newmetadata, 0, sizeof(Metadata));
+
+    json_object_foreach(oldmetadata->data, key, value) {
+        json = json_object_get(oldmetadata->data, key);
+        if (!strcmp(key, "DX-lastModified"))
+            continue;
+
+        if (!strncmp(key, "DX-", 3)) {
+            uskey = (char*)(key + 3);
+        } else {
+            uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
+            if (!uskey)
+                return -1;
+
+            if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
+                return -1;
+        }
+
+        if (Metadata_Set(newmetadata, uskey, json) < 0)
+            return -1;
     }
 
     return 0;

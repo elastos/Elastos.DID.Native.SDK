@@ -473,3 +473,22 @@ int to_hexstringfrombase58(char *id, size_t size, const char *base58)
     return to_hexstring(id, size, binkey, len);
 }
 
+char *last_strstr(const char *haystack, const char *needle)
+{
+    assert(haystack && needle);
+
+    if (*needle == '\0')
+        return (char *)haystack;
+
+    char *result = NULL;
+    for (;;) {
+        char *p = strstr(haystack, needle);
+        if (p == NULL)
+            break;
+        result = p;
+        haystack = p + strlen(needle);
+    }
+
+    return result;
+}
+

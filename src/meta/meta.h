@@ -48,7 +48,8 @@ int Metadata_FromJson_Internal(Metadata *metadata, json_t *json);
 const char *Metadata_ToString(Metadata *metadata);
 
 void Metadata_Free(Metadata *metadata);
-int Metadata_Merge(Metadata *tometa, Metadata *frommeta);
+int Metadata_Merge(Metadata *tometadata, Metadata *frommetadata);
+int Metadata_Upgrade(Metadata *newmetadata, Metadata *oldmetadata);
 int Metadata_Copy(Metadata *metadata, Metadata *frommeta);
 
 int Metadata_SetExtra(Metadata *metadata, const char* key, const char *value);
