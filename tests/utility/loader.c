@@ -201,6 +201,39 @@ char *get_file_path(char *path, size_t size, int count, ...)
     return path;
 }
 
+static int copy_metadata(const char *dst, const char *src)
+{
+    int fd1, fd2;
+    char symbol[1];
+    int rc = -1;
+
+    assert(dst);
+    assert(src);
+
+    fd1 = open(src, O_RDONLY);
+    if (fd1 == -1)
+        return -1;
+
+    fd2 = open(dst, O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR);
+    if (fd2 == -1) {
+        close(fd1);
+        return -1;
+    }
+
+    while (read(fd1, symbol, sizeof(symbol)) == 1) {
+        if(write(fd2, symbol, sizeof(symbol)) < 1)
+            goto errorExit;
+    }
+
+    rc = 0;
+
+errorExit:
+    close(fd2);
+    close(fd1);
+
+    return rc;
+}
+
 static int dir_copy(const char *dst, const char *src);
 
 static int dir_copy_helper(const char *path, void *context)
@@ -226,7 +259,8 @@ static int dir_copy(const char *dst, const char *src)
 {
     Dir_Copy_Helper dh;
     const char *string;
-    int rc;
+    char path[PATH_MAX];
+    int rc = -1;
 
     assert(dst && *dst);
     assert(src && *src);
@@ -252,8 +286,15 @@ static int dir_copy(const char *dst, const char *src)
 
     //src is file
     string = load_file(src);
-    if (!string || !*string)
-        return -1;
+    if (!string || !*string) {
+        if (last_strstr(src, ".meta"))
+            rc = copy_metadata(dst, src);
+
+        if (string)
+            free((void*)string);
+
+        return rc;
+    }
 
     rc = store_file(dst, string);
     free((void*)string);
@@ -456,7 +497,7 @@ DIDStore *TestData_SetupV1TestStore(bool dummybackend)
         return NULL;
 
     newpath = get_file_path(_newpath, PATH_MAX, 11, "..", PATH_STEP, "etc", PATH_STEP,
-        "did", PATH_STEP, "resources", PATH_STEP, "v1-copy", PATH_STEP, "teststore");
+        "did", PATH_STEP, "resources", PATH_STEP, "v1-backup", PATH_STEP, "teststore");
     if (!newpath)
         return NULL;
 

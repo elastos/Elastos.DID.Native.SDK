@@ -39,18 +39,16 @@ static const char *ROOTIDENTITY = "defaultRootIdentity";
 int StoreMetadata_Init(StoreMetadata *metadata, const char *type, const char *version,
         const char *fingerprint, const char *defaultrootidentity)
 {
-    char string[32];
-
     assert(metadata);
     assert(type);
     assert(version);
-    assert(fingerprint);
 
     memset(metadata, 0, sizeof(StoreMetadata));
-    if (type && StoreMetadata_SetType(metadata, type) < 0)
+    if (StoreMetadata_SetType(metadata, type) < 0 ||
+            StoreMetadata_SetVersion(metadata, version) < 0)
         goto errorExit;
-    if (StoreMetadata_SetFingerPrint(metadata, fingerprint) < 0 ||
-           StoreMetadata_SetVersion(metadata, string) < 0)
+
+    if (fingerprint && StoreMetadata_SetFingerPrint(metadata, fingerprint) < 0)
         goto errorExit;
 
     if (defaultrootidentity && StoreMetadata_SetDefaultRootIdentity(metadata, defaultrootidentity) < 0)
@@ -59,6 +57,7 @@ int StoreMetadata_Init(StoreMetadata *metadata, const char *type, const char *ve
     return 0;
 
 errorExit:
+    StoreMetadata_Free(metadata);
     memset(metadata, 0, sizeof(StoreMetadata));
     return -1;
 }

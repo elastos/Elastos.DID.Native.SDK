@@ -94,6 +94,8 @@ int to_hexstring(char *id, size_t size, uint8_t *data, size_t datasize);
 
 int to_hexstringfrombase58(char *id, size_t size, const char *base58);
 
+char *last_strstr(const char *haystack, const char *needle);
+
 #ifdef __cplusplus
 }
 #endif
