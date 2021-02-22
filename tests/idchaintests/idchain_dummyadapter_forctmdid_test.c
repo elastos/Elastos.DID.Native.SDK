@@ -9,6 +9,7 @@
 #include <crystal.h>
 
 #include "ela_did.h"
+#include "HDkey.h"
 #include "constant.h"
 #include "loader.h"
 #include "did.h"
@@ -16,7 +17,6 @@
 #include "diddocument.h"
 #include "backend/didrequest.h"
 
-#define MAX_PUBLICKEY_BASE58      64
 #define MAX_DOC_SIGN              128
 
 static DIDStore *store;
@@ -30,7 +30,7 @@ static DID controller3;  //issuer doc
 static void test_publish_ctmdid_with_onecontroller(void)
 {
     const char *customized_string = "whisper", *keybase;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     DIDDocument *resolve_doc, *customized_doc;
     DID *controller, customizedid;
     DIDURL *keyid1, *keyid2, *credid;
@@ -154,7 +154,7 @@ static void test_publish_ctmdid_with_onecontroller(void)
 static void test_publish_ctmdid_with_multicontroller(void)
 {
     const char *customized_string = "cici", *keybase, *idrequest, *idrequest1;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     DIDDocument *resolve_doc, *customized_doc;
     DID *controller, customizedid;
     DIDURL *keyid1, *keyid2, *credid, *signkey1, *signkey2, *signkey3;
@@ -325,7 +325,7 @@ static void test_publish_ctmdid_with_multicontroller(void)
 static void test_transfer_ctmdid_with_onecontroller(void)
 {
     const char *customized_string = "tristan", *keybase;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     DIDDocument *resolve_doc, *customized_doc;
     DID *controller, customizedid;
     DIDURL *keyid1, *keyid2, *credid, *signkey1, *signkey2;
@@ -545,7 +545,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
 static void test_transfer_ctmdid_with_multicontroller(void)
 {
     const char *customized_string = "jack", *keybase, *idrequest, *idrequest1;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     DIDDocument *resolve_doc, *customized_doc;
     DID *controller, customizedid;
     DIDURL *keyid1, *keyid2, *credid, *signkey1, *signkey2, *signkey3, *creater;

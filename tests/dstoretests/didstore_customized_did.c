@@ -14,6 +14,7 @@
 #include "diddocument.h"
 #include "didstore.h"
 #include "crypto.h"
+#include "HDkey.h"
 
 static const char *customizedid = "littlefish";
 
@@ -379,9 +380,9 @@ static void test_new_customizedid_with_existcontrollers2(void)
     DIDURL *id1, *id2, *serviceid1, *serviceid2, *credid, *keyid;
     HDKey *hdkey, _hdkey;
     PublicKey *pk;
-    char publickeybase58[MAX_PUBLICKEY_BASE58], privatekeybase58[256];
-    char publickeybase58_a[MAX_PUBLICKEY_BASE58];
-    char publickeybase58_b[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES], privatekeybase58[256];
+    char publickeybase58_a[PUBLICKEY_BASE58_BYTES];
+    char publickeybase58_b[PUBLICKEY_BASE58_BYTES];
     const char *keybase1, *keybase2, *keybase3, *data;
     time_t expires;
     int rc;

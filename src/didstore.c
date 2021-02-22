@@ -61,8 +61,6 @@
 #include "ticket.h"
 #include "rootidentity.h"
 
-#define MAX_PUBKEY_BASE58            128
-
 static char MAGIC[] = { 0x00, 0x0D, 0x01, 0x0D };
 static char VERSION[] = { 0x00, 0x00, 0x00, 0x02 };
 
@@ -1356,7 +1354,7 @@ static const char *load_pubkey_file(DIDStore *store, const char *id)
 
 static int store_extendedpubkey(DIDStore *store, const char *id, uint8_t *extendedkey, size_t size)
 {
-    char publickeybase58[MAX_PUBKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
 
     assert(store);
     assert(id);
@@ -2696,10 +2694,8 @@ ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass,
     }
 
     privatekey_str = load_file(path);
-    if (!privatekey_str) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "No valid private key.");
-        return -1;
-    }
+    if (!privatekey_str)
+        return RootIdentity_LazyCreatePrivateKey(key, store, storepass, extendedkey, size);
 
     len = didstore_decrypt_from_base64(store, storepass, extendedkey, privatekey_str);
     free((void*)privatekey_str);

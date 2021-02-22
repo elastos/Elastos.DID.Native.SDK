@@ -46,6 +46,9 @@ struct RootIdentity {
 
 void RootIdentity_Wipe(RootIdentity *rootidentity);
 
+ssize_t RootIdentity_LazyCreatePrivateKey(DIDURL *key, DIDStore *store, const char *storepass,
+        uint8_t *extendedkey, size_t size);
+
 #ifdef __cplusplus
 }
 #endif

@@ -7,7 +7,6 @@
 #include "ela_did.h"
 #include "loader.h"
 
-#define MAX_PUBLICKEY_BASE58           64
 #define HARDENED                       0x80000000
 
 static const char *mnemonic = "pact reject sick voyage foster fence warm luggage cabbage any subject carbon";
@@ -54,7 +53,7 @@ static void test_derive_publiconly(void)
     HDKey _pubhdkey, *pubhdkey;
     HDKey _derivedkey, *derivedkey;
     HDKey _derivedpub, *derivedpub;
-    char prvbase58[MAX_PUBLICKEY_BASE58], pubbse58[MAX_PUBLICKEY_BASE58];
+    char prvbase58[PUBLICKEY_BASE58_BYTES], pubbse58[PUBLICKEY_BASE58_BYTES];
     char extendedkeybase[512];
     int i;
 

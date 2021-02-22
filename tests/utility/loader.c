@@ -1320,7 +1320,7 @@ const char *Generater_Publickey(char *publickeybase58, size_t size)
     HDKey hk, *privateIdentity;
     HDKey _derivedkey, *derivedkey;
 
-    if (size < MAX_PUBLICKEY_BASE58)
+    if (size < PUBLICKEY_BASE58_BYTES)
         return NULL;
 
     mnemonic = Mnemonic_Generate(language);

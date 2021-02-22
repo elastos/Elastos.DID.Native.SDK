@@ -44,6 +44,7 @@ typedef ptrdiff_t       ssize_t;
 #define EXTENDEDKEY_BYTES               82
 #define SEED_BYTES                      64
 #define BUFF_BYTES                      128
+#define PUBLICKEY_BASE58_BYTES          48
 
 #define CHINESE_SIMPLIFIED             "chinese_simplified"
 #define CHINESE_TRADITIONAL            "chinese_traditional"

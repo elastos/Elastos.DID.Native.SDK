@@ -45,7 +45,7 @@ static void test_issuer_create_without_key(void)
 
 static void test_issuer_create_with_invalidkey1(void)
 {
-    char pkbase[MAX_PUBLICKEY_BASE58];
+    char pkbase[PUBLICKEY_BASE58_BYTES];
     const char *publickeybase;
     DIDDocumentBuilder *builder;
     DIDURL *keyid;
