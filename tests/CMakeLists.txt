@@ -41,7 +41,6 @@ endif()
 
 add_definitions(-DLIBCONFIG_STATIC)
 
-file(GLOB ADAPTER_SOURCE "testadapter/*.c")
 file(GLOB UTILITY_SOURCE "utility/*.c")
 file(GLOB VC-TESTS "vctests/*.c")
 file(GLOB DID-TESTS "didtests/*.c")
@@ -53,6 +52,16 @@ file(GLOB ISSUER-TESTS "issuertests/*.c")
 file(GLOB HDKEY-TESTS "hdkeytests/*.c")
 file(GLOB JWT-TESTS "jwttests/*.c")
 file(GLOB TICKET-TESTS "tickettests/*.c")
+
+if(WIN32)
+    set(ADAPTER_SOURCE "testadapter/dummyadapter.c")
+else()
+    set(INCLUDE
+        ../adapter/spvadapter
+        ${INCLUDE})
+
+    file(GLOB ADAPTER_SOURCE "testadapter/*.c")
+endif()
 
 set(SRC
     tests.c
@@ -82,8 +91,7 @@ set(LIBS
     eladid-static
     hdkey-static
     cunit
-    ${STATIC_LIBS}
-    pthread)
+    ${STATIC_LIBS})
 
 set(DEPS
     ela-did
@@ -91,8 +99,9 @@ set(DEPS
     hdkey)
 
 set(INCLUDE
-    testadapter
+    ${INCLUDE}
     utility
+    testadapter
     .
     ../src
     ../src/utility
@@ -112,37 +121,30 @@ if(WIN32)
         -D_CRT_SECURE_NO_WARNINGS
         -D_CRT_NONSTDC_NO_WARNINGS)
 
-
     add_definitions(-DCRYSTAL_STATIC)
 
     # Force source code encoding to utf-8
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
     set(LIBS
         ${LIBS}
+        crystal
         Ws2_32
-        Shlwapi
-        crystal)
+        Iphlpapi
+        Shlwapi)
 
     set(DEPS
         ${DEPS}
         libcrystal)
 else()
-    file(GLOB TEST-ADAPTER "testadapter/*.c")
-    set(SRC
-        ${SRC}
-        ${TEST-ADAPTER})
-
     set(LIBS
+        spvadapter-shared
         ${LIBS}
-        spvadapter-shared)
+        pthread
+        m)
 
     set(DEPS
         ${DEPS}
         spvadapter)
-
-    set(INCLUDE
-        ../adapter/spvadapter
-        ${INCLUDE})
 
     set(LINK
         ${CMAKE_CURRENT_BINARY_DIR}/../adapter/spvadapter

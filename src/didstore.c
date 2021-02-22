@@ -85,6 +85,7 @@ static const char *PRIVATEKEYS_DIR = "privatekeys";
 
 static const char *DATA_JOURNAL = "data.journal";
 static const char *POST_PASSWORD = "postChangePassword";
+static const char *POST_UPGRADE = "postUpgrade";
 static const char *DID_EXPORT = "did.elastos.export/2.0";
 
 const char *renames[2] = {"credentials", "privatekeys"};
@@ -607,7 +608,7 @@ static int create_store(DIDStore *store)
 #pragma GCC diagnostic ignored "-Wformat-overflow="
 #endif
 
-static int postchange_password(DIDStore *store)
+static int post_changepassword(DIDStore *store)
 {
     char post_file[PATH_MAX], buffer[DOC_BUFFER_LEN];
     char data_dir[PATH_MAX], data_journal_dir[PATH_MAX], data_deprecated_dir[PATH_MAX];
@@ -618,12 +619,69 @@ static int postchange_password(DIDStore *store)
     if (test_path(post_file) == S_IFREG) {
         if (get_dir(data_journal_dir, 0, 2, store->root, DATA_JOURNAL) == 0) {
             if (get_dir(data_dir, 0, 2, store->root, DATA_DIR) == 0) {
-                sprintf(buffer, "%s_%s", DATA_DIR, get_time_string(buffer, sizeof(buffer), NULL));
+                sprintf(buffer, "%s_%ld", DATA_DIR, (long)time(NULL));
                 if (get_dir(data_deprecated_dir, 1, 2, store->root, buffer) == 0)
                     rename(data_dir, data_deprecated_dir);
             }
             rename(data_journal_dir, data_dir);
         }
+        delete_file(post_file);
+    } else {
+        if (get_dir(data_journal_dir, 0, 2, store->root, DATA_JOURNAL) == 0)
+            delete_file(data_journal_dir);
+    }
+
+    return 0;
+}
+
+static int post_upgrade(DIDStore *store)
+{
+    char post_file[PATH_MAX], path[PATH_MAX * 2];
+    char data_dir[PATH_MAX], data_journal_dir[PATH_MAX], data_deprecated_dir[PATH_MAX];
+    const char *data;
+
+    assert(store);
+
+    sprintf(post_file, "%s%s%s", store->root, PATH_SEP, POST_UPGRADE);
+    if (test_path(post_file) == S_IFREG) {
+        if (get_dir(data_journal_dir, 0, 2, store->root, DATA_JOURNAL) == 0) {
+            sprintf(data_dir, "%s%s%s", store->root, PATH_SEP, DATA_DIR);
+            rename(data_journal_dir, data_dir);
+        }
+
+        data = load_file(post_file);
+        if (!data) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "'upgrade file is wrong.");
+            return -1;
+        }
+
+        if (!*data) {
+            sprintf(data_deprecated_dir, "%s%s%s_%ld", store->root, PATH_SEP, DATA_DIR, (long)time(NULL));
+            store_file(post_file, data_deprecated_dir);
+        } else {
+            sprintf(data_deprecated_dir, "%s%s%s", store->root, PATH_SEP, data);
+            free((void*)data);
+        }
+
+        if (test_path(data_deprecated_dir) != S_IFDIR)
+            delete_file(data_deprecated_dir);
+
+        if (test_path(data_deprecated_dir) == -1)
+            mkdirs(data_deprecated_dir, S_IRWXU);
+
+        if (get_dir(data_dir, 0, 2, store->root, PRIVATE_FILE) == 0) {
+            sprintf(path, "%s%s%s", data_deprecated_dir, PATH_SEP, PRIVATE_FILE);
+            rename(data_dir, path);
+        }
+        if (get_dir(data_dir, 0, 2, store->root, IDS_DIR) == 0) {
+            sprintf(path, "%s%s%s", data_deprecated_dir, PATH_SEP, IDS_DIR);
+            rename(data_dir, path);
+        }
+        if (get_file(data_dir, 0, 2, store->root, ".meta") == 0) {
+            sprintf(path, "%s%s%s", data_deprecated_dir, PATH_SEP, ".meta");
+            rename(data_dir, path);
+        }
+
         delete_file(post_file);
     } else {
         if (get_dir(data_journal_dir, 0, 2, store->root, DATA_JOURNAL) == 0)
@@ -1063,26 +1121,20 @@ static int upgradeFromV2(DIDStore *store)
         goto errorExit;
     }
 
-    if (get_dir(path, 0, 2, store->root, DATA_JOURNAL) == 0) {
-        sprintf(v2path, "%s%s%s", store->root, PATH_SEP, DATA_DIR);
-        rename(path, v2path);
+    //create tag file to indicate copying successfully.
+    if (get_file(path, 1, 2, store->root, POST_UPGRADE) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create 'upgrade' file failed.");
+        goto errorExit;
     }
 
-    current = time(NULL);
-    sprintf(buffer, "%s_%ld", DATA_DIR, (long)current);
-    if (get_dir(v2path, 1, 2, store->root, buffer) == 0) {
-        if (get_dir(path, 0, 2, store->root, PRIVATE_FILE) == 0) {
-            sprintf(v2path, "%s%s%s%s%s", store->root, PATH_SEP, buffer, PATH_SEP, PRIVATE_FILE);
-            rename(path, v2path);
-        }
-        if (get_dir(path, 0, 2, store->root, IDS_DIR) == 0) {
-            sprintf(v2path, "%s%s%s%s%s", store->root, PATH_SEP, buffer, PATH_SEP, IDS_DIR);
-            rename(path, v2path);
-        }
-        if (get_file(path, 0, 2, store->root, ".meta") == 0) {
-            sprintf(v2path, "%s%s%s%s%s", store->root, PATH_SEP, buffer, PATH_SEP, ".meta");
-            rename(path, v2path);
-        }
+    if (store_file(path, "") < 0) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store 'upgrade' file failed.");
+        goto errorExit;
+    }
+
+    if (post_upgrade(store) < 0) {
+        delete_file(path);
+        goto errorExit;
     }
 
     return 0;
@@ -1091,6 +1143,12 @@ errorExit:
     if (get_dir(v2path, 0, 2, store->root, DATA_JOURNAL) == 0)
         delete_file(path);
     return -1;
+}
+
+static void post_operations(DIDStore *store)
+{
+    post_upgrade(store);
+    post_changepassword(store);
 }
 
 static int check_store(DIDStore *store)
@@ -1103,7 +1161,7 @@ static int check_store(DIDStore *store)
     if (test_path(store->root) != S_IFDIR)
         return -1;
 
-    postchange_password(store);
+    post_operations(store);
 
     //data does not already exist.
     if (get_dir(path, 0, 2, store->root, DATA_DIR) == -1) {
@@ -2872,7 +2930,7 @@ int DIDStore_ChangePassword(DIDStore *store, const char *newpw, const char *oldp
         return -1;
     }
 
-    if (postchange_password(store) < 0)
+    if (post_changepassword(store) < 0)
         return -1;
 
     if (StoreMetadata_SetFingerPrint(&store->metadata, fingerprint) < 0 ||
