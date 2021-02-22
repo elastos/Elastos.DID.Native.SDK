@@ -246,7 +246,7 @@ static void test_ctmdoc_add_publickey(void)
     DIDDocumentBuilder *builder;
     DID *did;
     DIDURL *id1, *id2;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     const char *keybase;
     PublicKey *pk;
 
@@ -484,7 +484,7 @@ static void test_ctmdoc_add_authentication_key(void)
     DIDDocumentBuilder *builder;
     DID *did, *controller;
     DIDURL *id1, *id2, *id3, *id4, *id;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     const char *keybase;
     PublicKey *pk;
 
@@ -595,7 +595,7 @@ static void test_ctmdoc_remove_authentication_key(void)
     DIDDocumentBuilder *builder;
     DID *did, *controller;
     DIDURL *id1, *id2, *id;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     const char *keybase;
     int rc;
 
@@ -738,7 +738,7 @@ static void test_ctmdoc_add_authorization_key(void)
     DIDDocument *sealeddoc, *doc;
     DIDDocumentBuilder *builder;
     DIDURL *id;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     HDKey _dkey, *dkey;
     const char *keybase, *idstring;
     DID controller, *did, *_controller;
@@ -1040,7 +1040,7 @@ static void test_multictmdoc_add_publickey(void)
     DIDDocumentBuilder *builder;
     DID *customized_did, *controller1, *controller2, *controller3;
     DIDURL *keyid, *keyid1, *keyid2;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     PublicKey *pk;
     const char *keybase;
 
@@ -1324,7 +1324,7 @@ static void test_multictmdoc_add_authentication_key(void)
     DIDDocument *sealeddoc, *controller1_doc, *controller2_doc, *controller3_doc, *customized_doc;
     DIDDocumentBuilder *builder;
     DID *customized_did, *controller1, *controller2, *controller3;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     DIDURL *keyid1, *keyid2, *keyid3, *keyid4, *keyid;
     const char *keybase, *data;
     ssize_t size;
@@ -1449,7 +1449,7 @@ static void test_multictmdoc_remove_authentication_key(void)
     DIDDocument *sealeddoc, *controller1_doc, *controller2_doc, *controller3_doc, *customized_doc;
     DIDDocumentBuilder *builder;
     DID *customized_did, *controller1, *controller2, *controller3;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     DIDURL *keyid1, *keyid2, *keyid;
     const char *keybase, *data;
     ssize_t size;
@@ -1543,7 +1543,7 @@ static void test_multictmdoc_add_authorization_key(void)
     DIDDocument *sealeddoc, *customized_doc, *controller2_doc;
     DIDDocumentBuilder *builder;
     DIDURL *keyid1;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     HDKey _dkey, *dkey;
     const char *keybase, *idstring;
     DID *customized_did, controller;

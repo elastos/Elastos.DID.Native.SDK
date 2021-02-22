@@ -108,7 +108,7 @@ static void test_diddoc_add_publickey(void)
 {
     DIDDocument *sealeddoc;
     DIDDocumentBuilder *builder;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     const char *keybase;
     int rc;
 
@@ -286,7 +286,7 @@ static void test_diddoc_add_authentication_key(void)
 {
     DIDDocument *sealeddoc;
     DIDDocumentBuilder *builder;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     const char *keybase;
     int rc;
 
@@ -379,7 +379,7 @@ static void test_diddoc_remove_authentication_key(void)
 {
     DIDDocument *sealeddoc;
     DIDDocumentBuilder *builder;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     const char *keybase;
     int rc;
 
@@ -508,7 +508,7 @@ static void test_diddoc_add_authorization_key(void)
 {
     DIDDocument *sealeddoc;
     DIDDocumentBuilder *builder;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     HDKey _dkey, *dkey;
     const char *keybase, *idstring;
     DID controller;
@@ -621,7 +621,7 @@ static void test_diddoc_remove_authorization_key(void)
 {
     DIDDocument *sealeddoc;
     DIDDocumentBuilder *builder;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     HDKey _dkey, *dkey;
     const char *keybase, *idstring;
     DID controller;

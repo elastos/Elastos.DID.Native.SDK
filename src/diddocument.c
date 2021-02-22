@@ -1946,7 +1946,7 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
         return -1;
     }
 
-    if (strlen(key) >= MAX_PUBLICKEY_BASE58) {
+    if (strlen(key) >= PUBLICKEY_BASE58_BYTES) {
         DIDError_Set(DIDERR_INVALID_KEY, "public key is too long.");
         return -1;
     }
@@ -2036,7 +2036,7 @@ int DIDDocumentBuilder_AddAuthenticationKey(DIDDocumentBuilder *builder,
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
-    if (key && strlen (key) >= MAX_PUBLICKEY_BASE58) {
+    if (key && strlen (key) >= PUBLICKEY_BASE58_BYTES) {
         DIDError_Set(DIDERR_INVALID_KEY, "Authentication key is too long.");
         return -1;
     }

@@ -9,6 +9,7 @@
 #include <crystal.h>
 
 #include "ela_did.h"
+#include "HDkey.h"
 #include "constant.h"
 #include "loader.h"
 #include "did.h"
@@ -16,7 +17,6 @@
 #include "diddocument.h"
 #include "credential.h"
 
-#define MAX_PUBLICKEY_BASE58      64
 #define MAX_DOC_SIGN              128
 
 static DIDStore *store;
@@ -39,7 +39,7 @@ static bool has_type(const char **types, size_t size, const char *type)
 static void test_idchain_publishdid(void)
 {
     DIDURL *signkey;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     char *signs[3];
     DIDDocument *resolvedoc = NULL, *doc;
     RootIdentity *rootidentity;
@@ -226,7 +226,7 @@ static void test_idchain_publishdid(void)
 static void test_idchain_publishdid_without_txid(void)
 {
     DIDURL *signkey;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
     DIDMetadata *metadata;
@@ -388,7 +388,7 @@ static void test_idchain_publishdid_without_txid(void)
 static void test_idchain_publishdid_without_signature(void)
 {
     DIDURL *signkey;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
     DIDMetadata *metadata;
@@ -545,7 +545,7 @@ static void test_idchain_publishdid_without_signature(void)
 static void test_idchain_publishdid_without_prevsignature(void)
 {
     DIDURL *signkey;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
     DIDMetadata *metadata;
@@ -703,7 +703,7 @@ static void test_idchain_publishdid_without_prevsignature(void)
 
 static void test_idchain_publishdid_without_prevsignature_and_signature(void)
 {
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
     DIDMetadata *metadata;
@@ -785,7 +785,7 @@ static void test_idchain_publishdid_without_prevsignature_and_signature(void)
 
 static void test_force_updatedid_without_prevsignature_and_signature(void)
 {
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
     DIDMetadata *metadata;
@@ -887,7 +887,7 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
 
 static void test_updatedid_with_diffprevsignature_only(void)
 {
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
     DIDMetadata *metadata;
@@ -978,7 +978,7 @@ static void test_updatedid_with_diffprevsignature_only(void)
 
 static void test_updatedid_with_diffsignature_only(void)
 {
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
     DIDMetadata *metadata;
@@ -1125,7 +1125,7 @@ static void test_updatedid_with_diffsignature_only(void)
 
 static void test_updatedid_with_diff_prevsignature_and_signature(void)
 {
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
     DIDMetadata *metadata;
@@ -1207,7 +1207,7 @@ static void test_updatedid_with_diff_prevsignature_and_signature(void)
 
 static void test_force_updatedid_with_wrongsignature(void)
 {
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
     DIDMetadata *metadata;
@@ -1453,7 +1453,7 @@ static void test_idchain_deactivedid_after_create(void)
 static void test_idchain_deactivedid_after_update(void)
 {
     DIDURL *signkey;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
     DIDMetadata *metadata;
@@ -1676,7 +1676,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
 
 static void test_idchain_deactivedid_with_authorization2(void)
 {
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *authorizordoc, *targetdoc;
     DIDMetadata *metadata;

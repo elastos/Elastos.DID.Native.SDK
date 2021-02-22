@@ -29,12 +29,12 @@
 #include "did.h"
 #include "didmeta.h"
 #include "common.h"
+#include "HDkey.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define MAX_PUBLICKEY_BASE58            64
 #define MAX_ENDPOINT                    256
 
 typedef struct DocumentProof {
@@ -82,7 +82,7 @@ struct PublicKey {
     DIDURL id;
     char type[MAX_TYPE_LEN];
     DID controller;
-    char publicKeyBase58[MAX_PUBLICKEY_BASE58];
+    char publicKeyBase58[PUBLICKEY_BASE58_BYTES];
     bool authenticationKey;
     bool authorizationKey;
 };

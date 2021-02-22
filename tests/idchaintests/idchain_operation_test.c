@@ -21,7 +21,7 @@ static DIDStore *store;
 static void test_idchain_publishdid_and_resolve(void)
 {
     DIDURL *signkey;
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     RootIdentity *rootidentity;
     char previous_txid[ELA_MAX_TXID_LEN];
     DIDDocument *resolvedoc = NULL, *doc;

@@ -256,12 +256,36 @@ DID *RootIdentity_GetDefaultDID(RootIdentity *rootidentity)
     return DID_FromString(idstring);
 }
 
+static HDKey *get_derivedkey(uint8_t *extendedkey, size_t size, int index,
+        HDKey *derivedkey)
+{
+    HDKey _identity, *identity, *dkey;
+
+    assert(extendedkey);
+    assert(size >= EXTENDEDKEY_BYTES);
+    assert(index >= 0);
+    assert(derivedkey);
+
+    identity = HDKey_FromExtendedKey(extendedkey, sizeof(extendedkey), &_identity);
+    if (!identity) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial private identity failed.");
+        return NULL;
+    }
+
+    dkey = HDKey_GetDerivedKey(identity, derivedkey, 5, 44 | HARDENED, 0 | HARDENED,
+            0 | HARDENED, 0, index);
+    HDKey_Wipe(identity);
+    if (!dkey)
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial derived private identity failed.");
+
+    return dkey;
+}
+
 static HDKey *get_derive(RootIdentity *rootidentity, int index, DIDStore *store,
         const char *storepass, HDKey *derivedkey)
 {
     ssize_t size;
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
-    HDKey _identity, *identity, *dkey;
 
     assert(rootidentity);
     assert(index >= 0);
@@ -278,20 +302,7 @@ static HDKey *get_derive(RootIdentity *rootidentity, int index, DIDStore *store,
         memcpy(extendedkey, rootidentity->preDerivedPublicKey, sizeof(extendedkey));
     }
 
-    identity = HDKey_FromExtendedKey(extendedkey, sizeof(extendedkey), &_identity);
-    memset(extendedkey, 0, sizeof(extendedkey));
-    if (!identity) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial private identity failed.");
-        return NULL;
-    }
-
-    dkey = HDKey_GetDerivedKey(identity, derivedkey, 5, 44 | HARDENED, 0 | HARDENED,
-            0 | HARDENED, 0, index);
-    HDKey_Wipe(identity);
-    if (!dkey)
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial derived private identity failed.");
-
-    return dkey;
+    return get_derivedkey(extendedkey, sizeof(extendedkey), index, derivedkey);
 }
 
 static DIDDocument *create_document(DID *did, const char *key, const char *alias,
@@ -339,7 +350,7 @@ static DIDDocument *create_document(DID *did, const char *key, const char *alias
 static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index, const char *alias,
         DIDStore *store, const char *storepass)
 {
-    char publickeybase58[MAX_PUBLICKEY_BASE58];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
     HDKey _derivedkey, *derivedkey;
     DIDDocument *document;
@@ -394,6 +405,7 @@ static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index
     }
 
     DIDMetadata_SetRootIdentity(&document->metadata, rootidentity->id);
+    DIDMetadata_SetIndex(&document->metadata, index);
     DIDMetadata_SetAlias(&document->metadata, alias);
     DIDMetadata_SetDeactivated(&document->metadata, false);
     memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetadata));
@@ -563,7 +575,6 @@ bool RootIdentity_SynchronizeByIndex(RootIdentity *rootidentity, int index,
         if (status == DIDStatus_NotFound)
             DIDError_Set(DIDERR_NOT_EXISTS, "Synchronize DID does not exist.");
         goto errorExit;
-
     }
 
     store = rootidentity->metadata.base.store;
@@ -583,6 +594,7 @@ bool RootIdentity_SynchronizeByIndex(RootIdentity *rootidentity, int index,
 
     DIDMetadata_SetRootIdentity(&finalcopy->metadata, rootidentity->id);
     DIDMetadata_SetIndex(&finalcopy->metadata, index);
+    DIDMetadata_SetDeactivated(&finalcopy->metadata, DIDMetadata_GetDeactivated(&chaincopy->metadata));
 
     if (DIDStore_StoreDID(store, finalcopy) == 0)
         success = true;
@@ -594,5 +606,84 @@ errorExit:
     DIDDocument_Destroy(localcopy);
     DID_Destroy(did);
     return success;
+}
+
+ssize_t RootIdentity_LazyCreatePrivateKey(DIDURL *key, DIDStore *store, const char *storepass,
+        uint8_t *extendedkey, size_t size)
+{
+    DIDDocument *doc = NULL;
+    const char *id;
+    uint8_t rootPrvkey[EXTENDEDKEY_BYTES];
+    HDKey _derivedkey, *derivedkey = NULL;
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
+    PublicKey *pk;
+    ssize_t len;
+    int index, rc = -1;
+
+    assert(id);
+    assert(store);
+    assert(storepass && *storepass);
+    assert(extendedkey);
+    assert(size >= EXTENDEDKEY_BYTES);
+
+    doc = DIDStore_LoadDID(store, &key->did);
+    if (!doc)
+        return -1;
+
+    id = DIDMetadata_GetRootIdentity(&doc->metadata);
+    if (!id) {
+        DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "Missing id.");
+        goto errorExit;
+    }
+
+    index = DIDMetadata_GetIndex(&doc->metadata);
+    if (index < 0) {
+        DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "Missing index.");
+        goto errorExit;
+    }
+
+    len = DIDStore_LoadRootIdentityPrvkey(store, storepass, id,
+            rootPrvkey, sizeof(rootPrvkey));
+    if (len != EXTENDEDKEY_BYTES)
+        goto errorExit;
+
+    derivedkey = get_derivedkey(rootPrvkey, len, index, &_derivedkey);
+    memset(rootPrvkey, 0, sizeof(rootPrvkey));
+    if (!derivedkey)
+        goto errorExit;
+
+    if (b58_encode(publickeybase58, sizeof(publickeybase58),
+            derivedkey->publickey, PUBLICKEY_BYTES) < 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Encode extended public key failed.");
+        goto errorExit;
+    }
+
+    pk = DIDDocument_GetPublicKey(doc, key);
+    if (!pk)
+        goto errorExit;
+
+    if (strcmp(pk->publicKeyBase58, publickeybase58)) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Meta data mismatch with DID.");
+        goto errorExit;
+    }
+
+    len = HDKey_SerializePrv(derivedkey, extendedkey, size);
+    if (len < 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Serialize extended private key failed.");
+        goto errorExit;
+    }
+
+    if (DIDStore_StorePrivateKey(store, storepass, &key->did, key,
+            extendedkey, len) < 0) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Meta data mismatch with DID.");
+        goto errorExit;
+    }
+
+    rc = len;
+
+errorExit:
+    HDKey_Wipe(derivedkey);
+    DIDDocument_Destroy(doc);
+    return rc;
 }
 
