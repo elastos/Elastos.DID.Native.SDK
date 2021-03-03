@@ -27,7 +27,7 @@ static void test_vp_getelem(void)
     DID *signer;
     int i;
 
-    vp = TestData_LoadVp();
+    vp = TestData_GetPresentation(NULL, "vp", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vp);
 
     CU_ASSERT_NOT_EQUAL_FATAL(Presentation_GetType(vp), PresentationType);
@@ -87,21 +87,21 @@ static void test_vp_parse(void)
     Presentation *vp, *normvp;
     const char *data;
 
-    vp = TestData_LoadVp();
+    vp = TestData_GetPresentation(NULL, "vp", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vp);
     CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
     CU_ASSERT_TRUE(Presentation_IsValid(vp));
 
-    normvp = Presentation_FromJson(TestData_LoadVpNormJson());
+    normvp = Presentation_FromJson(TestData_GetPresentationJson(NULL, "vp", "normalized", 0));
     CU_ASSERT_PTR_NOT_NULL_FATAL(normvp);
     CU_ASSERT_TRUE(Presentation_IsGenuine(normvp));
     CU_ASSERT_TRUE(Presentation_IsValid(normvp));
 
     data = Presentation_ToJson(normvp, true);
-    CU_ASSERT_TRUE(!strcmp(TestData_LoadVpNormJson(), data));
+    CU_ASSERT_TRUE(!strcmp(TestData_GetPresentationJson(NULL, "vp", "normalized", 0), data));
     free((void*)data);
     data = Presentation_ToJson(vp, true);
-    CU_ASSERT_TRUE(!strcmp(TestData_LoadVpNormJson(), data));
+    CU_ASSERT_TRUE(!strcmp(TestData_GetPresentationJson(NULL, "vp", "normalized", 0), data));
     free((void*)data);
 
     Presentation_Destroy(normvp);
@@ -122,8 +122,10 @@ static void test_vp_create(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(did);
 
     vp = Presentation_Create(did, NULL, store, storepass, "873172f58701a9ee686f0630204fee59",
-            "https://example.com/", 4, TestData_LoadProfileVc(), TestData_LoadEmailVc(),
-            TestData_LoadPassportVc(), TestData_LoadTwitterVc());
+            "https://example.com/", 4, TestData_GetCredential(NULL, "vc-profile", NULL, 0),
+            TestData_GetCredential(NULL, "vc-email", NULL, 0),
+            TestData_GetCredential(NULL, "vc-passport", NULL, 0),
+            TestData_GetCredential(NULL, "vc-twitter", NULL, 0));
     CU_ASSERT_PTR_NOT_NULL_FATAL(vp);
 
     CU_ASSERT_NOT_EQUAL_FATAL(Presentation_GetType(vp), PresentationType);
@@ -195,10 +197,10 @@ static void test_vp_create_by_credarray(void)
     did = DIDDocument_GetSubject(testdoc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(did);
 
-    vcs[0] = TestData_LoadProfileVc();
-    vcs[1] = TestData_LoadEmailVc();
-    vcs[2] = TestData_LoadPassportVc();
-    vcs[3] = TestData_LoadTwitterVc();
+    vcs[0] = TestData_GetCredential(NULL, "vc-profile", NULL, 0);
+    vcs[1] = TestData_GetCredential(NULL, "vc-email", NULL, 0);
+    vcs[2] = TestData_GetCredential(NULL, "vc-passport", NULL, 0);
+    vcs[3] = TestData_GetCredential(NULL, "vc-twitter", NULL, 0);
     vp = Presentation_CreateByCredentials(did, NULL, store, storepass,
             "873172f58701a9ee686f0630204fee59", "https://example.com/", vcs, 4);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vp);
@@ -296,13 +298,13 @@ static int vp_test_suite_init(void)
     if (!store)
         return -1;
 
-    testdoc = TestData_LoadDoc();
+    testdoc = TestData_GetDocument("document", NULL, 0);
     if (!testdoc) {
         TestData_Free();
         return -1;
     }
 
-    issuerdoc = TestData_LoadIssuerDoc();
+    issuerdoc = TestData_GetDocument("issuer", NULL, 0);
     if (!issuerdoc) {
         TestData_Free();
         return -1;

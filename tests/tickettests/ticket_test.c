@@ -78,22 +78,22 @@ static void test_ticket(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller1_doc);
     signkey1 = DIDDocument_GetDefaultPublicKey(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL(signkey1);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller2_doc);
     signkey2 = DIDDocument_GetDefaultPublicKey(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL(signkey2);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller3_doc);
     signkey3 = DIDDocument_GetDefaultPublicKey(controller3_doc);
     CU_ASSERT_PTR_NOT_NULL(signkey3);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigThree();
+    customized_doc = TestData_GetDocument("customized-multisigthree", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller2_doc);
 
     ticket = DIDDocument_CreateTransferTicket(controller1_doc,

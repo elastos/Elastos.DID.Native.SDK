@@ -20,49 +20,35 @@
  * SOFTWARE.
  */
 
-#ifndef __TEST_LOADER_H__
-#define __TEST_LOADER_H__
+#ifndef __TEST_UTILITY_H__
+#define __TEST_UTILITY_H__
 
 #include "ela_did.h"
-#include "HDkey.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-const char *Generater_Publickey(char *publickeybase58, size_t size);
+const char *get_store_path(char* path, const char *dir);
 
-HDKey *Generater_KeyPair(HDKey *hdkey);
+const char *get_file_path(char *path, size_t size, int count, ...);
 
-////////////////////////////////////////
-int TestData_Init(bool dummy);
+bool file_exist(const char *path);
 
-void TestData_Deinit(void);
+bool dir_exist(const char *path);
 
-DIDStore *TestData_SetupStore(bool dummybackend);
+const char *get_did_path(char *path, char *did, char *type, int version);
 
-DIDStore *TestData_SetupTestStore(bool dummybackend, int version);
+const char *get_credential_path(char *path, char *did, char *vc, char *type, int version);
 
-void TestData_Free(void);
+const char *get_presentation_path(char *path, char *did, char *vp, char *type, int version);
 
-const char *TestData_GetDocumentJson(char *did, char *type, int version);
+const char *get_privatekey_path(char *path, DIDURL *id, int version);
 
-const char *TestData_GetCredentialJson(char *did, char *vc, char *type, int version);
-
-const char *TestData_GetPresentationJson(char *did, char *vp, char *type, int version);
-
-DIDDocument *TestData_GetDocument(char *did, char *type, int version);
-
-Credential *TestData_GetCredential(char *did, char *vc, char *type, int version);
-
-Presentation *TestData_GetPresentation(char *did, char *vp, char *type, int version);
-
-RootIdentity *TestData_InitIdentity(DIDStore *store);
-
-const char *TestData_LoadRestoreMnemonic(void);
+const char *get_ticket_path(char *path, char *did);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __TEST_LOADER_H__ */
+#endif /* __TEST_UTILITY_H__ */

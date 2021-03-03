@@ -71,7 +71,7 @@ static void test_diddoc_derive_fromidentifier(void)
 
     const char *identifier = "org.elastos.did.test";
 
-    doc = TestData_LoadUser1Doc();
+    doc = TestData_GetDocument("user1", NULL, 2);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     for (int i = -100; i < 100; i++) {
@@ -128,7 +128,7 @@ static int diddoc_sign_test_suite_init(void)
     if (!store)
         return -1;
 
-    document = TestData_LoadDoc();
+    document = TestData_GetDocument("document", NULL, 0);
     if (!document) {
         TestData_Free();
         return -1;

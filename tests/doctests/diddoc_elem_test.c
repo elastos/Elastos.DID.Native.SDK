@@ -771,14 +771,14 @@ static void test_diddoc_add_credential(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add credentials.
-    rc = DIDDocumentBuilder_AddCredential(builder, TestData_LoadPassportVc());
+    rc = DIDDocumentBuilder_AddCredential(builder, TestData_GetCredential(NULL, "vc-passport", NULL, 0));
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    rc = DIDDocumentBuilder_AddCredential(builder, TestData_LoadTwitterVc());
+    rc = DIDDocumentBuilder_AddCredential(builder, TestData_GetCredential(NULL, "vc-twitter", NULL, 0));
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     // Credential already exist, should fail.
-    rc = DIDDocumentBuilder_AddCredential(builder, TestData_LoadTwitterVc());
+    rc = DIDDocumentBuilder_AddCredential(builder, TestData_GetCredential(NULL, "vc-twitter", NULL, 0));
     CU_ASSERT_EQUAL(rc, -1);
 
     sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -873,10 +873,10 @@ static void test_diddoc_remove_credential(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add credentials.
-    rc = DIDDocumentBuilder_AddCredential(builder, TestData_LoadPassportVc());
+    rc = DIDDocumentBuilder_AddCredential(builder, TestData_GetCredential(NULL, "vc-passport", NULL, 0));
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    rc = DIDDocumentBuilder_AddCredential(builder, TestData_LoadTwitterVc());
+    rc = DIDDocumentBuilder_AddCredential(builder, TestData_GetCredential(NULL, "vc-twitter", NULL, 0));
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     DIDURL *profileid = DIDURL_NewByDid(did, "profile");
@@ -1094,7 +1094,7 @@ static void test_diddoc_add_controller(void)
     DIDDocument *controllerdoc;
     DIDDocumentBuilder *builder;
 
-    controllerdoc = TestData_LoadControllerDoc();
+    controllerdoc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controllerdoc);
 
     CU_ASSERT_EQUAL(0, DIDDocument_GetControllerCount(doc));
@@ -1137,13 +1137,13 @@ static int diddoc_elem_test_suite_init(void)
     if (!store)
         return -1;
 
-    doc = TestData_LoadDoc();
+    doc = TestData_GetDocument("document", NULL, 0);
     if (!doc || !DIDDocument_IsValid(doc)) {
         TestData_Free();
         return -1;
     }
 
-    TestData_LoadIssuerDoc();
+    TestData_GetDocument("issuer", NULL, 0);
     did = DIDDocument_GetSubject(doc);
     if (!did) {
         TestData_Free();

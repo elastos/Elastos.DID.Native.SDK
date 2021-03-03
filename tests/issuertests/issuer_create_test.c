@@ -97,10 +97,13 @@ static void test_issuer_create_by_cid(void)
 {
     Issuer *issuer;
 
-    DIDDocument *customized_doc = TestData_LoadCtmDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    DIDDocument *customized_doc = TestData_GetDocument("customized-did", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
 
-    DIDDocument *doc = TestData_LoadDoc();
+    DIDDocument *doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
 
     DIDURL *signkey = DIDURL_NewByDid(&doc->did, "key3");
@@ -139,7 +142,11 @@ static void test_issuer_create_by_multicid(void)
     DID controller1, controller2, controller3;
     ssize_t size;
 
-    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("controller", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    DIDDocument *customized_doc = TestData_GetDocument("customized-multisigone", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
 
     DID *controllers[3] = {0};
@@ -188,7 +195,7 @@ static int issuer_create_test_suite_init(void)
     if (!store)
         return -1;
 
-    issuerdoc = TestData_LoadIssuerDoc();
+    issuerdoc = TestData_GetDocument("issuer", NULL, 0);
     if (!issuerdoc) {
         TestData_Free();
         return -1;

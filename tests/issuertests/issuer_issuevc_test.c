@@ -340,7 +340,10 @@ static void test_cidissuer_issue_kycvc(void)
 
     expires = DIDDocument_GetExpires(doc);
 
-    customizeddoc = TestData_LoadCtmDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    customizeddoc = TestData_GetDocument("customized-did", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
 
     subject = DIDDocument_GetSubject(customizeddoc);
@@ -422,7 +425,10 @@ static void test_issuer_issue_cidvc(void)
 
     expires = DIDDocument_GetExpires(issuerdoc);
 
-    customizeddoc = TestData_LoadCtmDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    customizeddoc = TestData_GetDocument("customized-did", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
 
     subject = DIDDocument_GetSubject(customizeddoc);
@@ -502,7 +508,10 @@ static void test_cidissuer_issue_selfvc(void)
     ssize_t size;
     const char* provalue;
 
-    customizeddoc = TestData_LoadCtmDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    customizeddoc = TestData_GetDocument("customized-did", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
     expires = DIDDocument_GetExpires(customizeddoc);
 
@@ -576,7 +585,11 @@ static void test_issuer_issue_multicidvc(void)
 
     expires = DIDDocument_GetExpires(issuerdoc);
 
-    customizeddoc = TestData_LoadCtmDoc_MultisigOne();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("controller", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    customizeddoc = TestData_GetDocument("customized-multisigone", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
 
     subject = DIDDocument_GetSubject(customizeddoc);
@@ -658,7 +671,11 @@ static void test_multicidissuer_issue_kycvc(void)
 
     expires = DIDDocument_GetExpires(doc);
 
-    customizeddoc = TestData_LoadCtmDoc_MultisigOne();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("controller", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    customizeddoc = TestData_GetDocument("customized-multisigone", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
 
     subject = DIDDocument_GetSubject(customizeddoc);
@@ -744,7 +761,11 @@ static void test_multicidissuer_issue_kycvc2(void)
 
     expires = DIDDocument_GetExpires(doc);
 
-    customizeddoc = TestData_LoadCtmDoc_MultisigOne();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("controller", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    customizeddoc = TestData_GetDocument("customized-multisigone", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
 
     subject = DIDDocument_GetSubject(customizeddoc);
@@ -828,7 +849,11 @@ static void test_multicidissuer_issue_selfvc(void)
     ssize_t size;
     const char* provalue;
 
-    customizeddoc = TestData_LoadCtmDoc_MultisigOne();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("controller", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    customizeddoc = TestData_GetDocument("customized-multisigone", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
     expires = DIDDocument_GetExpires(customizeddoc);
 
@@ -903,7 +928,11 @@ static void test_multicidissuer_issue_selfvc2(void)
     ssize_t size;
     const char* provalue;
 
-    customizeddoc = TestData_LoadCtmDoc_MultisigOne();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("controller", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    customizeddoc = TestData_GetDocument("customized-multisigone", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(customizeddoc);
     expires = DIDDocument_GetExpires(customizeddoc);
 
@@ -976,7 +1005,7 @@ static int issuer_issuevc_test_suite_init(void)
     if (!store)
         return -1;
 
-    issuerdoc = TestData_LoadIssuerDoc();
+    issuerdoc = TestData_GetDocument("issuer", NULL, 0);
     if (!issuerdoc) {
         TestData_Free();
         return -1;
@@ -988,7 +1017,7 @@ static int issuer_issuevc_test_suite_init(void)
         return -1;
     }
 
-    doc = TestData_LoadDoc();
+    doc = TestData_GetDocument("document", NULL, 0);
     if (!doc) {
         TestData_Free();
         return -1;
