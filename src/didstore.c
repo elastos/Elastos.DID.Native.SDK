@@ -145,7 +145,7 @@ typedef struct RootIdentity_Export {
     zip_t *zip;
 } RootIdentity_Export;
 
-int DIDStore_WriteDIDMetadata(DIDStore *store, DIDMetadata *meta, DID *did)
+int DIDStore_StoreDIDMetadata(DIDStore *store, DIDMetadata *meta, DID *did)
 {
     char path[PATH_MAX];
     const char *data;
@@ -180,12 +180,11 @@ int DIDStore_WriteDIDMetadata(DIDStore *store, DIDMetadata *meta, DID *did)
     return rc;
 }
 
-static int load_didmeta(DIDStore *store, DIDMetadata *meta, const char *did)
+static int DIDStore_LoadDIDMeta(DIDStore *store, DIDMetadata *meta, DID *did)
 {
     const char *data;
     char path[PATH_MAX];
     DIDDocument *doc;
-    DID _did;
     int rc, status;
 
     assert(store);
@@ -193,7 +192,7 @@ static int load_didmeta(DIDStore *store, DIDMetadata *meta, const char *did)
     assert(did);
 
     memset(meta, 0, sizeof(DIDMetadata));
-    if (get_file(path, 0, 5, store->root, DATA_DIR, IDS_DIR, did, META_FILE) == -1) {
+    if (get_file(path, 0, 5, store->root, DATA_DIR, IDS_DIR, did->idstring, META_FILE) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Did meta don't exist.");
         return 0;
     }
@@ -218,51 +217,24 @@ static int load_didmeta(DIDStore *store, DIDMetadata *meta, const char *did)
     free((void*)data);
     if (rc < 0) {
         delete_file(path);
-        Init_DID(&_did, did);
-        doc = DID_Resolve(&_did, &status, false);
+        doc = DID_Resolve(did, &status, false);
         if (!doc) {
             memset(meta, 0, sizeof(DIDMetadata));
+            DIDMetadata_SetStore(meta, store);
+            DID_ToString(did, meta->did, sizeof(meta->did));
             DIDMetadata_SetDeactivated(meta, false);
         } else {
-            DIDMetadata_Copy(meta, &doc->metadata);
+            DIDMetadata_SetStore(&doc->metadata, store);
+            DID_ToString(did, doc->metadata.did, sizeof(doc->metadata.did));
+            DIDMetadata_Store(&doc->metadata);
+            DIDDocument_Destroy(doc);
         }
-        DIDDocument_Destroy(doc);
-        DIDStore_StoreDIDMetadata(store, meta, &_did);
     }
 
-    DIDMetadata_SetStore(meta, store);
     return 0;
 }
 
-int DIDStore_LoadDIDMeta(DIDStore *store, DIDMetadata *meta, DID *did)
-{
-    assert(store);
-    assert(meta);
-    assert(did);
-
-    if (!DIDStore_ContainsDID(store, did)) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "No did: %s", did->idstring);
-        return -1;
-    }
-
-    return load_didmeta(store, meta, did->idstring);
-}
-
-int DIDStore_StoreDIDMetadata(DIDStore *store, DIDMetadata *meta, DID *did)
-{
-    assert(store);
-    assert(meta);
-    assert(did);
-
-    if (!DIDStore_ContainsDID(store, did)) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "No DID: %s", did->idstring);
-        return -1;
-    }
-
-    return DIDStore_WriteDIDMetadata(store, meta, did);
-}
-
-static int store_credmeta(DIDStore *store, CredentialMetadata *meta, DIDURL *id)
+int DIDStore_StoreCredMetadata(DIDStore *store, CredentialMetadata *meta, DIDURL *id)
 {
     char path[PATH_MAX], filename[128];
     const char *data;
@@ -316,8 +288,7 @@ errorExit:
     return -1;
 }
 
-static int load_credmeta(DIDStore *store, CredentialMetadata *meta, const char *did,
-        const char *fragment)
+static int DIDStore_LoadCredMeta(DIDStore *store, CredentialMetadata *meta, DIDURL *id)
 {
     const char *data;
     char path[PATH_MAX], filename[128];
@@ -325,14 +296,13 @@ static int load_credmeta(DIDStore *store, CredentialMetadata *meta, const char *
 
     assert(store);
     assert(meta);
-    assert(did);
-    assert(fragment);
+    assert(id);
 
     memset(meta, 0, sizeof(CredentialMetadata));
 
-    sprintf(filename, "%s%s", "#", fragment);
+    sprintf(filename, "%s%s", "#", id->fragment);
     CredentialMetadata_SetStore(meta, store);
-    if (get_file(path, 0, 7, store->root, DATA_DIR, IDS_DIR, did, CREDENTIALS_DIR,
+    if (get_file(path, 0, 7, store->root, DATA_DIR, IDS_DIR, &id->did.idstring, CREDENTIALS_DIR,
             filename, META_FILE) == -1)
         return 0;
 
@@ -356,6 +326,8 @@ static int load_credmeta(DIDStore *store, CredentialMetadata *meta, const char *
 
     rc = CredentialMetadata_FromJson(meta, data);
     free((void*)data);
+    CredentialMetadata_SetStore(meta, store);
+    DIDURL_ToString(id, meta->id, sizeof(meta->id), false);
     if (rc < 0) {
         //compatible with the oldest version
         delete_file(path);
@@ -451,34 +423,6 @@ static int load_identitymeta(DIDStore *store, const char *id, IdentityMetadata *
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Get identity meta data failed.");
 
     return rc;
-}
-
-int DIDStore_StoreCredMeta(DIDStore *store, CredentialMetadata *meta, DIDURL *id)
-{
-    assert(store);
-    assert(meta);
-    assert(id);
-
-    if (!DIDStore_ContainsCredential(store, DIDURL_GetDid(id), id)) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "No credential: %s#%s", id->did.idstring, id->fragment);
-        return -1;
-    }
-
-    return store_credmeta(store, meta, id);
-}
-
-int DIDStore_LoadCredMeta(DIDStore *store, CredentialMetadata *meta, DIDURL *id)
-{
-    assert(store);
-    assert(meta);
-    assert(id);
-
-    if (!DIDStore_ContainsCredential(store, DIDURL_GetDid(id), id)) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "No credential: %s#%s", id->did.idstring, id->fragment);
-        return -1;
-    }
-
-    return load_credmeta(store, meta, id->did.idstring, id->fragment);
 }
 
 static int calc_fingerprint(char *fingerprint, size_t size, const char *storepass)
@@ -1467,7 +1411,7 @@ static int list_did_helper(const char *path, void *context)
     }
 
     strcpy(did.idstring, path);
-    load_didmeta(dh->store, &did.metadata, did.idstring);
+    DIDStore_LoadDIDMeta(dh->store, &did.metadata, &did);
 
     if (dh->filter == 0 || (dh->filter == 1 && DIDSotre_ContainsPrivateKeys(dh->store, &did)) ||
             (dh->filter == 2 && !DIDSotre_ContainsPrivateKeys(dh->store, &did)))
@@ -1608,7 +1552,7 @@ static int list_credential_helper(const char *path, void *context)
 
     strcpy(id.did.idstring, ch->did.idstring);
     strcpy(id.fragment, path + 1);
-    load_credmeta(ch->store, &id.metadata, id.did.idstring, id.fragment);
+    DIDStore_LoadCredMeta(ch->store, &id.metadata, &id);
     rc = ch->cb(&id, ch->context);
     CredentialMetadata_Free(&id.metadata);
     return rc;
@@ -1723,7 +1667,7 @@ int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
         return -1;
     }
 
-    if (load_didmeta(store, &meta, document->did.idstring) == -1)
+    if (DIDStore_LoadDIDMeta(store, &meta, &document->did) == -1)
         return -1;
 
     rc = DIDMetadata_Merge(&document->metadata, &meta);
@@ -1732,6 +1676,7 @@ int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
         return -1;
 
     DIDMetadata_SetStore(&document->metadata, store);
+    DID_ToString(&document->did, document->metadata.did, sizeof(document->metadata.did));
 	data = DIDDocument_ToJson(document, true);
 	if (!data)
 		return -1;
@@ -1750,7 +1695,7 @@ int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
         goto errorExit;
     }
 
-    if (DIDStore_WriteDIDMetadata(store, &document->metadata, &document->did) == -1)
+    if (DIDStore_StoreDIDMetadata(store, &document->metadata, &document->did) == -1)
         goto errorExit;
 
     count = DIDDocument_GetCredentialCount(document);
@@ -1828,7 +1773,7 @@ DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did)
     if (!document)
         return NULL;
 
-    if (load_didmeta(store, &document->metadata, document->did.idstring) == -1) {
+    if (DIDStore_LoadDIDMeta(store, &document->metadata, &document->did) == -1) {
         DIDDocument_Destroy(document);
         return NULL;
     }
@@ -1945,17 +1890,18 @@ int DIDStore_StoreCredential(DIDStore *store, Credential *credential)
     if (!id)
         return -1;
 
-    if (load_credmeta(store, &meta, id->did.idstring, id->fragment) == -1)
+    if (DIDStore_LoadCredMeta(store, &meta, id) == -1)
         return -1;
 
     if (CredentialMetadata_Merge(&credential->metadata, &meta) < 0)
         return -1;
 
     CredentialMetadata_SetStore(&credential->metadata, store);
+    DIDURL_ToString(&credential->id, credential->metadata.id, sizeof(credential->metadata.id), false);
     CredentialMetadata_Free(&meta);
 
     if (store_credential(store, credential) == -1 ||
-            store_credmeta(store, &credential->metadata, id) == -1)
+            DIDStore_StoreCredMetadata(store, &credential->metadata, id) == -1)
         return -1;
 
     return 0;

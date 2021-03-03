@@ -35,6 +35,7 @@ extern "C" {
 
 struct DIDMetadata {
     Metadata base;
+    char did[ELA_MAX_DID_LEN];
 };
 
 const char *DIDMetadata_ToJson(DIDMetadata *metadata);
@@ -72,6 +73,8 @@ void DIDMetadata_SetStore(DIDMetadata *metadata, DIDStore *store);
 DIDStore *DIDMetadata_GetStore(DIDMetadata *metadata);
 
 bool DIDMetadata_AttachedStore(DIDMetadata *metadata);
+
+int DIDMetadata_Store(DIDMetadata *metadata);
 
 //for DID_API
 DID_API const char *DIDMetadata_GetPrevSignature(DIDMetadata *metadata);

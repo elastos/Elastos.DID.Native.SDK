@@ -275,14 +275,6 @@ DIDMetadata *DID_GetMetadata(DID *did)
     return &did->metadata;
 }
 
-int DID_SaveMetadata(DID *did)
-{
-    if (did && DIDMetadata_AttachedStore(&did->metadata))
-        return DIDStore_StoreDIDMetadata(did->metadata.base.store, &did->metadata, did);
-
-    return 0;
-}
-
 int Parse_DIDURL(DIDURL *id, const char *idstring, DID *base)
 {
     return parse_id_string(id->did.idstring, id->fragment, idstring, base);
@@ -503,14 +495,6 @@ CredentialMetadata *DIDURL_GetMetadata(DIDURL *id)
         return NULL;
     }
     return &id->metadata;
-}
-
-int DIDURL_SaveMetadata(DIDURL *id)
-{
-    if (id && CredentialMetadata_AttachedStore(&id->metadata))
-        return DIDStore_StoreCredMeta(id->metadata.base.store, &id->metadata, id);
-
-    return 0;
 }
 
 bool Contains_DID(DID **dids, size_t size, DID *did)

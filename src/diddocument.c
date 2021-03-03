@@ -1203,14 +1203,6 @@ void DIDDocument_Destroy(DIDDocument *document)
     free(document);
 }
 
-int DIDDocument_SaveMetadata(DIDDocument *document)
-{
-    if (document && DIDMetadata_AttachedStore(&document->metadata))
-        return DIDStore_StoreDIDMetadata(document->metadata.base.store, &document->metadata, &document->did);
-
-    return 0;
-}
-
 DIDMetadata *DIDDocument_GetMetadata(DIDDocument *document)
 {
     if (!document) {
@@ -1332,10 +1324,8 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
     }*/
 
 storeexit:
-    if (deactived) {
+    if (deactived)
         DIDMetadata_SetDeactivated(&resolvedoc->metadata, true);
-        DIDDocument_SaveMetadata(resolvedoc);
-    }
 
     DIDDocument_Destroy(resolvedoc);
     return deactived;
@@ -4289,11 +4279,12 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
     DIDMetadata_SetSignature(&document->metadata, DIDDocument_GetProofSignature(document, 0));
     if (resolve_signature)
         DIDMetadata_SetPrevSignature(&document->metadata, resolve_signature);
-    rc = DIDStore_WriteDIDMetadata(store, &document->metadata, &document->did);
+
+    return true;
 
 errorExit:
     DIDDocument_Destroy(resolve_doc);
-    return rc == -1 ? false : true;
+    return false;
 }
 
 bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
@@ -4362,16 +4353,17 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
     DIDMetadata_SetSignature(&document->metadata, DIDDocument_GetProofSignature(document, 0));
     if (*resolve_doc->proofs.proofs[0].signatureValue)
         DIDMetadata_SetPrevSignature(&document->metadata, resolve_doc->proofs.proofs[0].signatureValue);
-    rc = DIDStore_WriteDIDMetadata(store, &document->metadata, &document->did);
+
+    return true;
 
 errorExit:
     DIDDocument_Destroy(resolve_doc);
-    return rc == -1 ? false : true;
+    return false;
 }
 
 bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
 {
-    DIDDocument *resolve_doc;
+    DIDDocument *resolve_doc, *controllerdoc;
     DIDStore *store;
     bool localcopy = false;
     int rc = 0, status;
@@ -4398,16 +4390,27 @@ bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const cha
     DIDMetadata_SetStore(&resolve_doc->metadata, store);
 
     if (!signkey) {
-        signkey = DIDDocument_GetDefaultPublicKey(resolve_doc);
+        signkey = DIDDocument_GetDefaultPublicKey(document);
         if (!signkey) {
             DIDDocument_Destroy(resolve_doc);
             DIDError_Set(DIDERR_INVALID_KEY, "Not default key.");
             return false;
         }
     } else {
-        if (!DIDDocument_IsAuthenticationKey(resolve_doc, signkey)) {
+        if (DIDDocument_IsCustomizedDID(document)) {
+            controllerdoc = DIDDocument_GetControllerDocument(document, &signkey->did);
+            if (!controllerdoc) {
+                DIDDocument_Destroy(resolve_doc);
+                DIDError_Set(DIDERR_INVALID_KEY, "Sign key isn't owned to controller of DID.");
+                return false;
+            }
+        } else {
+            controllerdoc = document;
+        }
+
+        if (!DIDURL_Equals(signkey, DIDDocument_GetDefaultPublicKey(controllerdoc))) {
             DIDDocument_Destroy(resolve_doc);
-            DIDError_Set(DIDERR_INVALID_KEY, "Invalid authentication key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Sign key is not the default key.");
             return false;
         }
     }

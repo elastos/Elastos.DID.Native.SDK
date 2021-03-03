@@ -27,6 +27,7 @@
 
 #include "ela_did.h"
 #include "did.h"
+#include "didstore.h"
 #include "didmeta.h"
 #include "JsonGenerator.h"
 #include "common.h"
@@ -41,6 +42,20 @@ static const char *PREV_SIGNATURE = "prevSignature";
 static const char *SIGNATURE = "signature";
 static const char *PUBLISHED = "published";
 static const char *DEACTIVATED = "deactivated";
+
+int DIDMetadata_Store(DIDMetadata *metadata)
+{
+    DID did;
+
+    assert(metadata);
+
+    if (metadata->base.store && *metadata->did) {
+        Parse_DID(&did, metadata->did);
+        return DIDStore_StoreDIDMetadata(metadata->base.store, metadata, &did);
+    }
+
+    return 0;
+}
 
 int DIDMetadata_ToJson_Internal(DIDMetadata *metadata, JsonGenerator *gen)
 {
@@ -87,49 +102,77 @@ int DIDMetadata_SetDeactivated(DIDMetadata *metadata, bool deactived)
 {
     assert(metadata);
 
-    return Metadata_SetDefaultExtraWithBoolean(&metadata->base, DEACTIVATED, deactived);
+    if (Metadata_SetDefaultExtraWithBoolean(&metadata->base, DEACTIVATED, deactived) < 0 ||
+            DIDMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 int DIDMetadata_SetPublished(DIDMetadata *metadata, time_t time)
 {
     assert(metadata);
 
-    return Metadata_SetDefaultExtraWithInteger(&metadata->base, PUBLISHED, time);
+    if (Metadata_SetDefaultExtraWithInteger(&metadata->base, PUBLISHED, time) < 0 ||
+            DIDMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 int DIDMetadata_SetTxid(DIDMetadata *metadata, const char *txid)
 {
     assert(metadata);
 
-    return Metadata_SetDefaultExtra(&metadata->base, TXID, txid);
+    if (Metadata_SetDefaultExtra(&metadata->base, TXID, txid) < 0 ||
+            DIDMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 int DIDMetadata_SetSignature(DIDMetadata *metadata, const char *signature)
 {
     assert(metadata);
 
-    return Metadata_SetDefaultExtra(&metadata->base, SIGNATURE, signature);
+    if (Metadata_SetDefaultExtra(&metadata->base, SIGNATURE, signature) < 0 ||
+            DIDMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 int DIDMetadata_SetPrevSignature(DIDMetadata *metadata, const char *signature)
 {
     assert(metadata);
 
-    return Metadata_SetDefaultExtra(&metadata->base, PREV_SIGNATURE, signature);
+    if (Metadata_SetDefaultExtra(&metadata->base, PREV_SIGNATURE, signature) < 0 ||
+            DIDMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 int DIDMetadata_SetRootIdentity(DIDMetadata *metadata, const char *rootidentity)
 {
     assert(metadata);
 
-    return Metadata_SetDefaultExtra(&metadata->base, ROOTIDENTITY, rootidentity);
+    if (Metadata_SetDefaultExtra(&metadata->base, ROOTIDENTITY, rootidentity) < 0 ||
+            DIDMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 int DIDMetadata_SetIndex(DIDMetadata *metadata, int index)
 {
     assert(metadata);
 
-    return Metadata_SetDefaultExtraWithInteger(&metadata->base, INDEX, index);
+    if (Metadata_SetDefaultExtraWithInteger(&metadata->base, INDEX, index) < 0 ||
+            DIDMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 const char *DIDMetadata_GetRootIdentity(DIDMetadata *metadata)
@@ -236,7 +279,11 @@ int DIDMetadata_SetAlias(DIDMetadata *metadata, const char *alias)
         return -1;
     }
 
-    return Metadata_SetDefaultExtra(&metadata->base, ALIAS, alias);
+    if (Metadata_SetDefaultExtra(&metadata->base, ALIAS, alias) < 0 ||
+            DIDMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 const char *DIDMetadata_GetAlias(DIDMetadata *metadata)
@@ -256,7 +303,11 @@ int DIDMetadata_SetExtra(DIDMetadata *metadata, const char* key, const char *val
         return -1;
     }
 
-    return Metadata_SetExtra(&metadata->base, key, value);
+    if (Metadata_SetExtra(&metadata->base, key, value) < 0 ||
+            DIDMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 int DIDMetadata_SetExtraWithBoolean(DIDMetadata *metadata, const char *key, bool value)
@@ -266,7 +317,11 @@ int DIDMetadata_SetExtraWithBoolean(DIDMetadata *metadata, const char *key, bool
         return -1;
     }
 
-    return Metadata_SetExtraWithBoolean(&metadata->base, key, value);
+    if (Metadata_SetExtraWithBoolean(&metadata->base, key, value) < 0 ||
+            DIDMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 int DIDMetadata_SetExtraWithDouble(DIDMetadata *metadata, const char *key, double value)
@@ -276,7 +331,11 @@ int DIDMetadata_SetExtraWithDouble(DIDMetadata *metadata, const char *key, doubl
         return -1;
     }
 
-    return Metadata_SetExtraWithDouble(&metadata->base, key, value);
+    if (Metadata_SetExtraWithDouble(&metadata->base, key, value) < 0 ||
+            DIDMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 const char *DIDMetadata_GetExtra(DIDMetadata *metadata, const char *key)

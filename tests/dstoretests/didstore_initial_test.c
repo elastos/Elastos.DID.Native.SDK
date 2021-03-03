@@ -219,8 +219,6 @@ static void test_didstore_newdid_withouAlias(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = DIDMetadata_SetExtraWithBoolean(metadata, "femal", false);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDDocument_SaveMetadata(doc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
 
     loaddoc = DIDStore_LoadDID(store, did);
     CU_ASSERT_PTR_NOT_NULL(loaddoc);
