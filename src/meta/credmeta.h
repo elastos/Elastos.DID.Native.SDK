@@ -34,6 +34,7 @@ extern "C" {
 
 struct CredentialMetadata {
     Metadata base;
+    char id[ELA_MAX_DIDURL_LEN];
 };
 
 int CredentialMetadata_ToJson_Internal(CredentialMetadata *metadata, JsonGenerator *gen);
@@ -63,6 +64,8 @@ int CredentialMetadata_SetTxid(CredentialMetadata *metadata, const char *txid);
 const char *CredentialMetadata_GetTxid(CredentialMetadata *metadata);
 
 bool CredentialMetadata_AttachedStore(CredentialMetadata *metadata);
+
+int CredentialMetadata_Store(CredentialMetadata *metadata);
 
 #ifdef __cplusplus
 }

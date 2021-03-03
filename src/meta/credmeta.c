@@ -26,6 +26,7 @@
 
 #include "ela_did.h"
 #include "did.h"
+#include "didstore.h"
 #include "common.h"
 #include "credmeta.h"
 #include "JsonGenerator.h"
@@ -36,6 +37,20 @@ static const char *ALIAS = "alias";
 static const char *PUBLISHED = "published";
 static const char *REVOKED = "revoke";
 static const char *TXID = "txid";
+
+int CredentialMetadata_Store(CredentialMetadata *metadata)
+{
+    DIDURL id;
+
+    assert(metadata);
+
+    if (metadata->base.store && *metadata->id) {
+        Parse_DIDURL(&id, metadata->id, NULL);
+        return DIDStore_StoreCredMetadata(metadata->base.store, metadata, &id);
+    }
+
+    return 0;
+}
 
 int CredentialMetadata_ToJson_Internal(CredentialMetadata *metadata, JsonGenerator *gen)
 {
@@ -101,7 +116,11 @@ int CredentialMetadata_SetRevoke(CredentialMetadata *metadata, bool revoke)
 {
     assert(metadata);
 
-    return Metadata_SetDefaultExtraWithBoolean(&metadata->base, REVOKED, revoke);
+    if (Metadata_SetDefaultExtraWithBoolean(&metadata->base, REVOKED, revoke) < 0 ||
+            CredentialMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 bool CredentialMetadata_GetRevoke(CredentialMetadata *metadata)
@@ -118,7 +137,11 @@ int CredentialMetadata_SetPublished(CredentialMetadata *metadata, time_t time)
 {
     assert(metadata);
 
-    return Metadata_SetDefaultExtraWithInteger(&metadata->base, PUBLISHED, time);
+    if (Metadata_SetDefaultExtraWithInteger(&metadata->base, PUBLISHED, time) < 0 ||
+            CredentialMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 time_t CredentialMetadata_GetPublished(CredentialMetadata *metadata)
@@ -149,7 +172,11 @@ int CredentialMetadata_SetTxid(CredentialMetadata *metadata, const char *txid)
 {
     assert(metadata);
 
-    return Metadata_SetDefaultExtra(&metadata->base, TXID, txid);
+    if (Metadata_SetDefaultExtra(&metadata->base, TXID, txid) < 0 ||
+            CredentialMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 const char *CredentialMetadata_GetTxid(CredentialMetadata *metadata)
@@ -167,7 +194,11 @@ int CredentialMetadata_SetAlias(CredentialMetadata *metadata, const char *alias)
         return -1;
     }
 
-    return Metadata_SetDefaultExtra(&metadata->base, ALIAS, alias);
+    if (Metadata_SetDefaultExtra(&metadata->base, ALIAS, alias) < 0 ||
+            CredentialMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 const char *CredentialMetadata_GetAlias(CredentialMetadata *metadata)
@@ -187,7 +218,11 @@ int CredentialMetadata_SetExtra(CredentialMetadata *metadata, const char* key, c
         return -1;
     }
 
-    return Metadata_SetExtra(&metadata->base, key, value);
+    if (Metadata_SetExtra(&metadata->base, key, value) < 0 ||
+            CredentialMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 int CredentialMetadata_SetExtraWithBoolean(CredentialMetadata *metadata, const char *key, bool value)
@@ -197,7 +232,11 @@ int CredentialMetadata_SetExtraWithBoolean(CredentialMetadata *metadata, const c
         return -1;
     }
 
-    return Metadata_SetExtraWithBoolean(&metadata->base, key, value);
+    if (Metadata_SetExtraWithBoolean(&metadata->base, key, value) < 0 ||
+            CredentialMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 int CredentialMetadata_SetExtraWithDouble(CredentialMetadata *metadata, const char *key, double value)
@@ -207,7 +246,11 @@ int CredentialMetadata_SetExtraWithDouble(CredentialMetadata *metadata, const ch
         return -1;
     }
 
-    return Metadata_SetExtraWithDouble(&metadata->base, key, value);
+    if (Metadata_SetExtraWithDouble(&metadata->base, key, value) < 0 ||
+            CredentialMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
 }
 
 const char *CredentialMetadata_GetExtra(CredentialMetadata *metadata, const char *key)

@@ -616,18 +616,6 @@ DID_API DIDMetadata *DID_GetMetadata(DID *did);
 
 /**
  * \~English
- * Save DID metadata.
- *
- * @param
- *      did                      [in] The handle of DID.
- * @return
- *      If no error occurs, return 0.
- *      Otherwise, return -1.
- */
-DID_API int DID_SaveMetadata(DID *did);
-
-/**
- * \~English
  * Get alias for did.
  *
  * @param
@@ -901,18 +889,6 @@ DID_API void DIDURL_Destroy(DIDURL *id);
  *      If no error occurs, return the handle to CredentialMetadata. Otherwise, return NULL.
  */
 DID_API CredentialMetadata *DIDURL_GetMetadata(DIDURL *id);
-
-/**
- * \~English
- * Save Credential(DIDURL) metadata.
- *
- * @param
- *      id                      [in] The handle of DIDURL.
- * @return
- *      If no error occurs, return 0.
- *      Otherwise, return -1.
- */
-DID_API int DIDURL_SaveMetadata(DIDURL *id);
 
 /**
  * \~English
@@ -2534,17 +2510,6 @@ DID_API DIDMetadata *DIDDocument_GetMetadata(DIDDocument *document);
 
 /**
  * \~English
- * Save DIDMetadata of document.
- *
- * @param
- *      document                    [in] The handle to DIDDocument.
- * @return
- *      0 on success, -1 if an error occurred.
- */
-DID_API int DIDDocument_SaveMetadata(DIDDocument *document);
-
-/**
- * \~English
  * Get the signer count.
  *
  * @param
@@ -3184,17 +3149,6 @@ DID_API bool Credential_IsGenuine(Credential *cred);
  *      flase if not valid, true if valid.
  */
 DID_API bool Credential_IsValid(Credential *cred);
-
-/**
- * \~English
- * Set Credential from DID Store.
- *
- * @param
- *      cred                     [in] The handle to Credential.
- * @return
- *      0 on success, -1 if an error occurred.
- */
-DID_API int Credential_SaveMetadata(Credential *cred);
 
 /**
  * \~English

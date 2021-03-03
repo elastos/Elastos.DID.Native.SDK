@@ -1007,12 +1007,6 @@ bool Credential_IsValid(Credential *cred)
     return valid;
 }
 
-int Credential_SaveMetadata(Credential *cred)
-{
-    return (!cred || !CredentialMetadata_AttachedStore(&cred->metadata)) ? 0:
-            DIDStore_StoreCredMeta(cred->metadata.base.store, &cred->metadata, &cred->id);
-}
-
 CredentialMetadata *Credential_GetMetadata(Credential *cred)
 {
     if (!cred) {
