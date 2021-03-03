@@ -234,21 +234,21 @@ static void test_new_customizedid_with_existcontrollers(void)
 
     strcpy(customized_did.idstring, customizedid);
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1_doc);
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1);
     signkey1 = DIDDocument_GetDefaultPublicKey(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(signkey1);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2_doc);
     controller2 = DIDDocument_GetSubject(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2);
     signkey2 = DIDDocument_GetDefaultPublicKey(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(signkey2);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3_doc);
     controller3 = DIDDocument_GetSubject(controller3_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3);
@@ -390,21 +390,21 @@ static void test_new_customizedid_with_existcontrollers2(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1_doc);
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1);
     signkey1 = DIDDocument_GetDefaultPublicKey(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(signkey1);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2_doc);
     controller2 = DIDDocument_GetSubject(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2);
     signkey2 = DIDDocument_GetDefaultPublicKey(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(signkey2);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3_doc);
     controller3 = DIDDocument_GetSubject(controller3_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3);

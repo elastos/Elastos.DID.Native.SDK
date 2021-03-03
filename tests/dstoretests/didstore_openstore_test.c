@@ -149,13 +149,13 @@ static void test_openstore_newdid(void)
     List_Helper helper;
     int count = 0;
 
-    store = TestData_SetupTestStore(true);
+    store = TestData_SetupTestStore(true, 2);
     CU_ASSERT_PTR_NOT_NULL(store);
 
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser1Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser2Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser3Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadIssuerIdDoc());
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 2));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store, get_identity, (void*)&count));
     CU_ASSERT_EQUAL(1, count);
@@ -189,13 +189,13 @@ static void test_openstore_newdid_with_wrongpw(void)
     DIDDocument *doc;
     const char *id;
 
-    store = TestData_SetupTestStore(true);
+    store = TestData_SetupTestStore(true, 2);
     CU_ASSERT_PTR_NOT_NULL(store);
 
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser1Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser2Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser3Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadIssuerIdDoc());
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 2));
 
     id = DIDStore_GetDefaultRootIdentity(store);
     CU_ASSERT_PTR_NOT_NULL(id);
@@ -221,13 +221,13 @@ static void test_openstore_upgradev2(void)
     int count = 0;
     const char *id;
 
-    store = TestData_SetupV1TestStore(true);
+    store = TestData_SetupTestStore(true, 1);
     CU_ASSERT_PTR_NOT_NULL(store);
 
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser1Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser2Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser3Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadIssuerIdDoc());
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 2));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store, get_identity, (void*)&count));
     CU_ASSERT_EQUAL(1, count);

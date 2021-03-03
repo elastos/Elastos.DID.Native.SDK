@@ -8,6 +8,7 @@
 #include <limits.h>
 
 #include "constant.h"
+#include "utility.h"
 #include "loader.h"
 #include "ela_did.h"
 #include "did.h"
@@ -52,7 +53,7 @@ static void test_didstore_bulk_newdid(void)
         DID *did = DIDDocument_GetSubject(doc);
         CU_ASSERT_PTR_NOT_NULL(did);
 
-        char *path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP,
+        const char *path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP,
                 DATA_DIR, PATH_STEP,IDS_DIR, PATH_STEP, did->idstring, PATH_STEP, DOCUMENT_FILE);
         CU_ASSERT_TRUE(file_exist(path));
 
@@ -130,7 +131,7 @@ static void test_didstore_op_deletedid(void)
 
         CU_ASSERT_TRUE(DIDStore_DeleteDID(store, &dids[i]));
 
-        char *path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP,
+        const char *path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP,
                 DATA_DIR, PATH_STEP, IDS_DIR, PATH_STEP, dids[i].idstring);
         CU_ASSERT_FALSE_FATAL(file_exist(path));
     }
@@ -162,8 +163,8 @@ static void test_didstore_op_store_load_did(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    issuerdoc = TestData_LoadIssuerDoc();
-    doc = TestData_LoadDoc();
+    issuerdoc = TestData_GetDocument("issuer", NULL, 0);
+    doc = TestData_GetDocument("document", NULL, 0);
 
     loaddoc = DIDStore_LoadDID(store, DIDDocument_GetSubject(issuerdoc));
     CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), DIDDocument_GetSubject(loaddoc)));

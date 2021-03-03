@@ -22,6 +22,7 @@
 #include "ela_did.h"
 #include "dummyadapter.h"
 #include "constant.h"
+#include "utility.h"
 #include "loader.h"
 #include "crypto.h"
 #include "HDkey.h"
@@ -29,6 +30,7 @@
 #include "diddocument.h"
 #include "credential.h"
 #include "credmeta.h"
+
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <crystal.h>
@@ -38,167 +40,33 @@
 
 #define HARDENED                       0x80000000
 
+const char *VERSION[3] = {"v1-backup", "v1", "v2"};
+
 typedef struct TestData {
+    char dkey[128];
+    void *dvalue;
+} TestData;
+
+typedef struct CompatibleData {
     DIDStore *store;
     RootIdentity *rootidentity;
 
-    DIDDocument *issuerdoc;
-    const char *issuerJson;
-    const char *issuerCompactJson;
-    const char *issuerNormalizedJson;
-
-    DIDDocument *doc;
-    const char *docJson;
-    const char *docCompactJson;
-    const char *docNormalizedJson;
-
-    DIDDocument *controllerdoc;
-    DIDDocument *user1doc;
-    DIDDocument *user2doc;
-    DIDDocument *user3doc;
-    DIDDocument *issuerIddoc;
-
-    DIDDocument *emptyctmdoc;
-    DIDDocument *ctmdoc;
-
-    DIDDocument *emptyctmdoc_multisigone;
-    DIDDocument *ctmdoc_multisigone;
-
-    DIDDocument *emptyctmdoc_multisigtwo;
-    DIDDocument *ctmdoc_multisigtwo;
-
-    DIDDocument *emptyctmdoc_multisigthree;
-    DIDDocument *ctmdoc_multisigthree;
-
-    Credential *profileVc;
-    const char *profileVcCompactJson;
-    const char *profileVcNormalizedJson;
-
-    Credential *emailVc;
-    const char *emailVcCompactJson;
-    const char *emailVcNormalizedJson;
-
-    Credential *passportVc;
-    const char *passportVcCompactJson;
-    const char *passportVcNormalizedJson;
-
-    Credential *twitterVc;
-    const char *twitterVcCompactJson;
-    const char *twitterVcNormalizedJson;
-
-    Credential *Vc;
-    const char *VcCompactJson;
-    const char *VcNormalizedJson;
-
-    Presentation *vp;
-    const char *vpNormalizedJson;
+    TestData testdata[512];
+    int dsize;
 
     const char *restoreMnemonic;
-} TestData;
+} CompatibleData;
 
 typedef struct Dir_Copy_Helper {
     const char *srcpath;
     const char *dstpath;
 } Dir_Copy_Helper;
 
-TestData testdata;
-
-char *get_wallet_path(char* path, const char* dir)
-{
-    if (!path || !dir)
-        return NULL;
-
-    sprintf(path, "%s%s%s", getenv("HOME"), PATH_STEP, dir);
-    return path;
-}
-
-const char *get_store_path(char* path, const char *dir)
-{
-    if (!path || !dir)
-        return NULL;
-
-    if(!getcwd(path, PATH_MAX)) {
-        printf("\nCan't get current dir.");
-        return NULL;
-    }
-
-    strcat(path, PATH_STEP);
-    strcat(path, dir);
-    return path;
-}
-
-char *get_path(char *path, const char *file, int version)
-{
-    size_t len;
-
-    assert(file);
-    assert(*file);
-
-    switch (version) {
-        case 0:
-            len = snprintf(path, PATH_MAX, "..%setc%sdid%sresources%stestdata%s%s",
-                PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, file);
-            break;
-        case 1:
-            len = snprintf(path, PATH_MAX, "..%setc%sdid%sresources%sv1%stestdata%s%s",
-                PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, file);
-            break;
-        case 2:
-            len = snprintf(path, PATH_MAX, "..%setc%sdid%sresources%sv2%stestdata%s%s",
-                PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, file);
-            break;
-        default:
-            return NULL;
-    }
-
-    if (len < 0 || len > PATH_MAX)
-        return NULL;
-
-    return path;
-}
-
-static const char *load_testdata_file(const char *file, int version)
-{
-    char _path[PATH_MAX];
-    char *readstring = NULL, *path;
-
-    assert(file && *file);
-
-    path = get_path(_path, file, version);
-    if (!path)
-        return NULL;
-
-    return load_file(path);
-}
+CompatibleData compatibledata;
 
 static const char *getpassword(const char *walletDir, const char *walletId)
 {
     return walletpass;
-}
-
-char *get_file_path(char *path, size_t size, int count, ...)
-{
-    va_list list;
-    int i, totalsize = 0;
-
-    if (!path || size <= 0 || count <= 0)
-        return NULL;
-
-    *path = 0;
-    va_start(list, count);
-    for (i = 0; i < count; i++) {
-        const char *suffix = va_arg(list, const char*);
-        assert(suffix);
-        int len = strlen(suffix);
-        totalsize = totalsize + len;
-        if (totalsize > size)
-            return NULL;
-
-        strncat(path, suffix, len + 1);
-    }
-    va_end(list);
-
-    return path;
 }
 
 static int copy_metadata(const char *dst, const char *src)
@@ -301,96 +169,17 @@ static int dir_copy(const char *dst, const char *src)
     return rc;
 }
 
-static Credential *store_credential(const char *file, const char *alias, bool version)
-{
-    Credential *cred;
-    const char *data;
-
-    data = load_testdata_file(file, version);
-    if (!data)
-        return NULL;
-
-    cred = Credential_FromJson(data, NULL);
-    free((void*)data);
-    if (!cred)
-        return NULL;
-
-    CredentialMetadata *metadata = Credential_GetMetadata(cred);
-    if (!metadata) {
-        Credential_Destroy(cred);
-        return NULL;
-    }
-
-    if (CredentialMetadata_SetAlias(metadata, alias) < 0) {
-        Credential_Destroy(cred);
-        return NULL;
-    }
-
-    if (DIDStore_StoreCredential(testdata.store, cred) == -1) {
-        Credential_Destroy(cred);
-        return NULL;
-    }
-
-    return cred;
-}
-
-static DIDDocument *store_document(const char *file, const char *alias, int version)
-{
-    DIDDocument *doc;
-    const char *string;
-    DID did;
-    int rc;
-
-    string = load_testdata_file(file, version);
-    if (!string)
-        return NULL;
-
-    doc = DIDDocument_FromJson(string);
-    free((void*)string);
-    if (!doc)
-        return NULL;
-
-    strcpy(did.idstring, doc->did.idstring);
-    DIDMetadata *metadata = DIDDocument_GetMetadata(doc);
-    if (!metadata) {
-        DIDDocument_Destroy(doc);
-        return NULL;
-    }
-
-    if (DIDMetadata_SetAlias(metadata, alias) < 0) {
-        DIDDocument_Destroy(doc);
-        return NULL;
-    }
-
-    rc = DIDStore_StoreDID(testdata.store, doc);
-    DIDDocument_Destroy(doc);
-    if (rc < 0)
-        return NULL;
-
-    return DIDStore_LoadDID(testdata.store, &did);
-}
-
-bool file_exist(const char *path)
-{
-    return test_path(path) == S_IFREG;
-}
-
-bool dir_exist(const char* path)
-{
-    return test_path(path) == S_IFDIR;
-}
-
 static int import_privatekey(DIDURL *id, const char *storepass, const char *file, int version)
 {
     const char *skbase;
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
     ssize_t size;
-    HDKey _hdkey, *hdkey;
 
-    if (!id || !file || !*file)
-        return -1;
+    assert(id);
+    assert(storepass && *storepass);
+    assert(file);
 
-    skbase = load_testdata_file(file, version);
+    skbase = load_file(file);
     if (!skbase || !*skbase)
         return -1;
 
@@ -401,21 +190,339 @@ static int import_privatekey(DIDURL *id, const char *storepass, const char *file
             return -1;
     }
 
-    if (DIDStore_StorePrivateKey(testdata.store, storepass, DIDURL_GetDid(id),
+    if (DIDStore_StorePrivateKey(compatibledata.store, storepass, DIDURL_GetDid(id),
             id, extendedkey, size) == -1)
         return -1;
 
     return 0;
 }
 
+static void *get_testdata(char *dkey)
+{
+    int i;
+    TestData *data;
+
+    assert(dkey && *dkey);
+
+    if (strncmp(dkey, "res:", 4))
+        return NULL;
+
+    for(i = 0; i < compatibledata.dsize; i++) {
+        data = &compatibledata.testdata[i];
+        if (!strcmp(data->dkey, dkey))
+            return data->dvalue;
+    }
+
+    return NULL;
+}
+
+static int set_testdata(char *dkey, void *dvalue)
+{
+    assert(dkey);
+    assert(dvalue);
+
+    if (strncmp(dkey, "res:", 4))
+        return -1;
+
+    strcpy(compatibledata.testdata[compatibledata.dsize].dkey, dkey);
+    compatibledata.testdata[compatibledata.dsize++].dvalue = dvalue;
+    return 0;
+}
+
+static void did_basekey(char *basekey, char *did, char *type, bool json)
+{
+    assert(basekey);
+    assert(did);
+
+    strcpy(basekey, "res:");
+    if (json)
+        strcat(basekey, "json:");
+    strcat(basekey, "did:");
+    strcat(basekey, did);
+    if (type) {
+        strcat(basekey, ":");
+        strcat(basekey, type);
+    }
+}
+
+static void credential_basekey(char *basekey, char *did, char *vc, char *type, bool json)
+{
+    assert(basekey);
+    assert(vc);
+
+    strcpy(basekey, "res:");
+    if (json)
+        strcat(basekey, "json:");
+    strcat(basekey, "vc:");
+    if (did) {
+       strcat(basekey, did);
+       strcat(basekey, ":");
+    }
+    strcat(basekey, vc);
+    if (type) {
+        strcat(basekey, ":");
+        strcat(basekey, type);
+    }
+}
+
+static void presentation_basekey(char *basekey, char *did, char *vp, char *type, bool json)
+{
+    assert(basekey);
+    assert(vp);
+
+    strcpy(basekey, "res:");
+    if (json)
+        strcat(basekey, "json:");
+    strcat(basekey, "vp:");
+    if (did) {
+        strcat(basekey, did);
+        strcat(basekey, ":");
+    }
+    strcat(basekey, vp);
+    if (type) {
+        strcat(basekey, ":");
+        strcat(basekey, type);
+    }
+}
+
+const char *TestData_GetDocumentJson(char *did, char *type, int version)
+{
+    char path[PATH_MAX * 2], basekey[120] = {0};
+    const char *data;
+    void *dvalue;
+
+    assert(did);
+
+    did_basekey(basekey, did, type, true);
+    dvalue = get_testdata(basekey);
+    if (dvalue)
+        return (const char*)dvalue;
+
+    get_did_path(path, did, type, version);
+    data = load_file(path);
+    if (!data)
+        return NULL;
+
+    if (set_testdata(basekey, (void*)data) < 0) {
+        free((void*)data);
+        return NULL;
+    }
+
+    return data;
+}
+
+DIDDocument *TestData_GetDocument(char *did, char *type, int version)
+{
+    char path[PATH_MAX * 2], basekey[120] = {0};
+    const char *keys[5] = {0};
+    const char *data;
+    char *idstring;
+    DIDDocument *doc, *resolvedoc;
+    void *dvalue;
+    DIDURL *signkey = NULL, *id;
+    int rc, i, size = 0;
+
+    assert(did);
+
+    did_basekey(basekey, did, type, false);
+    dvalue = get_testdata(basekey);
+    if (dvalue)
+        return (DIDDocument*)dvalue;
+
+    data = TestData_GetDocumentJson(did, type, version);
+    if (!data)
+        return NULL;
+
+    doc = DIDDocument_FromJson(data);
+    if (!doc)
+        return NULL;
+
+    if (!type) {
+        if (DIDStore_StoreDID(compatibledata.store, doc) < 0)
+            goto errorExit;
+
+        //store privatekeys
+        if (strcmp(did, "bar") && strcmp(did, "examplecorp") && strcmp(did, "foo")) {
+            keys[size++] = "primary";
+            idstring = did;
+        }
+
+        if (!strcmp(did, "user1") || !strcmp(did, "foobar") || !strcmp(did, "document")) {
+            keys[size++] = "key2";
+            keys[size++] = "key3";
+            idstring = did;
+        }
+
+        if (!strcmp(did, "controller")) {
+            keys[size++] = "pk1";
+            idstring = did;
+        }
+
+        if (!strncmp(did, "customized", 10)) {
+            keys[size++] = "k1";
+            keys[size++] = "k2";
+            idstring = "customized";
+        }
+
+        for (i = 0; i < size; i++) {
+            id = DIDURL_New(idstring, keys[i]);
+            get_privatekey_path(path, id, version);
+            rc = import_privatekey(id, storepass, path, version);
+            DIDURL_Destroy(id);
+            if (rc < 0)
+                goto errorExit;
+        }
+
+        //publish did
+        if (!strcmp(did, "foobar") || !strcmp(did, "foo") || !strcmp(did, "bar") ||
+                !strcmp(did, "baz")) {
+            DIDDocument *userdoc = TestData_GetDocument("user1", NULL, version);
+            if (!userdoc)
+                goto errorExit;
+
+            signkey = DIDDocument_GetDefaultPublicKey(userdoc);
+        }
+
+        if (!DIDDocument_PublishDID(doc, signkey, false, storepass))
+            goto errorExit;
+    }
+
+    if (set_testdata(basekey, (void*)doc) < 0)
+        goto errorExit;
+
+    return doc;
+
+errorExit:
+    DIDDocument_Destroy(doc);
+    return NULL;
+}
+
+const char *TestData_GetCredentialJson(char *did, char *vc, char *type, int version)
+{
+    char path[PATH_MAX * 2], basekey[120] = {0};
+    const char *data;
+    void *dvalue;
+
+    assert(vc);
+
+    credential_basekey(basekey, did, vc, type, true);
+    dvalue = get_testdata(basekey);
+    if (dvalue)
+        return (const char*)dvalue;
+
+    get_credential_path(path, did, vc, type, version);
+    data = load_file(path);
+    if (!data)
+        return NULL;
+
+    if (set_testdata(basekey, (void*)data) < 0) {
+        free((void*)data);
+        return NULL;
+    }
+
+    return data;
+}
+
+Credential *TestData_GetCredential(char *did, char *vc, char *type, int version)
+{
+    char path[PATH_MAX * 2], basekey[120] = {0};
+    Credential *credential;
+    const char *data;
+    void *dvalue;
+
+    assert(vc);
+
+    credential_basekey(basekey, did, vc, type, false);
+    dvalue = get_testdata(basekey);
+    if (dvalue)
+        return (Credential*)dvalue;
+
+    data = TestData_GetCredentialJson(did, vc, type, version);
+    if (!data)
+        return NULL;
+
+    credential = Credential_FromJson(data, NULL);
+    if (!credential)
+        return NULL;
+
+    if (!type) {
+        if (DIDStore_StoreCredential(compatibledata.store, credential) < 0) {
+            Credential_Destroy(credential);
+            return NULL;
+        }
+    }
+
+    if (set_testdata(basekey, (void*)credential) < 0) {
+        Credential_Destroy(credential);
+        return NULL;
+    }
+
+    return credential;
+}
+
+const char *TestData_GetPresentationJson(char *did, char *vp, char *type, int version)
+{
+    char path[PATH_MAX * 2], basekey[120] = {0};
+    const char *data;
+    void *dvalue;
+
+    assert(vp);
+
+    presentation_basekey(basekey, did, vp, type, true);
+    dvalue = get_testdata(basekey);
+    if (dvalue)
+        return (const char*)dvalue;
+
+    get_presentation_path(path, did, vp, type, version);
+    data = load_file(path);
+    if (!data)
+        return NULL;
+
+    if (set_testdata(basekey, (void*)data) < 0) {
+        free((void*)data);
+        return NULL;
+    }
+
+    return data;
+}
+
+Presentation *TestData_GetPresentation(char *did, char *vp, char *type, int version)
+{
+    char path[PATH_MAX * 2], basekey[120] = {0};
+    Presentation *presentation;
+    const char *data;
+    void *dvalue;
+
+    assert(vp);
+
+    presentation_basekey(basekey, did, vp, type, false);
+    dvalue = get_testdata(basekey);
+    if (dvalue)
+        return (Presentation*)dvalue;
+
+    data = TestData_GetPresentationJson(did, vp, type, version);
+    if (!data)
+        return NULL;
+
+    presentation = Presentation_FromJson(data);
+    if (!presentation)
+        return NULL;
+
+    if (set_testdata(basekey, (void*)presentation) < 0) {
+        Presentation_Destroy(presentation);
+        return NULL;
+    }
+
+    return presentation;
+}
+
 /////////////////////////////////////
 int TestData_Init(bool dummy)
 {
-    char _dir[PATH_MAX];
-    char *walletDir;
+    char walletDir[PATH_MAX];
     int rc = 0;
 
-    walletDir = get_wallet_path(_dir, walletdir);
+    sprintf(walletDir, "%s%s%s", getenv("HOME"), PATH_STEP, walletdir);
     if (!dummy && !dir_exist(walletDir)) {
         printf("Wallet Dir doesn't exist: %s\n", walletDir);
         return -1;
@@ -444,7 +551,7 @@ static DIDStore *setup_store(bool dummybackend, const char *root)
     assert(root);
 
     sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
-    testdata.store = DIDStore_Open(root);
+    compatibledata.store = DIDStore_Open(root);
 
 #if defined(_WIN32) ||  defined(_WIN64)
     dummybackend = true;
@@ -458,52 +565,41 @@ static DIDStore *setup_store(bool dummybackend, const char *root)
         DummyAdapter_Set(cachedir);
     }
 
-    return testdata.store;
+    return compatibledata.store;
 }
 
 DIDStore *TestData_SetupStore(bool dummybackend)
 {
     char _path[PATH_MAX];
-    const char*root;
+    const char *root;
 
     root = get_store_path(_path, "DIDStore");
     delete_file(root);
     return setup_store(dummybackend, root);
 }
 
-//only for v2
-DIDStore *TestData_SetupTestStore(bool dummybackend)
-{
-    char _path[PATH_MAX];
-    const char *path;
-
-    path = get_file_path(_path, PATH_MAX, 11, "..", PATH_STEP, "etc", PATH_STEP,
-        "did", PATH_STEP, "resources", PATH_STEP, "v2", PATH_STEP, "teststore");
-    if (!path)
-        return NULL;
-
-    return setup_store(dummybackend, path);
-}
-
-//only for v1
-DIDStore *TestData_SetupV1TestStore(bool dummybackend)
+DIDStore *TestData_SetupTestStore(bool dummybackend, int version)
 {
     char _path[PATH_MAX], _newpath[PATH_MAX];
     const char *path, *newpath;
 
     path = get_file_path(_path, PATH_MAX, 11, "..", PATH_STEP, "etc", PATH_STEP,
-        "did", PATH_STEP, "resources", PATH_STEP, "v1", PATH_STEP, "teststore");
+        "did", PATH_STEP, "resources", PATH_STEP, VERSION[version], PATH_STEP, "teststore");
     if (!path)
         return NULL;
 
-    newpath = get_file_path(_newpath, PATH_MAX, 11, "..", PATH_STEP, "etc", PATH_STEP,
-        "did", PATH_STEP, "resources", PATH_STEP, "v1-backup", PATH_STEP, "teststore");
-    if (!newpath)
-        return NULL;
+    if (version == 1) {
+        newpath = get_file_path(_newpath, PATH_MAX, 11, "..", PATH_STEP, "etc", PATH_STEP,
+            "did", PATH_STEP, "resources", PATH_STEP, VERSION[0], PATH_STEP, "teststore");
+        if (!newpath)
+            return NULL;
 
-    delete_file(newpath);
-    dir_copy(newpath, path);
-    return setup_store(dummybackend, newpath);
+        delete_file(newpath);
+        dir_copy(newpath, path);
+        path = newpath;
+    }
+
+    return setup_store(dummybackend, path);
 }
 
 RootIdentity *TestData_InitIdentity(DIDStore *store)
@@ -512,805 +608,51 @@ RootIdentity *TestData_InitIdentity(DIDStore *store)
     int rc;
 
     mnemonic = Mnemonic_Generate(language);
-    testdata.rootidentity = RootIdentity_Create(mnemonic, passphrase, language, true, store, storepass);
+    compatibledata.rootidentity = RootIdentity_Create(mnemonic, passphrase, language, true, store, storepass);
     Mnemonic_Free((void*)mnemonic);
 
-    return testdata.rootidentity;
+    return compatibledata.rootidentity;
 }
 
-const char *TestData_LoadIssuerJson(void)
+/*const char *TestData_LoadRestoreMnemonic(void)
 {
-    if (!testdata.issuerJson)
-        testdata.issuerJson = load_testdata_file("issuer.json", 0);
-
-    return testdata.issuerJson;
-}
-
-const char *TestData_LoadIssuerCompJson(void)
-{
-    if (!testdata.issuerCompactJson)
-        testdata.issuerCompactJson = load_testdata_file("issuer.compact.json", 0);
-
-    return testdata.issuerCompactJson;
-}
-
-const char *TestData_LoadIssuerNormJson(void)
-{
-    if (!testdata.issuerNormalizedJson)
-        testdata.issuerNormalizedJson = load_testdata_file("issuer.normalized.json", 0);
-
-    return testdata.issuerNormalizedJson;
-}
-
-const char *TestData_LoadDocJson(void)
-{
-    if (!testdata.docJson)
-        testdata.docJson = load_testdata_file("document.json", 0);
-
-    return testdata.docJson;
-}
-
-const char *TestData_LoadDocCompJson(void)
-{
-    if (!testdata.docCompactJson)
-        testdata.docCompactJson = load_testdata_file("document.compact.json", 0);
-
-    return testdata.docCompactJson;
-}
-
-const char *TestData_LoadDocNormJson(void)
-{
-    if (!testdata.docNormalizedJson)
-        testdata.docNormalizedJson = load_testdata_file("document.normalized.json", 0);
-
-    return testdata.docNormalizedJson;
-}
-
-Credential *TestData_LoadProfileVc(void)
-{
-    if (!testdata.profileVc)
-        testdata.profileVc = store_credential("vc-profile.json", "profile vc", 0);
-
-    return testdata.profileVc;
-}
-
-const char *TestData_LoadProfileVcCompJson(void)
-{
-    if (!testdata.profileVcCompactJson)
-        testdata.profileVcCompactJson = load_testdata_file("vc-profile.compact.json", 0);
-
-    return testdata.profileVcCompactJson;
-}
-
-const char *TestData_LoadProfileVcNormJson(void)
-{
-    if (!testdata.profileVcNormalizedJson)
-        testdata.profileVcNormalizedJson = load_testdata_file("vc-profile.normalized.json", 0);
-
-    return testdata.profileVcNormalizedJson;
-}
-
-Credential *TestData_LoadEmailVc(void)
-{
-    if (!testdata.emailVc)
-        testdata.emailVc = store_credential("vc-email.json", "email vc", 0);
-
-    return testdata.emailVc;
-}
-
-const char *TestData_LoadEmailVcCompJson(void)
-{
-    if (!testdata.emailVcCompactJson)
-        testdata.emailVcCompactJson = load_testdata_file("vc-email.compact.json", 0);
-
-    return testdata.emailVcCompactJson;
-}
-
-const char *TestData_LoadEmailVcNormJson(void)
-{
-    if (!testdata.emailVcNormalizedJson)
-        testdata.emailVcNormalizedJson = load_testdata_file("vc-email.normalized.json", 0);
-
-    return testdata.emailVcNormalizedJson;
-}
-
-Credential *TestData_LoadPassportVc(void)
-{
-    if (!testdata.passportVc)
-        testdata.passportVc = store_credential("vc-passport.json", "passport vc", 0);
-
-    return testdata.passportVc;
-}
-
-const char *TestData_LoadPassportVcCompJson(void)
-{
-    if (!testdata.passportVcCompactJson)
-        testdata.passportVcCompactJson = load_testdata_file("vc-passport.compact.json", 0);
-
-    return testdata.passportVcCompactJson;
-}
-
-const char *TestData_LoadPassportVcNormJson(void)
-{
-    if (!testdata.passportVcNormalizedJson)
-        testdata.passportVcNormalizedJson = load_testdata_file("vc-passport.normalized.json", 0);
-
-    return testdata.passportVcNormalizedJson;
-}
-
-Credential *TestData_LoadTwitterVc(void)
-{
-    if (!testdata.twitterVc)
-        testdata.twitterVc = store_credential("vc-twitter.json", "twitter vc", 0);
-
-    return testdata.twitterVc;
-}
-
-const char *TestData_LoadTwitterVcCompJson(void)
-{
-    if (!testdata.twitterVcCompactJson)
-        testdata.twitterVcCompactJson = load_testdata_file("vc-twitter.compact.json", 0);
-
-    return testdata.twitterVcCompactJson;
-}
-
-const char *TestData_LoadTwitterVcNormJson(void)
-{
-    if (!testdata.twitterVcNormalizedJson)
-        testdata.twitterVcNormalizedJson = load_testdata_file("vc-twitter.normalized.json", 0);
-
-    return testdata.twitterVcNormalizedJson;
-}
-
-Credential *TestData_LoadVc(void)
-{
-    if (!testdata.Vc)
-        testdata.Vc = store_credential("vc-json.json", "test vc", 0);
-
-    return testdata.Vc;
-}
-
-const char *TestData_LoadVcCompJson(void)
-{
-    if (!testdata.VcCompactJson)
-        testdata.VcCompactJson = load_testdata_file("vc-json.compact.json", 0);
-
-    return testdata.VcCompactJson;
-}
-
-const char *TestData_LoadVcNormJson(void)
-{
-    if (!testdata.VcNormalizedJson)
-        testdata.VcNormalizedJson = load_testdata_file("vc-json.normalized.json", 0);
-
-    return testdata.VcNormalizedJson;
-}
-
-Presentation *TestData_LoadVp(void)
-{
-    if (!testdata.vp) {
-        const char *data = load_testdata_file("vp.json", 0);
-        if (!data)
-            return NULL;
-
-        testdata.vp = Presentation_FromJson(data);
-        free((void*)data);
-    }
-    return testdata.vp;
-}
-
-const char *TestData_LoadVpNormJson(void)
-{
-    if (!testdata.vpNormalizedJson)
-        testdata.vpNormalizedJson = load_testdata_file("vp.normalized.json", 0);
-
-    return testdata.vpNormalizedJson;
-}
-
-DIDDocument *TestData_LoadDoc(void)
-{
-    DIDURL *id;
-    DID *subject;
-    int rc, status;
-    DIDDocument *doc;
-
-    if (!testdata.doc)
-       testdata.doc = store_document("document.json", "doc test", 0);
-
-    subject = DIDDocument_GetSubject(testdata.doc);
-    id = DIDURL_NewByDid(subject, "key2");
-    rc = import_privatekey(id, storepass, "document.key2.sk", 0);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    id = DIDURL_NewByDid(subject, "key3");
-    rc = import_privatekey(id, storepass, "document.key3.sk", 0);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    id = DIDURL_NewByDid(subject, "primary");
-    rc = import_privatekey(id, storepass, "document.primary.sk", 0);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.doc, NULL, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.doc;
-}
-
-DIDDocument *TestData_LoadControllerDoc(void)
-{
-    DIDURL *id;
-    DID *subject;
-    int rc, status;
-    DIDDocument *doc;
-
-    if (!testdata.controllerdoc)
-       testdata.controllerdoc = store_document("controller.json", "controller test", 0);
-
-    subject = DIDDocument_GetSubject(testdata.controllerdoc);
-    id = DIDURL_NewByDid(subject, "pk1");
-    rc = import_privatekey(id, storepass, "controller.pk1.sk", 0);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    id = DIDURL_NewByDid(subject, "primary");
-    rc = import_privatekey(id, storepass, "controller.primary.sk", 0);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.controllerdoc, NULL, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.controllerdoc;
-}
-
-DIDDocument *TestData_LoadIssuerDoc(void)
-{
-    DIDURL *id;
-    DID *subject;
-    int rc, status;
-    DIDDocument *doc;
-
-    if (!testdata.issuerdoc)
-        testdata.issuerdoc = store_document("issuer.json", "issuer test", 0);
-
-    subject = DIDDocument_GetSubject(testdata.issuerdoc);
-    id = DIDURL_NewByDid(subject, "primary");
-    rc = import_privatekey(id, storepass, "issuer.primary.sk", 0);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.issuerdoc, NULL, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.issuerdoc;
-}
-
-DIDDocument *TestData_LoadUser1Doc(void)
-{
-    DIDURL *id;
-    DID *subject;
-    int rc, status;
-    DIDDocument *doc;
-
-    if (!testdata.user1doc)
-        testdata.user1doc = store_document("user1.id.json", "User1", 2);
-
-    subject = DIDDocument_GetSubject(testdata.user1doc);
-    id = DIDURL_NewByDid(subject, "key2");
-    rc = import_privatekey(id, storepass, "user1.id.key2.sk", 2);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    id = DIDURL_NewByDid(subject, "key3");
-    rc = import_privatekey(id, storepass, "user1.id.key3.sk", 2);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    id = DIDURL_NewByDid(subject, "primary");
-    rc = import_privatekey(id, storepass, "user1.id.primary.sk", 2);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.user1doc, NULL, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.user1doc;
-}
-
-DIDDocument *TestData_LoadUser2Doc(void)
-{
-    DIDURL *id;
-    DID *subject;
-    int rc, status;
-    DIDDocument *doc;
-
-    if (!testdata.user2doc)
-        testdata.user2doc = store_document("user2.id.json", "User2", 2);
-
-    subject = DIDDocument_GetSubject(testdata.user2doc);
-    id = DIDURL_NewByDid(subject, "primary");
-    rc = import_privatekey(id, storepass, "user2.id.primary.sk", 2);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.user2doc, NULL, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.user2doc;
-}
-
-DIDDocument *TestData_LoadUser3Doc(void)
-{
-    DIDURL *id;
-    DID *subject;
-    int rc, status;
-    DIDDocument *doc;
-
-    if (!testdata.user3doc)
-        testdata.user3doc = store_document("user3.id.json", "User3", 2);
-
-    subject = DIDDocument_GetSubject(testdata.user3doc);
-    id = DIDURL_NewByDid(subject, "primary");
-    rc = import_privatekey(id, storepass, "user3.id.primary.sk", 2);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.user3doc, NULL, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.user3doc;
-}
-
-DIDDocument *TestData_LoadIssuerIdDoc(void)
-{
-    DIDURL *id;
-    DID *subject;
-    int rc, status;
-    DIDDocument *doc;
-
-    if (!testdata.issuerIddoc)
-        testdata.issuerIddoc = store_document("issuer.id.json", "Issuer", 2);
-
-    subject = DIDDocument_GetSubject(testdata.issuerIddoc);
-    id = DIDURL_NewByDid(subject, "primary");
-    rc = import_privatekey(id, storepass, "issuer.id.primary.sk", 2);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.issuerIddoc, NULL, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.issuerIddoc;
-}
-
-DIDDocument *TestData_LoadEmptyCtmDoc(void)
-{
-    DIDDocument *doc;
-    DID *subject;
-    int status;
-
-    TestData_LoadIssuerDoc();
-    TestData_LoadDoc();
-
-    if (!testdata.emptyctmdoc)
-        testdata.emptyctmdoc = store_document("customized-did-empty.json", "empty customized doc", 0);
-
-    subject = DIDDocument_GetSubject(testdata.emptyctmdoc);
-    if (!subject)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.emptyctmdoc, NULL, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.emptyctmdoc;
-}
-
-DIDDocument *TestData_LoadCtmDoc(void)
-{
-    DIDDocument *doc;
-    DID *subject;
-    DIDURL *id;
-    int rc, status;
-
-    TestData_LoadIssuerDoc();
-    TestData_LoadDoc();
-
-    if (!testdata.ctmdoc)
-        testdata.ctmdoc = store_document("customized-did.json", "customized doc", 0);
-
-    subject = DIDDocument_GetSubject(testdata.ctmdoc);
-    if (!subject)
-        return NULL;
-
-    id = DIDURL_NewByDid(subject, "k1");
-    rc = import_privatekey(id, storepass, "customized.k1.sk", 0);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    id = DIDURL_NewByDid(subject, "k2");
-    rc = import_privatekey(id, storepass, "customized.k2.sk", 0);
-    DIDURL_Destroy(id);
-    if (rc)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.ctmdoc, NULL, false, storepass))
-        return NULL;
-
-    DIDDocument_Destroy(doc);
-
-    return testdata.ctmdoc;
-}
-
-static int import_ctmdid_privatekey(DID *did, const char *storepass)
-{
-    DIDURL *id;
-    int rc;
-
-    assert(did);
-
-    id = DIDURL_NewByDid(did, "k1");
-    rc = import_privatekey(id, storepass, "customized.k1.sk", 0);
-    DIDURL_Destroy(id);
-    if (rc)
-        return -1;
-
-    id = DIDURL_NewByDid(did, "k2");
-    rc = import_privatekey(id, storepass, "customized.k2.sk", 0);
-    DIDURL_Destroy(id);
-    if (rc)
-        return -1;
-
-    return 0;
-}
-
-//1:3
-DIDDocument *TestData_LoadEmptyCtmDoc_MultisigOne(void)
-{
-    DIDDocument *doc, *controller_doc;
-    DID *subject;
-    DIDURL *signkey;
-    int status;
-
-    TestData_LoadIssuerDoc();
-    TestData_LoadControllerDoc();
-    controller_doc = TestData_LoadDoc();
-    if (!controller_doc)
-        return NULL;
-
-    if (!testdata.emptyctmdoc_multisigone)
-        testdata.emptyctmdoc_multisigone = store_document("customized-multisigone-empty.json", "empty ctmdoc_1:3", 0);
-
-    subject = DIDDocument_GetSubject(testdata.emptyctmdoc_multisigone);
-    if (!subject)
-        return NULL;
-
-    signkey = DIDDocument_GetDefaultPublicKey(controller_doc);
-    if (!signkey)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.emptyctmdoc_multisigone, signkey, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.emptyctmdoc_multisigone;
-}
-
-//1:3
-DIDDocument *TestData_LoadCtmDoc_MultisigOne(void)
-{
-    DIDDocument *doc, *controller_doc;
-    DID *subject;
-    DIDURL *signkey;
-    int status;
-
-    TestData_LoadIssuerDoc();
-    TestData_LoadControllerDoc();
-    controller_doc = TestData_LoadDoc();
-    if (!controller_doc)
-        return NULL;
-
-    if (!testdata.ctmdoc_multisigone)
-        testdata.ctmdoc_multisigone = store_document("customized-multisigone.json", "ctmdoc_1:3", 0);
-
-    subject = DIDDocument_GetSubject(testdata.ctmdoc_multisigone);
-    if (!subject)
-        return NULL;
-
-    if (import_ctmdid_privatekey(subject, storepass) < 0)
-        return NULL;
-
-    signkey = DIDDocument_GetDefaultPublicKey(controller_doc);
-    if (!signkey)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.ctmdoc_multisigone, signkey, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.ctmdoc_multisigone;
-}
-
-//2:3
-DIDDocument *TestData_LoadEmptyCtmDoc_MultisigTwo(void)
-{
-    DIDDocument *doc, *controller_doc;
-    DID *subject;
-    DIDURL *signkey;
-    int status;
-
-    TestData_LoadIssuerDoc();
-    TestData_LoadControllerDoc();
-    controller_doc = TestData_LoadDoc();
-    if (!controller_doc)
-        return NULL;
-
-    if (!testdata.emptyctmdoc_multisigtwo)
-        testdata.emptyctmdoc_multisigtwo = store_document("customized-multisigtwo-empty.json", "empty ctmdoc_2:3", 0);
-
-    subject = DIDDocument_GetSubject(testdata.emptyctmdoc_multisigtwo);
-    if (!subject)
-        return NULL;
-
-    signkey = DIDDocument_GetDefaultPublicKey(controller_doc);
-    if (!signkey)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.emptyctmdoc_multisigtwo, signkey, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.emptyctmdoc_multisigtwo;
-}
-
-//2:3
-DIDDocument *TestData_LoadCtmDoc_MultisigTwo(void)
-{
-    DIDDocument *doc, *controller_doc;
-    DID *subject;
-    DIDURL *signkey;
-    int status;
-
-    TestData_LoadIssuerDoc();
-    TestData_LoadControllerDoc();
-    controller_doc = TestData_LoadDoc();
-    if (!controller_doc)
-        return NULL;
-
-    if (!testdata.ctmdoc_multisigtwo)
-        testdata.ctmdoc_multisigtwo = store_document("customized-multisigtwo.json", "ctmdoc_2:3", 0);
-
-    subject = DIDDocument_GetSubject(testdata.ctmdoc_multisigtwo);
-    if (!subject)
-        return NULL;
-
-    if (import_ctmdid_privatekey(subject, storepass) < 0)
-        return NULL;
-
-    signkey = DIDDocument_GetDefaultPublicKey(controller_doc);
-    if (!signkey)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.ctmdoc_multisigtwo, signkey, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.ctmdoc_multisigtwo;
-}
-
-//3:3
-DIDDocument *TestData_LoadEmptyCtmDoc_MultisigThree(void)
-{
-    DIDDocument *doc, *controller_doc;
-    DID *subject;
-    DIDURL *signkey;
-    int status;
-
-    TestData_LoadIssuerDoc();
-    TestData_LoadControllerDoc();
-    controller_doc = TestData_LoadDoc();
-    if (!controller_doc)
-        return NULL;
-
-    if (!testdata.emptyctmdoc_multisigthree)
-        testdata.emptyctmdoc_multisigthree = store_document("customized-multisigthree-empty.json", "empty ctmdoc_3:3", 0);
-
-    subject = DIDDocument_GetSubject(testdata.emptyctmdoc_multisigthree);
-    if (!subject)
-        return NULL;
-
-    signkey = DIDDocument_GetDefaultPublicKey(controller_doc);
-    if (!signkey)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.emptyctmdoc_multisigthree, signkey, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.emptyctmdoc_multisigthree;
-}
-
-//3:3
-DIDDocument *TestData_LoadCtmDoc_MultisigThree(void)
-{
-    DIDDocument *doc, *controller_doc;
-    DID *subject;
-    DIDURL *signkey;
-    int status;
-
-    TestData_LoadIssuerDoc();
-    TestData_LoadControllerDoc();
-    controller_doc = TestData_LoadDoc();
-    if (!controller_doc)
-        return NULL;
-
-    if (!testdata.ctmdoc_multisigthree)
-        testdata.ctmdoc_multisigthree = store_document("customized-multisigthree.json", "ctmdoc_3:3", 0);
-
-    subject = DIDDocument_GetSubject(testdata.ctmdoc_multisigthree);
-    if (!subject)
-        return NULL;
-
-    if (import_ctmdid_privatekey(subject, storepass) < 0)
-        return NULL;
-
-    signkey = DIDDocument_GetDefaultPublicKey(controller_doc);
-    if (!signkey)
-        return NULL;
-
-    doc = DID_Resolve(subject, &status, true);
-    if (!doc && !DIDDocument_PublishDID(testdata.ctmdoc_multisigthree, signkey, false, storepass))
-        return NULL;
-    DIDDocument_Destroy(doc);
-
-    return testdata.ctmdoc_multisigthree;
-}
-
-const char *TestData_LoadRestoreMnemonic(void)
-{
-    if (!testdata.restoreMnemonic)
-        testdata.restoreMnemonic = load_testdata_file("mnemonic.restore", 0);
-
-    return testdata.restoreMnemonic;
-}
+    if (!compatibledata.restoreMnemonic)
+        compatibledata.restoreMnemonic = load_testdata_file("mnemonic.restore", 0);
+
+    return compatibledata.restoreMnemonic;
+}*/
 
 void TestData_Free(void)
 {
-    DIDStore_Close(testdata.store);
+    int i;
+    TestData *testdata;
+    char *dkey;
+    void *dvalue;
 
-    if (testdata.rootidentity)
-        RootIdentity_Destroy(testdata.rootidentity);
+    DIDStore_Close(compatibledata.store);
 
-    if (testdata.issuerdoc)
-        DIDDocument_Destroy(testdata.issuerdoc);
-    if (testdata.issuerJson)
-        free((void*)testdata.issuerJson);
-    if (testdata.issuerCompactJson)
-        free((void*)testdata.issuerCompactJson);
-    if (testdata.issuerNormalizedJson)
-        free((void*)testdata.issuerNormalizedJson);
+    if (compatibledata.rootidentity)
+        RootIdentity_Destroy(compatibledata.rootidentity);
 
-    if (testdata.doc)
-        DIDDocument_Destroy(testdata.doc);
-    if (testdata.docJson)
-        free((void*)testdata.docJson);
-    if (testdata.docCompactJson)
-        free((void*)testdata.docCompactJson);
-    if (testdata.docNormalizedJson)
-        free((void*)testdata.docNormalizedJson);
+    for (i = 0; i < compatibledata.dsize; i++) {
+        testdata = &compatibledata.testdata[i];
+        dkey = testdata->dkey;
+        dvalue = testdata->dvalue;
+        if (!strncmp(dkey, "res:did", 7)) {
+            DIDDocument_Destroy((DIDDocument*)dvalue);
+        } else if (!strncmp(dkey, "res:vc", 6)) {
+            Credential_Destroy((Credential*)dvalue);
+        } else if (!strncmp(dkey, "res:vp", 6)) {
+            Presentation_Destroy((Presentation*)dvalue);
+        } else {
+            free(dvalue);
+        }
+    }
 
-    if (testdata.controllerdoc)
-        DIDDocument_Destroy(testdata.controllerdoc);
-    if (testdata.user1doc)
-        DIDDocument_Destroy(testdata.user1doc);
-    if (testdata.user2doc)
-        DIDDocument_Destroy(testdata.user2doc);
-    if (testdata.user3doc)
-        DIDDocument_Destroy(testdata.user3doc);
-    if (testdata.issuerIddoc)
-        DIDDocument_Destroy(testdata.issuerIddoc);
+    if (compatibledata.restoreMnemonic)
+        free((void*)compatibledata.restoreMnemonic);
 
-    if (testdata.emptyctmdoc)
-        DIDDocument_Destroy(testdata.emptyctmdoc);
-    if (testdata.ctmdoc)
-        DIDDocument_Destroy(testdata.ctmdoc);
-
-    if (testdata.emptyctmdoc_multisigone)
-        DIDDocument_Destroy(testdata.emptyctmdoc_multisigone);
-    if (testdata.ctmdoc_multisigone)
-        DIDDocument_Destroy(testdata.ctmdoc_multisigone);
-
-    if (testdata.emptyctmdoc_multisigtwo)
-        DIDDocument_Destroy(testdata.emptyctmdoc_multisigtwo);
-    if (testdata.ctmdoc_multisigtwo)
-        DIDDocument_Destroy(testdata.ctmdoc_multisigtwo);
-
-    if (testdata.emptyctmdoc_multisigthree)
-        DIDDocument_Destroy(testdata.emptyctmdoc_multisigthree);
-    if (testdata.ctmdoc_multisigthree)
-        DIDDocument_Destroy(testdata.ctmdoc_multisigthree);
-
-    if (testdata.profileVc)
-        Credential_Destroy(testdata.profileVc);
-    if (testdata.profileVcCompactJson)
-        free((void*)testdata.profileVcCompactJson);
-    if (testdata.profileVcNormalizedJson)
-        free((void*)testdata.profileVcNormalizedJson);
-
-    if (testdata.emailVc)
-        Credential_Destroy(testdata.emailVc);
-    if (testdata.emailVcCompactJson)
-        free((void*)testdata.emailVcCompactJson);
-    if (testdata.emailVcNormalizedJson)
-        free((void*)testdata.emailVcNormalizedJson);
-
-    if (testdata.passportVc)
-        Credential_Destroy(testdata.passportVc);
-    if (testdata.passportVcCompactJson)
-        free((void*)testdata.passportVcCompactJson);
-    if (testdata.passportVcNormalizedJson)
-        free((void*)testdata.passportVcNormalizedJson);
-
-    if (testdata.twitterVc)
-        Credential_Destroy(testdata.twitterVc);
-    if (testdata.twitterVcCompactJson)
-        free((void*)testdata.twitterVcCompactJson);
-    if (testdata.twitterVcNormalizedJson)
-        free((void*)testdata.twitterVcNormalizedJson);
-
-    if (testdata.Vc)
-        Credential_Destroy(testdata.Vc);
-    if (testdata.VcCompactJson)
-        free((void*)testdata.VcCompactJson);
-    if (testdata.VcNormalizedJson)
-        free((void*)testdata.VcNormalizedJson);
-
-    if (testdata.vp)
-        Presentation_Destroy(testdata.vp);
-    if (testdata.vpNormalizedJson)
-        free((void*)testdata.vpNormalizedJson);
-
-    if (testdata.restoreMnemonic)
-        free((void*)testdata.restoreMnemonic);
-
-    memset(&testdata, 0, sizeof(testdata));
+    memset(&compatibledata, 0, sizeof(compatibledata));
 }
 
 /////////////////////////////////////////

@@ -20,7 +20,7 @@ static void test_diddoc_json_operateion(void)
     DIDDocument *compactdoc, *normalizedoc, *doc;
     const char *data;
 
-    compactdoc = DIDDocument_FromJson(TestData_LoadDocCompJson());
+    compactdoc = DIDDocument_FromJson(TestData_GetDocumentJson("document", "compact", 0));
     CU_ASSERT_PTR_NOT_NULL(compactdoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(compactdoc));
 
@@ -30,7 +30,7 @@ static void test_diddoc_json_operateion(void)
     CU_ASSERT_EQUAL(2, DIDDocument_GetCredentialCount(compactdoc));
     CU_ASSERT_EQUAL(3, DIDDocument_GetServiceCount(compactdoc));
 
-    normalizedoc = DIDDocument_FromJson(TestData_LoadDocNormJson());
+    normalizedoc = DIDDocument_FromJson(TestData_GetDocumentJson("document", "normalized", 0));
     CU_ASSERT_PTR_NOT_NULL(normalizedoc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(normalizedoc));
 
@@ -40,33 +40,33 @@ static void test_diddoc_json_operateion(void)
     CU_ASSERT_EQUAL(2, DIDDocument_GetCredentialCount(normalizedoc));
     CU_ASSERT_EQUAL(3, DIDDocument_GetServiceCount(normalizedoc));
 
-    doc = TestData_LoadDoc();
+    doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(doc));
 
     data = DIDDocument_ToJson(compactdoc, true);
     CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadDocNormJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetDocumentJson("document", "normalized", 0), data);
     free((void*)data);
     data = DIDDocument_ToJson(normalizedoc, true);
     CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadDocNormJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetDocumentJson("document", "normalized", 0), data);
     free((void*)data);
     data = DIDDocument_ToJson(doc, true);
     CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadDocNormJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetDocumentJson("document", "normalized", 0), data);
     free((void*)data);
     data = DIDDocument_ToJson(compactdoc, false);
     CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadDocCompJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetDocumentJson("document", "compact", 0), data);
     free((void*)data);
     data = DIDDocument_ToJson(normalizedoc, false);
     CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadDocCompJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetDocumentJson("document", "compact", 0), data);
     free((void*)data);
     data = DIDDocument_ToJson(doc, false);
     CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadDocCompJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetDocumentJson("document", "compact", 0), data);
     free((void*)data);
 
     DIDDocument_Destroy(compactdoc);

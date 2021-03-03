@@ -8,6 +8,7 @@
 #include <limits.h>
 
 #include "constant.h"
+#include "utility.h"
 #include "loader.h"
 #include "ela_did.h"
 #include "did.h"
@@ -66,29 +67,29 @@ static void test_didstore_load_vcs(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    issuerdoc = TestData_LoadIssuerDoc();
-    doc = TestData_LoadDoc();
+    issuerdoc = TestData_GetDocument("issuer", NULL, 0);
+    doc = TestData_GetDocument("document", NULL, 0);
     did = DIDDocument_GetSubject(doc);
 
-    vc = TestData_LoadProfileVc();
+    vc = TestData_GetCredential(NULL, "vc-profile", NULL, 0);
     metadata = Credential_GetMetadata(vc);
     rc = CredentialMetadata_SetAlias(metadata, "MyProfile");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = Credential_SaveMetadata(vc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    vc = TestData_LoadEmailVc();
+    vc = TestData_GetCredential(NULL, "vc-email", NULL, 0);
     metadata = Credential_GetMetadata(vc);
     rc = CredentialMetadata_SetAlias(metadata, "Email");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = Credential_SaveMetadata(vc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    vc = TestData_LoadTwitterVc();
+    vc = TestData_GetCredential(NULL, "vc-twitter", NULL, 0);
     metadata = Credential_GetMetadata(vc);
     rc = CredentialMetadata_SetAlias(metadata, "Twitter");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = Credential_SaveMetadata(vc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    vc = TestData_LoadPassportVc();
+    vc = TestData_GetCredential(NULL, "vc-passport", NULL, 0);
     metadata = Credential_GetMetadata(vc);
     rc = CredentialMetadata_SetAlias(metadata, "Passport");
     CU_ASSERT_NOT_EQUAL(rc, -1);
@@ -150,29 +151,29 @@ static void test_didstore_list_vcs(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    issuerdoc = TestData_LoadIssuerDoc();
-    doc = TestData_LoadDoc();
+    issuerdoc = TestData_GetDocument("issuer", NULL, 0);
+    doc = TestData_GetDocument("document", NULL, 0);
     did = DIDDocument_GetSubject(doc);
 
-    vc = TestData_LoadProfileVc();
+    vc = TestData_GetCredential(NULL, "vc-profile", NULL, 0);
     metadata = Credential_GetMetadata(vc);
     rc = CredentialMetadata_SetAlias(metadata, "MyProfile");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = Credential_SaveMetadata(vc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    vc = TestData_LoadEmailVc();
+    vc = TestData_GetCredential(NULL, "vc-email", NULL, 0);
     metadata = Credential_GetMetadata(vc);
     rc = CredentialMetadata_SetAlias(metadata, "Email");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = Credential_SaveMetadata(vc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    vc = TestData_LoadTwitterVc();
+    vc = TestData_GetCredential(NULL, "vc-twitter", NULL, 0);
     metadata = Credential_GetMetadata(vc);
     rc = CredentialMetadata_SetAlias(metadata, "Twitter");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = Credential_SaveMetadata(vc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    vc = TestData_LoadPassportVc();
+    vc = TestData_GetCredential(NULL, "vc-passport", NULL, 0);
     metadata = Credential_GetMetadata(vc);
     rc = CredentialMetadata_SetAlias(metadata, "Passport");
     CU_ASSERT_NOT_EQUAL(rc, -1);
@@ -201,29 +202,29 @@ static void test_didstore_delete_vc(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    issuerdoc = TestData_LoadIssuerDoc();
-    doc = TestData_LoadDoc();
+    issuerdoc = TestData_GetDocument("issuer", NULL, 0);
+    doc = TestData_GetDocument("document", NULL, 0);
     did = DIDDocument_GetSubject(doc);
 
-    vc = TestData_LoadProfileVc();
+    vc = TestData_GetCredential(NULL, "vc-profile", NULL, 0);
     metadata = Credential_GetMetadata(vc);
     rc = CredentialMetadata_SetAlias(metadata, "MyProfile");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = Credential_SaveMetadata(vc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    vc = TestData_LoadEmailVc();
+    vc = TestData_GetCredential(NULL, "vc-email", NULL, 0);
     metadata = Credential_GetMetadata(vc);
     rc = CredentialMetadata_SetAlias(metadata, "Email");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = Credential_SaveMetadata(vc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    vc = TestData_LoadTwitterVc();
+    vc = TestData_GetCredential(NULL, "vc-twitter", NULL, 0);
     metadata = Credential_GetMetadata(vc);
     rc = CredentialMetadata_SetAlias(metadata, "Twitter");
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = Credential_SaveMetadata(vc);
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    vc = TestData_LoadPassportVc();
+    vc = TestData_GetCredential(NULL, "vc-passport", NULL, 0);
     metadata = Credential_GetMetadata(vc);
     rc = CredentialMetadata_SetAlias(metadata, "Passport");
     CU_ASSERT_NOT_EQUAL(rc, -1);

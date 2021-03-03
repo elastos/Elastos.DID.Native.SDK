@@ -44,7 +44,10 @@ static void test_emptyctmdoc_get_publickey(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *doc = TestData_LoadEmptyCtmDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    DIDDocument *doc = TestData_GetDocument("customized-did-empty", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -141,7 +144,10 @@ static void test_ctmdoc_get_publickey(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *doc = TestData_LoadCtmDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    DIDDocument *doc = TestData_GetDocument("customized-did", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -253,9 +259,10 @@ static void test_ctmdoc_add_publickey(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    TestData_LoadIssuerDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
 
-    doc = TestData_LoadCtmDoc();
+    doc = TestData_GetDocument("customized-did", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -315,9 +322,10 @@ static void test_ctmdoc_remove_publickey(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    TestData_LoadIssuerDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
 
-    doc = TestData_LoadCtmDoc();
+    doc = TestData_GetDocument("customized-did", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -389,7 +397,10 @@ static void test_ctmdoc_get_authentication_key(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    doc = TestData_LoadCtmDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    doc = TestData_GetDocument("customized-did", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -491,9 +502,10 @@ static void test_ctmdoc_add_authentication_key(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    TestData_LoadIssuerDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
 
-    doc = TestData_LoadEmptyCtmDoc();
+    doc = TestData_GetDocument("customized-did-empty", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -602,9 +614,10 @@ static void test_ctmdoc_remove_authentication_key(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    TestData_LoadIssuerDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
 
-    DIDDocument *doc = TestData_LoadCtmDoc();
+    DIDDocument *doc = TestData_GetDocument("customized-did", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -677,7 +690,10 @@ static void test_ctmdoc_get_authorization_key(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    doc = TestData_LoadCtmDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    doc = TestData_GetDocument("customized-did", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -747,9 +763,10 @@ static void test_ctmdoc_add_authorization_key(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    TestData_LoadIssuerDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
 
-    doc = TestData_LoadCtmDoc();
+    doc = TestData_GetDocument("customized-did", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -803,7 +820,11 @@ static void test_empty_multictmdoc_get_publickey(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *customized_doc = TestData_LoadEmptyCtmDoc_MultisigOne();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("controller", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    DIDDocument *customized_doc = TestData_GetDocument("customized-multisigone-empty", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -925,7 +946,11 @@ static void test_multictmdoc_get_publickey(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("controller", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    DIDDocument *customized_doc = TestData_GetDocument("customized-multisigone", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1047,22 +1072,22 @@ static void test_multictmdoc_add_publickey(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1_doc);
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL(controller1);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2_doc);
     controller2 = DIDDocument_GetSubject(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL(controller2);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3_doc);
     controller3 = DIDDocument_GetSubject(controller3_doc);
     CU_ASSERT_PTR_NOT_NULL(controller3);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigOne();
+    customized_doc = TestData_GetDocument("customized-multisigone", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1140,13 +1165,15 @@ static void test_multictmdoc_remove_publickey(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    DIDDocument *controller1_doc = TestData_LoadDoc();
+    DIDDocument *controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1_doc);
 
-    DIDDocument *controller2_doc = TestData_LoadControllerDoc();
+    DIDDocument *controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2_doc);
 
-    DIDDocument *customized_doc = TestData_LoadCtmDoc_MultisigOne();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+
+    DIDDocument *customized_doc = TestData_GetDocument("customized-multisigone", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1229,7 +1256,11 @@ static void test_multictmdoc_get_authentication_key(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigTwo();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("controller", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    customized_doc = TestData_GetDocument("customized-multisigtwo", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1333,22 +1364,22 @@ static void test_multictmdoc_add_authentication_key(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1_doc);
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL(controller1);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2_doc);
     controller2 = DIDDocument_GetSubject(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL(controller2);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3_doc);
     controller3 = DIDDocument_GetSubject(controller3_doc);
     CU_ASSERT_PTR_NOT_NULL(controller3);
 
-    customized_doc = TestData_LoadEmptyCtmDoc_MultisigTwo();
+    customized_doc = TestData_GetDocument("customized-multisigtwo-empty", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1457,22 +1488,22 @@ static void test_multictmdoc_remove_authentication_key(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1_doc);
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL(controller1);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2_doc);
     controller2 = DIDDocument_GetSubject(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL(controller2);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3_doc);
     controller3 = DIDDocument_GetSubject(controller3_doc);
     CU_ASSERT_PTR_NOT_NULL(controller3);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigTwo();
+    customized_doc = TestData_GetDocument("customized-multisigtwo", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1554,10 +1585,13 @@ static void test_multictmdoc_add_authorization_key(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2_doc);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigThree();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    customized_doc = TestData_GetDocument("customized-multisigthree", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1605,12 +1639,14 @@ static void test_multictmdoc_get_credential(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller1_doc);
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL(controller1);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigThree();
+    customized_doc = TestData_GetDocument("customized-multisigthree", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(customized_doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
 
@@ -1650,18 +1686,18 @@ static void test_multictmdoc_add_credential(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller1_doc);
     signkey = DIDDocument_GetDefaultPublicKey(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL(signkey);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller2_doc);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3_doc);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigThree();
+    customized_doc = TestData_GetDocument("customized-multisigthree", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1729,18 +1765,18 @@ static void test_multictmdoc_remove_credential(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller1_doc);
     signkey = DIDDocument_GetDefaultPublicKey(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL(signkey);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller2_doc);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller3_doc);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigThree();
+    customized_doc = TestData_GetDocument("customized-multisigthree", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1795,12 +1831,14 @@ static void test_multictmdoc_get_service(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller1_doc);
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL(controller1);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigThree();
+    customized_doc = TestData_GetDocument("customized-multisigthree", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1836,13 +1874,15 @@ static void test_multictmdoc_add_service(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller1_doc);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller3_doc);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigTwo();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("controller", NULL, 0));
+
+    customized_doc = TestData_GetDocument("customized-multisigtwo", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1891,10 +1931,13 @@ static void test_multictmdoc_remove_service(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controllerdoc = TestData_LoadControllerDoc();
+    controllerdoc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controllerdoc);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigOne();
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("document", NULL, 0));
+
+    customized_doc = TestData_GetDocument("customized-multisigone", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1933,22 +1976,22 @@ static void test_multictmdoc_get_controller(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller1_doc);
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL(controller1);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller2_doc);
     controller2 = DIDDocument_GetSubject(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL(controller2);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller3_doc);
     controller3 = DIDDocument_GetSubject(controller3_doc);
     CU_ASSERT_PTR_NOT_NULL(controller3);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigThree();
+    customized_doc = TestData_GetDocument("customized-multisigthree", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -1974,22 +2017,22 @@ static void test_multictmdoc_add_controller(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1_doc);
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2_doc);
     controller2 = DIDDocument_GetSubject(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3_doc);
     controller3 = DIDDocument_GetSubject(controller3_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3);
 
-    customized_doc = TestData_LoadCtmDoc();
+    customized_doc = TestData_GetDocument("customized-did", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
 
@@ -2066,28 +2109,28 @@ static void test_multictmdoc_remove_controller(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1_doc);
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1);
     signkey1 = DIDDocument_GetDefaultPublicKey(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL(controller1);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2_doc);
     controller2 = DIDDocument_GetSubject(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2);
     signkey2 = DIDDocument_GetDefaultPublicKey(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL(controller2);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3_doc);
     controller3 = DIDDocument_GetSubject(controller3_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3);
     signkey3 = DIDDocument_GetDefaultPublicKey(controller3_doc);
     CU_ASSERT_PTR_NOT_NULL(controller3);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigThree();
+    customized_doc = TestData_GetDocument("customized-multisigthree", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
     DID_Copy(&customized_did, &customized_doc->did);
@@ -2186,28 +2229,28 @@ static void test_multictmdoc_remove_proof(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1_doc);
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1);
     signkey1 = DIDDocument_GetDefaultPublicKey(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL(controller1);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2_doc);
     controller2 = DIDDocument_GetSubject(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2);
     signkey2 = DIDDocument_GetDefaultPublicKey(controller2_doc);
     CU_ASSERT_PTR_NOT_NULL(controller2);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3_doc);
     controller3 = DIDDocument_GetSubject(controller3_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller3);
     signkey3 = DIDDocument_GetDefaultPublicKey(controller3_doc);
     CU_ASSERT_PTR_NOT_NULL(controller3);
 
-    customized_doc = TestData_LoadCtmDoc_MultisigTwo();
+    customized_doc = TestData_GetDocument("customized-multisigtwo", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(customized_doc));
     DID_Copy(&customized_did, &customized_doc->did);

@@ -1812,22 +1812,22 @@ static void test_idchain_declarevc(void)
     DIDURL *signkey1, *signkey2, *signkey3;
     int status;
 
-    doc = TestData_LoadDoc();
+    doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(doc);
     signkey1 = DIDDocument_GetDefaultPublicKey(doc);
     CU_ASSERT_PTR_NOT_NULL(signkey1);
 
-    issuerdoc = TestData_LoadIssuerDoc();
+    issuerdoc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(issuerdoc);
     signkey2 = DIDDocument_GetDefaultPublicKey(issuerdoc);
     CU_ASSERT_PTR_NOT_NULL(signkey2);
 
-    repealerdoc = TestData_LoadControllerDoc();
+    repealerdoc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(repealerdoc);
     signkey3 = DIDDocument_GetDefaultPublicKey(repealerdoc);
     CU_ASSERT_PTR_NOT_NULL(signkey3);
 
-    vc = TestData_LoadEmailVc();
+    vc = TestData_GetCredential(NULL, "vc-email", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(vc);
 
     //declare
@@ -1892,22 +1892,22 @@ static void test_idchain_revokevc(void)
     DIDURL *signkey1, *signkey2, *signkey3;
     int status;
 
-    doc = TestData_LoadDoc();
+    doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(doc);
     signkey1 = DIDDocument_GetDefaultPublicKey(doc);
     CU_ASSERT_PTR_NOT_NULL(signkey1);
 
-    issuerdoc = TestData_LoadIssuerDoc();
+    issuerdoc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(issuerdoc);
     signkey2 = DIDDocument_GetDefaultPublicKey(issuerdoc);
     CU_ASSERT_PTR_NOT_NULL(signkey2);
 
-    repealerdoc = TestData_LoadControllerDoc();
+    repealerdoc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(repealerdoc);
     signkey3 = DIDDocument_GetDefaultPublicKey(repealerdoc);
     CU_ASSERT_PTR_NOT_NULL(signkey3);
 
-    vc = TestData_LoadTwitterVc();
+    vc = TestData_GetCredential(NULL, "vc-twitter", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(vc);
 
     CU_ASSERT_FALSE(Credential_Revoke(vc, NULL, storepass));

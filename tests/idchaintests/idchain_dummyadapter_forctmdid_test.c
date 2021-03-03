@@ -872,21 +872,21 @@ static int idchain_dummyadapter_forctmdid_test_suite_init(void)
         return -1;
     }
 
-    controller1_doc = TestData_LoadDoc();
+    controller1_doc = TestData_GetDocument("document", NULL, 0);
     if (!controller1_doc) {
         TestData_Free();
         return -1;
     }
     DID_Copy(&controller1, &controller1_doc->did);
 
-    controller2_doc = TestData_LoadControllerDoc();
+    controller2_doc = TestData_GetDocument("controller", NULL, 0);
     if (!controller2_doc) {
         TestData_Free();
         return -1;
     }
     DID_Copy(&controller2, &controller2_doc->did);
 
-    controller3_doc = TestData_LoadIssuerDoc();
+    controller3_doc = TestData_GetDocument("issuer", NULL, 0);
     if (!controller3_doc) {
         TestData_Free();
         return -1;

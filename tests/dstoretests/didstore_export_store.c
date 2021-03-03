@@ -9,6 +9,7 @@
 #include <assert.h>
 
 #include "constant.h"
+#include "utility.h"
 #include "loader.h"
 #include "ela_did.h"
 #include "diddocument.h"
@@ -30,7 +31,7 @@ static int get_did(DID *did, void *context)
     return 0;
 }
 
-static char *get_tmp_file(char *path, const char *filename)
+static const char *get_tmp_file(char *path, const char *filename)
 {
     assert(filename && *filename);
 
@@ -41,16 +42,16 @@ static char *get_tmp_file(char *path, const char *filename)
 static void test_didstore_export_import_did(void)
 {
     DIDStore *store, *store2;
-    char _path[PATH_MAX], _path2[PATH_MAX], command[512], *file;
-    const char *path, *path2;
+    char _path[PATH_MAX], _path2[PATH_MAX], command[512];
+    const char *path, *path2, *file;
     DID did;
 
-    store = TestData_SetupTestStore(true);
+    store = TestData_SetupTestStore(true, 2);
     CU_ASSERT_PTR_NOT_NULL(store);
 
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser1Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser2Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser3Doc());
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
 
     memset(&did, 0, sizeof(did));
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&did));
@@ -89,10 +90,10 @@ static void test_didstore_export_import_did(void)
 static void test_didstore_export_import_rootidentity(void)
 {
     DIDStore *store, *store2;
-    char _path[PATH_MAX], _path2[PATH_MAX], command[512], *file;
-    const char *path, *path2, *defaultidentity;
+    char _path[PATH_MAX], _path2[PATH_MAX], command[512];
+    const char *path, *path2, *defaultidentity, *file;
 
-    store = TestData_SetupTestStore(true);
+    store = TestData_SetupTestStore(true, 2);
     CU_ASSERT_PTR_NOT_NULL(store);
 
     defaultidentity = DIDStore_GetDefaultRootIdentity(store);
@@ -134,16 +135,16 @@ static void test_didstore_export_import_rootidentity(void)
 static void test_didstore_export_import_store(void)
 {
     DIDStore *store, *store2;
-    char _path[PATH_MAX], _path2[PATH_MAX], command[512], *file;
-    const char *path, *path2;
+    char _path[PATH_MAX], _path2[PATH_MAX], command[512];
+    const char *path, *path2, *file;
 
-    store = TestData_SetupTestStore(true);
+    store = TestData_SetupTestStore(true, 2);
     CU_ASSERT_PTR_NOT_NULL(store);
 
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser1Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser2Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadUser3Doc());
-    CU_ASSERT_PTR_NOT_NULL(TestData_LoadIssuerIdDoc());
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 2));
 
     file = get_tmp_file(_path, "storeexport.zip");
     CU_ASSERT_PTR_NOT_NULL(file);

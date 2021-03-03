@@ -362,7 +362,7 @@ static int jwt_test_suite_init(void)
     if (!store)
         return -1;
 
-    doc = TestData_LoadDoc();
+    doc = TestData_GetDocument("document", NULL, 0);
     if (!doc) {
         TestData_Free();
         return -1;

@@ -25,10 +25,10 @@ static void test_vc_kycvc(void)
     const char *types[3], *data;
     int i;
 
-    issuerdoc = TestData_LoadIssuerDoc();
+    issuerdoc = TestData_GetDocument("issuer", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuerdoc);
 
-    cred = TestData_LoadEmailVc();
+    cred = TestData_GetCredential(NULL, "vc-email", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(cred);
 
     id = DIDURL_NewByDid(did, "email");
@@ -69,7 +69,7 @@ static void test_vc_selfclaimvc(void)
     const char *types[2], *prop;
     int i;
 
-    cred = TestData_LoadProfileVc();
+    cred = TestData_GetCredential(NULL, "vc-profile", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(cred);
 
     id = DIDURL_NewByDid(did, "profile");
@@ -121,37 +121,37 @@ static void test_vc_parse_kycvc(void)
     const char *data;
     Credential *compactvc, *normvc, *cred;
 
-    data = TestData_LoadTwitterVcNormJson();
+    data = TestData_GetCredentialJson(NULL, "vc-twitter", "normalized", 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(data);
     normvc = Credential_FromJson(data, did);
     CU_ASSERT_PTR_NOT_NULL_FATAL(normvc);
 
-    data = TestData_LoadTwitterVcCompJson();
+    data = TestData_GetCredentialJson(NULL, "vc-twitter", "compact", 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(data);
     compactvc = Credential_FromJson(data, did);
     CU_ASSERT_PTR_NOT_NULL_FATAL(compactvc);
 
-    cred = TestData_LoadTwitterVc();
+    cred = TestData_GetCredential(NULL, "vc-twitter", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(cred);
 
     data = Credential_ToJson(normvc, true);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadTwitterVcNormJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-twitter", "normalized", 0), data);
     free((void*)data);
     data = Credential_ToJson(compactvc, true);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadTwitterVcNormJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-twitter", "normalized", 0), data);
     free((void*)data);
     data = Credential_ToJson(cred, true);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadTwitterVcNormJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-twitter", "normalized", 0), data);
     free((void*)data);
 
     data = Credential_ToJson(normvc, false);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadTwitterVcCompJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-twitter", "compact", 0), data);
     free((void*)data);
     data = Credential_ToJson(compactvc, false);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadTwitterVcCompJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-twitter", "compact", 0), data);
     free((void*)data);
     data = Credential_ToJson(cred, false);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadTwitterVcCompJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-twitter", "compact", 0), data);
     free((void*)data);
 
     Credential_Destroy(compactvc);
@@ -163,37 +163,37 @@ static void test_vc_parse_selfclaimvc(void)
     const char *data;
     Credential *compactvc, *normvc, *cred;
 
-    data = TestData_LoadProfileVcNormJson();
+    data = TestData_GetCredentialJson(NULL, "vc-profile", "normalized", 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(data);
     normvc = Credential_FromJson(data, did);
     CU_ASSERT_PTR_NOT_NULL_FATAL(normvc);
 
-    data = TestData_LoadProfileVcCompJson();
+    data = TestData_GetCredentialJson(NULL, "vc-profile", "compact", 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(data);
     compactvc = Credential_FromJson(data, did);
     CU_ASSERT_PTR_NOT_NULL_FATAL(compactvc);
 
-    cred = TestData_LoadProfileVc();
+    cred = TestData_GetCredential(NULL, "vc-profile", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(cred);
 
     data = Credential_ToJson(normvc, true);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadProfileVcNormJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-profile", "normalized", 0), data);
     free((void*)data);
     data = Credential_ToJson(compactvc, true);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadProfileVcNormJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-profile", "normalized", 0), data);
     free((void*)data);
     data = Credential_ToJson(cred, true);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadProfileVcNormJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-profile", "normalized", 0), data);
     free((void*)data);
 
     data = Credential_ToJson(normvc, false);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadProfileVcCompJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-profile", "compact", 0), data);
     free((void*)data);
     data = Credential_ToJson(compactvc, false);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadProfileVcCompJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-profile", "compact", 0), data);
     free((void*)data);
     data = Credential_ToJson(cred, false);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadProfileVcCompJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-profile", "compact", 0), data);
     free((void*)data);
 
     Credential_Destroy(compactvc);
@@ -205,37 +205,37 @@ static void test_vc_parse_jsonvc(void)
     const char *data;
     Credential *compactvc, *normvc, *cred;
 
-    data = TestData_LoadVcNormJson();
+    data = TestData_GetCredentialJson(NULL, "vc-json", "normalized", 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(data);
     normvc = Credential_FromJson(data, did);
     CU_ASSERT_PTR_NOT_NULL_FATAL(normvc);
 
-    data = TestData_LoadVcCompJson();
+    data = TestData_GetCredentialJson(NULL, "vc-json", "compact", 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(data);
     compactvc = Credential_FromJson(data, did);
     CU_ASSERT_PTR_NOT_NULL_FATAL(compactvc);
 
-    cred = TestData_LoadVc();
+    cred = TestData_GetCredential(NULL, "vc-json", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(cred);
 
     data = Credential_ToJson(normvc, true);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadVcNormJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-json", "normalized", 0), data);
     free((void*)data);
     data = Credential_ToJson(compactvc, true);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadVcNormJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-json", "normalized", 0), data);
     free((void*)data);
     data = Credential_ToJson(cred, true);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadVcNormJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-json", "normalized", 0), data);
     free((void*)data);
 
     data = Credential_ToJson(normvc, false);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadVcCompJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-json", "compact", 0), data);
     free((void*)data);
     data = Credential_ToJson(compactvc, false);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadVcCompJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-json", "compact", 0), data);
     free((void*)data);
     data = Credential_ToJson(cred, false);
-    CU_ASSERT_STRING_EQUAL(TestData_LoadVcCompJson(), data);
+    CU_ASSERT_STRING_EQUAL(TestData_GetCredentialJson(NULL, "vc-json", "compact", 0), data);
     free((void*)data);
 
     Credential_Destroy(compactvc);
@@ -248,7 +248,7 @@ static int vc_test_suite_init(void)
     if (!store)
         return -1;
 
-    document = TestData_LoadDoc();
+    document = TestData_GetDocument("document", NULL, 0);
     if(!document) {
         TestData_Free();
         return -1;
