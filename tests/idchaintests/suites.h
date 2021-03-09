@@ -31,8 +31,9 @@ DECL_TESTSUITE(idchain_operation_test);
 #define DEFINE_IDCHAIN_TESTSUITES \
     DEFINE_TESTSUITE(idchain_dummyadapter_forctmdid_test), \
     DEFINE_TESTSUITE(idchain_dummyadapter_test), \
-    DEFINE_TESTSUITE(idchain_operation_test)
+    DEFINE_TESTSUITE(idchain_operation_test), \
+    DEFINE_TESTSUITE(idchain_restore_test)
 
 #endif /* __IDCHAIN_TEST_SUITES_H__ */
 
-    //DEFINE_TESTSUITE(idchain_restore_test)
+

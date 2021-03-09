@@ -424,6 +424,7 @@ DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepa
 {
     DIDDocument *document;
     DIDStore *store;
+    char didstring[ELA_MAX_DID_LEN];
     int index;
 
     if (!rootidentity || !storepass || !*storepass) {
@@ -450,6 +451,9 @@ DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepa
         return NULL;
     }
 
+    if (!IdentityMetadata_GetDefaultDID(&rootidentity->metadata))
+        IdentityMetadata_SetDefaultDID(&rootidentity->metadata, DID_ToString(&document->did, didstring, sizeof(didstring)));
+
     return document;
 }
 
@@ -458,6 +462,7 @@ DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
 {
     DIDStore *store;
     DIDDocument *document;
+    char didstring[ELA_MAX_DID_LEN];
 
     if (!rootidentity || !storepass || !*storepass || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -473,6 +478,9 @@ DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
     document = rootidentity_createdid(rootidentity, index, alias, store, storepass);
     if (!document)
         return NULL;
+
+    if (!IdentityMetadata_GetDefaultDID(&rootidentity->metadata))
+        IdentityMetadata_SetDefaultDID(&rootidentity->metadata, DID_ToString(&document->did, didstring, sizeof(didstring)));
 
     return document;
 }
@@ -501,6 +509,21 @@ DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index)
     did = DID_New(HDKey_GetAddress(derivedkey));
     HDKey_Wipe(derivedkey);
     return did;
+}
+
+int RootIdentity_SetAsDefault(RootIdentity *identity)
+{
+    if (!identity) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    if (!identity->metadata.base.store) {
+        DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "No attache store to root identity.");
+        return -1;
+    }
+
+    return DIDStore_SetDefaultRootIdentity(identity->metadata.base.store, identity->id);
 }
 
 static DIDDocument* diddocument_conflict_merge(DIDDocument *chaincopy, DIDDocument *localcopy)

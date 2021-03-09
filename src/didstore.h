@@ -83,6 +83,8 @@ int DIDStore_StoreRootIdentityWithElem(DIDStore *store, const char *storepass, c
         const char *mnemonic, uint8_t *rootPrivatekey, size_t rootsize,
         uint8_t *preDerivedPublicKey, size_t keysize, int index);
 
+int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id);
+
 #ifdef __cplusplus
 }
 #endif

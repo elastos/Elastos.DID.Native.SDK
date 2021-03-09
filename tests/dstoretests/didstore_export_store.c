@@ -9,7 +9,6 @@
 #include <assert.h>
 
 #include "constant.h"
-#include "utility.h"
 #include "loader.h"
 #include "ela_did.h"
 #include "diddocument.h"
@@ -31,7 +30,7 @@ static int get_did(DID *did, void *context)
     return 0;
 }
 
-static const char *get_tmp_file(char *path, const char *filename)
+static char *get_tmp_file(char *path, const char *filename)
 {
     assert(filename && *filename);
 
@@ -43,7 +42,7 @@ static void test_didstore_export_import_did(void)
 {
     DIDStore *store, *store2;
     char _path[PATH_MAX], _path2[PATH_MAX], command[512];
-    const char *path, *path2, *file;
+    char *path, *path2, *file;
     DID did;
 
     store = TestData_SetupTestStore(true, 2);
@@ -91,7 +90,8 @@ static void test_didstore_export_import_rootidentity(void)
 {
     DIDStore *store, *store2;
     char _path[PATH_MAX], _path2[PATH_MAX], command[512];
-    const char *path, *path2, *defaultidentity, *file;
+    char *path, *path2, *file;
+    const char *defaultidentity;
 
     store = TestData_SetupTestStore(true, 2);
     CU_ASSERT_PTR_NOT_NULL(store);
@@ -136,7 +136,7 @@ static void test_didstore_export_import_store(void)
 {
     DIDStore *store, *store2;
     char _path[PATH_MAX], _path2[PATH_MAX], command[512];
-    const char *path, *path2, *file;
+    char *path, *path2, *file;
 
     store = TestData_SetupTestStore(true, 2);
     CU_ASSERT_PTR_NOT_NULL(store);

@@ -8,7 +8,6 @@
 #include <limits.h>
 
 #include "constant.h"
-#include "utility.h"
 #include "loader.h"
 #include "ela_did.h"
 #include "did.h"
@@ -173,9 +172,8 @@ static void test_didstore_list_vcs(void)
 
 static void test_didstore_delete_vc(void)
 {
-    char _path[PATH_MAX];
+    char _path[PATH_MAX], *path;
     CredentialMetadata *metadata;
-    const char *path;
     DIDDocument *issuerdoc, *doc;
     DIDStore *store;
     Credential *vc;

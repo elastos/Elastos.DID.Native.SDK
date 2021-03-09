@@ -28,7 +28,7 @@ static const char *vcspec = "elastos/credential/1.0";
 static const char *methods[3] = {"resolvedid", "listcredentials", "resolvecredential"};
 
 static DIDTransaction *infos[256];
-static CredentialTransaction *vcinfos[256];
+static CredentialTransaction *vcinfos[1500];
 static int num;
 static int vcnum;
 
@@ -497,22 +497,29 @@ static const char *parse_resolvedid(json_t *json)
     return JsonGenerator_Finish(gen);
 }
 
-static int listvcs_result_tojson(JsonGenerator *gen, DID *did, int skip, int limit)
+static int listvcs_result_tojson(JsonGenerator *gen, DID *did, int skip, int _limit)
 {
     CredentialTransaction *ct;
     DIDURL *vcs, *vcid;
     DID *vcowner;
-    int i, j, size = 0;
+    int i, j, size = 0, limit;
     bool equal = false;
     char idstring[ELA_MAX_DIDURL_LEN];
 
     assert(gen);
     assert(did);
     assert(skip >= 0);
-    assert(limit > 0);
+    assert(_limit > 0);
 
-    if (limit > 256)
+    if (_limit > 1500)
         return -1;
+
+    limit = _limit;
+
+    if (_limit == 0)
+        limit = 128;
+    if (limit > 512)
+        limit = 512;
 
     vcs = (DIDURL*)alloca(limit * sizeof(DIDURL));
     if (!vcs)

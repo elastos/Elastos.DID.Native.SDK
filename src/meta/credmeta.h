@@ -61,8 +61,6 @@ int CredentialMetadata_SetPublished(CredentialMetadata *metadata, time_t time);
 
 int CredentialMetadata_SetTxid(CredentialMetadata *metadata, const char *txid);
 
-const char *CredentialMetadata_GetTxid(CredentialMetadata *metadata);
-
 bool CredentialMetadata_AttachedStore(CredentialMetadata *metadata);
 
 int CredentialMetadata_Store(CredentialMetadata *metadata);

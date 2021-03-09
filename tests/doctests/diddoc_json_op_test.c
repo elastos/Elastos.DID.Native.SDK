@@ -12,72 +12,68 @@
 #include "ela_did.h"
 #include "did.h"
 
-static DIDDocument *document;
-static DIDStore *store;
+static DataParam params[] = {
+    { 1, "issuer", NULL, NULL },      { 1, "user1", NULL, NULL },
+    { 1, "user2", NULL, NULL },       { 1, "user3", NULL, NULL },
+    { 2, "examplecorp", NULL, NULL }, { 2, "foobar", NULL, NULL },
+    { 2, "foo", NULL, NULL },         { 2, "bar", NULL, NULL },
+    { 2, "baz", NULL, NULL },         { 0, "document", NULL, NULL }
+};
 
 static void test_diddoc_json_operateion(void)
 {
     DIDDocument *compactdoc, *normalizedoc, *doc;
-    const char *data;
+    const char *data, *compactJson, *normalizedJson;
+    int i;
 
-    compactdoc = DIDDocument_FromJson(TestData_GetDocumentJson("document", "compact", 0));
-    CU_ASSERT_PTR_NOT_NULL(compactdoc);
-    CU_ASSERT_TRUE(DIDDocument_IsValid(compactdoc));
+    for (i = 0; i < 10; i++) {
+        //compactdoc = DIDDocument_FromJson(TestData_GetDocumentJson("document", "compact", 0));
+        compactJson = TestData_GetDocumentJson(params[i].did, "compact", params[i].version);
+        CU_ASSERT_PTR_NOT_NULL(compactJson);
+        compactdoc = DIDDocument_FromJson(compactJson);
+        CU_ASSERT_PTR_NOT_NULL(compactdoc);
+        CU_ASSERT_TRUE(DIDDocument_IsValid(compactdoc));
 
-    CU_ASSERT_EQUAL(4, DIDDocument_GetPublicKeyCount(compactdoc));
-    CU_ASSERT_EQUAL(3, DIDDocument_GetAuthenticationCount(compactdoc));
-    CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(compactdoc));
-    CU_ASSERT_EQUAL(2, DIDDocument_GetCredentialCount(compactdoc));
-    CU_ASSERT_EQUAL(3, DIDDocument_GetServiceCount(compactdoc));
+        normalizedJson = TestData_GetDocumentJson(params[i].did, "normalized", params[i].version);
+        CU_ASSERT_PTR_NOT_NULL(compactJson);
+        normalizedoc = DIDDocument_FromJson(normalizedJson);
+        CU_ASSERT_PTR_NOT_NULL(normalizedoc);
+        CU_ASSERT_TRUE(DIDDocument_IsValid(normalizedoc));
 
-    normalizedoc = DIDDocument_FromJson(TestData_GetDocumentJson("document", "normalized", 0));
-    CU_ASSERT_PTR_NOT_NULL(normalizedoc);
-    CU_ASSERT_TRUE(DIDDocument_IsValid(normalizedoc));
+        doc = TestData_GetDocument(params[i].did, NULL, params[i].version);
+        CU_ASSERT_PTR_NOT_NULL(doc);
+        CU_ASSERT_TRUE(DIDDocument_IsValid(doc));
 
-    CU_ASSERT_EQUAL(4, DIDDocument_GetPublicKeyCount(normalizedoc));
-    CU_ASSERT_EQUAL(3, DIDDocument_GetAuthenticationCount(normalizedoc));
-    CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(normalizedoc));
-    CU_ASSERT_EQUAL(2, DIDDocument_GetCredentialCount(normalizedoc));
-    CU_ASSERT_EQUAL(3, DIDDocument_GetServiceCount(normalizedoc));
-
-    doc = TestData_GetDocument("document", NULL, 0);
-    CU_ASSERT_PTR_NOT_NULL(doc);
-    CU_ASSERT_TRUE(DIDDocument_IsValid(doc));
-
-    data = DIDDocument_ToJson(compactdoc, true);
-    CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(TestData_GetDocumentJson("document", "normalized", 0), data);
-    free((void*)data);
-    data = DIDDocument_ToJson(normalizedoc, true);
-    CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(TestData_GetDocumentJson("document", "normalized", 0), data);
-    free((void*)data);
-    data = DIDDocument_ToJson(doc, true);
-    CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(TestData_GetDocumentJson("document", "normalized", 0), data);
-    free((void*)data);
-    data = DIDDocument_ToJson(compactdoc, false);
-    CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(TestData_GetDocumentJson("document", "compact", 0), data);
-    free((void*)data);
-    data = DIDDocument_ToJson(normalizedoc, false);
-    CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(TestData_GetDocumentJson("document", "compact", 0), data);
-    free((void*)data);
-    data = DIDDocument_ToJson(doc, false);
-    CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(TestData_GetDocumentJson("document", "compact", 0), data);
-    free((void*)data);
-
-    DIDDocument_Destroy(compactdoc);
-    DIDDocument_Destroy(normalizedoc);
+        data = DIDDocument_ToJson(compactdoc, true);
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL(normalizedJson, data);
+        free((void*)data);
+        data = DIDDocument_ToJson(normalizedoc, true);
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL(normalizedJson, data);
+        free((void*)data);
+        data = DIDDocument_ToJson(doc, true);
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL(normalizedJson, data);
+        free((void*)data);
+        data = DIDDocument_ToJson(compactdoc, false);
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL(compactJson, data);
+        free((void*)data);
+        data = DIDDocument_ToJson(normalizedoc, false);
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL(compactJson, data);
+        free((void*)data);
+        data = DIDDocument_ToJson(doc, false);
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL(compactJson, data);
+        free((void*)data);
+    }
 }
 
 static int diddoc_json_op_test_suite_init(void)
 {
-    int rc;
-
-    store = TestData_SetupStore(true);
+    DIDStore *store = TestData_SetupStore(true);
     if (!store)
         return -1;
 

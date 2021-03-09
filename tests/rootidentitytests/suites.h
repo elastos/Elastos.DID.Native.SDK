@@ -20,35 +20,13 @@
  * SOFTWARE.
  */
 
-#ifndef __TEST_UTILITY_H__
-#define __TEST_UTILITY_H__
+#ifndef __ROOTIDENTITY_TEST_SUITES_H__
+#define __ROOTIDENTITY_TEST_SUITES_H__
 
-#include "ela_did.h"
+DECL_TESTSUITE(rootidentity_test);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define DEFINE_ROOTIDENTITY_TESTSUITES \
+    DEFINE_TESTSUITE(rootidentity_test)
 
-const char *get_store_path(char* path, const char *dir);
+#endif /* __ROOTIDENTITY_TEST_SUITES_H__ */
 
-const char *get_file_path(char *path, size_t size, int count, ...);
-
-bool file_exist(const char *path);
-
-bool dir_exist(const char *path);
-
-const char *get_did_path(char *path, char *did, char *type, int version);
-
-const char *get_credential_path(char *path, char *did, char *vc, char *type, int version);
-
-const char *get_presentation_path(char *path, char *did, char *vp, char *type, int version);
-
-const char *get_privatekey_path(char *path, DIDURL *id, int version);
-
-const char *get_ticket_path(char *path, char *did);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* __TEST_UTILITY_H__ */

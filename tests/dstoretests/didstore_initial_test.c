@@ -8,7 +8,6 @@
 #include <limits.h>
 
 #include "constant.h"
-#include "utility.h"
 #include "loader.h"
 #include "ela_did.h"
 #include "diddocument.h"
@@ -34,9 +33,8 @@ static int get_rootidentity(RootIdentity *rootidentity, void *context)
 
 static void test_didstore_newdid(void)
 {
-    char _path[PATH_MAX];
+    char _path[PATH_MAX], *path;
     const char *newalias, *id;
-    const char *path;
     DIDDocument *doc, *loaddoc;
     RootIdentity *rootidentity;
     DIDStore *store;
@@ -57,22 +55,6 @@ static void test_didstore_newdid(void)
     id = RootIdentity_GetId(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_TRUE(DIDStore_ContainsRootIdentity(store, id));
-
-    path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
-            PATH_STEP, ROOTS_DIR, PATH_STEP, id, PATH_STEP, INDEX_FILE);
-    CU_ASSERT_TRUE(file_exist(path));
-
-    path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
-            PATH_STEP, ROOTS_DIR, PATH_STEP, id, PATH_STEP, PRIVATE_FILE);
-    CU_ASSERT_TRUE(file_exist(path));
-
-    path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
-            PATH_STEP, ROOTS_DIR, PATH_STEP, id, PATH_STEP, MNEMONIC_FILE);
-    CU_ASSERT_TRUE(file_exist(path));
-
-    path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
-            PATH_STEP, ROOTS_DIR, PATH_STEP, id, PATH_STEP, PUBLIC_FILE);
-    CU_ASSERT_TRUE(file_exist(path));
 
     //doc = DIDStore_NewDID(store, storepass, alias);
     doc = RootIdentity_NewDID(rootidentity, storepass, alias);
@@ -115,8 +97,7 @@ static void test_didstore_newdid(void)
 static void test_didstore_newdid_byindex(void)
 {
     RootIdentity *rootidentity;
-    const char *path;
-    char _path[PATH_MAX];
+    char _path[PATH_MAX], *path;
     DIDDocument *doc;
     DIDStore *store;
     DID did, *ndid;
@@ -166,9 +147,8 @@ static void test_didstore_newdid_byindex(void)
 static void test_didstore_newdid_withouAlias(void)
 {
     RootIdentity *rootidentity;
-    char _path[PATH_MAX];
+    char _path[PATH_MAX], *path;
     const char *newalias, *id;
-    const char *path;
     DIDDocument *doc, *loaddoc;
     DIDStore *store;
     int rc;

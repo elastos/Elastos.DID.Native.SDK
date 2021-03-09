@@ -22,7 +22,6 @@
 #include "ela_did.h"
 #include "dummyadapter.h"
 #include "constant.h"
-#include "utility.h"
 #include "loader.h"
 #include "crypto.h"
 #include "HDkey.h"
@@ -30,7 +29,6 @@
 #include "diddocument.h"
 #include "credential.h"
 #include "credmeta.h"
-
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <crystal.h>
@@ -67,6 +65,182 @@ CompatibleData compatibledata;
 static const char *getpassword(const char *walletDir, const char *walletId)
 {
     return walletpass;
+}
+
+char *get_store_path(char* path, const char *dir)
+{
+    assert(path);
+    assert(dir);
+
+    if(!getcwd(path, PATH_MAX)) {
+        printf("\nCan't get current dir.");
+        return NULL;
+    }
+
+    strcat(path, PATH_STEP);
+    strcat(path, dir);
+    return path;
+}
+
+static char *get_testdata_path(char *path, char *file, int version)
+{
+    size_t len;
+
+    assert(path);
+
+    switch (version) {
+        case 0:
+            len = snprintf(path, PATH_MAX, "..%setc%sdid%sresources%stestdata%s%s",
+                PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, file);
+            break;
+        case 1:
+            len = snprintf(path, PATH_MAX, "..%setc%sdid%sresources%sv1%stestdata%s%s",
+                PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, file);
+            break;
+        case 2:
+            len = snprintf(path, PATH_MAX, "..%setc%sdid%sresources%sv2%stestdata%s%s",
+                PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, file);
+            break;
+        default:
+            return NULL;
+    }
+
+    if (len < 0 || len > PATH_MAX)
+        return NULL;
+
+    return path;
+}
+
+char *get_file_path(char *path, size_t size, int count, ...)
+{
+    va_list list;
+    int i, totalsize = 0;
+
+    if (!path || size <= 0 || count <= 0)
+        return NULL;
+
+    *path = 0;
+    va_start(list, count);
+    for (i = 0; i < count; i++) {
+        const char *suffix = va_arg(list, const char*);
+        assert(suffix);
+        int len = strlen(suffix);
+        totalsize = totalsize + len;
+        if (totalsize > size)
+            return NULL;
+
+        strncat(path, suffix, len + 1);
+    }
+    va_end(list);
+
+    return path;
+}
+
+bool file_exist(const char *path)
+{
+    return test_path(path) == S_IFREG;
+}
+
+bool dir_exist(const char* path)
+{
+    return test_path(path) == S_IFDIR;
+}
+
+static char *get_did_path(char *path, char *did, char *type, int version)
+{
+    char file[128];
+
+    assert(path);
+    assert(did);
+
+    strcpy(file, did);
+    if (version != 0)
+        strcat(file, ".id.");
+    if (type)
+        strcat(file, type);
+    strcat(file, ".json");
+
+    get_testdata_path(path, file, version);
+    return path;
+}
+
+static char *get_credential_path(char *path, char *did, char *vc, char *type, int version)
+{
+    char file[120];
+
+    assert(path);
+
+    if (version == 0) {
+        strcpy(file, vc);
+    } else {
+        strcpy(file, did);
+        strcat(file, ".vc");
+    }
+
+    if (type) {
+        strcat(file, ".");
+        strcat(file, type);
+    }
+
+    strcat(file, ".json");
+
+    get_testdata_path(path, file, version);
+    return path;
+}
+
+static char *get_presentation_path(char *path, char *did, char *vp, char *type, int version)
+{
+    char file[120];
+
+    assert(path);
+
+    if (version == 0) {
+        strcpy(file, vp);
+    } else {
+        strcpy(file, did);
+        strcat(file, ".vp");
+    }
+
+    if (type) {
+        strcat(file, ".");
+        strcat(file, type);
+    }
+
+    strcat(file, ".json");
+
+    get_testdata_path(path, file, version);
+    return path;
+}
+
+static char *get_ticket_path(char *path, char *did)
+{
+    char file[120];
+
+    assert(path);
+    assert(did);
+
+    strcpy(file, did);
+    strcat(file, ".tt.json");
+
+    get_testdata_path(path, file, 2);
+    return path;
+}
+
+static char *get_privatekey_path(char *path, DIDURL *id, int version)
+{
+    char file[120];
+
+    assert(path);
+    assert(id);
+
+    strcpy(file, id->did.idstring);
+    if (version != 0)
+        strcat(file, ".id.");
+    strcat(file, id->fragment);
+    strcat(file, ".sk");
+
+    get_testdata_path(path, file, version);
+    return path;
 }
 
 static int copy_metadata(const char *dst, const char *src)
@@ -571,7 +745,7 @@ static DIDStore *setup_store(bool dummybackend, const char *root)
 DIDStore *TestData_SetupStore(bool dummybackend)
 {
     char _path[PATH_MAX];
-    const char *root;
+    char *root;
 
     root = get_store_path(_path, "DIDStore");
     delete_file(root);
@@ -581,7 +755,7 @@ DIDStore *TestData_SetupStore(bool dummybackend)
 DIDStore *TestData_SetupTestStore(bool dummybackend, int version)
 {
     char _path[PATH_MAX], _newpath[PATH_MAX];
-    const char *path, *newpath;
+    char *path, *newpath;
 
     path = get_file_path(_path, PATH_MAX, 11, "..", PATH_STEP, "etc", PATH_STEP,
         "did", PATH_STEP, "resources", PATH_STEP, VERSION[version], PATH_STEP, "teststore");
@@ -614,25 +788,12 @@ RootIdentity *TestData_InitIdentity(DIDStore *store)
     return compatibledata.rootidentity;
 }
 
-/*const char *TestData_LoadRestoreMnemonic(void)
-{
-    if (!compatibledata.restoreMnemonic)
-        compatibledata.restoreMnemonic = load_testdata_file("mnemonic.restore", 0);
-
-    return compatibledata.restoreMnemonic;
-}*/
-
-void TestData_Free(void)
+void TestData_Cleanup(void)
 {
     int i;
     TestData *testdata;
     char *dkey;
     void *dvalue;
-
-    DIDStore_Close(compatibledata.store);
-
-    if (compatibledata.rootidentity)
-        RootIdentity_Destroy(compatibledata.rootidentity);
 
     for (i = 0; i < compatibledata.dsize; i++) {
         testdata = &compatibledata.testdata[i];
@@ -648,6 +809,18 @@ void TestData_Free(void)
             free(dvalue);
         }
     }
+
+    compatibledata.dsize = 0;
+}
+
+void TestData_Free(void)
+{
+    DIDStore_Close(compatibledata.store);
+
+    if (compatibledata.rootidentity)
+        RootIdentity_Destroy(compatibledata.rootidentity);
+
+    TestData_Cleanup();
 
     if (compatibledata.restoreMnemonic)
         free((void*)compatibledata.restoreMnemonic);

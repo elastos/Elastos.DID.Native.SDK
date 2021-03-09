@@ -3952,21 +3952,25 @@ static int map_to_derivepath(int *paths, size_t size, const char *identifier)
     return 0;
 }
 
-const char *DIDDocument_Derive(DIDDocument *document, const char *identifier,
-        int securityCode, const char *storepass)
+static const char *document_derive(DIDDocument *document, const char *identifier,
+        int index, const char *storepass)
 {
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
     int paths[8];
     HDKey *hdkey, *derivedkey, _hdkey, _dkey;
     char extendedkeyBase58[512];
 
-    if (!document || !identifier || !*identifier || !storepass || !*storepass) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    assert(document);
+    assert(index);
+    assert(storepass && *storepass);
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Not attached with DID store.");
+        return NULL;
+    }
+
+    if (DIDDocument_IsCustomizedDID(document)) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport customized did to derive.");
         return NULL;
     }
 
@@ -3982,13 +3986,19 @@ const char *DIDDocument_Derive(DIDDocument *document, const char *identifier,
         return NULL;
     }
 
-    if (map_to_derivepath(paths, 8, identifier) < 0) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get derived path failed.");
-        return NULL;
+    if (identifier) {
+        if (map_to_derivepath(paths, 8, identifier) < 0) {
+            DIDError_Set(DIDERR_CRYPTO_ERROR, "Get derived path failed.");
+            return NULL;
+        }
+
+        derivedkey = HDKey_GetDerivedKey(hdkey, &_dkey, 9, paths[0], paths[1], paths[2], paths[3],
+                paths[4], paths[5], paths[6], paths[7], index);
+    } else {
+        derivedkey = HDKey_GetDerivedKey(hdkey, &_dkey, 5, 44 | HARDENED, 0 | HARDENED,
+                0 | HARDENED, 0, index);
     }
 
-    derivedkey = HDKey_GetDerivedKey(hdkey, &_dkey, 9, paths[0], paths[1], paths[2], paths[3],
-           paths[4], paths[5], paths[6], paths[7], securityCode);
     if (!derivedkey) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Get derived key failed.");
         return NULL;
@@ -4000,6 +4010,28 @@ const char *DIDDocument_Derive(DIDDocument *document, const char *identifier,
     }
 
    return strdup(extendedkeyBase58);
+}
+
+const char *DIDDocument_DeriveByIdentifier(DIDDocument *document, const char *identifier,
+        int securityCode, const char *storepass)
+{
+    if (!document || !identifier || !*identifier || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    return document_derive(document, identifier, securityCode, storepass);
+}
+
+const char *DIDDocument_DeriveByIndex(DIDDocument *document, int index,
+        const char *storepass)
+{
+    if (!document || index < 0 || !storepass || !*storepass) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    return document_derive(document, NULL, index, storepass);
 }
 
 DIDDocument *DIDDocument_SignDIDDocument(DIDDocument* controllerdoc,
