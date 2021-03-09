@@ -13,57 +13,26 @@
 #include "ela_did.h"
 #include "did.h"
 
-#define MAX_DOC_SIGN                    128
+static DIDStore *store;
+static DID dids[5];
+static const char *newmnemonic;
 
 static int didcount = 0;
 
 typedef struct DIDs {
-    DID dids[10];
+    DID dids[5];
     int index;
 } DIDs;
 
-static int load_restore(DIDs *dids, const char *path)
-{
-    FILE *fd;
-    char *find;
-    char data[128];
-    int i = 0;
-
-    if (!path || !*path)
-        return -1;
-
-    fd = fopen(path , "r");
-    if (!fd)
-        return -1;
-
-    while(!feof(fd)) {
-        if (!fgets(data, sizeof(data), fd))
-            return -1;
-
-        find = strchr(data, '\n');
-        if (find)
-            *find = '\0';
-
-        DID *did = DID_FromString(data);
-        if (!did)
-            break;
-
-        DID_Copy(&(dids->dids[dids->index++]), did);
-        DID_Destroy(did);
-    }
-
-    return 0;
-}
-
-static bool contain_did(DIDs *dids, DID *did)
+static bool contain_did(DID *dids, DID *did)
 {
     int i;
 
     if (!dids || !did)
         return -1;
 
-    for (i = 0; i < dids->index; i++) {
-        if (DID_Equals(&(dids->dids[i]), did))
+    for (i = 0; i < 5; i++) {
+        if (DID_Equals(&dids[i], did))
             return true;
     }
     return false;
@@ -109,271 +78,237 @@ static DIDDocument* merge_to_chaincopy(DIDDocument *chaincopy, DIDDocument *loca
 
 static void test_idchain_restore(void)
 {
-    /*int rc;
-    char _path[PATH_MAX], cachedir[PATH_MAX];
+    char _path[PATH_MAX];
     RootIdentity *rootidentity;
     const char *path;
-    DIDStore *store;
-    DIDs dids;
-    DIDs restore_dids;
+    DIDStore *cleanstore;
+    DIDs redids;
     int i;
 
-    path = get_store_path(_path, "DIDStore");
+    path = get_store_path(_path, "cleanstore");
     delete_file(path);
-    store = DIDStore_Open(path);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(store);
+    cleanstore = DIDStore_Open(path);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(cleanstore);
 
-    sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
-    DIDBackend_InitializeDefault(NULL, resolver, cachedir);
-
-    rootidentity = RootIdentity_Create(TestData_LoadRestoreMnemonic(), "secret", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(newmnemonic, "", language, true, cleanstore, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     printf("\nSynchronizing from IDChain...");
-    rc = RootIdentity_Synchronize(rootidentity, merge_to_localcopy);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_TRUE(RootIdentity_Synchronize(rootidentity, NULL));
     printf("OK!\n");
 
-    memset(&dids, 0, sizeof(DIDs));
-    rc = DIDStore_ListDIDs(store, 0, get_did, (void*)&dids);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
-    CU_ASSERT_EQUAL(dids.index, 5);
+    memset(&redids, 0, sizeof(DIDs));
+    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&redids));
+    CU_ASSERT_EQUAL(5, redids.index);
 
-    path = get_testdata_path(_path, "dids.restore", 0);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(path);
+    for(i = 0; i < redids.index; i++) {
+        DID *did = &redids.dids[i];
+        CU_ASSERT_TRUE(contain_did(dids, did));
 
-    memset(&restore_dids, 0, sizeof(DIDs));
-    rc = load_restore(&restore_dids, path);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
-
-    CU_ASSERT_EQUAL_FATAL(dids.index, restore_dids.index);
-
-    for(i = 0; i < restore_dids.index; i++) {
-        DID *did = &restore_dids.dids[i];
-        CU_ASSERT_TRUE(contain_did(&dids, did));
-
-        DIDDocument *doc = DIDStore_LoadDID(store, did);
-        CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
+        DIDDocument *doc = DIDStore_LoadDID(cleanstore, did);
+        CU_ASSERT_PTR_NOT_NULL(doc);
         CU_ASSERT_TRUE_FATAL(DID_Equals(did, DIDDocument_GetSubject(doc)));
-        CU_ASSERT_EQUAL_FATAL(4, DIDDocument_GetCredentialCount(doc));
 
-        Credential *creds[4];
-        ssize_t size = DIDDocument_GetCredentials(doc, creds, 4);
-        CU_ASSERT_EQUAL_FATAL(4, size);
-
-        int j;
-        for (j = 0; j < size; j++) {
-            Credential *cred = creds[j];
-            CU_ASSERT_PTR_NOT_NULL_FATAL(cred);
-            CU_ASSERT_TRUE_FATAL(DID_Equals(did, Credential_GetOwner(cred)));
-        }
         DIDDocument_Destroy(doc);
     }
     RootIdentity_Destroy(rootidentity);
-    DIDStore_Close(store);
-    TestData_Free();*/
+    DIDStore_Close(cleanstore);
 }
 
 static void test_sync_with_localmodification1(void)
 {
-    /*RootIdentity *rootidentity;
-    char _path[PATH_MAX], modified_signature[MAX_DOC_SIGN], cachedir[PATH_MAX];
+    RootIdentity *rootidentity;
+    char _path[PATH_MAX], modified_signature[MAX_SIGNATURE_LEN], cachedir[PATH_MAX];
     const char *path;
-    DIDStore *store;
-    DIDs dids;
-    int rc, i;
+    DIDStore *cleanstore;
+    DIDs redids;
+    int i;
 
-    path = get_store_path(_path, "DIDStore");
+    path = get_store_path(_path, "cleanstore");
     delete_file(path);
-    store = DIDStore_Open(path);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(store);
+    cleanstore = DIDStore_Open(path);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(cleanstore);
 
-    sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
-    DIDBackend_InitializeDefault(NULL, resolver, cachedir);
-
-    rootidentity = RootIdentity_Create(TestData_LoadRestoreMnemonic(), "secret",
-           language, true, store, storepass);
+    rootidentity = RootIdentity_Create(newmnemonic, "", language, true, cleanstore, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     printf("\nSynchronizing from IDChain...");
-    rc = RootIdentity_Synchronize(rootidentity, merge_to_localcopy);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_TRUE(RootIdentity_Synchronize(rootidentity, merge_to_localcopy));
     printf("OK!\n");
 
-    memset(&dids, 0, sizeof(DIDs));
-    rc = DIDStore_ListDIDs(store, 0, get_did, (void*)&dids);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
-    CU_ASSERT_EQUAL(dids.index, 5);
+    memset(&redids, 0, sizeof(DIDs));
+    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_ListDIDs(cleanstore, 0, get_did, (void*)&redids));
+    CU_ASSERT_EQUAL(5, redids.index);
 
-    DID *modified_did = &dids.dids[0];
-    DIDDocument *modified_doc = DIDStore_LoadDID(store, modified_did);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
+    DID *modified_did = &redids.dids[0];
+    DIDDocument *modified_doc = DIDStore_LoadDID(cleanstore, modified_did);
+    CU_ASSERT_PTR_NOT_NULL(modified_doc);
 
     DIDDocumentBuilder *builder = DIDDocument_Edit(modified_doc, NULL);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
+    CU_ASSERT_PTR_NOT_NULL(builder);
     DIDDocument_Destroy(modified_doc);
 
     DIDURL *serviceid = DIDURL_NewByDid(modified_did, "test1");
-    CU_ASSERT_PTR_NOT_NULL_FATAL(serviceid);
+    CU_ASSERT_PTR_NOT_NULL(serviceid);
 
-    rc = DIDDocumentBuilder_AddService(builder, serviceid, "TestType", "http://test.com/");
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL_FATAL(-1,
+            DIDDocumentBuilder_AddService(builder, serviceid, "TestType", "http://test.com/"));
     DIDURL_Destroy(serviceid);
 
     modified_doc = DIDDocumentBuilder_Seal(builder, storepass);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
+    CU_ASSERT_PTR_NOT_NULL(modified_doc);
     DIDDocumentBuilder_Destroy(builder);
 
-    rc = DIDStore_StoreDID(store, modified_doc);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_StoreDID(cleanstore, modified_doc));
     strcpy(modified_signature, DIDDocument_GetProofSignature(modified_doc, 0));
     DIDDocument_Destroy(modified_doc);
 
     printf("Synchronizing again from IDChain...");
-    rc = RootIdentity_Synchronize(rootidentity, merge_to_localcopy);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_TRUE(RootIdentity_Synchronize(rootidentity, merge_to_localcopy));
 
-    memset(&dids, 0, sizeof(DIDs));
-    rc = DIDStore_ListDIDs(store, 0, get_did, (void*)&dids);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
-    CU_ASSERT_EQUAL(dids.index, 5);
+    memset(&redids, 0, sizeof(DIDs));
+    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&redids));
+    CU_ASSERT_EQUAL(5, redids.index);
 
-    for(i = 0; i < dids.index; i++) {
-        DID *did = &dids.dids[i];
-        CU_ASSERT_TRUE(contain_did(&dids, did));
+    for(i = 0; i < redids.index; i++) {
+        DID *did = &redids.dids[i];
+        CU_ASSERT_TRUE(contain_did(dids, did));
 
-        DIDDocument *doc = DIDStore_LoadDID(store, did);
+        DIDDocument *doc = DIDStore_LoadDID(cleanstore, did);
         CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
         CU_ASSERT_TRUE_FATAL(DID_Equals(did, DIDDocument_GetSubject(doc)));
-        CU_ASSERT_EQUAL_FATAL(4, DIDDocument_GetCredentialCount(doc));
 
-        Credential *creds[4];
-        ssize_t size = DIDDocument_GetCredentials(doc, creds, 4);
-        CU_ASSERT_EQUAL_FATAL(4, size);
-
-        int j;
-        for (j = 0; j < size; j++) {
-            Credential *cred = creds[j];
-            CU_ASSERT_PTR_NOT_NULL_FATAL(cred);
-            CU_ASSERT_TRUE_FATAL(DID_Equals(did, Credential_GetOwner(cred)));
-        }
         DIDDocument_Destroy(doc);
     }
 
-    modified_doc = DIDStore_LoadDID(store, modified_did);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
+    modified_doc = DIDStore_LoadDID(cleanstore, modified_did);
+    CU_ASSERT_PTR_NOT_NULL(modified_doc);
     CU_ASSERT_STRING_EQUAL(modified_signature, DIDDocument_GetProofSignature(modified_doc, 0));
     DIDDocument_Destroy(modified_doc);
 
     RootIdentity_Destroy(rootidentity);
-    DIDStore_Close(store);
-    TestData_Free();*/
+    DIDStore_Close(cleanstore);
 }
 
 
 static void test_sync_with_localmodification2(void)
 {
-    /*RootIdentity *rootidentity;
-    char _path[PATH_MAX], origin_signature[MAX_DOC_SIGN], cachedir[PATH_MAX];
+    RootIdentity *rootidentity;
+    char _path[PATH_MAX], origin_signature[MAX_SIGNATURE_LEN], cachedir[PATH_MAX];
     const char *path;
-    DIDStore *store;
-    DIDs dids;
-    int rc, i;
+    DIDStore *cleanstore;
+    DIDs redids;
+    int i;
 
     path = get_store_path(_path, "DIDStore");
     delete_file(path);
-    store = DIDStore_Open(path);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(store);
+    cleanstore = DIDStore_Open(path);
+    CU_ASSERT_PTR_NOT_NULL(cleanstore);
 
-    sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
-    DIDBackend_InitializeDefault(NULL, resolver, cachedir);
-
-    rootidentity = RootIdentity_Create(TestData_LoadRestoreMnemonic(),
-        "secret", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(newmnemonic, "", language, true, cleanstore, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     printf("\nSynchronizing from IDChain...");
-    rc = RootIdentity_Synchronize(rootidentity, merge_to_localcopy);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_TRUE(RootIdentity_Synchronize(rootidentity, merge_to_localcopy));
     printf("OK!\n");
 
-    memset(&dids, 0, sizeof(DIDs));
-    rc = DIDStore_ListDIDs(store, 0, get_did, (void*)&dids);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
-    CU_ASSERT_EQUAL(dids.index, 5);
+    memset(&redids, 0, sizeof(DIDs));
+    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&redids));
+    CU_ASSERT_EQUAL(5, redids.index);
 
-    DID *modified_did = &dids.dids[0];
-    DIDDocument *modified_doc = DIDStore_LoadDID(store, modified_did);
+    DID *modified_did = &redids.dids[0];
+    DIDDocument *modified_doc = DIDStore_LoadDID(cleanstore, modified_did);
     CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
     strcpy(origin_signature, DIDDocument_GetProofSignature(modified_doc, 0));
 
     DIDDocumentBuilder *builder = DIDDocument_Edit(modified_doc, NULL);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
+    CU_ASSERT_PTR_NOT_NULL(builder);
     DIDDocument_Destroy(modified_doc);
 
     DIDURL *serviceid = DIDURL_NewByDid(modified_did, "test1");
     CU_ASSERT_PTR_NOT_NULL_FATAL(serviceid);
 
-    rc = DIDDocumentBuilder_AddService(builder, serviceid, "TestType", "http://test.com/");
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1,
+           DIDDocumentBuilder_AddService(builder, serviceid, "TestType", "http://test.com/"));
     DIDURL_Destroy(serviceid);
 
     modified_doc = DIDDocumentBuilder_Seal(builder, storepass);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
+    CU_ASSERT_PTR_NOT_NULL(modified_doc);
     DIDDocumentBuilder_Destroy(builder);
 
-    rc = DIDStore_StoreDID(store, modified_doc);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_StoreDID(store, modified_doc));
     DIDDocument_Destroy(modified_doc);
 
     printf("Synchronizing again from IDChain...");
-    rc = RootIdentity_Synchronize(rootidentity, merge_to_chaincopy);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_TRUE(RootIdentity_Synchronize(rootidentity, merge_to_chaincopy));
 
-    memset(&dids, 0, sizeof(DIDs));
-    rc = DIDStore_ListDIDs(store, 0, get_did, (void*)&dids);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
-    CU_ASSERT_EQUAL(dids.index, 5);
+    memset(&redids, 0, sizeof(DIDs));
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&redids));
+    CU_ASSERT_EQUAL(5, redids.index);
 
-    for(i = 0; i < dids.index; i++) {
-        DID *did = &dids.dids[i];
-        CU_ASSERT_TRUE(contain_did(&dids, did));
+    for(i = 0; i < redids.index; i++) {
+        DID *did = &redids.dids[i];
+        CU_ASSERT_TRUE(contain_did(dids, did));
 
-        DIDDocument *doc = DIDStore_LoadDID(store, did);
-        CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
-        CU_ASSERT_TRUE_FATAL(DID_Equals(did, DIDDocument_GetSubject(doc)));
-        CU_ASSERT_EQUAL_FATAL(4, DIDDocument_GetCredentialCount(doc));
+        DIDDocument *doc = DIDStore_LoadDID(cleanstore, did);
+        CU_ASSERT_PTR_NOT_NULL(doc);
+        CU_ASSERT_TRUE(DID_Equals(did, DIDDocument_GetSubject(doc)));
 
-        Credential *creds[4];
-        ssize_t size = DIDDocument_GetCredentials(doc, creds, 4);
-        CU_ASSERT_EQUAL_FATAL(4, size);
-
-        int j;
-        for (j = 0; j < size; j++) {
-            Credential *cred = creds[j];
-            CU_ASSERT_PTR_NOT_NULL_FATAL(cred);
-            CU_ASSERT_TRUE_FATAL(DID_Equals(did, Credential_GetOwner(cred)));
-        }
         DIDDocument_Destroy(doc);
     }
 
-    modified_doc = DIDStore_LoadDID(store, modified_did);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(modified_doc);
+    modified_doc = DIDStore_LoadDID(cleanstore, modified_did);
+    CU_ASSERT_PTR_NOT_NULL(modified_doc);
     CU_ASSERT_STRING_EQUAL(origin_signature, DIDDocument_GetProofSignature(modified_doc, 0));
     DIDDocument_Destroy(modified_doc);
 
     RootIdentity_Destroy(rootidentity);
-    DIDStore_Close(store);
-    TestData_Free();*/
+    DIDStore_Close(cleanstore);
 }
 
 static int idchain_restore_test_suite_init(void)
 {
+    RootIdentity *rootidentity;
+    DIDDocument *doc;
+    int i;
+
+    store = TestData_SetupStore(true);
+    if (!store)
+        return -1;
+
+    newmnemonic = Mnemonic_Generate(language);
+    if (!newmnemonic) {
+        TestData_Free();
+        return -1;
+    }
+
+    rootidentity = RootIdentity_Create(newmnemonic, "", language, true, store, storepass);
+    if (!rootidentity) {
+        Mnemonic_Free((void*)newmnemonic);
+        TestData_Free();
+        return -1;
+    }
+
+    for (i = 0; i < 5; i++) {
+        doc = RootIdentity_NewDID(rootidentity, storepass, NULL);
+        if (!doc) {
+            RootIdentity_Destroy(rootidentity);
+            Mnemonic_Free((void*)newmnemonic);
+            TestData_Free();
+            return -1;
+        }
+        DID_Copy(&dids[i], DIDDocument_GetSubject(doc));
+        DIDDocument_Destroy(doc);
+    }
+
+    RootIdentity_Destroy(rootidentity);
     return 0;
 }
 
 static int idchain_restore_test_suite_cleanup(void)
 {
+    Mnemonic_Free((void*)newmnemonic);
+    TestData_Free();
     return 0;
 }
 

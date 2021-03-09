@@ -1296,7 +1296,7 @@ bool Credential_IsRevoked(Credential *credential)
 
 ssize_t Credential_List(DID *did, DIDURL **buffer, size_t size, int skip, int limit)
 {
-    if (!did || !buffer || size == 0 || skip < 0 || limit <= 0) {
+    if (!did || !buffer || size == 0 || skip < 0 || limit < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }

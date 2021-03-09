@@ -8,7 +8,6 @@
 #include <limits.h>
 
 #include "constant.h"
-#include "utility.h"
 #include "loader.h"
 #include "ela_did.h"
 #include "did.h"
@@ -53,7 +52,7 @@ static void test_didstore_bulk_newdid(void)
         DID *did = DIDDocument_GetSubject(doc);
         CU_ASSERT_PTR_NOT_NULL(did);
 
-        const char *path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP,
+        char *path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP,
                 DATA_DIR, PATH_STEP,IDS_DIR, PATH_STEP, did->idstring, PATH_STEP, DOCUMENT_FILE);
         CU_ASSERT_TRUE(file_exist(path));
 
@@ -131,7 +130,7 @@ static void test_didstore_op_deletedid(void)
 
         CU_ASSERT_TRUE(DIDStore_DeleteDID(store, &dids[i]));
 
-        const char *path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP,
+        char *path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP,
                 DATA_DIR, PATH_STEP, IDS_DIR, PATH_STEP, dids[i].idstring);
         CU_ASSERT_FALSE_FATAL(file_exist(path));
     }

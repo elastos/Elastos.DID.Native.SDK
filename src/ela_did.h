@@ -986,6 +986,17 @@ DID_API bool CredentialMetadata_GetRevoke(CredentialMetadata *metadata);
 
 /**
  * \~English
+ * Get transaction id from credential by meta data.
+ *
+ * @param
+ *      metadata                     [in] The handle of CredentialMetadata.
+ * @return
+ *      If credential is revoked, return true. Otherwise, return false.
+ */
+DID_API const char *CredentialMetadata_GetTxid(CredentialMetadata *metadata);
+
+/**
+ * \~English
  * Get 'string' extra elem from Credential.
  *
  * @param
@@ -1319,6 +1330,19 @@ DID_API RootIdentity *RootIdentity_CreateByFromRootKey(const char *extendedprvke
  *      rootidentity               [in] A handle to RootIdentity.
  */
 DID_API void RootIdentity_Destroy(RootIdentity *rootidentity);
+
+/**
+ * \~English
+ * Set default rootidentity.
+ *
+ * @param
+ *      store                [in] The handle to DIDStore.
+ * @param
+ *      id                   [in] The root identity's id string.
+ * @return
+ *      0 on success, -1 if an error occurred.
+ */
+DID_API int RootIdentity_SetAsDefault(RootIdentity *identity);
 
 /**
  * \~English
@@ -2606,12 +2630,14 @@ DID_API JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document);
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
 DID_API JWSParser *DIDDocument_GetJwsParser(DIDDocument *document);
+#endif
+
 /**
  * \~English
  * Derive the default key of document by identifier and securityCode.
  *
  * @param
- *      document                 [in] A handle to DID Document.
+ *      document                 [in] A handle to primitive DID Document.
  *                                ps：document must attatch DIDstore.
  * @param
  *      identifier                [in] Application secified identifier.
@@ -2623,10 +2649,26 @@ DID_API JWSParser *DIDDocument_GetJwsParser(DIDDocument *document);
  *      If no error occurs, return serialize HDKey string. Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-#endif
-
-DID_API const char *DIDDocument_Derive(DIDDocument *document, const char *identifier,
+DID_API const char *DIDDocument_DeriveByIdentifier(DIDDocument *document, const char *identifier,
         int securityCode, const char *storepass);
+
+/**
+ * \~English
+ * Derive the default key of document by index.
+ *
+ * @param
+ *      document                  [in] A handle to primitive DID Document.
+ *                                ps：document must attatch DIDstore.
+ * @param
+ *      index                     [in] The index.
+ * @param
+ *      storepass                 [in] The password for DIDStore.
+ * @return
+ *      If no error occurs, return serialize HDKey string. Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API const char *DIDDocument_DeriveByIndex(DIDDocument *document, int index,
+        const char *storepass);
 
 /**
  * \~English
@@ -3286,6 +3328,10 @@ DID_API bool Credential_IsRevoked(Credential *credential);
  *      skip                     [in] The index of beginning credential.
  * @param
  *      limit                    [in] The size of credentials to listed.
+ *                               If limit == 0, and the count of credentials is more than
+ *                               128, return 128. You can reset 'skip' to get other credentials.
+ *                               If limit > 512, and the count of credentials is more than
+ *                               512, return 512. You can reset 'skip' to get other credentials.
  * @return
  *      If no error occurs, return the size of credentials. Remember: destory every 'DIDURL'
  *      object in buffer. Otherwise, return -1.
@@ -3443,14 +3489,27 @@ DID_API void DIDStore_Close(DIDStore *store);
 
 /**
  * \~English
- * Check if it has private identity or not.
+ * Check if it has the specified root identity or not.
+ *
+ * @param
+ *      store                 [in] The handle to DIDStore.
+  * @param
+ *      store                 [in] The specified root identity's id.
+ * @return
+ *      ture if it has identity, false if it has not.
+ */
+DID_API bool DIDStore_ContainsRootIdentity(DIDStore *store, const char *id);
+
+/**
+ * \~English
+ * Check if it has root identity or not.
  *
  * @param
  *      store                 [in] The handle to DIDStore.
  * @return
  *      ture if it has identity, false if it has not.
  */
-DID_API bool DIDStore_ContainsRootIdentity(DIDStore *store, const char *id);
+DID_API bool DIDStore_ContainsRootIdentities(DIDStore *store);
 
 /**
  * \~English
@@ -3506,19 +3565,6 @@ DID_API bool DIDStore_ContainsRootIdentityMnemonic(DIDStore *store, const char *
  */
 DID_API ssize_t DIDStore_ListRootIdentities(DIDStore *store,
         DIDStore_RootIdentitiesCallback *callback, void *context);
-
-/**
- * \~English
- * Set default rootidentity to DIDStore.
- *
- * @param
- *      store                [in] The handle to DIDStore.
- * @param
- *      id                   [in] The root identity's id string.
- * @return
- *      0 on success, -1 if an error occurred.
- */
-DID_API int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id);
 
 /**
  * \~English

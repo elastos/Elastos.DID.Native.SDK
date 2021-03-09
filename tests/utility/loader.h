@@ -30,6 +30,21 @@
 extern "C" {
 #endif
 
+typedef struct DataParam {
+    int version;
+    char *did;
+    char *param;
+    char *type;
+} DataParam;
+
+char *get_store_path(char* path, const char *dir);
+
+char *get_file_path(char *path, size_t size, int count, ...);
+
+bool file_exist(const char *path);
+
+bool dir_exist(const char *path);
+
 const char *Generater_Publickey(char *publickeybase58, size_t size);
 
 HDKey *Generater_KeyPair(HDKey *hdkey);
@@ -38,6 +53,8 @@ HDKey *Generater_KeyPair(HDKey *hdkey);
 int TestData_Init(bool dummy);
 
 void TestData_Deinit(void);
+
+void TestData_Cleanup(void);
 
 DIDStore *TestData_SetupStore(bool dummybackend);
 

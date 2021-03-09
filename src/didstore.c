@@ -145,6 +145,11 @@ typedef struct RootIdentity_Export {
     zip_t *zip;
 } RootIdentity_Export;
 
+typedef struct DefaultRootIdentity_Helper {
+    char id[MAX_ID_LEN];
+    int count;
+} DefaultRootIdentity_Helper;
+
 int DIDStore_StoreDIDMetadata(DIDStore *store, DIDMetadata *meta, DID *did)
 {
     char path[PATH_MAX];
@@ -2314,13 +2319,30 @@ bool DIDStore_ContainsRootIdentity(DIDStore *store, const char *id)
 {
     char path[PATH_MAX];
 
-    assert(store);
-    assert(id);
+    if (!store || !id || !*id) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
 
     if (get_dir(path, 0, 4, store->root, DATA_DIR, ROOTS_DIR, id) == -1)
         return false;
 
     return true;
+}
+
+bool DIDStore_ContainsRootIdentities(DIDStore *store)
+{
+    char path[PATH_MAX];
+
+    if (!store) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return false;
+    }
+
+    if (get_dir(path, 0, 3, store->root, DATA_DIR, ROOTS_DIR) == -1)
+        return false;
+
+    return !is_empty(path);
 }
 
 int DIDStore_StoreRootIdentityWithElem(DIDStore *store, const char *storepass, const char *id,
@@ -2477,8 +2499,10 @@ ssize_t DIDStore_ListRootIdentities(DIDStore *store,
 
 int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id)
 {
-    if (!store) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+    assert(store);
+
+    if (id && !DIDStore_ContainsRootIdentity(store, id)) {
+        DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "No this root identity.");
         return -1;
     }
 
@@ -2495,9 +2519,26 @@ int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id)
     return 0;
 }
 
+static int get_identity(RootIdentity *identity, void *context)
+{
+    DefaultRootIdentity_Helper *helper = (DefaultRootIdentity_Helper*)context;
+    const char *id;
+
+    if (!identity)
+        return 0;
+
+    if (!*helper->id)
+        strcpy(helper->id, identity->id);
+
+    helper->count++;
+    return 0;
+}
+
 const char *DIDStore_GetDefaultRootIdentity(DIDStore *store)
 {
+    DefaultRootIdentity_Helper helper;
     const char *id, *_id = NULL;
+    int count = 0;
 
     if (!store) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2505,10 +2546,25 @@ const char *DIDStore_GetDefaultRootIdentity(DIDStore *store)
     }
 
     id = StoreMetadata_GetDefaultRootIdentity(&store->metadata);
-    if (id)
-        _id = strdup(id);
+    if (id && DIDStore_ContainsRootIdentity(store, id))
+        return strdup(id);
 
-    return _id;
+    *helper.id = 0;
+    helper.count = 0;
+
+    if (DIDStore_ListRootIdentities(store, get_identity, (void*)&helper) < 0)
+        return NULL;
+
+    if (helper.count == 0) {
+        DIDError_Set(DIDERR_UNKNOWN, "There is no root identity.");
+        return NULL;
+    }
+    if (helper.count > 1) {
+        DIDError_Set(DIDERR_UNKNOWN, "There are more root identities, please specify one.");
+        return NULL;
+    }
+
+    return strdup(helper.id);
 }
 
 int DIDStore_ExportRootIdentityMnemonic(DIDStore *store, const char *storepass,

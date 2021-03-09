@@ -20,9 +20,10 @@ static const char *password = "passwd";
 typedef struct List_Helper {
     DIDStore *store;
     int count;
+    int version;
 } List_Helper;
 
-static int get_user1_cred(DIDURL *id, void *context)
+static int get_cred1(DIDURL *id, void *context)
 {
     List_Helper *helper = (List_Helper*)context;
 
@@ -46,7 +47,7 @@ static int get_user1_cred(DIDURL *id, void *context)
     return -1;
 }
 
-static int get_user2_cred(DIDURL *id, void *context)
+static int get_cred2(DIDURL *id, void *context)
 {
     List_Helper *helper = (List_Helper*)context;
 
@@ -56,6 +57,29 @@ static int get_user2_cred(DIDURL *id, void *context)
         return 0;
 
     if (!strcmp("profile", id->fragment)) {
+        cred = DIDStore_LoadCredential(helper->store, &id->did, id);
+        if (!cred)
+            return -1;
+
+        helper->count++;
+        Credential_Destroy(cred);
+        return 0;
+    }
+
+    return -1;
+}
+
+static int get_cred3(DIDURL *id, void *context)
+{
+    List_Helper *helper = (List_Helper*)context;
+
+    Credential *cred;
+
+    if (!id)
+        return 0;
+
+    if (!strcmp("email", id->fragment) || !strcmp("license", id->fragment) ||
+            !strcmp("services", id->fragment) || !strcmp("profile", id->fragment)) {
         cred = DIDStore_LoadCredential(helper->store, &id->did, id);
         if (!cred)
             return -1;
@@ -92,37 +116,57 @@ static int get_did(DID *did, void *context)
 
     DIDDocument_Destroy(doc);
 
-    if (!strcmp("bar", did->idstring) || !strcmp("baz", did->idstring) ||
-            !strcmp("example", did->idstring) || !strcmp("foo", did->idstring) ||
-            !strcmp("foobar", did->idstring)) {
-            helper->count++;
-            return 0;
-    } else {
-        if (!*alias)
-            return -1;
+    vchelper.store = store;
+    vchelper.count = 0;
+    vchelper.version = helper->version;
 
-       vchelper.store = store;
-       vchelper.count = 0;
-       if (!strcmp("User1", alias)) {
-            CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store, did, get_user1_cred, (void*)&vchelper));
-            CU_ASSERT_TRUE(vchelper.count == 4 || vchelper.count == 5);
-            helper->count++;
-            return 0;
-        }
+    if (!strcmp("bar", did->idstring) || !strcmp("baz", did->idstring)) {
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store, did, get_cred2, (void*)&vchelper));
+        CU_ASSERT_EQUAL(0, vchelper.count);
+        helper->count++;
+        return 0;
+    }
 
-        if (!strcmp("User2", alias) || !strcmp("Issuer", alias)) {
-            CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store, did, get_user2_cred, (void*)&vchelper));
-            CU_ASSERT_EQUAL(1, vchelper.count);
-            helper->count++;
-            return 0;
-        }
+    if (!strcmp("example", did->idstring) || !strcmp("foo", did->idstring)) {
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store, did, get_cred2, (void*)&vchelper));
+        CU_ASSERT_EQUAL(1, vchelper.count);
+        helper->count++;
+        return 0;
+    }
 
-        if (!strcmp("User3", alias) || !strcmp("User4", alias)) {
-            CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store, did, get_user2_cred, (void*)&vchelper));
-            CU_ASSERT_EQUAL(0, vchelper.count);
-            helper->count++;
-            return 0;
+    if (!strcmp("foobar", did->idstring)) {
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store, did, get_cred3, (void*)&vchelper));
+        CU_ASSERT_EQUAL(4, vchelper.count);
+        helper->count++;
+        return 0;
+    }
+
+    if (!*alias)
+        return -1;
+
+   if (!strcmp("User1", alias)) {
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store, did, get_cred1, (void*)&vchelper));
+        if (helper->version == 1) {
+            CU_ASSERT_TRUE(vchelper.count == 4);
+        } else {
+            CU_ASSERT_TRUE(vchelper.count == 5);
         }
+        helper->count++;
+        return 0;
+    }
+
+    if (!strcmp("User2", alias) || !strcmp("Issuer", alias)) {
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store, did, get_cred2, (void*)&vchelper));
+        CU_ASSERT_EQUAL(1, vchelper.count);
+        helper->count++;
+        return 0;
+    }
+
+    if (!strcmp("User3", alias) || !strcmp("User4", alias)) {
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store, did, get_cred2, (void*)&vchelper));
+        CU_ASSERT_EQUAL(0, vchelper.count);
+        helper->count++;
+        return 0;
     }
 
     return -1;
@@ -140,46 +184,61 @@ static int get_identity(RootIdentity *identity, void *context)
     return 0;
 }
 
-static void test_openstore_newdid(void)
+static void test_openstore_compatibility(void)
 {
     RootIdentity *rootidentity;
     DIDDocument *doc;
     const char *id;
     DIDStore *store;
     List_Helper helper;
-    int count = 0;
+    int count = 0, version;
+    DID *did;
 
-    store = TestData_SetupTestStore(true, 2);
-    CU_ASSERT_PTR_NOT_NULL(store);
+    for(version = 1; version <= 2; version++) {
+        store = TestData_SetupTestStore(true, version);
+        CU_ASSERT_PTR_NOT_NULL(store);
 
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 2));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, version));
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store, get_identity, (void*)&count));
-    CU_ASSERT_EQUAL(1, count);
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store, get_identity, (void*)&count));
+        CU_ASSERT_EQUAL(1, count);
 
-    helper.store = store;
-    helper.count = 0;
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&helper));
-    CU_ASSERT_EQUAL(10, helper.count);
+        helper.store = store;
+        helper.count = 0;
+        helper.version = version;
 
-    id = DIDStore_GetDefaultRootIdentity(store);
-    CU_ASSERT_PTR_NOT_NULL(id);
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&helper));
+        if (version == 2) {
+            CU_ASSERT_EQUAL(10, helper.count);
+        } else {
+            CU_ASSERT_EQUAL(4, helper.count);
+        }
 
-    rootidentity = DIDStore_LoadRootIdentity(store, id);
-    free((void*)id);
-    CU_ASSERT_PTR_NOT_NULL(rootidentity);
+        id = DIDStore_GetDefaultRootIdentity(store);
+        CU_ASSERT_PTR_NOT_NULL(id);
 
-    doc = RootIdentity_NewDID(rootidentity, password, "");
-    CU_ASSERT_PTR_NOT_NULL(doc);
-    CU_ASSERT_TRUE(DIDStore_DeleteDID(store, &doc->did));
+        rootidentity = DIDStore_LoadRootIdentity(store, id);
+        free((void*)id);
+        CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    RootIdentity_Destroy(rootidentity);
-    DIDDocument_Destroy(doc);
+        doc = RootIdentity_NewDIDByIndex(rootidentity, 100, password, "");
+        CU_ASSERT_PTR_NOT_NULL(doc);
 
-    TestData_Free();
+        did = RootIdentity_GetDIDByIndex(rootidentity, 100);
+        CU_ASSERT_PTR_NOT_NULL(did);
+        CU_ASSERT_TRUE(DID_Equals(did, &doc->did));
+
+        CU_ASSERT_TRUE(DIDStore_DeleteDID(store, &doc->did));
+
+        RootIdentity_Destroy(rootidentity);
+        DIDDocument_Destroy(doc);
+        DID_Destroy(did);
+
+        TestData_Free();
+    }
 }
 
 static void test_openstore_newdid_with_wrongpw(void)
@@ -212,45 +271,82 @@ static void test_openstore_newdid_with_wrongpw(void)
     TestData_Free();
 }
 
-static void test_openstore_upgradev2(void)
+static void didstore_openstore_emptyfolder(void)
 {
-    RootIdentity *rootidentity;
-    DIDDocument *doc;
+    char _path[PATH_MAX];
+    char *root;
     DIDStore *store;
-    List_Helper helper;
-    int count = 0;
-    const char *id;
 
-    store = TestData_SetupTestStore(true, 1);
+    root = get_store_path(_path, "DIDTest-EmptyStore");
+    delete_file(root);
+    mkdirs(root, S_IRWXU);
+
+    store = DIDStore_Open(root);
     CU_ASSERT_PTR_NOT_NULL(store);
 
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 2));
+    DIDStore_Close(store);
+}
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store, get_identity, (void*)&count));
-    CU_ASSERT_EQUAL(1, count);
+static void didstore_openmultistore(void)
+{
+    char cwd[PATH_MAX], path[PATH_MAX * 2];
+    DIDStore *stores[10] = {0};
+    DIDDocument *docs[10] = {0}, *doc;
+    const char *mnemonic, *docsJson, *docJson, *id;
+    RootIdentity *rootidentity;
+    int i;
 
-    helper.store = store;
-    helper.count = 0;
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&helper));
-    CU_ASSERT_EQUAL(4, helper.count);
+    CU_ASSERT_PTR_NOT_NULL(getcwd(cwd, PATH_MAX));
 
-    id = DIDStore_GetDefaultRootIdentity(store);
-    CU_ASSERT_PTR_NOT_NULL(id);
+    for(i = 0; i < 10; i++) {
+        sprintf(path, "%s%s%s%d", cwd, PATH_STEP, "DIDTestStore", i);
+        delete_file(path);
 
-    rootidentity = DIDStore_LoadRootIdentity(store, id);
-    free((void*)id);
-    CU_ASSERT_PTR_NOT_NULL(rootidentity);
+        stores[i] = DIDStore_Open(path);
+        CU_ASSERT_PTR_NOT_NULL(stores[i]);
 
-    doc = RootIdentity_NewDID(rootidentity, password, "");
-    CU_ASSERT_PTR_NOT_NULL(doc);
+        mnemonic = Mnemonic_Generate(language);
+        CU_ASSERT_PTR_NOT_NULL(stores[i]);
 
-    RootIdentity_Destroy(rootidentity);
-    DIDDocument_Destroy(doc);
+        rootidentity = RootIdentity_Create(mnemonic, "", language, true, stores[i], storepass);
+        Mnemonic_Free((void*)mnemonic);
+        CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    TestData_Free();
+        RootIdentity_Destroy(rootidentity);
+    }
+
+    for (i = 0; i < 10; i++) {
+        id = DIDStore_GetDefaultRootIdentity(stores[i]);
+        CU_ASSERT_PTR_NOT_NULL(id);
+
+        rootidentity = DIDStore_LoadRootIdentity(stores[i], id);
+        CU_ASSERT_PTR_NOT_NULL(rootidentity);
+
+        docs[i] = RootIdentity_NewDID(rootidentity, storepass, NULL);
+        RootIdentity_Destroy(rootidentity);
+        CU_ASSERT_PTR_NOT_NULL(docs[i]);
+    }
+
+    for (i = 0; i < 10; i++) {
+        doc = DIDStore_LoadDID(stores[i], &docs[i]->did);
+        CU_ASSERT_PTR_NOT_NULL(doc);
+
+        docsJson = DIDDocument_ToJson(docs[i], true);
+        CU_ASSERT_PTR_NOT_NULL(docsJson);
+
+        docJson = DIDDocument_ToJson(doc, true);
+        CU_ASSERT_PTR_NOT_NULL(docJson);
+        CU_ASSERT_STRING_EQUAL(docJson, docsJson);
+
+        free((void*)docsJson);
+        free((void*)docJson);
+        DIDDocument_Destroy(doc);
+    }
+
+    for (i = 0; i < 10; i++) {
+        DIDDocument_Destroy(docs[i]);
+        DIDStore_Close(stores[i]);
+    }
 }
 
 static int didstore_openstore_test_suite_init(void)
@@ -264,9 +360,10 @@ static int didstore_openstore_test_suite_cleanup(void)
 }
 
 static CU_TestInfo cases[] = {
-    { "test_openstore_newdid",                test_openstore_newdid              },
+    { "test_openstore_compatibility",         test_openstore_compatibility       },
     { "test_openstore_newdid_with_wrongpw",   test_openstore_newdid_with_wrongpw },
-    { "test_openstore_upgradev2",             test_openstore_upgradev2           },
+    { "didstore_openstore_emptyfolder",       didstore_openstore_emptyfolder     },
+    { "didstore_openmultistore",              didstore_openmultistore            },
     { NULL,                                   NULL                               }
 };
 
