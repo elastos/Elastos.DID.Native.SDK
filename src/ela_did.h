@@ -3823,8 +3823,6 @@ DID_API bool DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *keyi
  * @param
  *      storepass               [in] Password for DIDStore.
  * @param
- *      did                     [in] The handle to DID.
- * @param
  *      id                      [in] The handle to public key identifier.
  * @param
  *      privatekey              [in] Private key string.
@@ -3834,7 +3832,7 @@ DID_API bool DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *keyi
  *      0 on success, -1 if an error occurred.
  */
 DID_API int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass,
-        DID *did, DIDURL *id, const uint8_t *privatekey, size_t size);
+        DIDURL *id, const uint8_t *privatekey, size_t size);
 
 /**
  * \~English
@@ -3843,11 +3841,9 @@ DID_API int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass,
  * @param
  *      store                   [in] The handle to DIDStore.
  * @param
- *      did                     [in] The handle to DID.
- * @param
  *      keyid                   [in] The identifier of public key.
  */
-DID_API void DIDStore_DeletePrivateKey(DIDStore *store, DID *did, DIDURL *keyid);
+DID_API void DIDStore_DeletePrivateKey(DIDStore *store, DIDURL *keyid);
 
 /**
  * \~English

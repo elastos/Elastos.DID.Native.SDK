@@ -724,7 +724,7 @@ static int remove_publickey(DIDDocument *document, DIDURL *keyid)
         }
 
         if (DIDMetadata_AttachedStore(&document->metadata))
-            DIDStore_DeletePrivateKey(document->metadata.base.store, &document->did, keyid);
+            DIDStore_DeletePrivateKey(document->metadata.base.store, keyid);
 
         return 0;
     }

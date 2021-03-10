@@ -62,7 +62,7 @@ ssize_t DIDStore_LoadPrivateKey(DIDStore *store, const char *storepass, DID *did
 ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, uint8_t *extendedkey, size_t size);
 
-int DIDStore_StorePrivateKey_Internal(DIDStore *store, DID *did, DIDURL *id, const char *prvkey);
+int DIDStore_StorePrivateKey_Internal(DIDStore *store, DIDURL *id, const char *prvkey);
 
 int DIDStore_StoreDefaultPrivateKey(DIDStore *store, const char *storepass,
         const char *idstring, uint8_t *privatekey, size_t size);

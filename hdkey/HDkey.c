@@ -47,8 +47,6 @@ static unsigned char PADDING_STANDARD = 0xAD;
 static uint32_t PrvVersionCode = 0x0488ade4;
 static uint32_t PubVersionCode = 0x0488b21e;
 
-#define MAX_PUBLICKEY_BASE58 64
-
 static const char **get_word_list(const char* language)
 {
     if (language) {
@@ -596,7 +594,7 @@ const char *HDKey_GetPublicKeyBase58(HDKey *hdkey, char *base, size_t size)
 {
     size_t len;
 
-    if (!hdkey || !base || size < MAX_PUBLICKEY_BASE58)
+    if (!hdkey || !base || size < PUBLICKEY_BASE58_BYTES)
         return NULL;
 
     len = BRBase58Encode(NULL, 0, hdkey->publickey, sizeof(hdkey->publickey));

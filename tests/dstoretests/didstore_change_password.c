@@ -37,7 +37,7 @@ static void test_didstore_change_password(void)
     const char *gAlias;
     DIDStore *store;
     RootIdentity *rootidentity;
-    int rc, i, count = 0;
+    int i, count = 0;
     DIDDocument *newdoc;
     int status;
 
@@ -92,37 +92,30 @@ static void test_didstore_change_password(void)
         DIDDocument_Destroy(loaddoc);
     }
 
-    rc = DIDStore_ListDIDs(store, 0, get_did, (void*)&count);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&count));
     CU_ASSERT_EQUAL(count, 10);
 
     count = 0;
-    rc = DIDStore_ListDIDs(store, 1, get_did, (void*)&count);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 1, get_did, (void*)&count));
     CU_ASSERT_EQUAL(count, 10);
 
     count = 0;
-    rc = DIDStore_ListDIDs(store, 2, get_did, (void*)&count);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 2, get_did, (void*)&count));
     CU_ASSERT_EQUAL(count, 0);
 
     //change password
-    rc = DIDStore_ChangePassword(store, "newpasswd", storepass);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ChangePassword(store, "newpasswd", storepass));
 
     count = 0;
-    rc = DIDStore_ListDIDs(store, 0, get_did, (void*)&count);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&count));
     CU_ASSERT_EQUAL(count, 10);
 
     count = 0;
-    rc = DIDStore_ListDIDs(store, 1, get_did, (void*)&count);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 1, get_did, (void*)&count));
     CU_ASSERT_EQUAL(count, 10);
 
     count = 0;
-    rc = DIDStore_ListDIDs(store, 2, get_did, (void*)&count);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 2, get_did, (void*)&count));
     CU_ASSERT_EQUAL(count, 0);
 
     newdoc = RootIdentity_NewDID(rootidentity, "newpasswd", "new");

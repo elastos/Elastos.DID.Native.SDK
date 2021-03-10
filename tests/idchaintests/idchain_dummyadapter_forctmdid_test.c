@@ -75,7 +75,7 @@ static void test_publish_ctmdid_with_onecontroller(void)
     keyid1 = DIDURL_NewByDid(&customizedid, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, &customizedid, keyid1,
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, keyid1,
             HDKey_GetPrivateKey(dkey), PRIVATEKEY_BYTES));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid1, keybase));
@@ -121,7 +121,7 @@ static void test_publish_ctmdid_with_onecontroller(void)
     CU_ASSERT_PTR_NOT_NULL(keybase);
     keyid2 = DIDURL_NewByDid(&customizedid, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, &customizedid, keyid2,
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, keyid2,
             HDKey_GetPrivateKey(dkey), PRIVATEKEY_BYTES));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid2, keybase));
 
@@ -223,7 +223,7 @@ static void test_publish_ctmdid_with_multicontroller(void)
     keyid1 = DIDURL_NewByDid(&customizedid, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, &customizedid, keyid1,
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, keyid1,
             HDKey_GetPrivateKey(dkey), PRIVATEKEY_BYTES));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid1, keybase));
 
@@ -360,7 +360,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
 
     keyid1 = DIDURL_NewByDid(&customizedid, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, &customizedid, keyid1,
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, keyid1,
             HDKey_GetPrivateKey(dkey), PRIVATEKEY_BYTES));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid1, keybase));
 
@@ -671,7 +671,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(keybase);
     keyid2 = DIDURL_NewByDid(&customizedid, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, &customizedid, keyid2,
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, keyid2,
             HDKey_GetPrivateKey(dkey), PRIVATEKEY_BYTES));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid2, keybase));
 

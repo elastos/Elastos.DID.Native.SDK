@@ -293,7 +293,23 @@ int Init_DIDURL(DIDURL *id, DID *did, const char *fragment)
 
     DID_Copy(&id->did, did);
     strcpy(id->fragment, fragment);
-    memset(&did->metadata, 0, sizeof(CredentialMetadata));
+    memset(&id->metadata, 0, sizeof(CredentialMetadata));
+    return 0;
+}
+
+int Init_DIDURL_ByIdstring(DIDURL *id, const char *idstring, const char *fragment)
+{
+    assert(id);
+    assert(idstring && *idstring);
+    assert(fragment && *fragment);
+
+    if (strlen(fragment) >= sizeof(id->fragment)) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "The fragment is too long.");
+        return -1;
+    }
+
+    strcpy(id->did.idstring, idstring);
+    strcpy(id->fragment, fragment);
     return 0;
 }
 
