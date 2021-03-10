@@ -1708,7 +1708,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     DIDURL *signkey = DIDURL_NewByDid(&controller, "key-2");
     CU_ASSERT_PTR_NOT_NULL(signkey);
 
-    rc = DIDStore_StorePrivateKey(store, storepass, &controller, signkey,
+    rc = DIDStore_StorePrivateKey(store, storepass, signkey,
             HDKey_GetPrivateKey(dkey), PRIVATEKEY_BYTES);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 

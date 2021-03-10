@@ -364,8 +364,7 @@ static int import_privatekey(DIDURL *id, const char *storepass, const char *file
             return -1;
     }
 
-    if (DIDStore_StorePrivateKey(compatibledata.store, storepass, DIDURL_GetDid(id),
-            id, extendedkey, size) == -1)
+    if (DIDStore_StorePrivateKey(compatibledata.store, storepass, id, extendedkey, size) == -1)
         return -1;
 
     return 0;

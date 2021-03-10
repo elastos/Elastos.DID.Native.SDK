@@ -203,10 +203,10 @@ static void test_didstore_rootidentity(void)
     CU_ASSERT_EQUAL(2, count);
 
     //set one not-existed root identity to default, failed.
-    CU_ASSERT_TRUE(RootIdentity_SetAsDefault(rootidentity1));
+    CU_ASSERT_EQUAL(-1, RootIdentity_SetAsDefault(rootidentity1));
     CU_ASSERT_STRING_EQUAL("No this root identity.", DIDError_GetMessage());
 
-    CU_ASSERT_TRUE(RootIdentity_SetAsDefault(rootidentity3));
+    CU_ASSERT_NOT_EQUAL(-1, RootIdentity_SetAsDefault(rootidentity3));
     defaultid = DIDStore_GetDefaultRootIdentity(store);
     CU_ASSERT_PTR_NOT_NULL(defaultid);
     CU_ASSERT_STRING_EQUAL(rootidentity3->id, defaultid);

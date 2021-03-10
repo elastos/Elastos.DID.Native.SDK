@@ -849,7 +849,7 @@ static int store_pubkey_file(DIDStore *store, const char *datadir, const char *i
         return -1;
     }
 
-    if (store_file(path, (const char *)keybase58) == -1) {
+    if (store_file(path, keybase58) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store extended public key failed.");
         delete_file(path);
         return -1;
@@ -1303,7 +1303,7 @@ static const char *load_pubkey_file(DIDStore *store, const char *id)
 
 static int store_extendedpubkey(DIDStore *store, const char *id, uint8_t *extendedkey, size_t size)
 {
-    char publickeybase58[PUBLICKEY_BASE58_BYTES];
+    char publickeybase58[EXTENDEDKEY_BASE58_BYTES];
 
     assert(store);
     assert(id);
@@ -2224,23 +2224,17 @@ bool DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
     return true;
 }
 
-int DIDStore_StorePrivateKey_Internal(DIDStore *store, DID *did, DIDURL *id,
-        const char *prvkey)
+int DIDStore_StorePrivateKey_Internal(DIDStore *store, DIDURL *id, const char *prvkey)
 {
     char path[PATH_MAX], filename[128];
 
-    if (!store || !did || !id || !prvkey || !*prvkey) {
+    if (!store || !id || !prvkey || !*prvkey) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
-    if (!DID_Equals(DIDURL_GetDid(id), did)) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Private key does not match with did.");
-        return -1;
-    }
-
     sprintf(filename, "%s%s", "#", id->fragment);
-    if (get_file(path, 1, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
+    if (get_file(path, 1, 6, store->root, DATA_DIR, IDS_DIR, id->did.idstring,
             PRIVATEKEYS_DIR, filename) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create private key file failed.");
         return -1;
@@ -2254,18 +2248,13 @@ int DIDStore_StorePrivateKey_Internal(DIDStore *store, DID *did, DIDURL *id,
     return -1;
 }
 
-int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass, DID *did,
-        DIDURL *id, const uint8_t *privatekey, size_t size)
+int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass, DIDURL *id,
+        const uint8_t *privatekey, size_t size)
 {
     char base64[MAX_PRIVATEKEY_BASE64];
 
-    if (!store || !storepass || !*storepass || !did || !id || !privatekey || size == 0) {
+    if (!store || !storepass || !*storepass || !id || !privatekey || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
-    if (!DID_Equals(DIDURL_GetDid(id), did)) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Private key does not match with did.");
         return -1;
     }
 
@@ -2274,18 +2263,18 @@ int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass, DID *did,
         return -1;
     }
 
-    return DIDStore_StorePrivateKey_Internal(store, did, id, base64);
+    return DIDStore_StorePrivateKey_Internal(store, id, base64);
 }
 
-void DIDStore_DeletePrivateKey(DIDStore *store, DID *did, DIDURL *id)
+void DIDStore_DeletePrivateKey(DIDStore *store, DIDURL *id)
 {
     char path[PATH_MAX], filename[128];
 
-    if (!store || !did || !id)
+    if (!store || !id)
         return;
 
     sprintf(filename, "%s%s", "#", id->fragment);
-    if (get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
+    if (get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, &id->did,
             PRIVATEKEYS_DIR, filename) == -1)
         return;
 
@@ -2298,7 +2287,6 @@ void DIDStore_DeletePrivateKey(DIDStore *store, DID *did, DIDURL *id)
 int DIDStore_StoreDefaultPrivateKey(DIDStore *store, const char *storepass,
         const char *idstring, uint8_t *privatekey, size_t size)
 {
-    DID did;
     DIDURL id;
 
     assert(store);
@@ -2306,10 +2294,10 @@ int DIDStore_StoreDefaultPrivateKey(DIDStore *store, const char *storepass,
     assert(idstring && *idstring);
     assert(privatekey);
 
-    if (Init_DID(&did, idstring) == -1 || Init_DIDURL(&id, &did, "primary") == -1)
+    if (Init_DIDURL_ByIdstring(&id, idstring, "primary") < 0)
         return -1;
 
-    if (DIDStore_StorePrivateKey(store, storepass, &did, &id, privatekey, size) == -1)
+    if (DIDStore_StorePrivateKey(store, storepass, &id, privatekey, size) == -1)
         return -1;
 
     return 0;
@@ -3839,7 +3827,7 @@ int DIDStore_ImportDID(DIDStore *store, const char *storepass,
     }
 
     for (i = 0; i < prv_size; i++) {
-        if (DIDStore_StorePrivateKey_Internal(store, did, &prvs[i].keyid, prvs[i].key) < 0)
+        if (DIDStore_StorePrivateKey_Internal(store, &prvs[i].keyid, prvs[i].key) < 0)
             goto errorExit;
     }
 

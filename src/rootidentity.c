@@ -266,7 +266,7 @@ static HDKey *get_derivedkey(uint8_t *extendedkey, size_t size, int index,
     assert(index >= 0);
     assert(derivedkey);
 
-    identity = HDKey_FromExtendedKey(extendedkey, sizeof(extendedkey), &_identity);
+    identity = HDKey_FromExtendedKey(extendedkey, size, &_identity);
     if (!identity) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial private identity failed.");
         return NULL;
@@ -292,6 +292,7 @@ static HDKey *get_derive(RootIdentity *rootidentity, int index, DIDStore *store,
     assert(derivedkey);
     assert(store);
 
+    memset(derivedkey, 0, sizeof(HDKey));
     if (storepass) {
         size = DIDStore_LoadRootIdentityPrvkey(store, storepass, rootidentity->id, extendedkey, sizeof(extendedkey));
         if (size < 0) {
@@ -390,7 +391,7 @@ static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index
     }
 
     if (DIDStore_StoreDefaultPrivateKey(store, storepass, did.idstring,
-            extendedkey, sizeof(extendedkey)) == -1) {
+            extendedkey, sizeof(extendedkey)) < 0) {
         HDKey_Wipe(derivedkey);
         return NULL;
     }
@@ -696,8 +697,7 @@ ssize_t RootIdentity_LazyCreatePrivateKey(DIDURL *key, DIDStore *store, const ch
         goto errorExit;
     }
 
-    if (DIDStore_StorePrivateKey(store, storepass, &key->did, key,
-            extendedkey, len) < 0) {
+    if (DIDStore_StorePrivateKey(store, storepass, key, extendedkey, len) < 0) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Meta data mismatch with DID.");
         goto errorExit;
     }
