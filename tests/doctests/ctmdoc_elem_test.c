@@ -1646,6 +1646,9 @@ static void test_multictmdoc_get_credential(void)
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL(controller1);
 
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("controller", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
+
     customized_doc = TestData_GetDocument("customized-multisigthree", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(customized_doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
@@ -1837,6 +1840,9 @@ static void test_multictmdoc_get_service(void)
     CU_ASSERT_PTR_NOT_NULL(controller1_doc);
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL(controller1);
+
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("controller", NULL, 0));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0));
 
     customized_doc = TestData_GetDocument("customized-multisigthree", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);

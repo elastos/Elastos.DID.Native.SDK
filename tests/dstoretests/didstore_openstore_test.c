@@ -56,7 +56,7 @@ static int get_cred2(DIDURL *id, void *context)
     if (!id)
         return 0;
 
-    if (!strcmp("profile", id->fragment)) {
+    if (!strcmp("profile", id->fragment) || !strcmp("email", id->fragment)) {
         cred = DIDStore_LoadCredential(helper->store, &id->did, id);
         if (!cred)
             return -1;
@@ -203,8 +203,10 @@ static void test_openstore_compatibility(void)
         CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, version));
         CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, version));
 
-        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store, get_identity, (void*)&count));
-        CU_ASSERT_EQUAL(1, count);
+        if (version == 2) {
+            CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store, get_identity, (void*)&count));
+            CU_ASSERT_EQUAL(1, count);
+        }
 
         helper.store = store;
         helper.count = 0;

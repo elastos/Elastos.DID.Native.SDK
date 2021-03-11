@@ -804,7 +804,7 @@ static void test_diddoc_add_credential(void)
     Credential *vc;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 1; j < 3; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -815,13 +815,13 @@ static void test_diddoc_add_credential(void)
 
         // Add credentials.
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddCredential(builder,
-                TestData_GetCredential(NULL, "vc-passport", NULL, 0)));
+                TestData_GetCredential(params[j].did, "passport", NULL, params[j].version)));
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddCredential(builder,
-                TestData_GetCredential(NULL, "vc-twitter", NULL, 0)));
+                TestData_GetCredential(params[j].did, "twitter", NULL, params[j].version)));
 
         // Credential already exist, should fail.
         CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddCredential(builder,
-                TestData_GetCredential(NULL, "vc-twitter", NULL, 0)));
+                TestData_GetCredential(params[j].did, "passport", NULL, params[j].version)));
 
         sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
         CU_ASSERT_PTR_NOT_NULL(sealeddoc);
@@ -921,7 +921,7 @@ static void test_diddoc_remove_credential(void)
     Credential *vc;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 1; j < 3; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -932,9 +932,9 @@ static void test_diddoc_remove_credential(void)
 
         // Add credentials.
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddCredential(builder,
-                TestData_GetCredential(NULL, "vc-passport", NULL, 0)));
+                TestData_GetCredential(params[j].did, "passport", NULL, params[j].version)));
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddCredential(builder,
-                TestData_GetCredential(NULL, "vc-twitter", NULL, 0)));
+                TestData_GetCredential(params[j].did, "twitter", NULL, params[j].version)));
 
         DIDURL *profileid = DIDURL_NewByDid(did, "profile");
         CU_ASSERT_PTR_NOT_NULL(profileid);

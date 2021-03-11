@@ -61,7 +61,6 @@ static void test_didstore_load_vcs(void)
     Credential *vc;
     DIDURL *id;
     DID *did;
-    int rc;
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -72,20 +71,16 @@ static void test_didstore_load_vcs(void)
 
     vc = TestData_GetCredential(NULL, "vc-profile", NULL, 0);
     metadata = Credential_GetMetadata(vc);
-    rc = CredentialMetadata_SetAlias(metadata, "MyProfile");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, CredentialMetadata_SetAlias(metadata, "MyProfile"));
     vc = TestData_GetCredential(NULL, "vc-email", NULL, 0);
     metadata = Credential_GetMetadata(vc);
-    rc = CredentialMetadata_SetAlias(metadata, "Email");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, CredentialMetadata_SetAlias(metadata, "Email"));
     vc = TestData_GetCredential(NULL, "vc-twitter", NULL, 0);
     metadata = Credential_GetMetadata(vc);
-    rc = CredentialMetadata_SetAlias(metadata, "Twitter");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, CredentialMetadata_SetAlias(metadata, "Twitter"));
     vc = TestData_GetCredential(NULL, "vc-passport", NULL, 0);
     metadata = Credential_GetMetadata(vc);
-    rc = CredentialMetadata_SetAlias(metadata, "Passport");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, CredentialMetadata_SetAlias(metadata, "Passport"));
 
     id = DIDURL_NewByDid(did, "profile");
     CU_ASSERT_PTR_NOT_NULL(id);

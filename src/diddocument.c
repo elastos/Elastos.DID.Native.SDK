@@ -752,7 +752,7 @@ static int Parse_Credentials_InDoc(DIDDocument *document, json_t *json)
         return -1;
     }
 
-    size = Parse_Credentials(DIDDocument_GetSubject(document), credentials, size, json);
+    size = Parse_Credentials(&document->did, credentials, size, json);
     if (size <= 0) {
         free(credentials);
         return -1;
@@ -3961,7 +3961,6 @@ static const char *document_derive(DIDDocument *document, const char *identifier
     char extendedkeyBase58[512];
 
     assert(document);
-    assert(index);
     assert(storepass && *storepass);
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
