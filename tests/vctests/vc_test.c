@@ -160,16 +160,17 @@ static void test_vc_parse_selfclaimvc(void)
         CU_ASSERT_STRING_EQUAL(normJson, data);
         free((void*)data);
 
-        data = Credential_ToJson(normvc, false);
-        CU_ASSERT_STRING_EQUAL(compactJson, data);
-        free((void*)data);
-        data = Credential_ToJson(compactvc, false);
-        CU_ASSERT_STRING_EQUAL(compactJson, data);
-        free((void*)data);
-        data = Credential_ToJson(cred, false);
-        CU_ASSERT_STRING_EQUAL(compactJson, data);
-        free((void*)data);
-
+        if (version == 2) {
+            data = Credential_ToJson(normvc, false);
+            CU_ASSERT_STRING_EQUAL(compactJson, data);
+            free((void*)data);
+            data = Credential_ToJson(compactvc, false);
+            CU_ASSERT_STRING_EQUAL(compactJson, data);
+            free((void*)data);
+            data = Credential_ToJson(cred, false);
+            CU_ASSERT_STRING_EQUAL(compactJson, data);
+            free((void*)data);
+        }
         Credential_Destroy(compactvc);
         Credential_Destroy(normvc);
     }
@@ -184,8 +185,8 @@ static void test_vc_parse_kycvc(void)
     int version;
 
     for (version = 1; version <= 2; version++) {
-        issuerdoc = TestData_GetDocument("issuer", NULL, version);
-        CU_ASSERT_PTR_NOT_NULL(issuerdoc);
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, version));
+
         doc = TestData_GetDocument("user1", NULL, version);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -215,15 +216,17 @@ static void test_vc_parse_kycvc(void)
         CU_ASSERT_STRING_EQUAL(normJson, data);
         free((void*)data);
 
-        data = Credential_ToJson(normvc, false);
-        CU_ASSERT_STRING_EQUAL(compactJson, data);
-        free((void*)data);
-        data = Credential_ToJson(compactvc, false);
-        CU_ASSERT_STRING_EQUAL(compactJson, data);
-        free((void*)data);
-        data = Credential_ToJson(cred, false);
-        CU_ASSERT_STRING_EQUAL(compactJson, data);
-        free((void*)data);
+        if (version == 2) {
+            data = Credential_ToJson(normvc, false);
+            CU_ASSERT_STRING_EQUAL(compactJson, data);
+            free((void*)data);
+            data = Credential_ToJson(compactvc, false);
+            CU_ASSERT_STRING_EQUAL(compactJson, data);
+            free((void*)data);
+            data = Credential_ToJson(cred, false);
+            CU_ASSERT_STRING_EQUAL(compactJson, data);
+            free((void*)data);
+        }
 
         Credential_Destroy(compactvc);
         Credential_Destroy(normvc);
@@ -242,6 +245,10 @@ static void test_vc_keycvc_tocid(void)
 
     issuerdoc = TestData_GetDocument("issuer", NULL, 2);
     CU_ASSERT_PTR_NOT_NULL(issuerdoc);
+
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
+
     foodoc = TestData_GetDocument("foo", NULL, 2);
     CU_ASSERT_PTR_NOT_NULL(foodoc);
 
@@ -257,13 +264,10 @@ static void test_vc_keycvc_tocid(void)
     DIDURL_Destroy(id);
 
     size = Credential_GetTypes(cred, types, sizeof(types));
-    CU_ASSERT_EQUAL(size, 2);
+    CU_ASSERT_EQUAL(1, size);
 
-    for (i = 0; i < size; i++) {
-        const char *type = types[i];
-        CU_ASSERT_TRUE(!strcmp(type, "InternetAccountCredential") ||
-                !strcmp(type, "ProfileCredential"));
-    }
+    for (i = 0; i < size; i++)
+        CU_ASSERT_STRING_EQUAL("InternetAccountCredential", types[i]);
 
     CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
     CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
@@ -291,6 +295,11 @@ static void test_vc_kycvc_fromcid(void)
     size_t size;
     int i;
 
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 2));
+
     issuerdoc = TestData_GetDocument("examplecorp", NULL, 2);
     CU_ASSERT_PTR_NOT_NULL(issuerdoc);
     foobardoc = TestData_GetDocument("foobar", NULL, 2);
@@ -308,13 +317,10 @@ static void test_vc_kycvc_fromcid(void)
     DIDURL_Destroy(id);
 
     size = Credential_GetTypes(cred, types, sizeof(types));
-    CU_ASSERT_EQUAL(size, 2);
+    CU_ASSERT_EQUAL(1, size);
 
-    for (i = 0; i < size; i++) {
-        const char *type = types[i];
-        CU_ASSERT_TRUE(!strcmp(type, "LicenseCredential") ||
-                !strcmp(type, "ProfileCredential"));
-    }
+    for (i = 0; i < size; i++)
+        CU_ASSERT_STRING_EQUAL("LicenseCredential", types[i]);
 
     CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
     CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
@@ -329,7 +335,7 @@ static void test_vc_kycvc_fromcid(void)
     CU_ASSERT_NOT_EQUAL(0, Credential_GetIssuanceDate(cred));
     CU_ASSERT_NOT_EQUAL(0, Credential_GetExpirationDate(cred));
 
-    CU_ASSERT_TRUE(Credential_IsSelfProclaimed(cred));
+    CU_ASSERT_FALSE(Credential_IsSelfProclaimed(cred));
     CU_ASSERT_FALSE(Credential_IsExpired(cred));
     CU_ASSERT_TRUE(Credential_IsGenuine(cred));
     CU_ASSERT_TRUE(Credential_IsValid(cred));
@@ -344,6 +350,10 @@ static void test_vc_selfclaimvc_fromcid(void)
     const char *types[2], *data;
     size_t size;
     int i;
+
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
 
     foobardoc = TestData_GetDocument("foobar", NULL, 2);
     CU_ASSERT_PTR_NOT_NULL(foobardoc);

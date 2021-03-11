@@ -153,9 +153,8 @@ static int subject_toJson(JsonGenerator *generator, Credential *cred, DID *did, 
     assert(cred);
 
     CHECK(JsonGenerator_WriteStartObject(generator));
-    if (!compact || !did)
-        CHECK(JsonGenerator_WriteStringField(generator, "id",
-                DID_ToString(&cred->subject.id, id, sizeof(id))));
+    CHECK(JsonGenerator_WriteStringField(generator, "id",
+            DID_ToString(&cred->subject.id, id, sizeof(id))));
 
     CHECK(JsonHelper_ToJson(generator, cred->subject.properties, true));
     CHECK(JsonGenerator_WriteEndObject(generator));
@@ -177,7 +176,7 @@ static int proof_toJson(JsonGenerator *generator, Credential *cred, int compact)
     if (cred->proof.created != 0)
         CHECK(JsonGenerator_WriteStringField(generator, "created",
                 get_time_string(_timestring, sizeof(_timestring), &cred->proof.created)));
-    if (DID_Equals(&cred->issuer, &cred->proof.verificationMethod.did))
+    if (DID_Equals(&cred->id.did, &cred->proof.verificationMethod.did))
         CHECK(JsonGenerator_WriteStringField(generator, "verificationMethod",
                 DIDURL_ToString(&cred->proof.verificationMethod, id, sizeof(id), compact)));
     else
@@ -197,7 +196,7 @@ int Credential_ToJson_Internal(JsonGenerator *gen, Credential *cred, DID *did,
     assert(gen->buffer);
     assert(cred);
 
-    DIDURL_ToString(&cred->id, buf, sizeof(buf), did ? compact: false);
+    DIDURL_ToString(&cred->id, buf, sizeof(buf), compact);
 
     CHECK(JsonGenerator_WriteStartObject(gen));
     CHECK(JsonGenerator_WriteStringField(gen, "id", buf));
@@ -396,7 +395,7 @@ const char *Credential_GetProperties(Credential *cred)
         return NULL;
     }
 
-    data = JsonHelper_ToString(cred->subject.properties);
+    data = json_dumps(cred->subject.properties, JSON_COMPACT);
     if (!data)
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Serialize properties to json failed.");
 
@@ -515,6 +514,39 @@ Credential *Parse_Credential(json_t *json, DID *did)
         return NULL;
     }
 
+    //subject
+    item = json_object_get(json, "credentialSubject");
+    if (!item) {
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Missing credential subject.");
+        goto errorExit;
+    }
+    if (!json_is_object(item)) {
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid credential subject.");
+        goto errorExit;
+    }
+
+    field = json_object_get(item, "id");
+    if (!field) {
+        if (!did) {
+            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Missing subject id.");
+            goto errorExit;
+        }
+        DID_Copy(&credential->subject.id, did);
+    } else {
+        if (!json_is_string(field)) {
+            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid subject id.");
+            goto errorExit;
+        }
+        if (Parse_DID(&credential->subject.id, json_string_value(field)) == -1) {
+            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid subject id.");
+            goto errorExit;
+        }
+    }
+
+    // properties exclude "id".
+    json_object_del(item, "id");
+    credential->subject.properties = json_deep_copy(item);
+
     //id
     item = json_object_get(json, "id");
     if (!item) {
@@ -525,12 +557,12 @@ Credential *Parse_Credential(json_t *json, DID *did)
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid id.");
         goto errorExit;
     }
-    if (Parse_DIDURL(&credential->id, json_string_value(item), did) < 0) {
+    if (Parse_DIDURL(&credential->id, json_string_value(item), &credential->subject.id) < 0) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid credential id.");
         goto errorExit;
     }
 
-    if (did && strcmp(credential->id.did.idstring, did->idstring) != 0) {
+    if (!DID_Equals(&credential->id.did, &credential->subject.id)) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Credential owner is not match with DID.");
         goto errorExit;
     }
@@ -538,12 +570,7 @@ Credential *Parse_Credential(json_t *json, DID *did)
     //issuer
     item = json_object_get(json, "issuer");
     if (!item) {
-        if (!did) {
-            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "No issuer.");
-            goto errorExit;
-        } else {
-            DID_Copy(&credential->issuer, did);
-        }
+        DID_Copy(&credential->issuer, &credential->id.did);
     } else {
         if (!json_is_string(item) || Parse_DID(&credential->issuer, json_string_value(item)) < 0) {
             DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid issuer.");
@@ -632,39 +659,6 @@ Credential *Parse_Credential(json_t *json, DID *did)
         goto errorExit;
     }
     strcpy((char*)credential->proof.signatureValue, json_string_value(field));
-
-    //subject
-    item = json_object_get(json, "credentialSubject");
-    if (!item) {
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Missing credential subject.");
-        goto errorExit;
-    }
-    if (!json_is_object(item)) {
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid credential subject.");
-        goto errorExit;
-    }
-
-    field = json_object_get(item, "id");
-    if (!field) {
-        if (!did || !DID_Copy(&credential->subject.id, did)) {
-            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "No credential subject did.");
-            goto errorExit;
-        }
-    } else {
-        if (Parse_DID(&credential->subject.id, json_string_value(field)) == -1) {
-            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid subject id.");
-            goto errorExit;
-        }
-
-        if (did && !DID_Equals(&credential->subject.id, did)) {
-            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Credential subject did is not match with did.");
-            goto errorExit;
-        }
-    }
-
-    // properties exclude "id".
-    json_object_del(item, "id");
-    credential->subject.properties = json_deep_copy(item);
 
     //type
     item = json_object_get(json, "type");
@@ -799,7 +793,7 @@ const char *Credential_ToString(Credential *cred, bool normalized)
     return json_dumps(json, JSON_COMPACT);
 }
 
-Credential *Credential_FromJson(const char *json, DID *owner)
+Credential *Credential_FromJson(const char *json, DID *did)
 {
     json_t *root;
     json_error_t error;
@@ -816,7 +810,7 @@ Credential *Credential_FromJson(const char *json, DID *owner)
         return NULL;
     }
 
-    cred = Parse_Credential(root, owner);
+    cred = Parse_Credential(root, did);
     json_decref(root);
 
     return cred;

@@ -174,7 +174,7 @@ int DIDStore_StoreDIDMetadata(DIDStore *store, DIDMetadata *meta, DID *did)
     data = DIDMetadata_ToJson(meta);
     if (!data) {
         delete_file(path);
-        return -1;
+        return 0;
     }
 
     rc = store_file(path, data);

@@ -155,9 +155,12 @@ static char *get_did_path(char *path, char *did, char *type, int version)
 
     strcpy(file, did);
     if (version != 0)
-        strcat(file, ".id.");
-    if (type)
+        strcat(file, ".id");
+
+    if (type) {
+        strcat(file, ".");
         strcat(file, type);
+    }
     strcat(file, ".json");
 
     get_testdata_path(path, file, version);
@@ -170,11 +173,13 @@ static char *get_credential_path(char *path, char *did, char *vc, char *type, in
 
     assert(path);
 
-    if (version == 0) {
-        strcpy(file, vc);
-    } else {
+    if (version != 0) {
         strcpy(file, did);
         strcat(file, ".vc");
+        strcat(file, ".");
+        strcat(file, vc);
+    } else {
+        strcpy(file, vc);
     }
 
     if (type) {
@@ -198,7 +203,8 @@ static char *get_presentation_path(char *path, char *did, char *vp, char *type, 
         strcpy(file, vp);
     } else {
         strcpy(file, did);
-        strcat(file, ".vp");
+        strcat(file, ".vp.");
+        strcat(file, vp);
     }
 
     if (type) {
@@ -226,17 +232,20 @@ static char *get_ticket_path(char *path, char *did)
     return path;
 }
 
-static char *get_privatekey_path(char *path, DIDURL *id, int version)
+static char *get_privatekey_path(char *path, const char *did, const char *fragment, int version)
 {
     char file[120];
 
     assert(path);
-    assert(id);
+    assert(did);
+    assert(fragment);
 
-    strcpy(file, id->did.idstring);
+    strcpy(file, did);
     if (version != 0)
         strcat(file, ".id.");
-    strcat(file, id->fragment);
+    else
+        strcat(file, ".");
+    strcat(file, fragment);
     strcat(file, ".sk");
 
     get_testdata_path(path, file, version);
@@ -402,15 +411,21 @@ static int set_testdata(char *dkey, void *dvalue)
     return 0;
 }
 
-static void did_basekey(char *basekey, char *did, char *type, bool json)
+static void did_basekey(char *basekey, char *did, char *type, int version, bool json)
 {
+    char _version[10];
+
     assert(basekey);
     assert(did);
+
+    sprintf(_version, "%d", version);
 
     strcpy(basekey, "res:");
     if (json)
         strcat(basekey, "json:");
-    strcat(basekey, "did:");
+    strcat(basekey, "did");
+    strcat(basekey, _version);
+    strcat(basekey, ":");
     strcat(basekey, did);
     if (type) {
         strcat(basekey, ":");
@@ -418,15 +433,21 @@ static void did_basekey(char *basekey, char *did, char *type, bool json)
     }
 }
 
-static void credential_basekey(char *basekey, char *did, char *vc, char *type, bool json)
+static void credential_basekey(char *basekey, char *did, char *vc, char *type, int version, bool json)
 {
+    char _version[10];
+
     assert(basekey);
     assert(vc);
+
+    sprintf(_version, "%d", version);
 
     strcpy(basekey, "res:");
     if (json)
         strcat(basekey, "json:");
-    strcat(basekey, "vc:");
+    strcat(basekey, "vc");
+    strcat(basekey, _version);
+    strcat(basekey, ":");
     if (did) {
        strcat(basekey, did);
        strcat(basekey, ":");
@@ -438,15 +459,21 @@ static void credential_basekey(char *basekey, char *did, char *vc, char *type, b
     }
 }
 
-static void presentation_basekey(char *basekey, char *did, char *vp, char *type, bool json)
+static void presentation_basekey(char *basekey, char *did, char *vp, char *type, int version, bool json)
 {
+    char _version[10];
+
     assert(basekey);
     assert(vp);
+
+    sprintf(_version, "%d", version);
 
     strcpy(basekey, "res:");
     if (json)
         strcat(basekey, "json:");
-    strcat(basekey, "vp:");
+    strcat(basekey, "vp");
+    strcat(basekey, _version);
+    strcat(basekey, ":");
     if (did) {
         strcat(basekey, did);
         strcat(basekey, ":");
@@ -466,7 +493,7 @@ const char *TestData_GetDocumentJson(char *did, char *type, int version)
 
     assert(did);
 
-    did_basekey(basekey, did, type, true);
+    did_basekey(basekey, did, type, version, true);
     dvalue = get_testdata(basekey);
     if (dvalue)
         return (const char*)dvalue;
@@ -488,16 +515,16 @@ DIDDocument *TestData_GetDocument(char *did, char *type, int version)
 {
     char path[PATH_MAX * 2], basekey[120] = {0};
     const char *keys[5] = {0};
-    const char *data;
+    const char *data, *subject;
     char *idstring;
-    DIDDocument *doc, *resolvedoc;
+    DIDDocument *doc = NULL, *signerdoc = NULL;
     void *dvalue;
     DIDURL *signkey = NULL, *id;
     int rc, i, size = 0;
 
     assert(did);
 
-    did_basekey(basekey, did, type, false);
+    did_basekey(basekey, did, type, version, false);
     dvalue = get_testdata(basekey);
     if (dvalue)
         return (DIDDocument*)dvalue;
@@ -510,12 +537,13 @@ DIDDocument *TestData_GetDocument(char *did, char *type, int version)
     if (!doc)
         return NULL;
 
+    subject = doc->did.idstring;
+
     if (!type) {
         if (DIDStore_StoreDID(compatibledata.store, doc) < 0)
             goto errorExit;
 
-        //store privatekeys
-        if (strcmp(did, "bar") && strcmp(did, "examplecorp") && strcmp(did, "foo")) {
+        if (!DIDDocument_IsCustomizedDID(doc)) {
             keys[size++] = "primary";
             idstring = did;
         }
@@ -538,22 +566,28 @@ DIDDocument *TestData_GetDocument(char *did, char *type, int version)
         }
 
         for (i = 0; i < size; i++) {
-            id = DIDURL_New(idstring, keys[i]);
-            get_privatekey_path(path, id, version);
+            id = DIDURL_New(subject, keys[i]);
+            get_privatekey_path(path, idstring, keys[i], version);
             rc = import_privatekey(id, storepass, path, version);
             DIDURL_Destroy(id);
             if (rc < 0)
                 goto errorExit;
         }
 
-        //publish did
-        if (!strcmp(did, "foobar") || !strcmp(did, "foo") || !strcmp(did, "bar") ||
-                !strcmp(did, "baz")) {
-            DIDDocument *userdoc = TestData_GetDocument("user1", NULL, version);
-            if (!userdoc)
+        if (DIDDocument_IsCustomizedDID(doc)) {
+            if (version == 0) {
+                signerdoc = TestData_GetDocument("document", NULL, 0);
+            } else {
+                if (!strcmp("example", subject))
+                    signerdoc = TestData_GetDocument("issuer", NULL, version);
+                else
+                    signerdoc = TestData_GetDocument("user1", NULL, version);
+            }
+
+            if (!signerdoc)
                 goto errorExit;
 
-            signkey = DIDDocument_GetDefaultPublicKey(userdoc);
+            signkey = DIDDocument_GetDefaultPublicKey(signerdoc);
         }
 
         if (!DIDDocument_PublishDID(doc, signkey, false, storepass))
@@ -578,7 +612,7 @@ const char *TestData_GetCredentialJson(char *did, char *vc, char *type, int vers
 
     assert(vc);
 
-    credential_basekey(basekey, did, vc, type, true);
+    credential_basekey(basekey, did, vc, type, version, true);
     dvalue = get_testdata(basekey);
     if (dvalue)
         return (const char*)dvalue;
@@ -605,7 +639,7 @@ Credential *TestData_GetCredential(char *did, char *vc, char *type, int version)
 
     assert(vc);
 
-    credential_basekey(basekey, did, vc, type, false);
+    credential_basekey(basekey, did, vc, type, version, false);
     dvalue = get_testdata(basekey);
     if (dvalue)
         return (Credential*)dvalue;
@@ -641,7 +675,7 @@ const char *TestData_GetPresentationJson(char *did, char *vp, char *type, int ve
 
     assert(vp);
 
-    presentation_basekey(basekey, did, vp, type, true);
+    presentation_basekey(basekey, did, vp, type, version, true);
     dvalue = get_testdata(basekey);
     if (dvalue)
         return (const char*)dvalue;
@@ -668,7 +702,7 @@ Presentation *TestData_GetPresentation(char *did, char *vp, char *type, int vers
 
     assert(vp);
 
-    presentation_basekey(basekey, did, vp, type, false);
+    presentation_basekey(basekey, did, vp, type, version, false);
     dvalue = get_testdata(basekey);
     if (dvalue)
         return (Presentation*)dvalue;

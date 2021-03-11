@@ -27,7 +27,6 @@ static void test_diddoc_json_operateion(void)
     int i;
 
     for (i = 0; i < 10; i++) {
-        //compactdoc = DIDDocument_FromJson(TestData_GetDocumentJson("document", "compact", 0));
         compactJson = TestData_GetDocumentJson(params[i].did, "compact", params[i].version);
         CU_ASSERT_PTR_NOT_NULL(compactJson);
         compactdoc = DIDDocument_FromJson(compactJson);
@@ -35,7 +34,7 @@ static void test_diddoc_json_operateion(void)
         CU_ASSERT_TRUE(DIDDocument_IsValid(compactdoc));
 
         normalizedJson = TestData_GetDocumentJson(params[i].did, "normalized", params[i].version);
-        CU_ASSERT_PTR_NOT_NULL(compactJson);
+        CU_ASSERT_PTR_NOT_NULL(normalizedJson);
         normalizedoc = DIDDocument_FromJson(normalizedJson);
         CU_ASSERT_PTR_NOT_NULL(normalizedoc);
         CU_ASSERT_TRUE(DIDDocument_IsValid(normalizedoc));
@@ -56,18 +55,21 @@ static void test_diddoc_json_operateion(void)
         CU_ASSERT_PTR_NOT_NULL(data);
         CU_ASSERT_STRING_EQUAL(normalizedJson, data);
         free((void*)data);
-        data = DIDDocument_ToJson(compactdoc, false);
-        CU_ASSERT_PTR_NOT_NULL(data);
-        CU_ASSERT_STRING_EQUAL(compactJson, data);
-        free((void*)data);
-        data = DIDDocument_ToJson(normalizedoc, false);
-        CU_ASSERT_PTR_NOT_NULL(data);
-        CU_ASSERT_STRING_EQUAL(compactJson, data);
-        free((void*)data);
-        data = DIDDocument_ToJson(doc, false);
-        CU_ASSERT_PTR_NOT_NULL(data);
-        CU_ASSERT_STRING_EQUAL(compactJson, data);
-        free((void*)data);
+
+        if (params[i].version == 2) {
+            data = DIDDocument_ToJson(compactdoc, false);
+            CU_ASSERT_PTR_NOT_NULL(data);
+            CU_ASSERT_STRING_EQUAL(compactJson, data);
+            free((void*)data);
+            data = DIDDocument_ToJson(normalizedoc, false);
+            CU_ASSERT_PTR_NOT_NULL(data);
+            CU_ASSERT_STRING_EQUAL(compactJson, data);
+            free((void*)data);
+            data = DIDDocument_ToJson(doc, false);
+            CU_ASSERT_PTR_NOT_NULL(data);
+            CU_ASSERT_STRING_EQUAL(compactJson, data);
+            free((void*)data);
+        }
     }
 }
 

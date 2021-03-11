@@ -368,7 +368,7 @@ const char *load_file(const char *path)
 
 static int is_empty_helper(const char *path, void *context)
 {
-    if (!path) {
+    if (!path || !strcmp(path, ".") || !strcmp(path, "..")) {
         *(int *)context = 0;
         return 0;
     }
