@@ -743,12 +743,12 @@ int TestData_Init(bool dummy)
     return rc;
 }
 
-void TestData_Deinit(void)
+void TestData_Deinit(int type)
 {
 #if !defined(_WIN32) && !defined(_WIN64)
     TestDIDAdapter_Cleanup();
 #endif
-    DummyAdapter_Cleanup();
+    DummyAdapter_Cleanup(type);
 }
 
 static DIDStore *setup_store(bool dummybackend, const char *root)
@@ -768,7 +768,7 @@ static DIDStore *setup_store(bool dummybackend, const char *root)
 #endif
 
     if (dummybackend) {
-        DummyAdapter_Cleanup();
+        DummyAdapter_Cleanup(0);
         DummyAdapter_Set(cachedir);
     }
 

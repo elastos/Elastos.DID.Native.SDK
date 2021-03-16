@@ -564,6 +564,8 @@ bool RootIdentity_Synchronize(RootIdentity *rootidentity, DIDDocument_ConflictHa
             if (i > lastindex)
                 blanks++;
         }
+
+        i++;
     }
 
     if (lastindex >= rootidentity->index)
@@ -641,10 +643,10 @@ ssize_t RootIdentity_LazyCreatePrivateKey(DIDURL *key, DIDStore *store, const ch
     HDKey _derivedkey, *derivedkey = NULL;
     char publickeybase58[PUBLICKEY_BASE58_BYTES];
     PublicKey *pk;
-    ssize_t len;
-    int index, rc = -1;
+    ssize_t len, rc = -1;
+    int index;
 
-    assert(id);
+    assert(key);
     assert(store);
     assert(storepass && *storepass);
     assert(extendedkey);
@@ -698,7 +700,7 @@ ssize_t RootIdentity_LazyCreatePrivateKey(DIDURL *key, DIDStore *store, const ch
     }
 
     if (DIDStore_StorePrivateKey(store, storepass, key, extendedkey, len) < 0) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Meta data mismatch with DID.");
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store private key failed.");
         goto errorExit;
     }
 

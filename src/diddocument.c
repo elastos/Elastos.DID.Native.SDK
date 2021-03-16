@@ -4199,7 +4199,7 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
     const char *last_txid, *local_signature, *local_prevsignature, *resolve_signature = NULL;
     DIDDocument *resolve_doc = NULL;
     DIDStore *store;
-    bool success;
+    bool success = false;
     int rc = -1, status;
 
     if (!document || !storepass || !*storepass) {
@@ -4311,11 +4311,11 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
     if (resolve_signature)
         DIDMetadata_SetPrevSignature(&document->metadata, resolve_signature);
 
-    return true;
+    success = true;
 
 errorExit:
     DIDDocument_Destroy(resolve_doc);
-    return false;
+    return success;
 }
 
 bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
@@ -4324,7 +4324,7 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
     DIDDocument *resolve_doc = NULL;
     DocumentProof *proof;
     DIDStore *store;
-    bool equal = false;
+    bool equal = false, success = false;
     int rc = -1, i, status;
 
     if (!document || !storepass || !*storepass || !ticket || !signkey) {
@@ -4385,11 +4385,11 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
     if (*resolve_doc->proofs.proofs[0].signatureValue)
         DIDMetadata_SetPrevSignature(&document->metadata, resolve_doc->proofs.proofs[0].signatureValue);
 
-    return true;
+    success = true;
 
 errorExit:
     DIDDocument_Destroy(resolve_doc);
-    return false;
+    return success;
 }
 
 bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)

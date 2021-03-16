@@ -141,6 +141,7 @@ CredentialBiography *CredentialBiography_FromJson(json_t *json)
                 revoked = (biography->status == CredentialStatus_Revoked) ? true : false;
                 CredentialMetadata_SetRevoke(&vc->metadata, revoked);
                 CredentialMetadata_SetPublished(&vc->metadata, tx->timestamp);
+                CredentialMetadata_SetTxid(&vc->metadata, tx->txid);
             }
 
             biography->txs.size++;

@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
         CU_basic_run_tests();
         CU_cleanup_registry();
 
-        TestData_Deinit();
+        TestData_Deinit(0);
 
         if (memstats_file)
             system(memstats_cmd);

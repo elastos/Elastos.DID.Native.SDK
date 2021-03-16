@@ -3239,7 +3239,7 @@ DID_API bool Credential_Revoke(Credential *credential, DIDURL *signkey, const ch
  * @return
  *      true on success, false if an error occurred. Caller should free the returned value.
  */
-DID_API bool Credential_RevokeById(DIDURL *id, DIDDocument *document,  DIDURL *signkey,
+DID_API bool Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
         const char *storepass);
 
 /**

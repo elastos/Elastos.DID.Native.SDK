@@ -297,6 +297,13 @@ static int idchain_restore_test_suite_init(void)
             TestData_Free();
             return -1;
         }
+        if (!DIDDocument_PublishDID(doc, NULL, true, storepass)) {
+            DIDDocument_Destroy(doc);
+            RootIdentity_Destroy(rootidentity);
+            Mnemonic_Free((void*)newmnemonic);
+            TestData_Free();
+            return -1;
+        }
         DID_Copy(&dids[i], DIDDocument_GetSubject(doc));
         DIDDocument_Destroy(doc);
     }

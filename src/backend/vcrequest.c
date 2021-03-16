@@ -308,33 +308,34 @@ errorExit:
 bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credential)
 {
     DID *signer;
-    DIDDocument *signerdoc;
-    Credential *vc;
-    int status, rc;
+    DIDDocument *signerdoc = NULL, *ownerdoc = NULL, *issuerdoc = NULL;
+    DIDURL *signkey;
+    Credential *vc = NULL;
+    int status, rc = -1;
 
     assert(request);
 
-    signer = &request->proof.verificationMethod.did;
-    signerdoc = DID_Resolve(signer, &status, false);
-    if (!signerdoc) {
+    signkey = &request->proof.verificationMethod;
+    ownerdoc = DID_Resolve(&request->id.did, &status, false);
+    if (!ownerdoc) {
         if (status == DIDStatus_NotFound)
             DIDError_Set(DIDERR_NOT_EXISTS, "Credential request's signer does not exist.");
         return false;
     }
 
-    if (!DIDDocument_IsValid(signerdoc))
-        return false;
+    if (!DIDDocument_IsValid(ownerdoc))
+        goto errorExit;
 
     if (!strcmp("declare", request->header.op)) {
         vc = request->vc;
         if (!vc) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "Miss credential in the transaction.");
-            return false;
+            goto errorExit;
         }
 
-        if (!DID_Equals(signer, &vc->subject.id)) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "The transaction to declare credential must be signed by ownerself.");
-            return false;
+        if (!DIDDocument_IsAuthenticationKey(ownerdoc, signkey)) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "The signer is not the controller of customized did.");
+            goto errorExit;
         }
     } else {
         vc = request->vc;
@@ -342,24 +343,43 @@ bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credentia
             vc = credential;
 
         if (vc) {
-            if (!DID_Equals(signer, &vc->subject.id) && !DID_Equals(signer, &vc->issuer)) {
-               DIDError_Set(DIDERR_TRANSACTION_ERROR, "The transaction to revoke credential must be signed by ownerself or issuer.");
-               return false;
+            issuerdoc = DID_Resolve(&vc->issuer, &status, false);
+            if (!issuerdoc) {
+               DIDError_Set(DIDERR_TRANSACTION_ERROR, "Issuer of credential does not exist.");
+               goto errorExit;
             }
         }
+
+        if (!DIDDocument_IsAuthenticationKey(ownerdoc, signkey) &&
+                (issuerdoc && !DIDDocument_IsAuthenticationKey(issuerdoc, signkey)))
+            goto errorExit;
     }
 
-    if (!DIDDocument_IsAuthenticationKey(signerdoc, &request->proof.verificationMethod)) {
-        DIDError_Set(DIDERR_TRANSACTION_ERROR, "The sign key of transaction must be authentication key.");
-        return false;
+    if (vc && !Credential_IsValid(vc)) {
+        DIDError_Set(DIDERR_TRANSACTION_ERROR, "Credential in request is invalid.");
+        goto errorExit;
     }
+
+    signerdoc = DID_Resolve(&signkey->did, &status, false);
+    if (!signerdoc) {
+        if (status == DIDStatus_NotFound)
+            DIDError_Set(DIDERR_NOT_EXISTS, "Credential request's signer does not exist.");
+        goto errorExit;
+    }
+
+    if (!DIDDocument_IsValid(signerdoc))
+        goto errorExit;
 
     rc = DIDDocument_Verify(signerdoc, &request->proof.verificationMethod,
             (char*)request->proof.signature, 3,
             request->header.spec, strlen(request->header.spec),
             request->header.op, strlen(request->header.op),
             request->payload, strlen(request->payload));
+
+errorExit:
     DIDDocument_Destroy(signerdoc);
+    DIDDocument_Destroy(ownerdoc);
+    DIDDocument_Destroy(issuerdoc);
     return rc == -1 ? false : true;
 }
 

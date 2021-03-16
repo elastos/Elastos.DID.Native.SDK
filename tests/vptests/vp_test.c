@@ -633,6 +633,7 @@ static void test_vp_create_by_credarray_ctmid(void)
 
     vp = Presentation_CreateByCredentials(did, signkey, store, storepass,
             "873172f58701a9ee686f0630204fee59", "https://example.com/", vcs, 4);
+    DIDURL_Destroy(signkey);
     CU_ASSERT_PTR_NOT_NULL(vp);
 
     CU_ASSERT_NOT_EQUAL_FATAL(Presentation_GetType(vp), PresentationType);

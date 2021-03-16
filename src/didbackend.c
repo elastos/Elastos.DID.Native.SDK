@@ -368,7 +368,7 @@ static ssize_t listvcs_from_backend(DID *did, DIDURL **buffer, size_t size, int 
     assert(did);
     assert(size > 0);
     assert(skip >= 0);
-    assert(limit > 0);
+    assert(limit >= 0);
 
     didstring = DID_ToString(did, _idstring, sizeof(_idstring));
     if (!didstring)
@@ -622,7 +622,7 @@ ssize_t DIDBackend_ListCredentials(DID *did, DIDURL **buffer, size_t size,
     assert(did);
     assert(buffer);
     assert(size > 0);
-    assert(skip >= 0 && limit > 0);
+    assert(skip >= 0 && limit >= 0);
 
     if (!gResolve) {
         DIDError_Set(DIDERR_INVALID_BACKEND, "Resolver not initialized.");

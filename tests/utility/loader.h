@@ -52,7 +52,7 @@ HDKey *Generater_KeyPair(HDKey *hdkey);
 ////////////////////////////////////////
 int TestData_Init(bool dummy);
 
-void TestData_Deinit(void);
+void TestData_Deinit(int type);
 
 void TestData_Cleanup(void);
 
