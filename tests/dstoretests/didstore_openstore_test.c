@@ -323,6 +323,7 @@ static void didstore_openmultistore(void)
 
         rootidentity = DIDStore_LoadRootIdentity(stores[i], id);
         CU_ASSERT_PTR_NOT_NULL(rootidentity);
+        free((void*)id);
 
         docs[i] = RootIdentity_NewDID(rootidentity, storepass, NULL);
         RootIdentity_Destroy(rootidentity);

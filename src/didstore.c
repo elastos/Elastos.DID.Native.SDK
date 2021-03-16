@@ -485,10 +485,13 @@ static int store_storemeta(DIDStore *store, const char *datadir, StoreMetadata *
 
     rc = store_file(path, data);
     free((void*)data);
-    if (rc < 0)
+    if (rc < 0) {
         delete_file(path);
+        return -1;
+    }
 
-    return rc;
+    StoreMetadata_SetStore(metadata, store);
+    return 0;
 }
 
 static int load_storemeta(DIDStore *store, StoreMetadata *metadata)
@@ -525,6 +528,7 @@ static int load_storemeta(DIDStore *store, StoreMetadata *metadata)
     if (rc < 0)
         return -1;
 
+    StoreMetadata_SetStore(metadata, store);
     return 0;
 }
 
@@ -607,8 +611,8 @@ static int post_upgrade(DIDStore *store)
             store_file(post_file, data_deprecated_dir);
         } else {
             sprintf(data_deprecated_dir, "%s%s%s", store->root, PATH_SEP, data);
-            free((void*)data);
         }
+        free((void*)data);
 
         if (test_path(data_deprecated_dir) != S_IFDIR)
             delete_file(data_deprecated_dir);
@@ -1682,6 +1686,7 @@ int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
 
     DIDMetadata_SetStore(&document->metadata, store);
     DID_ToString(&document->did, document->metadata.did, sizeof(document->metadata.did));
+    memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetadata));
 	data = DIDDocument_ToJson(document, true);
 	if (!data)
 		return -1;
@@ -1903,6 +1908,7 @@ int DIDStore_StoreCredential(DIDStore *store, Credential *credential)
 
     CredentialMetadata_SetStore(&credential->metadata, store);
     DIDURL_ToString(&credential->id, credential->metadata.id, sizeof(credential->metadata.id), false);
+    memcpy(&credential->id.metadata, &credential->metadata, sizeof(CredentialMetadata));
     CredentialMetadata_Free(&meta);
 
     if (store_credential(store, credential) == -1 ||
@@ -1957,6 +1963,7 @@ Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
         return NULL;
     }
 
+    memcpy(&credential->id.metadata, &credential->metadata, sizeof(CredentialMetadata));
     return credential;
 }
 
@@ -2665,10 +2672,10 @@ ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass,
         DIDURL *key, uint8_t *extendedkey, size_t size)
 {
     ssize_t len;
-    const char *privatekey_str;
+    const char *privatekey_str = NULL;
     char path[PATH_MAX], filename[128];
     bool success = false;
-    ssize_t rc = -1;
+    int rc = -1;
 
     assert(store);
     assert(storepass && *storepass);
@@ -2678,13 +2685,14 @@ ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass,
     assert(size >= EXTENDEDKEY_BYTES);
 
     sprintf(filename, "%s%s", "#", key->fragment);
-    if (get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring, PRIVATEKEYS_DIR, filename) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "No private key file.");
-        return -1;
+    rc = get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring, PRIVATEKEYS_DIR, filename);
+    if (rc == 0) {
+        privatekey_str = load_file(path);
+        if (!privatekey_str)
+            rc = -1;
     }
 
-    privatekey_str = load_file(path);
-    if (!privatekey_str)
+    if (rc == -1)
         return RootIdentity_LazyCreatePrivateKey(key, store, storepass, extendedkey, size);
 
     len = didstore_decrypt_from_base64(store, storepass, extendedkey, privatekey_str);

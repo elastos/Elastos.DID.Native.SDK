@@ -30,7 +30,7 @@ extern "C" {
 
 int DummyAdapter_Set(const char *cachedir);
 
-void DummyAdapter_Cleanup(void);
+void DummyAdapter_Cleanup(int type);
 
 #ifdef __cplusplus
 }

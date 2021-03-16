@@ -179,7 +179,7 @@ const char *DIDMetadata_GetRootIdentity(DIDMetadata *metadata)
 {
     assert(metadata);
 
-    return Metadata_GetDefaultExtra(&metadata->base, SIGNATURE);
+    return Metadata_GetDefaultExtra(&metadata->base, ROOTIDENTITY);
 }
 
 int DIDMetadata_GetIndex(DIDMetadata *metadata)

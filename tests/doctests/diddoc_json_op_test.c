@@ -70,6 +70,9 @@ static void test_diddoc_json_operateion(void)
             CU_ASSERT_STRING_EQUAL(compactJson, data);
             free((void*)data);
         }
+
+        DIDDocument_Destroy(normalizedoc);
+        DIDDocument_Destroy(compactdoc);
     }
 }
 

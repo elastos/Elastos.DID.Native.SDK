@@ -457,6 +457,9 @@ static void test_vc_parse_vcs(void)
             CU_ASSERT_STRING_EQUAL(compactJson, data);
             free((void*)data);
         }
+
+        Credential_Destroy(normvc);
+        Credential_Destroy(compactvc);
     }
 }
 

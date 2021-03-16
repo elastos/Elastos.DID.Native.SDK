@@ -15,7 +15,7 @@
 #include "did.h"
 
 static DIDDocument *doc;
-static DIDStore *store = (DIDStore *)0x123456;
+static DIDStore *store;
 
 static void get_time(time_t *date, int n)
 {

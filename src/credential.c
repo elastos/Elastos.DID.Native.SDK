@@ -1110,10 +1110,9 @@ errorExit:
 
 bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *storepass)
 {
-    DIDDocument *doc = NULL;
+    DIDDocument *ownerdoc = NULL, *issuerdoc = NULL, *signerdoc = NULL;
     DIDStore *store;
     bool success = false;
-    DID *signer;
     int status;
 
     if (!credential || !storepass || !*storepass) {
@@ -1131,14 +1130,6 @@ bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *stor
         return false;
     }
 
-    if (!signkey) {
-        signer = &credential->subject.id;
-    } else {
-        signer = &signkey->did;
-        if (!DID_Equals(signer, &credential->subject.id) && !DID_Equals(signer, &credential->issuer))
-            return false;
-    }
-
     if (!Credential_IsValid(credential))
         return false;
 
@@ -1148,34 +1139,50 @@ bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *stor
     }
 
     store = credential->metadata.base.store;
-    doc = DIDStore_LoadDID(store, signer);
-    if (!doc) {
-        doc = DID_Resolve(signer, &status, false);
-        if (!doc) {
+    ownerdoc = DIDStore_LoadDID(store, &credential->id.did);
+    if (!ownerdoc) {
+        ownerdoc = DID_Resolve(&credential->id.did, &status, false);
+        if (!ownerdoc) {
             if (status == DIDStatus_NotFound)
                 DIDError_Set(DIDERR_NOT_EXISTS, "The owner of Credential doesn't already exist.");
             return false;
         }
-        DIDMetadata_SetStore(&doc->metadata, store);
+        DIDMetadata_SetStore(&ownerdoc->metadata, store);
     }
 
     if (!signkey) {
-        signkey = DIDDocument_GetDefaultPublicKey(doc);
+        signkey = DIDDocument_GetDefaultPublicKey(ownerdoc);
         if (!signkey) {
             DIDError_Set(DIDERR_INVALID_KEY, "Please give the specificed sign key.");
             goto errorExit;
         }
     } else {
-        if(!DIDDocument_IsAuthenticationKey(doc, signkey)) {
+        issuerdoc = DID_Resolve(&credential->issuer, &status, false);
+        if (!issuerdoc) {
+            DIDError_Set(DIDERR_NOT_EXISTS, "The issuer of Credential doesn't already exist.");
+            goto errorExit;
+        }
+
+        if(!DIDDocument_IsAuthenticationKey(ownerdoc, signkey) &&
+                !DIDDocument_IsAuthenticationKey(issuerdoc, signkey)) {
             DIDError_Set(DIDERR_INVALID_KEY, "Please give the authentication key to sign.");
             goto errorExit;
         }
     }
 
-    success = DIDBackend_RevokeCredential(&credential->id, signkey, doc, storepass);
+    signerdoc = DID_Resolve(&credential->proof.verificationMethod.did, &status, false);
+    if (!signerdoc) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "The signer of Credential doesn't already exist.");
+        goto errorExit;
+    }
+    DIDMetadata_SetStore(&signerdoc->metadata, store);
+
+    success = DIDBackend_RevokeCredential(&credential->id, signkey, signerdoc, storepass);
 
 errorExit:
-    DIDDocument_Destroy(doc);
+    DIDDocument_Destroy(ownerdoc);
+    DIDDocument_Destroy(issuerdoc);
+    DIDDocument_Destroy(signerdoc);
     return success;
 }
 

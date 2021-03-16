@@ -51,21 +51,39 @@ static DIDTransaction *get_lasttransaction(DID *did)
     DIDTransaction *info;
     int i;
 
-    assert(did);
-
-    for (i = num - 1; i >= 0; i--) {
-        info = infos[i];
-        if (DID_Equals(did, DIDTransaction_GetOwner(info)))
-            return info;
+    if (did) {
+        for (i = num - 1; i >= 0; i--) {
+            info = infos[i];
+            if (DID_Equals(did, DIDTransaction_GetOwner(info)))
+                return info;
+        }
     }
     return NULL;
 }
 
-bool credential_isrevoked(DIDURL *id, DID *repealer)
+static DIDDocument *get_lastdocument(DID *did)
 {
-    CredentialTransaction *info;
-    DID *issuer = NULL, *signer;
+    DIDTransaction *info;
     int i;
+
+    if (did) {
+        for (i = num - 1; i >= 0; i--) {
+            info = infos[i];
+            if (DID_Equals(did, DIDTransaction_GetOwner(info))) {
+                if (strcmp(info->request.header.op, "deactivate"))
+                    return info->request.doc;
+            }
+        }
+    }
+    return NULL;
+}
+
+static DIDDocument *get_issuerdoc(DIDURL *id)
+{
+    int i;
+    DID *issuer = NULL;
+    DIDDocument *doc = NULL;
+    CredentialTransaction *info;
 
     assert(id);
 
@@ -74,18 +92,46 @@ bool credential_isrevoked(DIDURL *id, DID *repealer)
         if (DIDURL_Equals(id, &info->request.id)) {
             if (!strcmp("declare", info->request.header.op))
                 issuer = &info->request.vc->issuer;
-
-            if (!strcmp("revoke", info->request.header.op)) {
-                signer = &info->request.proof.verificationMethod.did;
-                if (DID_Equals(&id->did, signer) || (issuer && DID_Equals(issuer, signer))
-                        ||(repealer && DID_Equals(issuer, repealer))) {
-                    return true;
-                }
-            }
         }
     }
 
-    return false;
+    return get_lastdocument(issuer);
+}
+
+bool credential_readyrevoke(DIDURL *id, DIDURL *signkey, DIDDocument *ownerdoc,
+        DIDDocument *issuerdoc)
+{
+    CredentialTransaction *info;
+    DIDURL *_signkey;
+    int i;
+
+    assert(id);
+    assert(signkey);
+    assert(ownerdoc);
+
+    for (i = vcnum - 1; i >= 0; i--) {
+        info = vcinfos[i];
+        if (DIDURL_Equals(id, &info->request.id)) {
+            if (strcmp("revoke", info->request.header.op))
+                continue;
+
+            _signkey = &info->request.proof.verificationMethod;
+            if (DIDURL_Equals(_signkey, signkey) || DIDDocument_IsAuthenticationKey(ownerdoc, _signkey))
+                return false;
+
+            if (issuerdoc && DIDDocument_IsAuthenticationKey(issuerdoc, _signkey))
+                return false;
+        }
+    }
+
+    //no revoke tx
+    if (issuerdoc) {
+        if (!DIDDocument_IsAuthenticationKey(ownerdoc, signkey) &&
+                !DIDDocument_IsAuthenticationKey(issuerdoc, signkey))
+            return false;
+    }
+
+    return true;
 }
 
 bool credential_readydeclare(DIDURL *id, DID *issuer)
@@ -95,6 +141,7 @@ bool credential_readydeclare(DIDURL *id, DID *issuer)
     int i;
 
     assert(id);
+    assert(issuer);
 
     for (i = 0; i < vcnum; i++) {
         info = vcinfos[i];
@@ -104,7 +151,7 @@ bool credential_readydeclare(DIDURL *id, DID *issuer)
 
             if (!strcmp("revoke", info->request.header.op)) {
                 signer = &info->request.proof.verificationMethod.did;
-                if (DID_Equals(&id->did, signer) || (issuer && DID_Equals(issuer, signer))) {
+                if (DID_Equals(&id->did, signer) || DID_Equals(issuer, signer)) {
                     return false;
                 }
             }
@@ -290,6 +337,7 @@ errorExit:
 static bool create_vctransaction(json_t *json)
 {
     CredentialTransaction *info;
+    DIDDocument *ownerdoc, *issuerdoc;
 
     assert(json);
 
@@ -314,7 +362,15 @@ static bool create_vctransaction(json_t *json)
         if (info->request.vc)
             goto errorExit;
 
-        if (credential_isrevoked(&info->request.id, &info->request.proof.verificationMethod.did)) {
+        ownerdoc = get_lastdocument(&info->request.id.did);
+        if (!ownerdoc) {
+            DIDError_Set(DIDERR_TRANSACTION_ERROR, "The owner of credential is not in chain.");
+            goto errorExit;
+        }
+
+        issuerdoc = get_issuerdoc(&info->request.id);
+        if (!credential_readyrevoke(&info->request.id,
+                &info->request.proof.verificationMethod, ownerdoc, issuerdoc)) {
             DIDError_Set(DIDERR_TRANSACTION_ERROR, "Don't revoke the inexistence credential.");
             goto errorExit;
         }
@@ -502,14 +558,14 @@ static int listvcs_result_tojson(JsonGenerator *gen, DID *did, int skip, int _li
     CredentialTransaction *ct;
     DIDURL *vcs, *vcid;
     DID *vcowner;
-    int i, j, size = 0, limit;
+    int i, j, count = 0, limit, size = 0;
     bool equal = false;
     char idstring[ELA_MAX_DIDURL_LEN];
 
     assert(gen);
     assert(did);
     assert(skip >= 0);
-    assert(_limit > 0);
+    assert(_limit >= 0);
 
     if (_limit > 1500)
         return -1;
@@ -525,24 +581,20 @@ static int listvcs_result_tojson(JsonGenerator *gen, DID *did, int skip, int _li
     if (!vcs)
         return -1;
 
-    for (i = 0; i < vcnum; i++) {
+    for (i = vcnum - 1; i >= 0; i--) {
         ct = vcinfos[i];
         vcid = &ct->request.id;
         vcowner = &vcid->did;
         if (!DID_Equals(did, vcowner))
             continue;
 
-        equal = false;
-        for (j = 0; j < size; j++) {
-            if (!DIDURL_Equals(vcid, &vcs[j]))
-               continue;
-
-            equal = true;
+        if (count >= skip + limit || size >= limit)
             break;
-        }
 
-        if (!equal && size < limit)
-            DIDURL_Copy(&vcs[size++], vcid);
+        if (count++ < skip)
+            continue;
+
+        DIDURL_Copy(&vcs[size++], vcid);
     }
 
     CHECK(JsonGenerator_WriteStartObject(gen));
@@ -625,9 +677,11 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, DID *issuer)
 {
     CredentialTransaction *infos[2] = {0};
     CredentialTransaction *info;
+    DIDDocument *ownerdoc, *issuerdoc = NULL;
     char idstring[ELA_MAX_DID_LEN];
     int i, size = 0, status = CredentialStatus_NotFound;
     DID *signer;
+    DIDURL *signkey;
 
     assert(gen);
     assert(id);
@@ -651,14 +705,23 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, DID *issuer)
             }
 
             if (!strcmp("revoke", info->request.header.op)) {
-                signer = &info->request.proof.verificationMethod.did;
-                if (DID_Equals(&id->did, signer) || (issuer && DID_Equals(issuer, signer))) {
-                    if (size > 1)
-                        return -1;
+                signkey = &info->request.proof.verificationMethod;
+                ownerdoc = get_lastdocument(&id->did);
+                if (!ownerdoc)
+                    return -1;
 
-                    infos[size++] = info;
-                    status = CredentialStatus_Revoked;
+                if (issuer) {
+                    issuerdoc = get_lastdocument(issuer);
+                    if (!issuerdoc)
+                        return -1;
                 }
+
+                if (!DIDDocument_IsAuthenticationKey(ownerdoc, signkey) &&
+                       (issuerdoc && !DIDDocument_IsAuthenticationKey(issuerdoc, signkey)))
+                    return -1;
+
+                infos[size++] = info;
+                status = CredentialStatus_Revoked;
             }
         }
     }
@@ -789,11 +852,11 @@ errorExit:
 
 int DummyAdapter_Set(const char *cachedir)
 {
-    DummyAdapter_Cleanup();
+    DummyAdapter_Cleanup(0);
     return DIDBackend_Initialize(DummyAdapter_CreateIdTransaction, DummyAdapter_Resolve, cachedir);
 }
 
-void DummyAdapter_Cleanup(void)
+static void DummyAdapter_DidCleanup(void)
 {
     int i;
     for (i = 0; i < num; i++) {
@@ -801,14 +864,31 @@ void DummyAdapter_Cleanup(void)
         free(infos[i]);
     }
 
+    memset(infos, 0, sizeof(infos));
+    num = 0;
+}
+
+static void DummyAdapter_VcCleanup(void)
+{
+    int i;
     for (i = 0; i < vcnum; i++) {
         CredentialTransaction_Destroy(vcinfos[i]);
         free(vcinfos[i]);
     }
-
-    memset(infos, 0, sizeof(infos));
     memset(vcinfos, 0, sizeof(vcinfos));
-    num = 0;
     vcnum = 0;
 }
+
+void DummyAdapter_Cleanup(int type)
+{
+    if (type == 0) {
+        DummyAdapter_DidCleanup();
+        DummyAdapter_VcCleanup();
+    }
+    if (type == 1)
+        DummyAdapter_DidCleanup();
+    if (type == 2)
+        DummyAdapter_VcCleanup();
+}
+
 
