@@ -1424,7 +1424,7 @@ static int list_did_helper(const char *path, void *context)
 
     if (dh->filter == 0 || (dh->filter == 1 && DIDSotre_ContainsPrivateKeys(dh->store, &did)) ||
             (dh->filter == 2 && !DIDSotre_ContainsPrivateKeys(dh->store, &did)))
-        rc = dh->cb(&did, dh->context);
+            rc = dh->cb(&did, dh->context);
 
     DIDMetadata_Free(&did.metadata);
     return rc;
@@ -2956,19 +2956,19 @@ static int write_credentials(DIDURL *id, void *context)
     if (!cred)
         return -1;
 
-    CHECK_TO_MSG_ERROREXIT(JsonGenerator_WriteStartObject(ch->gen),
+    CHECK_TO_MSG_ERROREXIT(DIDJG_WriteStartObject(ch->gen),
             DIDERR_OUT_OF_MEMORY, "Start 'credential' object failed.");
-    CHECK_TO_MSG_ERROREXIT(JsonGenerator_WriteFieldName(ch->gen, "content"),
+    CHECK_TO_MSG_ERROREXIT(DIDJG_WriteFieldName(ch->gen, "content"),
             DIDERR_OUT_OF_MEMORY, "Write 'vc' failed.");
     CHECK_TO_MSG_ERROREXIT(Credential_ToJson_Internal(ch->gen, cred, creddid, true, false),
             DIDERR_OUT_OF_MEMORY, "Write credential failed.");
     if (cred->metadata.base.data) {
-        CHECK_TO_MSG_ERROREXIT(JsonGenerator_WriteFieldName(ch->gen, "metadata"),
+        CHECK_TO_MSG_ERROREXIT(DIDJG_WriteFieldName(ch->gen, "metadata"),
                 DIDERR_OUT_OF_MEMORY, "Write 'metadata' failed.");
         CHECK_TO_MSG_ERROREXIT(CredentialMetadata_ToJson_Internal(&cred->metadata, ch->gen),
                 DIDERR_OUT_OF_MEMORY, "Write credential meta failed.");
     }
-    CHECK_TO_MSG_ERROREXIT(JsonGenerator_WriteEndObject(ch->gen),
+    CHECK_TO_MSG_ERROREXIT(DIDJG_WriteEndObject(ch->gen),
             DIDERR_OUT_OF_MEMORY, "End 'credential' object failed.");
     vc_string = Credential_ToJson(cred, true);
     if (!vc_string)
@@ -2998,7 +2998,7 @@ static int export_type(JsonGenerator *gen, Sha256_Digest *digest)
     assert(gen);
     assert(digest);
 
-    CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "type", DID_EXPORT),
+    CHECK_TO_MSG(DIDJG_WriteStringField(gen, "type", DID_EXPORT),
             DIDERR_OUT_OF_MEMORY, "Write 'type' failed.");
     CHECK_TO_MSG(sha256_digest_update(digest, 1, DID_EXPORT, strlen(DID_EXPORT)),
             DIDERR_CRYPTO_ERROR, "Sha256 'type' failed.");
@@ -3019,7 +3019,7 @@ static int export_id(JsonGenerator *gen, DID *did, Sha256_Digest *digest)
     if (!value)
         return -1;
 
-    CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "id", value),
+    CHECK_TO_MSG(DIDJG_WriteStringField(gen, "id", value),
             DIDERR_OUT_OF_MEMORY, "Write 'id' failed.");
     CHECK_TO_MSG(sha256_digest_update(digest, 1, value, strlen(value)),
             DIDERR_CRYPTO_ERROR, "Sha256 'id' failed.");
@@ -3042,7 +3042,7 @@ static int export_created(JsonGenerator *gen, Sha256_Digest *digest)
         return -1;
     }
 
-    CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "created", value),
+    CHECK_TO_MSG(DIDJG_WriteStringField(gen, "created", value),
             DIDERR_OUT_OF_MEMORY, "Write 'created' failed.");
     CHECK_TO_MSG(sha256_digest_update(digest, 1, value, strlen(value)),
             DIDERR_CRYPTO_ERROR, "Sha256 'created' failed.");
@@ -3058,13 +3058,13 @@ static int export_document(JsonGenerator *gen, DIDDocument *doc, Sha256_Digest *
     assert(gen);
     assert(doc);
 
-    CHECK(JsonGenerator_WriteFieldName(gen, "document"));
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteFieldName(gen, "content"));
+    CHECK(DIDJG_WriteFieldName(gen, "document"));
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteFieldName(gen, "content"));
     CHECK(DIDDocument_ToJson_Internal(gen, doc, true, false));
-    CHECK(JsonGenerator_WriteFieldName(gen, "metadata"));
+    CHECK(DIDJG_WriteFieldName(gen, "metadata"));
     CHECK(DIDMetadata_ToJson_Internal(&doc->metadata, gen));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
 
     docstring = DIDDocument_ToJson(doc, true);
     if (!docstring)
@@ -3092,16 +3092,16 @@ static int export_creds(JsonGenerator *gen, DIDStore *store, DID *did, Sha256_Di
     assert(did);
 
     if (DIDStore_ContainsCredentials(store, did)) {
-        CHECK_TO_MSG(JsonGenerator_WriteFieldName(gen, "credential"),
+        CHECK_TO_MSG(DIDJG_WriteFieldName(gen, "credential"),
                 DIDERR_OUT_OF_MEMORY, "Write 'document' failed.");
-        CHECK_TO_MSG(JsonGenerator_WriteStartArray(gen),
+        CHECK_TO_MSG(DIDJG_WriteStartArray(gen),
                 DIDERR_OUT_OF_MEMORY, "Start credential array failed.");
 
         ch.store = store;
         ch.gen = gen;
         ch.digest = digest;
         CHECK(DIDStore_ListCredentials(store, did, write_credentials, (void*)&ch));
-        CHECK_TO_MSG(JsonGenerator_WriteEndArray(gen),
+        CHECK_TO_MSG(DIDJG_WriteEndArray(gen),
                 DIDERR_OUT_OF_MEMORY, "End credential array failed.");
     }
 
@@ -3131,9 +3131,9 @@ static int export_privatekey(JsonGenerator *gen, DIDStore *store, const char *st
         if (!pks)
             return -1;
 
-        CHECK_TO_MSG(JsonGenerator_WriteFieldName(gen, "privatekey"),
+        CHECK_TO_MSG(DIDJG_WriteFieldName(gen, "privatekey"),
                 DIDERR_OUT_OF_MEMORY, "Write 'privatekey' failed.");
-        CHECK_TO_MSG(JsonGenerator_WriteStartArray(gen),
+        CHECK_TO_MSG(DIDJG_WriteStartArray(gen),
                 DIDERR_OUT_OF_MEMORY, "Start 'privatekey' array failed.");
 
         for (i = 0; i < size; i++) {
@@ -3149,14 +3149,14 @@ static int export_privatekey(JsonGenerator *gen, DIDStore *store, const char *st
                 if (rc < 0)
                     return -1;
 
-                CHECK_TO_MSG(JsonGenerator_WriteStartObject(gen),
+                CHECK_TO_MSG(DIDJG_WriteStartObject(gen),
                         DIDERR_OUT_OF_MEMORY, "Start 'privatekey' failed.");
                 idstring = DIDURL_ToString(keyid, _idstring, sizeof(_idstring), false);
-                CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "id", idstring),
+                CHECK_TO_MSG(DIDJG_WriteStringField(gen, "id", idstring),
                         DIDERR_OUT_OF_MEMORY, "Write 'id' failed.");
-                CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "privatekey", (char*)base64),
+                CHECK_TO_MSG(DIDJG_WriteStringField(gen, "privatekey", (char*)base64),
                         DIDERR_OUT_OF_MEMORY, "Write 'key' failed.");
-                CHECK_TO_MSG(JsonGenerator_WriteEndObject(gen),
+                CHECK_TO_MSG(DIDJG_WriteEndObject(gen),
                         DIDERR_OUT_OF_MEMORY, "End 'privatekey' failed.");
 
                 CHECK_TO_MSG(sha256_digest_update(digest, 2, idstring, strlen(idstring), base64, strlen(base64)),
@@ -3164,7 +3164,7 @@ static int export_privatekey(JsonGenerator *gen, DIDStore *store, const char *st
             }
         }
 
-        CHECK_TO_MSG(JsonGenerator_WriteEndArray(gen),
+        CHECK_TO_MSG(DIDJG_WriteEndArray(gen),
                 DIDERR_OUT_OF_MEMORY, "End 'privatekey' array failed.");
     }
 
@@ -3180,7 +3180,7 @@ static int export_init(JsonGenerator *gen, const char *password, Sha256_Digest *
             DIDERR_CRYPTO_ERROR, "Init sha256 digest failed.");
     CHECK_TO_MSG(sha256_digest_update(digest, 1, password, strlen(password)),
             DIDERR_CRYPTO_ERROR, "Sha256 password failed.");
-    CHECK_TO_MSG(JsonGenerator_WriteStartObject(gen),
+    CHECK_TO_MSG(DIDJG_WriteStartObject(gen),
             DIDERR_OUT_OF_MEMORY, "Write object failed.");
 
     return 0;
@@ -3203,9 +3203,9 @@ static int export_final(JsonGenerator *gen, Sha256_Digest *digest)
 
     CHECK_TO_MSG(b64_url_encode(base64, final_digest, size),
             DIDERR_CRYPTO_ERROR, "Final sha256 digest failed.");
-    CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "fingerprint", base64),
+    CHECK_TO_MSG(DIDJG_WriteStringField(gen, "fingerprint", base64),
             DIDERR_OUT_OF_MEMORY, "Write 'fingerprint' failed.");
-    CHECK_TO_MSG(JsonGenerator_WriteEndObject(gen),
+    CHECK_TO_MSG(DIDJG_WriteEndObject(gen),
             DIDERR_OUT_OF_MEMORY, "End export object failed.");
 
     return 0;
@@ -3293,7 +3293,7 @@ int DIDStore_ExportDID(DIDStore *store, const char *storepass, DID *did,
         return -1;
 
     //generate did export string
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
         return -1;;
@@ -3301,11 +3301,11 @@ int DIDStore_ExportDID(DIDStore *store, const char *storepass, DID *did,
 
     if (exportdid_internal(gen, store, storepass, did, password) < 0) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize exporting did to json failed.");
-        JsonGenerator_Destroy(gen);
+        DIDJG_Destroy(gen);
         return -1;
     }
 
-    data = JsonGenerator_Finish(gen);
+    data = DIDJG_Finish(gen);
     rc = store_file(file, data);
     free((void*)data);
     if (rc < 0) {
@@ -3881,7 +3881,7 @@ static int export_mnemonic(JsonGenerator *gen, DIDStore *store, const char *stor
         if (size < 0)
             return -1;
 
-        CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "mnemonic", encryptedmnemonic),
+        CHECK_TO_MSG(DIDJG_WriteStringField(gen, "mnemonic", encryptedmnemonic),
                 DIDERR_OUT_OF_MEMORY, "Write 'mnemonic' failed.");
         CHECK_TO_MSG(sha256_digest_update(digest, 1, encryptedmnemonic, strlen(encryptedmnemonic)),
                DIDERR_CRYPTO_ERROR, "Sha256 'mnemonic' failed.");
@@ -3915,7 +3915,7 @@ static int export_prvkey(JsonGenerator *gen, DIDStore *store, const char *storep
         return -1;
     }
 
-    CHECK_TO_MSG(JsonGenerator_WriteStringField(gen, "privatekey", encryptedKey),
+    CHECK_TO_MSG(DIDJG_WriteStringField(gen, "privatekey", encryptedKey),
         DIDERR_OUT_OF_MEMORY, "Write 'key' failed.");
     CHECK_TO_MSG(sha256_digest_update(digest, 1, encryptedKey, strlen(encryptedKey)),
         DIDERR_CRYPTO_ERROR, "Sha256 'key' failed.");
@@ -3937,7 +3937,7 @@ static int export_pubkey(JsonGenerator *gen, DIDStore *store, const char *id, Sh
     if (!pubKey)
         return -1;
 
-    CHECK_TO_MSG_ERROREXIT(JsonGenerator_WriteStringField(gen, "publickey", pubKey),
+    CHECK_TO_MSG_ERROREXIT(DIDJG_WriteStringField(gen, "publickey", pubKey),
             DIDERR_OUT_OF_MEMORY, "Write 'publickey' failed.");
     CHECK_TO_MSG_ERROREXIT(sha256_digest_update(digest, 1, pubKey, strlen(pubKey)),
             DIDERR_CRYPTO_ERROR, "Sha256 'publickey' failed.");
@@ -3967,7 +3967,7 @@ static int export_index(JsonGenerator *gen, DIDStore *store, const char *id, Sha
         return -1;
     }
 
-    CHECK_TO_MSG_ERROREXIT(JsonGenerator_WriteStringField(gen, "index", index),
+    CHECK_TO_MSG_ERROREXIT(DIDJG_WriteStringField(gen, "index", index),
             DIDERR_OUT_OF_MEMORY, "Write 'index' failed.");
     CHECK_TO_MSG_ERROREXIT(sha256_digest_update(digest, 1, index, strlen(index)),
             DIDERR_CRYPTO_ERROR, "Sha256 'index' failed.");
@@ -3995,9 +3995,9 @@ static int export_defaultId(JsonGenerator *gen, DIDStore *store, const char *id,
 
     defaultid = isDefault ? "true" : "false";
 
-    CHECK_TO_MSG(JsonGenerator_WriteFieldName(gen, "default"),
+    CHECK_TO_MSG(DIDJG_WriteFieldName(gen, "default"),
             DIDERR_OUT_OF_MEMORY, "Write 'default' failed.");
-    CHECK_TO_MSG(JsonGenerator_WriteBoolean(gen, isDefault),
+    CHECK_TO_MSG(DIDJG_WriteBoolean(gen, isDefault),
             DIDERR_OUT_OF_MEMORY, "Write 'default' failed.");
     CHECK_TO_MSG(sha256_digest_update(digest, 1, defaultid, strlen(defaultid)),
             DIDERR_CRYPTO_ERROR, "Sha256 'default' failed.");
@@ -4023,7 +4023,7 @@ int DIDStore_ExportRootIdentity(DIDStore *store, const char *storepass,
     if (check_file(file) < 0)
         return -1;
 
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
         goto errorExit;
@@ -4044,7 +4044,7 @@ int DIDStore_ExportRootIdentity(DIDStore *store, const char *storepass,
     if (export_final(gen, &digest) < 0)
         goto errorExit;
 
-    data = JsonGenerator_Finish(gen);
+    data = DIDJG_Finish(gen);
     rc = store_file(file, data);
     free((void*)data);
     if (rc < 0) {

@@ -442,8 +442,8 @@ static int didresult_tojson(JsonGenerator *gen, DID *did, bool all)
 
     assert(gen);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "did",
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "did",
             DID_ToString(did, idstring, sizeof(idstring))));
 
     info = get_lasttransaction(did);
@@ -456,17 +456,17 @@ static int didresult_tojson(JsonGenerator *gen, DID *did, bool all)
             status = DIDStatus_Valid;
     }
 
-    CHECK(JsonGenerator_WriteFieldName(gen, "status"));
-    CHECK(JsonGenerator_WriteNumber(gen, status));
+    CHECK(DIDJG_WriteFieldName(gen, "status"));
+    CHECK(DIDJG_WriteNumber(gen, status));
 
     if (status == DIDStatus_NotFound) {
-        CHECK(JsonGenerator_WriteEndObject(gen));
+        CHECK(DIDJG_WriteEndObject(gen));
         return 0;
     }
 
     info = NULL;
-    CHECK(JsonGenerator_WriteFieldName(gen, "transaction"));
-    CHECK(JsonGenerator_WriteStartArray(gen));
+    CHECK(DIDJG_WriteFieldName(gen, "transaction"));
+    CHECK(DIDJG_WriteStartArray(gen));
     if (all) {
         for (i = num - 1; i >= 0; i--) {
             info = infos[i];
@@ -494,8 +494,8 @@ static int didresult_tojson(JsonGenerator *gen, DID *did, bool all)
             }
         }
     }
-    CHECK(JsonGenerator_WriteEndArray(gen));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndArray(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -504,11 +504,11 @@ static int resolvedid_tojson(JsonGenerator *gen, DID *did, bool all)
     assert(gen);
     assert(did);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "jsonrpc", "2.0"));
-    CHECK(JsonGenerator_WriteFieldName(gen, "result"));
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "jsonrpc", "2.0"));
+    CHECK(DIDJG_WriteFieldName(gen, "result"));
     CHECK(didresult_tojson(gen, did, all));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -537,7 +537,7 @@ static const char *parse_resolvedid(json_t *json)
     }
 
     all = (json_is_false(item) ? false : true);
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen) {
         DID_Destroy(did);
         return NULL;
@@ -546,11 +546,11 @@ static const char *parse_resolvedid(json_t *json)
     rc = resolvedid_tojson(gen, did, all);
     DID_Destroy(did);
     if (rc < 0) {
-        JsonGenerator_Destroy(gen);
+        DIDJG_Destroy(gen);
         return NULL;
     }
 
-    return JsonGenerator_Finish(gen);
+    return DIDJG_Finish(gen);
 }
 
 static int listvcs_result_tojson(JsonGenerator *gen, DID *did, int skip, int _limit)
@@ -597,18 +597,18 @@ static int listvcs_result_tojson(JsonGenerator *gen, DID *did, int skip, int _li
         DIDURL_Copy(&vcs[size++], vcid);
     }
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "did",
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "did",
             DID_ToString(did, idstring, sizeof(idstring))));
     if (size > 0) {
-        CHECK(JsonGenerator_WriteFieldName(gen, "credentials"));
-        CHECK(JsonGenerator_WriteStartArray(gen));
+        CHECK(DIDJG_WriteFieldName(gen, "credentials"));
+        CHECK(DIDJG_WriteStartArray(gen));
         for (i = 0; i < size; i++)
-            CHECK(JsonGenerator_WriteString(gen, DIDURL_ToString(&vcs[i], idstring, sizeof(idstring), false)));
-        CHECK(JsonGenerator_WriteEndArray(gen));
+            CHECK(DIDJG_WriteString(gen, DIDURL_ToString(&vcs[i], idstring, sizeof(idstring), false)));
+        CHECK(DIDJG_WriteEndArray(gen));
     }
 
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -617,11 +617,11 @@ static int listvcs_tojson(JsonGenerator *gen, DID *did, int skip, int limit)
     assert(gen);
     assert(did);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "jsonrpc", "2.0"));
-    CHECK(JsonGenerator_WriteFieldName(gen, "result"));
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "jsonrpc", "2.0"));
+    CHECK(DIDJG_WriteFieldName(gen, "result"));
     CHECK(listvcs_result_tojson(gen, did, skip, limit));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -657,7 +657,7 @@ static const char *parse_listvcs(json_t *json)
     }
     limit = json_integer_value(item);
 
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen) {
         DID_Destroy(did);
         return NULL;
@@ -666,11 +666,11 @@ static const char *parse_listvcs(json_t *json)
     rc = listvcs_tojson(gen, did, skip, limit);
     DID_Destroy(did);
     if (rc < 0) {
-        JsonGenerator_Destroy(gen);
+        DIDJG_Destroy(gen);
         return NULL;
     }
 
-    return JsonGenerator_Finish(gen);
+    return DIDJG_Finish(gen);
 }
 
 static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, DID *issuer)
@@ -686,8 +686,8 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, DID *issuer)
     assert(gen);
     assert(id);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "id",
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "id",
             DIDURL_ToString(id, idstring, sizeof(idstring), false)));
 
     for (i = 0; i < vcnum; i++) {
@@ -726,24 +726,24 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, DID *issuer)
         }
     }
 
-    CHECK(JsonGenerator_WriteFieldName(gen, "status"));
-    CHECK(JsonGenerator_WriteNumber(gen, status));
+    CHECK(DIDJG_WriteFieldName(gen, "status"));
+    CHECK(DIDJG_WriteNumber(gen, status));
 
     if (status == CredentialStatus_NotFound) {
-        CHECK(JsonGenerator_WriteEndObject(gen));
+        CHECK(DIDJG_WriteEndObject(gen));
         return 0;
     }
 
-    CHECK(JsonGenerator_WriteFieldName(gen, "transaction"));
-    CHECK(JsonGenerator_WriteStartArray(gen));
+    CHECK(DIDJG_WriteFieldName(gen, "transaction"));
+    CHECK(DIDJG_WriteStartArray(gen));
     for (i = size - 1; i >= 0; i--) {
         info = infos[i];
         if (info)
             CHECK(CredentialTransaction_ToJson_Internal(gen, info));
     }
 
-    CHECK(JsonGenerator_WriteEndArray(gen));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndArray(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -752,11 +752,11 @@ static int resolvevc_tojson(JsonGenerator *gen, DIDURL *id, DID *issuer)
     assert(gen);
     assert(id);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "jsonrpc", "2.0"));
-    CHECK(JsonGenerator_WriteFieldName(gen, "result"));
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "jsonrpc", "2.0"));
+    CHECK(DIDJG_WriteFieldName(gen, "result"));
     CHECK(vcresult_tojson(gen, id, issuer));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -789,17 +789,17 @@ static const char *parse_resolvevc(json_t *json)
             goto errorExit;
     }
 
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen)
         goto errorExit;
 
     rc = resolvevc_tojson(gen, id, issuer);
     if (rc < 0) {
-        JsonGenerator_Destroy(gen);
+        DIDJG_Destroy(gen);
         goto errorExit;
     }
 
-    data = JsonGenerator_Finish(gen);
+    data = DIDJG_Finish(gen);
 
 errorExit:
     DIDURL_Destroy(id);

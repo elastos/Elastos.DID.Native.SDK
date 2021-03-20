@@ -163,19 +163,19 @@ static int credentialbiography_toJson_internal(JsonGenerator *gen, CredentialBio
     assert(gen);
     assert(biography);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "did",
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "did",
             DIDURL_ToString(&biography->id, id, sizeof(id), false)));
-    CHECK(JsonGenerator_WriteFieldName(gen, "status"));
-    CHECK(JsonGenerator_WriteNumber(gen, biography->status));
+    CHECK(DIDJG_WriteFieldName(gen, "status"));
+    CHECK(DIDJG_WriteNumber(gen, biography->status));
     if (biography->status != CredentialStatus_NotFound) {
-        CHECK(JsonGenerator_WriteFieldName(gen, "transaction"));
-        CHECK(JsonGenerator_WriteStartArray(gen));
+        CHECK(DIDJG_WriteFieldName(gen, "transaction"));
+        CHECK(DIDJG_WriteStartArray(gen));
         for (i = 0; i < biography->txs.size; i++)
             CHECK(CredentialTransaction_ToJson_Internal(gen, &biography->txs.txs[i]));
-        CHECK(JsonGenerator_WriteEndArray(gen));
+        CHECK(DIDJG_WriteEndArray(gen));
     }
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -185,16 +185,16 @@ const char *Credentialbiography_ToJson(CredentialBiography *biography)
 
     assert(biography);
 
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen)
         return NULL;
 
     if (credentialbiography_toJson_internal(gen, biography) < 0) {
-        JsonGenerator_Destroy(gen);
+        DIDJG_Destroy(gen);
         return NULL;
     }
 
-    return JsonGenerator_Finish(gen);
+    return DIDJG_Finish(gen);
 }
 
 DIDURL *CredentialBiography_GetId(CredentialBiography *biography)

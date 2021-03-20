@@ -47,10 +47,10 @@ static int header_toJson(JsonGenerator *gen, CredentialRequest *request)
     assert(gen);
     assert(request);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "specification", request->header.spec));
-    CHECK(JsonGenerator_WriteStringField(gen, "operation", request->header.op));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "specification", request->header.spec));
+    CHECK(DIDJG_WriteStringField(gen, "operation", request->header.op));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -65,10 +65,10 @@ static int proof_toJson(JsonGenerator *gen, CredentialRequest *request)
     if (!method)
         return -1;
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "verificationMethod", method));
-    CHECK(JsonGenerator_WriteStringField(gen, "signature", request->proof.signature));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "verificationMethod", method));
+    CHECK(DIDJG_WriteStringField(gen, "signature", request->proof.signature));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -77,13 +77,13 @@ int CredentialRequest_ToJson_Internal(JsonGenerator *gen, CredentialRequest *req
     assert(gen);
     assert(request);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteFieldName(gen, "header"));
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteFieldName(gen, "header"));
     CHECK(header_toJson(gen, request));
-    CHECK(JsonGenerator_WriteStringField(gen, "payload", request->payload));
-    CHECK(JsonGenerator_WriteFieldName(gen, "proof"));
+    CHECK(DIDJG_WriteStringField(gen, "payload", request->payload));
+    CHECK(DIDJG_WriteFieldName(gen, "proof"));
     CHECK(proof_toJson(gen, request));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -93,7 +93,7 @@ const char *CredentialRequest_ToJson(CredentialRequest *request)
 
     assert(request);
 
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
         return NULL;
@@ -101,11 +101,11 @@ const char *CredentialRequest_ToJson(CredentialRequest *request)
 
     if (CredentialRequest_ToJson_Internal(gen, request) < 0) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize CredentialRequest to json failed.");
-        JsonGenerator_Destroy(gen);
+        DIDJG_Destroy(gen);
         return NULL;
     }
 
-    return JsonGenerator_Finish(gen);
+    return DIDJG_Finish(gen);
 }
 
 const char *CredentialRequest_Sign(CredentialRequest_Type type, DIDURL *credid,

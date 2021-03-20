@@ -91,6 +91,7 @@ struct Service {
     DIDURL id;
     char type[MAX_TYPE_LEN];
     char endpoint[MAX_ENDPOINT];
+    json_t *properties;
 };
 
 struct DIDDocumentBuilder {

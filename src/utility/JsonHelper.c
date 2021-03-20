@@ -71,19 +71,19 @@ int JsonHelper_ToJson(JsonGenerator *generator, json_t *object, bool objectconte
     assert(object);
 
     if (json_is_array(object)) {
-        CHECK(JsonGenerator_WriteStartArray(generator));
+        CHECK(DIDJG_WriteStartArray(generator));
         size = json_array_size(object);
         for (i = 0; i < size; i++) {
             item  = json_array_get(object, i);
             CHECK(JsonHelper_ToJson(generator, item, false));
         }
-        CHECK(JsonGenerator_WriteEndArray(generator));
+        CHECK(DIDJG_WriteEndArray(generator));
         return 0;
     }
 
     if (json_is_object(object)) {
         if (!objectcontext)
-            CHECK(JsonGenerator_WriteStartObject(generator));
+            CHECK(DIDJG_WriteStartObject(generator));
 
         size = json_object_size(object);
         const char **items = item_sort(object, size);
@@ -92,7 +92,7 @@ int JsonHelper_ToJson(JsonGenerator *generator, json_t *object, bool objectconte
 
         for (i = 0; i < size; i++) {
             const char *key = items[i];
-            CHECK(JsonGenerator_WriteFieldName(generator, key));
+            CHECK(DIDJG_WriteFieldName(generator, key));
             rc = JsonHelper_ToJson(generator, json_object_get(object, key), false);
             if (rc < 0) {
                 free(items);
@@ -102,38 +102,38 @@ int JsonHelper_ToJson(JsonGenerator *generator, json_t *object, bool objectconte
         free(items);
 
         if (!objectcontext)
-            CHECK(JsonGenerator_WriteEndObject(generator));
+            CHECK(DIDJG_WriteEndObject(generator));
 
         return 0;
     }
 
     if (json_is_false(object)) {
-        CHECK(JsonGenerator_WriteBoolean(generator, false));
+        CHECK(DIDJG_WriteBoolean(generator, false));
         return 0;
     }
 
     if (json_is_true(object)) {
-        CHECK(JsonGenerator_WriteBoolean(generator, true));
+        CHECK(DIDJG_WriteBoolean(generator, true));
         return 0;
     }
 
     if (json_is_null(object)) {
-        CHECK(JsonGenerator_WriteString(generator, NULL));
+        CHECK(DIDJG_WriteString(generator, NULL));
         return 0;
     }
 
     if (json_is_integer(object)) {
-        CHECK(JsonGenerator_WriteNumber(generator, json_integer_value(object)));
+        CHECK(DIDJG_WriteNumber(generator, json_integer_value(object)));
         return 0;
     }
 
     if (json_is_real(object)) {
-        CHECK(JsonGenerator_WriteDouble(generator, json_real_value(object)));
+        CHECK(DIDJG_WriteDouble(generator, json_real_value(object)));
         return 0;
     }
 
     if (json_is_string(object)) {
-        CHECK(JsonGenerator_WriteString(generator, json_string_value(object)));
+        CHECK(DIDJG_WriteString(generator, json_string_value(object)));
         return 0;
     }
 
@@ -146,14 +146,14 @@ const char *JsonHelper_ToString(json_t *object)
 
     assert(object);
 
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen)
         return NULL;
 
     if (JsonHelper_ToJson(gen, object, false) < 0) {
-        JsonGenerator_Destroy(gen);
+        DIDJG_Destroy(gen);
         return NULL;
     }
 
-    return JsonGenerator_Finish(gen);
+    return DIDJG_Finish(gen);
 }

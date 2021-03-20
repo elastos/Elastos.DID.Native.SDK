@@ -59,18 +59,18 @@ const char *Metadata_ToJson(Metadata *metadata)
     assert(metadata);
 
     if (metadata->data) {
-        gen = JsonGenerator_Initialize(&g);
+        gen = DIDJG_Initialize(&g);
         if (!gen) {
             DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
             return NULL;
         }
 
         if (Metadata_ToJson_Internal(metadata, gen) == -1) {
-            JsonGenerator_Destroy(gen);
+            DIDJG_Destroy(gen);
             return NULL;
         }
 
-        return JsonGenerator_Finish(gen);
+        return DIDJG_Finish(gen);
     }
 
     return NULL;

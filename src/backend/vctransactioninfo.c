@@ -99,13 +99,13 @@ int CredentialTransaction_ToJson_Internal(JsonGenerator *gen, CredentialTransact
     assert(gen);
     assert(txinfo);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "txid", txinfo->txid));
-    CHECK(JsonGenerator_WriteStringField(gen, "timestamp",
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "txid", txinfo->txid));
+    CHECK(DIDJG_WriteStringField(gen, "timestamp",
             get_time_string(_timestring, sizeof(_timestring), &txinfo->timestamp)));
-    CHECK(JsonGenerator_WriteFieldName(gen, "operation"));
+    CHECK(DIDJG_WriteFieldName(gen, "operation"));
     CHECK(CredentialRequest_ToJson_Internal(gen, &txinfo->request));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -115,7 +115,7 @@ const char *CredentialTransaction_ToJson(CredentialTransaction *txinfo)
 
     assert(txinfo);
 
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
         return NULL;
@@ -123,11 +123,11 @@ const char *CredentialTransaction_ToJson(CredentialTransaction *txinfo)
 
     if (CredentialTransaction_ToJson_Internal(gen, txinfo) < 0) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize ID transaction to json failed.");
-        JsonGenerator_Destroy(gen);
+        DIDJG_Destroy(gen);
         return NULL;
     }
 
-    return JsonGenerator_Finish(gen);
+    return DIDJG_Finish(gen);
 }
 
 CredentialRequest *CredentialTransaction_GetRequest(CredentialTransaction *txinfo)

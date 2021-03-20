@@ -67,7 +67,7 @@ static void free_types(Credential *credential)
     free(credential->type.types);
 }
 
-static int parse_types(json_t *json, Credential *credential)
+static int parse_types(Credential *credential, json_t *json)
 {
     size_t i, size, index = 0;
     char **types;
@@ -112,7 +112,6 @@ static int parse_types(json_t *json, Credential *credential)
     credential->type.types = types;
     credential->type.size = index;
     return 0;
-
 }
 
 static int type_compr(const void *a, const void *b)
@@ -136,10 +135,10 @@ static int types_toJson(JsonGenerator *generator, Credential *cred)
     types = cred->type.types;
     qsort(types, size, sizeof(const char*), type_compr);
 
-    CHECK(JsonGenerator_WriteStartArray(generator));
+    CHECK(DIDJG_WriteStartArray(generator));
     for (i = 0; i < size; i++)
-        CHECK(JsonGenerator_WriteString(generator, types[i]));
-    CHECK(JsonGenerator_WriteEndArray(generator));
+        CHECK(DIDJG_WriteString(generator, types[i]));
+    CHECK(DIDJG_WriteEndArray(generator));
 
     return 0;
 }
@@ -152,12 +151,12 @@ static int subject_toJson(JsonGenerator *generator, Credential *cred, DID *did, 
     assert(generator->buffer);
     assert(cred);
 
-    CHECK(JsonGenerator_WriteStartObject(generator));
-    CHECK(JsonGenerator_WriteStringField(generator, "id",
+    CHECK(DIDJG_WriteStartObject(generator));
+    CHECK(DIDJG_WriteStringField(generator, "id",
             DID_ToString(&cred->subject.id, id, sizeof(id))));
 
     CHECK(JsonHelper_ToJson(generator, cred->subject.properties, true));
-    CHECK(JsonGenerator_WriteEndObject(generator));
+    CHECK(DIDJG_WriteEndObject(generator));
     return 0;
 }
 
@@ -170,20 +169,20 @@ static int proof_toJson(JsonGenerator *generator, Credential *cred, int compact)
     assert(generator->buffer);
     assert(cred);
 
-    CHECK(JsonGenerator_WriteStartObject(generator));
+    CHECK(DIDJG_WriteStartObject(generator));
     if (!compact)
-        CHECK(JsonGenerator_WriteStringField(generator, "type", cred->proof.type));
+        CHECK(DIDJG_WriteStringField(generator, "type", cred->proof.type));
     if (cred->proof.created != 0)
-        CHECK(JsonGenerator_WriteStringField(generator, "created",
+        CHECK(DIDJG_WriteStringField(generator, "created",
                 get_time_string(_timestring, sizeof(_timestring), &cred->proof.created)));
     if (DID_Equals(&cred->id.did, &cred->proof.verificationMethod.did))
-        CHECK(JsonGenerator_WriteStringField(generator, "verificationMethod",
+        CHECK(DIDJG_WriteStringField(generator, "verificationMethod",
                 DIDURL_ToString(&cred->proof.verificationMethod, id, sizeof(id), compact)));
     else
-        CHECK(JsonGenerator_WriteStringField(generator, "verificationMethod",
+        CHECK(DIDJG_WriteStringField(generator, "verificationMethod",
                 DIDURL_ToString(&cred->proof.verificationMethod, id, sizeof(id), false)));
-    CHECK(JsonGenerator_WriteStringField(generator, "signature", cred->proof.signatureValue));
-    CHECK(JsonGenerator_WriteEndObject(generator));
+    CHECK(DIDJG_WriteStringField(generator, "signature", cred->proof.signatureValue));
+    CHECK(DIDJG_WriteEndObject(generator));
     return 0;
 }
 
@@ -198,28 +197,28 @@ int Credential_ToJson_Internal(JsonGenerator *gen, Credential *cred, DID *did,
 
     DIDURL_ToString(&cred->id, buf, sizeof(buf), compact);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "id", buf));
-    CHECK(JsonGenerator_WriteFieldName(gen, "type"));
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "id", buf));
+    CHECK(DIDJG_WriteFieldName(gen, "type"));
     CHECK(types_toJson(gen, cred));
 
     if (!compact || !DID_Equals(&cred->issuer, &cred->subject.id)) {
-        CHECK(JsonGenerator_WriteStringField(gen, "issuer",
+        CHECK(DIDJG_WriteStringField(gen, "issuer",
                 DID_ToString(&cred->issuer, buf, sizeof(buf))));
     }
 
-    CHECK(JsonGenerator_WriteStringField(gen, "issuanceDate",
+    CHECK(DIDJG_WriteStringField(gen, "issuanceDate",
         get_time_string(buf, sizeof(buf), &cred->issuanceDate)));
     if (cred->expirationDate != 0)
-        CHECK(JsonGenerator_WriteStringField(gen, "expirationDate",
+        CHECK(DIDJG_WriteStringField(gen, "expirationDate",
                 get_time_string(buf, sizeof(buf), &cred->expirationDate)));
-    CHECK(JsonGenerator_WriteFieldName(gen, "credentialSubject"));
+    CHECK(DIDJG_WriteFieldName(gen, "credentialSubject"));
     CHECK(subject_toJson(gen, cred, did, compact));
     if (!forsign) {
-        CHECK(JsonGenerator_WriteFieldName(gen, "proof"));
+        CHECK(DIDJG_WriteFieldName(gen, "proof"));
         CHECK(proof_toJson(gen, cred, compact));
     }
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
 
     return 0;
 }
@@ -402,42 +401,6 @@ const char *Credential_GetProperties(Credential *cred)
     return data;
 }
 
-static const char *item_astext(json_t *item)
-{
-    const char *value;
-    char buffer[64];
-
-    assert(item);
-
-    if (json_is_object(item) || json_is_array(item)) {
-        value = (char*)JsonHelper_ToString(item);
-        if (!value)
-            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Serialize credential subject to json failed.");
-
-        return value;
-    }
-
-    if (json_is_string(item)) {
-        value = json_string_value(item);
-    } else if (json_is_false(item)) {
-        value = "false";
-    } else if (json_is_true(item)) {
-        value = "true";
-    } else if (json_is_null(item)) {
-        value = "null";
-    } else if (json_is_integer(item)) {
-        snprintf(buffer, sizeof(buffer), "%" JSON_INTEGER_FORMAT, json_integer_value(item));
-        value = buffer;
-    } else if (json_is_real(item)) {
-        snprintf(buffer, sizeof(buffer), "%g", json_real_value(item));
-        value = buffer;
-    } else {
-        value = "";
-    }
-
-    return strdup(value);
-}
-
 const char *Credential_GetProperty(Credential *cred, const char *name)
 {
     json_t *item;
@@ -458,7 +421,7 @@ const char *Credential_GetProperty(Credential *cred, const char *name)
         return NULL;
     }
 
-    return item_astext(item);
+    return json_astext(item);
 }
 
 time_t Credential_GetProofCreatedTime(Credential *cred)
@@ -670,7 +633,7 @@ Credential *Parse_Credential(json_t *json, DID *did)
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid types.");
         goto errorExit;
     }
-    if (parse_types(item, credential) == -1)
+    if (parse_types(credential, item) == -1)
         goto errorExit;
 
     return credential;
@@ -731,10 +694,10 @@ int CredentialArray_ToJson(JsonGenerator *gen, Credential **creds, size_t size,
 
     qsort(creds, size, sizeof(Credential*), didurl_func);
 
-    CHECK(JsonGenerator_WriteStartArray(gen));
+    CHECK(DIDJG_WriteStartArray(gen));
     for (i = 0; i < size; i++)
         CHECK(Credential_ToJson_Internal(gen, creds[i], did, compact, false));
-    CHECK(JsonGenerator_WriteEndArray(gen));
+    CHECK(DIDJG_WriteEndArray(gen));
 
     return 0;
 }
@@ -748,7 +711,7 @@ const char* Credential_ToJson_ForSign(Credential *cred, bool compact, bool forsi
         return NULL;
     }
 
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
         return NULL;
@@ -756,11 +719,11 @@ const char* Credential_ToJson_ForSign(Credential *cred, bool compact, bool forsi
 
     if (Credential_ToJson_Internal(gen, cred, NULL, compact, forsign) < 0) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize credential to json failed.");
-        JsonGenerator_Destroy(gen);
+        DIDJG_Destroy(gen);
         return NULL;
     }
 
-    return JsonGenerator_Finish(gen);
+    return DIDJG_Finish(gen);
 }
 
 const char* Credential_ToJson(Credential *cred, bool normalized)

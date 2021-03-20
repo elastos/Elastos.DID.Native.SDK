@@ -28,6 +28,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/stat.h>
+#include <jansson.h>
 
 #include "diderror.h"
 
@@ -95,6 +96,8 @@ int to_hexstring(char *id, size_t size, uint8_t *data, size_t datasize);
 int to_hexstringfrombase58(char *id, size_t size, const char *base58);
 
 char *last_strstr(const char *haystack, const char *needle);
+
+const char *json_astext(json_t *item);
 
 #ifdef __cplusplus
 }

@@ -58,6 +58,7 @@
 #include "did.h"
 #include "HDkey.h"
 #include "crypto.h"
+#include "JsonHelper.h"
 
 #define DID_MAX_LEN      512
 
@@ -490,5 +491,41 @@ char *last_strstr(const char *haystack, const char *needle)
     }
 
     return result;
+}
+
+const char *json_astext(json_t *item)
+{
+    const char *value;
+    char buffer[64];
+
+    assert(item);
+
+    if (json_is_object(item) || json_is_array(item)) {
+        value = (char*)JsonHelper_ToString(item);
+        if (!value)
+            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Serialize credential subject to json failed.");
+
+        return value;
+    }
+
+    if (json_is_string(item)) {
+        value = json_string_value(item);
+    } else if (json_is_false(item)) {
+        value = "false";
+    } else if (json_is_true(item)) {
+        value = "true";
+    } else if (json_is_null(item)) {
+        value = "null";
+    } else if (json_is_integer(item)) {
+        snprintf(buffer, sizeof(buffer), "%" JSON_INTEGER_FORMAT, json_integer_value(item));
+        value = buffer;
+    } else if (json_is_real(item)) {
+        snprintf(buffer, sizeof(buffer), "%g", json_real_value(item));
+        value = buffer;
+    } else {
+        value = "";
+    }
+
+    return strdup(value);
 }
 
