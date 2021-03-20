@@ -130,7 +130,7 @@ static inline int is_state_sticky(JsonGenerator *generator)
     return (generator->state[generator->deep - 1] & 0x80) == 0x80;
 }
 
-JsonGenerator *JsonGenerator_Initialize(JsonGenerator *generator)
+JsonGenerator *DIDJG_Initialize(JsonGenerator *generator)
 {
     assert(generator);
 
@@ -153,7 +153,7 @@ JsonGenerator *JsonGenerator_Initialize(JsonGenerator *generator)
     return generator;
 }
 
-int JsonGenerator_WriteStartObject(JsonGenerator *generator)
+int DIDJG_WriteStartObject(JsonGenerator *generator)
 {
     int is_sticky;
 
@@ -178,7 +178,7 @@ int JsonGenerator_WriteStartObject(JsonGenerator *generator)
     return 0;
 }
 
-int JsonGenerator_WriteEndObject(JsonGenerator *generator)
+int DIDJG_WriteEndObject(JsonGenerator *generator)
 {
     assert(generator);
     assert(generator->buffer);
@@ -195,11 +195,12 @@ int JsonGenerator_WriteEndObject(JsonGenerator *generator)
     return 0;
 }
 
-int JsonGenerator_WriteStartArray(JsonGenerator *generator)
+int DIDJG_WriteStartArray(JsonGenerator *generator)
 {
     assert(generator);
     assert(generator->buffer);
-    assert(get_state(generator) == State_Field);
+    assert(get_state(generator) == State_Field ||
+            get_state(generator) == State_Root);
 
     if (ensure_capacity(generator, 1) == -1)
         return -1;
@@ -210,7 +211,7 @@ int JsonGenerator_WriteStartArray(JsonGenerator *generator)
     return 0;
 }
 
-int JsonGenerator_WriteEndArray(JsonGenerator *generator)
+int DIDJG_WriteEndArray(JsonGenerator *generator)
 {
     assert(generator);
     assert(generator->buffer);
@@ -227,7 +228,7 @@ int JsonGenerator_WriteEndArray(JsonGenerator *generator)
     return 0;
 }
 
-int JsonGenerator_WriteFieldName(JsonGenerator *generator, const char *name)
+int DIDJG_WriteFieldName(JsonGenerator *generator, const char *name)
 {
     size_t len;
     int is_sticky;
@@ -258,7 +259,7 @@ int JsonGenerator_WriteFieldName(JsonGenerator *generator, const char *name)
     return 0;
 }
 
-int JsonGenerator_WriteString(JsonGenerator *generator, const char *value)
+int DIDJG_WriteString(JsonGenerator *generator, const char *value)
 {
     size_t len;
     int is_sticky;
@@ -343,7 +344,7 @@ int JsonGenerator_WriteString(JsonGenerator *generator, const char *value)
     return 0;
 }
 
-int JsonGenerator_WriteNumber(JsonGenerator *generator, int value)
+int DIDJG_WriteNumber(JsonGenerator *generator, int value)
 {
     size_t len;
     int is_sticky;
@@ -374,7 +375,7 @@ int JsonGenerator_WriteNumber(JsonGenerator *generator, int value)
     return 0;
 }
 
-int JsonGenerator_WriteDouble(JsonGenerator *generator, double value)
+int DIDJG_WriteDouble(JsonGenerator *generator, double value)
 {
     size_t len;
     int is_sticky;
@@ -405,7 +406,7 @@ int JsonGenerator_WriteDouble(JsonGenerator *generator, double value)
     return 0;
 }
 
-int JsonGenerator_WriteBoolean(JsonGenerator *generator, bool value)
+int DIDJG_WriteBoolean(JsonGenerator *generator, bool value)
 {
     size_t len;
     int is_sticky;
@@ -437,19 +438,19 @@ int JsonGenerator_WriteBoolean(JsonGenerator *generator, bool value)
     return 0;
 }
 
-int JsonGenerator_WriteStringField(JsonGenerator *generator,
+int DIDJG_WriteStringField(JsonGenerator *generator,
                                    const char *name, const char *value)
 {
     int rc;
 
-    rc = JsonGenerator_WriteFieldName(generator, name);
+    rc = DIDJG_WriteFieldName(generator, name);
     if (rc < 0)
         return rc;
 
-    return JsonGenerator_WriteString(generator, value);
+    return DIDJG_WriteString(generator, value);
 }
 
-const char *JsonGenerator_Finish(JsonGenerator *generator)
+const char *DIDJG_Finish(JsonGenerator *generator)
 {
     const char *buffer;
 
@@ -466,7 +467,7 @@ const char *JsonGenerator_Finish(JsonGenerator *generator)
     return buffer;
 }
 
-void JsonGenerator_Destroy(JsonGenerator *generator)
+void DIDJG_Destroy(JsonGenerator *generator)
 {
     if (!generator || !generator->buffer)
         return;

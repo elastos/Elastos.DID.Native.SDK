@@ -1930,11 +1930,37 @@ DID_API int DIDDocumentBuilder_RemoveSelfProclaimedCredential(DIDDocumentBuilder
  *      type                 [in] The type of Service.
  * @param
  *      endpoint             [in] ServiceEndpoint property is a valid URI.
+ * @param
+ *      properties           [in] The extra property by user provided, it can NULL.
+ * @param
+ *      size                 [in] The size of properties.
  * @return
  *      0 on success, -1 if an error occurred.
  */
 DID_API int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder,
-        DIDURL *serviceid, const char *type, const char *endpoint);
+        DIDURL *serviceid, const char *type, const char *endpoint,
+        Property *properties, int size);
+
+/**
+ * \~English
+ * Add one Service to services array.
+ *
+ * @param
+ *      builder              [in] A handle to DIDDocument Builder.
+ * @param
+ *      serviceid            [in] The identifier of Service.
+ * @param
+ *      type                 [in] The type of Service.
+ * @param
+ *      endpoint             [in] ServiceEndpoint property is a valid URI.
+ * @param
+ *      properties           [in] The extra properties string by user provided, it can NULL.
+ * @return
+ *      0 on success, -1 if an error occurred.
+ */
+DID_API int DIDDocumentBuilder_AddServiceByString(DIDDocumentBuilder *builder,
+        DIDURL *serviceid, const char *type, const char *endpoint,
+        const char *properties);
 
 /**
  * \~English
@@ -2909,6 +2935,43 @@ DID_API const char *Service_GetEndpoint(Service *service);
  *      Otherwise, return NULL.
  */
 DID_API const char *Service_GetType(Service *service);
+
+/**
+ * \~English
+ * Get size of extra properties in Service.
+ *
+ * @param
+ *      service                 [in] A handle to Service.
+ * @return
+ *      size of subject porperties on success, -1 if an error occurred.
+ */
+DID_API ssize_t Service_GetPropertyCount(Service *service);
+
+/**
+ * \~English
+ * Get array of extra properties in Service.
+ *
+ * @param
+ *      service                 [in] A handle to Service.
+ * @return
+ *      size of extra porperties on success, -1 if an error occurred.
+ *      Notice that user need to free the returned value it's memory.
+ */
+DID_API const char *Service_GetProperties(Service *service);
+
+/**
+ * \~English
+ * Get specific property value in string with the given key of property.
+ *
+ * @param
+ *      service              [in] A handle to Service.
+ * @param
+ *      name                 [in] The key of property.
+ * @return
+ *      If no error occurs, return property value string, otherwise return NULL.
+ *      Notice that user need to free the returned value it's memory.
+ */
+DID_API const char *Service_GetProperty(Service *service, const char *name);
 
 /******************************************************************************
  * Credential
@@ -4026,7 +4089,17 @@ DID_API bool Mnemonic_IsValid(const char *mnemonic, const char *language);
  * Create a presentation including some credentials.
  *
  * @param
- *      did                      [in] The handle to DID.
+ *      id                       [in] The Id of Presentation.
+ * @param
+ *      holder                   [in] The handle to holder.
+ * @param
+ *      types                    [in] The type array.
+ * @param
+ *      size                     [in] The size of types.
+ * @param
+ *      nonce                    [in] Indicate the usage of Presentation.
+  * @param
+ *      realm                    [in] Indicate where the Presentation is use.
  * @param
  *      signkey                  [in] The key id to sign.
  * @param
@@ -4034,47 +4107,51 @@ DID_API bool Mnemonic_IsValid(const char *mnemonic, const char *language);
  * @param
  *      storepass                [in] The password of DIDStore.
  * @param
- *      nonce                    [in] Indicate the usage of Presentation.
-  * @param
- *      realm                    [in] Indicate where the Presentation is use.
- * @param
  *      count                    [in] The count of Credentials.
  * @return
  *      If no error occurs, return the handle to Presentataion.
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API Presentation *Presentation_Create(DID *did, DIDURL *signkey, DIDStore *store,
-        const char *storepass, const char *nonce, const char *realm, int count, ...);
+DID_API Presentation *Presentation_Create(DIDURL *id, DID *holder,
+        const char **types, size_t size, const char *nonce, const char *realm,
+        DIDURL *signkey, DIDStore *store, const char *storepass, int count, ...);
 
 /**
  * \~English
  * Create a presentation including some credentials.
  *
  * @param
- *      did                      [in] The handle to DID.
+ *      id                       [in] The Id of Presentation.
+ * @param
+ *      holder                   [in] The handle to holder.
+ * @param
+ *      types                    [in] The type array.
+ * @param
+ *      size                     [in] The size of types.
+ * @param
+ *      nonce                    [in] Indicate the usage of Presentation.
+ * @param
+ *      realm                    [in] Indicate where the Presentation is use.
+ * @param
+ *      creds                    [in] The credential array.
+ * @param
+ *      count                    [in] The count of Credentials.
  * @param
  *      signkey                  [in] The key id to sign.
  * @param
  *      store                    [in] The handle to DIDStore.
  * @param
  *      storepass                [in] The password of DIDStore.
- * @param
- *      nonce                    [in] Indicate the usage of Presentation.
-  * @param
- *      realm                    [in] Indicate where the Presentation is use.
- * @param
- *      creds                    [in] The Credential array.
- * @param
- *      count                    [in] The count of Credentials.
  * @return
  *      If no error occurs, return the handle to Presentataion.
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API Presentation *Presentation_CreateByCredentials(DID *did, DIDURL *signkey,
-        DIDStore *store, const char *storepass, const char *nonce, const char *realm,
-        Credential **creds, size_t count);
+DID_API Presentation *Presentation_CreateByCredentials(DIDURL *id, DID *holder,
+        const char **types, size_t size, const char *nonce, const char *realm,
+        Credential **creds, size_t count, DIDURL *signkey, DIDStore *store,
+        const char *storepass);
 
 /**
  * \~English
@@ -4115,7 +4192,18 @@ DID_API Presentation *Presentation_FromJson(const char *json);
 
 /**
  * \~English
- * Get the DID for signing the Presentation.
+ * Get id of Presentation.
+ *
+ * @param
+ *      pre                 [in] The handle to Presentation.
+ * @return
+ *      If no error occurs, return the id.
+ *      Otherwise, return NULL.
+ */
+DID_API DIDURL *Presentation_GetId(Presentation *pre);
+/**
+ * \~English
+ * Get the holder(owner) of Presentation.
  *
  * @param
  *      pre                   [in] The handle to Presentation.
@@ -4123,7 +4211,7 @@ DID_API Presentation *Presentation_FromJson(const char *json);
  *      If no error occurs, return the handle to DID.
  *      Otherwise, return NULL.
  */
-DID_API DID *Presentation_GetSigner(Presentation *pre);
+DID_API DID *Presentation_GetHolder(Presentation *pre);
 
 /**
  * \~English
@@ -4170,15 +4258,29 @@ DID_API Credential *Presentation_GetCredential(Presentation *pre, DIDURL *credid
 
 /**
  * \~English
- * Get Presentation Type.
+ * Get count of Presentation types.
  *
  * @param
- *      pre                   [in] The handle to Presentation.
+ *      pre                 [in] A handle to Presentation.
  * @return
- *      If no error occurs, return the Presentation Type string.
- *      Otherwise, return NULL.
+ *      size of Presentation types on success, -1 if an error occurred.
  */
-DID_API const char *Presentation_GetType(Presentation *pre);
+DID_API ssize_t Presentation_GetTypeCount(Presentation *pre);
+
+/**
+ * \~English
+ * Get array of Presentation types.
+ *
+ * @param
+ *      pre                  [in] A handle to Presentation.
+ * @param
+ *      types                [out] The buffer that will receive presentation types.
+  * @param
+ *      size                 [in] The buffer size of presentation types.
+ * @return
+ *      size of Presentation types on success, -1 if an error occurred.
+ */
+DID_API ssize_t Presentation_GetTypes(Presentation *pre, const char **types, size_t size);
 
 /**
  * \~English
@@ -4593,6 +4695,11 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
  * RootIdentity error.
  */
 #define DIDERR_MALFORMED_ROOTIDENTITY               0x8D00001C
+/**
+ * \~English
+ * Illegal use error.
+ */
+#define DIDERR_ILLEGALUSAGE                         0x8D00001D
 /**
  * \~English
  * Unknown error.

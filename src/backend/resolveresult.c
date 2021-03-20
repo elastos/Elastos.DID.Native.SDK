@@ -160,20 +160,20 @@ static int resolveresult_tojson_internal(JsonGenerator *gen, ResolveResult *resu
     assert(gen);
     assert(result);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "did",
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "did",
             DID_ToString(&result->did, id, sizeof(id))));
-    CHECK(JsonGenerator_WriteFieldName(gen, "status"));
-    CHECK(JsonGenerator_WriteNumber(gen, result->status));
+    CHECK(DIDJG_WriteFieldName(gen, "status"));
+    CHECK(DIDJG_WriteNumber(gen, result->status));
     if (result->status != DIDStatus_NotFound) {
-        CHECK(JsonGenerator_WriteFieldName(gen, "transaction"));
-        CHECK(JsonGenerator_WriteStartArray(gen));
+        CHECK(DIDJG_WriteFieldName(gen, "transaction"));
+        CHECK(DIDJG_WriteStartArray(gen));
         for (i = 0; i < result->txs.size; i++)
             //todo: check
             CHECK(DIDTransaction_ToJson_Internal(gen, &result->txs.txs[i]));
-        CHECK(JsonGenerator_WriteEndArray(gen));
+        CHECK(DIDJG_WriteEndArray(gen));
     }
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -183,16 +183,16 @@ const char *ResolveResult_ToJson(ResolveResult *result)
 
     assert(result);
 
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen)
         return NULL;
 
     if (resolveresult_tojson_internal(gen, result) < 0) {
-        JsonGenerator_Destroy(gen);
+        DIDJG_Destroy(gen);
         return NULL;
     }
 
-    return JsonGenerator_Finish(gen);
+    return DIDJG_Finish(gen);
 }
 
 DID *ResolveResult_GetDID(ResolveResult *result)

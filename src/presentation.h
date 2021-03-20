@@ -42,8 +42,15 @@ typedef struct PresentationProof {
 } PresentationProof;
 
 struct Presentation {
-    char type[MAX_TYPE_LEN];
+    DIDURL id;
+
+    struct {
+        char **types;
+        size_t size;
+    } type;
+
     time_t created;
+    DID holder;
 
     struct {
        Credential **credentials;
@@ -52,8 +59,6 @@ struct Presentation {
 
     PresentationProof proof;
 };
-
-int Presentation_Verify(Presentation *pre);
 
 #ifdef __cplusplus
 }

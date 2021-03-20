@@ -33,6 +33,7 @@
 #include "credential.h"
 #include "common.h"
 #include "JsonGenerator.h"
+#include "JsonHelper.h"
 #include "crypto.h"
 #include "HDkey.h"
 #include "didmeta.h"
@@ -64,8 +65,13 @@ static void PublicKey_Destroy(PublicKey *publickey)
 
 static void Service_Destroy(Service *service)
 {
-    if (service)
-        free(service);
+    if (!service)
+        return;
+
+    if (service->properties)
+        json_decref(service->properties);
+
+    free(service);
 }
 
 static
@@ -77,20 +83,20 @@ int PublicKey_ToJson(JsonGenerator *gen, PublicKey *pk, int compact)
     assert(gen->buffer);
     assert(pk);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "id",
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "id",
         DIDURL_ToString(&pk->id, id, sizeof(id), compact)));
     if (!compact) {
-        CHECK(JsonGenerator_WriteStringField(gen, "type", pk->type));
-        CHECK(JsonGenerator_WriteStringField(gen, "controller",
+        CHECK(DIDJG_WriteStringField(gen, "type", pk->type));
+        CHECK(DIDJG_WriteStringField(gen, "controller",
                 DID_ToString(&pk->controller, id, sizeof(id))));
     } else {
         if (!DID_Equals(&pk->id.did, &pk->controller))
-            CHECK(JsonGenerator_WriteStringField(gen, "controller",
+            CHECK(DIDJG_WriteStringField(gen, "controller",
                    DID_ToString(&pk->controller, id, sizeof(id))));
     }
-    CHECK(JsonGenerator_WriteStringField(gen, "publicKeyBase58", pk->publicKeyBase58));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "publicKeyBase58", pk->publicKeyBase58));
+    CHECK(DIDJG_WriteEndObject(gen));
 
     return 0;
 }
@@ -144,15 +150,15 @@ static int ControllerArray_ToJson(JsonGenerator *gen, DIDDocument **docs, size_t
     qsort(controllers, size, sizeof(DID*), controllers_func);
 
     if (size != 1)
-        CHECK(JsonGenerator_WriteStartArray(gen));
+        CHECK(DIDJG_WriteStartArray(gen));
 
     for (i = 0; i < size; i++ ) {
-        CHECK(JsonGenerator_WriteString(gen,
+        CHECK(DIDJG_WriteString(gen,
                 DID_ToString(controllers[i], _string, sizeof(_string))));
     }
 
     if (size != 1)
-        CHECK(JsonGenerator_WriteEndArray(gen));
+        CHECK(DIDJG_WriteEndArray(gen));
 
     return 0;
 }
@@ -170,7 +176,7 @@ static int PublicKeyArray_ToJson(JsonGenerator *gen, PublicKey **pks, size_t siz
 
     qsort(pks, size, sizeof(PublicKey*), didurl_func);
 
-    CHECK(JsonGenerator_WriteStartArray(gen));
+    CHECK(DIDJG_WriteStartArray(gen));
     for (i = 0; i < size; i++ ) {
         char id[ELA_MAX_DIDURL_LEN];
 
@@ -181,10 +187,10 @@ static int PublicKeyArray_ToJson(JsonGenerator *gen, PublicKey **pks, size_t siz
         if (type == KeyType_PublicKey)
             CHECK(PublicKey_ToJson(gen, pks[i], compact));
         else
-            CHECK(JsonGenerator_WriteString(gen,
+            CHECK(DIDJG_WriteString(gen,
                 DIDURL_ToString(&pks[i]->id, id, sizeof(id), compact)));
     }
-    CHECK(JsonGenerator_WriteEndArray(gen));
+    CHECK(DIDJG_WriteEndArray(gen));
 
     return 0;
 }
@@ -197,12 +203,16 @@ static int Service_ToJson(JsonGenerator *gen, Service *service, int compact)
     assert(gen->buffer);
     assert(service);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "id",
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "id",
         DIDURL_ToString(&service->id, id, sizeof(id), compact)));
-    CHECK(JsonGenerator_WriteStringField(gen, "type", service->type));
-    CHECK(JsonGenerator_WriteStringField(gen, "serviceEndpoint", service->endpoint));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "type", service->type));
+    CHECK(DIDJG_WriteStringField(gen, "serviceEndpoint", service->endpoint));
+
+    if (service->properties)
+        CHECK(JsonHelper_ToJson(gen, service->properties, true));
+
+    CHECK(DIDJG_WriteEndObject(gen));
 
     return 0;
 }
@@ -216,11 +226,12 @@ int ServiceArray_ToJson(JsonGenerator *gen, Service **services, size_t size,
     assert(gen);
     assert(gen->buffer);
     assert(services);
-    CHECK(JsonGenerator_WriteStartArray(gen));
-    for ( i = 0; i < size; i++ ) {
+
+    CHECK(DIDJG_WriteStartArray(gen));
+    for ( i = 0; i < size; i++ )
         CHECK(Service_ToJson(gen, services[i], compact));
-    }
-    CHECK(JsonGenerator_WriteEndArray(gen));
+
+    CHECK(DIDJG_WriteEndArray(gen));
 
     return 0;
 }
@@ -235,18 +246,18 @@ static int Proof_ToJson(JsonGenerator *gen, DocumentProof *proof, DIDDocument *d
     assert(proof);
     assert(document);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStartObject(gen));
     if (!compact)
-        CHECK(JsonGenerator_WriteStringField(gen, "type", proof->type));
-    CHECK(JsonGenerator_WriteStringField(gen, "created",
+        CHECK(DIDJG_WriteStringField(gen, "type", proof->type));
+    CHECK(DIDJG_WriteStringField(gen, "created",
             get_time_string(_timestring, sizeof(_timestring), &proof->created)));
     if (!compact || !DID_Equals(&document->did, &proof->creater.did)) {
-        CHECK(JsonGenerator_WriteStringField(gen, "creator",
+        CHECK(DIDJG_WriteStringField(gen, "creator",
                 DIDURL_ToString(&proof->creater, id, sizeof(id), false)));
     }
 
-    CHECK(JsonGenerator_WriteStringField(gen, "signatureValue", proof->signatureValue));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "signatureValue", proof->signatureValue));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -271,7 +282,7 @@ static int ProofArray_ToJson(JsonGenerator *gen, DIDDocument *document, int comp
     size = document->proofs.size;
     proofs = document->proofs.proofs;
     if (size > 1)
-        CHECK(JsonGenerator_WriteStartArray(gen));
+        CHECK(DIDJG_WriteStartArray(gen));
 
     qsort(proofs, size, sizeof(DocumentProof), proof_cmp);
 
@@ -279,7 +290,7 @@ static int ProofArray_ToJson(JsonGenerator *gen, DIDDocument *document, int comp
         CHECK(Proof_ToJson(gen, &proofs[i], document, compact));
 
     if (size > 1)
-        CHECK(JsonGenerator_WriteEndArray(gen));
+        CHECK(DIDJG_WriteEndArray(gen));
 
     return 0;
 }
@@ -585,6 +596,13 @@ static int Parse_Services(DIDDocument *document, json_t *json)
             continue;
         }
         strcpy(service->endpoint, json_string_value(field));
+
+        //for property
+        json_object_del(item, "id");
+        json_object_del(item, "type");
+        json_object_del(item, "serviceEndpoint");
+        if (json_object_size(item) > 0)
+            service->properties = json_deep_copy(item);
 
         services[autal_size++] = service;
     }
@@ -1059,54 +1077,54 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
     assert(gen->buffer);
     assert(doc);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "id",
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "id",
             DID_ToString(&doc->did, id, sizeof(id))));
     if (doc->controllers.size > 0) {
-        CHECK(JsonGenerator_WriteFieldName(gen, "controller"));
+        CHECK(DIDJG_WriteFieldName(gen, "controller"));
         CHECK(ControllerArray_ToJson(gen, doc->controllers.docs, doc->controllers.size));
     }
     if (doc->controllers.size > 1)
-        CHECK(JsonGenerator_WriteStringField(gen, "multisig",
+        CHECK(DIDJG_WriteStringField(gen, "multisig",
                 format_multisig(multisig, sizeof(multisig), doc->multisig, doc->controllers.size)));
 
     if (doc->publickeys.size > 0) {
-        CHECK(JsonGenerator_WriteFieldName(gen, "publicKey"));
+        CHECK(DIDJG_WriteFieldName(gen, "publicKey"));
         CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
                 compact, KeyType_PublicKey));
 
         if (DIDDocument_GetSelfAuthenticationKeyCount(doc) > 0) {
-            CHECK(JsonGenerator_WriteFieldName(gen, "authentication"));
+            CHECK(DIDJG_WriteFieldName(gen, "authentication"));
             CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
                     compact, KeyType_Authentication));
         }
 
         if (get_self_authorization_count(doc) > 0) {
-            CHECK(JsonGenerator_WriteFieldName(gen, "authorization"));
+            CHECK(DIDJG_WriteFieldName(gen, "authorization"));
             CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks,
                     doc->publickeys.size, compact, KeyType_Authorization));
         }
     }
 
     if (doc->credentials.size > 0) {
-        CHECK(JsonGenerator_WriteFieldName(gen, "verifiableCredential"));
+        CHECK(DIDJG_WriteFieldName(gen, "verifiableCredential"));
         CHECK(CredentialArray_ToJson(gen, doc->credentials.credentials,
                 doc->credentials.size, &doc->did, compact));
     }
 
     if (doc->services.size > 0) {
-        CHECK(JsonGenerator_WriteFieldName(gen, "service"));
+        CHECK(DIDJG_WriteFieldName(gen, "service"));
         CHECK(ServiceArray_ToJson(gen, doc->services.services,
                 doc->services.size, compact));
     }
 
-    CHECK(JsonGenerator_WriteStringField(gen, "expires",
+    CHECK(DIDJG_WriteStringField(gen, "expires",
             get_time_string(_timestring, sizeof(_timestring), &doc->expires)));
     if (!forsign) {
-        CHECK(JsonGenerator_WriteFieldName(gen, "proof"));
+        CHECK(DIDJG_WriteFieldName(gen, "proof"));
         CHECK(ProofArray_ToJson(gen, doc, compact));
     }
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
 
     return 0;
 }
@@ -1120,7 +1138,7 @@ static const char *diddocument_tojson_forsign(DIDDocument *document, bool compac
         return NULL;
     }
 
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
         return NULL;
@@ -1128,11 +1146,11 @@ static const char *diddocument_tojson_forsign(DIDDocument *document, bool compac
 
     if (DIDDocument_ToJson_Internal(gen, document, compact, forsign) < 0) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize DID document to json failed.");
-        JsonGenerator_Destroy(gen);
+        DIDJG_Destroy(gen);
         return NULL;
     }
 
-    return JsonGenerator_Finish(gen);
+    return DIDJG_Finish(gen);
 }
 
 const char *DIDDocument_ToJson(DIDDocument *document, bool normalized)
@@ -1569,7 +1587,12 @@ static int services_copy(DIDDocument *doc, Service **services, size_t size)
         Service *service = (Service*)calloc(1, sizeof(Service));
         if (!service)
             return -1;
-        memcpy(service, services[i], sizeof(Service));
+
+        DIDURL_Copy(&service->id, &services[i]->id);
+        strcpy(service->type, services[i]->type);
+        strcpy(service->endpoint, services[i]->endpoint);
+        service->properties = json_deep_copy(services[i]->properties);
+
         doc->services.services[i] = service;
         doc->services.size = i + 1;
     }
@@ -2696,19 +2719,18 @@ int DIDDocumentBuilder_RemoveCredential(DIDDocumentBuilder *builder, DIDURL *cre
     return -1;
 }
 
-int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder, DIDURL *serviceid,
-        const char *type, const char *endpoint)
+static int document_addservice(DIDDocumentBuilder *builder, DIDURL *serviceid,
+        const char *type, const char *endpoint, json_t *properties)
 {
     DIDDocument *document;
     Service **services = NULL;
     Service *service = NULL;
-    size_t i;
+    int i;
 
-    if (!builder || !builder->document || !serviceid || !type || !*type ||
-        !endpoint || !*endpoint) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    assert(builder);
+    assert(serviceid);
+    assert(type);
+    assert(endpoint);
 
     if (strlen(type) >= MAX_TYPE_LEN) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Type argument is too long.");
@@ -2733,8 +2755,16 @@ int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder, DIDURL *serviceid
         }
     }
 
+    services = (Service**)realloc(document->services.services,
+            (document->services.size + 1) * sizeof(Service*));
+    if (!services) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for services failed.");
+        return -1;
+    }
+
     service = (Service*)calloc(1, sizeof(Service));
     if (!service) {
+        free(services);
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for service failed.");
         return -1;
     }
@@ -2742,18 +2772,80 @@ int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder, DIDURL *serviceid
     DIDURL_Copy(&service->id, serviceid);
     strcpy(service->type, type);
     strcpy(service->endpoint, endpoint);
-
-    services = (Service**)realloc(document->services.services,
-            (document->services.size + 1) * sizeof(Service*));
-    if (!services) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for services failed.");
-        Service_Destroy(service);
-        return -1;
-    }
+    if (properties)
+        service->properties = properties;
 
     services[document->services.size++] = service;
     document->services.services = services;
     clean_proofs(document);
+    return 0;
+}
+
+int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder, DIDURL *serviceid,
+        const char *type, const char *endpoint, Property *properties, int size)
+{
+    json_t *root = NULL;
+    int i, rc;
+
+    if (!builder || !builder->document || !serviceid || !type || !*type ||
+        !endpoint || !*endpoint || (properties && size <= 0)) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    if (properties) {
+        root = json_object();
+        if (!root) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Create property json failed.");
+            return -1;
+        }
+
+        for (i = 0; i < size; i++) {
+            if (json_object_set_new(root, properties[i].key, json_string(properties[i].value)) < 0) {
+               DIDError_Set(DIDERR_OUT_OF_MEMORY, "Add property failed.");
+               json_decref(root);
+               return -1;
+            }
+        }
+    }
+
+    rc = document_addservice(builder, serviceid, type, endpoint, root);
+    if (rc < 0) {
+        json_decref(root);
+        return -1;
+    }
+
+    return 0;
+}
+
+int DIDDocumentBuilder_AddServiceByString(DIDDocumentBuilder *builder,
+        DIDURL *serviceid, const char *type, const char *endpoint,
+        const char *properties)
+{
+    json_t *root = NULL;
+    json_error_t error;
+    int rc;
+
+    if (!builder || !builder->document || !serviceid || !type || !*type ||
+            !endpoint || !*endpoint) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+
+    if (properties) {
+        root = json_loads(properties, JSON_COMPACT, &error);
+        if (!root) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Deserialize property failed, error: %s.", error.text);
+            return -1;
+        }
+    }
+
+    rc = document_addservice(builder, serviceid, type, endpoint, root);
+    if (rc < 0) {
+        json_decref(root);
+        return -1;
+    }
+
     return 0;
 }
 
@@ -4810,3 +4902,56 @@ const char *Service_GetType(Service *service)
 
     return service->type;
 }
+
+ssize_t Service_GetPropertyCount(Service *service)
+{
+    if (!service) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return -1;
+    }
+    if (!service->properties)
+        return 0;
+
+    return json_object_size(service->properties);
+}
+
+const char *Service_GetProperties(Service *service)
+{
+    const char *data;
+
+    if (!service) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    if (!service->properties)
+        return NULL;
+
+    data = json_dumps(service->properties, JSON_COMPACT);
+    if (!data)
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Serialize properties to json failed.");
+
+    return data;
+}
+
+const char *Service_GetProperty(Service *service, const char *name)
+{
+    json_t *item;
+
+    if (!service || !name || !*name) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        return NULL;
+    }
+
+    if (!service->properties)
+        return NULL;
+
+    item = json_object_get(service->properties, name);
+    if (!item) {
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "No this property in subject.");
+        return NULL;
+    }
+
+    return json_astext(item);
+}
+

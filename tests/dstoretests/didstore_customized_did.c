@@ -459,12 +459,12 @@ static void test_new_customizedid_with_existcontrollers2(void)
     serviceid1 = DIDURL_NewByDid(&customized_did, "test-svc-1");
     CU_ASSERT_PTR_NOT_NULL(serviceid1);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, serviceid1, "Service.Testing",
-            "https://www.elastos.org/testing1"));
+            "https://www.elastos.org/testing1", NULL, 0));
 
     serviceid2 = DIDURL_NewByDid(&customized_did, "test-svc-2");
     CU_ASSERT_PTR_NOT_NULL(serviceid2);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, serviceid2, "Service.Testing",
-            "https://www.elastos.org/testing2"));
+            "https://www.elastos.org/testing2", NULL, 0));
 
     //add one credential
     credid = DIDURL_NewByDid(&customized_did, "vc-1");
@@ -525,9 +525,9 @@ static void test_new_customizedid_with_existcontrollers2(void)
 
     //add two services
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, serviceid1, "Service.Testing",
-            "https://www.elastos.org/testing1"));
+            "https://www.elastos.org/testing1", NULL, 0));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, serviceid2, "Service.Testing",
-            "https://www.elastos.org/testing2"));
+            "https://www.elastos.org/testing2", NULL, 0));
 
     //add one credential
     rc = DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid,
@@ -592,9 +592,9 @@ static void test_new_customizedid_with_existcontrollers2(void)
 
     //add two services
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, serviceid1, "Service.Testing",
-            "https://www.elastos.org/testing1"));
+            "https://www.elastos.org/testing1", NULL, 0));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, serviceid2, "Service.Testing",
-            "https://www.elastos.org/testing2"));
+            "https://www.elastos.org/testing2", NULL, 0));
 
     //add one credential
     rc = DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid,

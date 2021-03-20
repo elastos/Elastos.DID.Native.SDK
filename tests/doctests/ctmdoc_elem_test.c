@@ -1872,10 +1872,23 @@ static void test_multictmdoc_add_service(void)
 {
     DIDDocument *customized_doc, *controller1_doc, *controller3_doc;
     DIDDocumentBuilder *builder;
-    DIDURL *serviceid;
+    DIDURL *id1, *id2, *id3;
     DID *controller1;
+    Property props1[4];
     time_t expires;
-    const char *data;
+    const char *data, *props2;
+    Service *service;
+
+    props1[0].key = "abc";
+    props1[0].value = "helloworld";
+    props1[1].key = "bar";
+    props1[1].value = "foobar";
+    props1[2].key = "lalala...";
+    props1[2].value = "ABC";
+    props1[3].key = "Helloworld";
+    props1[3].value = "English";
+
+    props2 = "{\"name\":\"Jay Holtslander\",\"alternateName\":\"Jason Holtslander\",\"booleanValue\":true,\"numberValue\":1234,\"doubleValue\":9.5,\"nationality\":\"Canadian\",\"Description\":\"Technologist\",\"disambiguatingDescription\":\"Co-founder of CodeCore Bootcamp\",\"jobTitle\":\"Technical Director\",\"worksFor\":[{\"type\":\"Organization\",\"name\":\"Skunkworks Creative Group Inc.\",\"sameAs\":[\"https://twitter.com/skunkworks_ca\",\"https://www.facebook.com/skunkworks.ca\"]}],\"url\":\"https://jay.holtslander.ca\",\"image\":\"https://s.gravatar.com/avatar/961997eb7fd5c22b3e12fb3c8ca14e11?s=512&r=g\"}";
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -1897,11 +1910,21 @@ static void test_multictmdoc_add_service(void)
     builder = DIDDocument_Edit(customized_doc, controller1_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
 
-    serviceid = DIDURL_NewByDid(&customized_doc->did, "test-svc-3");
-    CU_ASSERT_PTR_NOT_NULL(serviceid);
+    id1 = DIDURL_NewByDid(&customized_doc->did, "test-svc-3");
+    CU_ASSERT_PTR_NOT_NULL(id1);
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, serviceid, "Service.Testing3",
-            "https://www.elastos.org/testing3"));
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, id1, "Service.Testing3",
+            "https://www.elastos.org/testing3", NULL, 0));
+
+    id2 = DIDURL_NewByDid(&customized_doc->did, "test-svc-4");
+    CU_ASSERT_PTR_NOT_NULL(id2);
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, id2, "Service.Testing",
+            "https://www.elastos.org/testing2", props1, 4));
+
+    id3 = DIDURL_NewByDid(&customized_doc->did, "test-svc-5");
+    CU_ASSERT_PTR_NOT_NULL(id3);
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddServiceByString(builder, id3, "Service.Testing",
+            "https://www.elastos.org/testing3", props2));
 
     customized_doc = DIDDocumentBuilder_Seal(builder, storepass);
     DIDDocumentBuilder_Destroy(builder);
@@ -1917,10 +1940,58 @@ static void test_multictmdoc_add_service(void)
     CU_ASSERT_PTR_NOT_NULL(customized_doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
 
-    CU_ASSERT_EQUAL(3, DIDDocument_GetServiceCount(customized_doc));
-    CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetService(customized_doc, serviceid));
-    DIDURL_Destroy(serviceid);
+    CU_ASSERT_EQUAL(5, DIDDocument_GetServiceCount(customized_doc));
+    CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetService(customized_doc, id1));
+    DIDURL_Destroy(id1);
 
+    service = DIDDocument_GetService(customized_doc, id2);
+    CU_ASSERT_PTR_NOT_NULL(service);
+
+    CU_ASSERT_EQUAL(4, Service_GetPropertyCount(service));
+    data = Service_GetProperty(service, "abc");
+    CU_ASSERT_PTR_NOT_NULL(data);
+    CU_ASSERT_STRING_EQUAL("helloworld", data);
+    free((void*)data);
+    data = Service_GetProperty(service, "bar");
+    CU_ASSERT_PTR_NOT_NULL(data);
+    CU_ASSERT_STRING_EQUAL("foobar", data);
+    free((void*)data);
+    data = Service_GetProperty(service, "lalala...");
+    CU_ASSERT_PTR_NOT_NULL(data);
+    CU_ASSERT_STRING_EQUAL("ABC", data);
+    free((void*)data);
+    data = Service_GetProperty(service, "Helloworld");
+    CU_ASSERT_PTR_NOT_NULL(data);
+    CU_ASSERT_STRING_EQUAL("English", data);
+    free((void*)data);
+
+    service = DIDDocument_GetService(customized_doc, id3);
+    CU_ASSERT_PTR_NOT_NULL(service);
+
+    CU_ASSERT_EQUAL(12, Service_GetPropertyCount(service));
+    data = Service_GetProperty(service, "numberValue");
+    CU_ASSERT_PTR_NOT_NULL(data);
+    CU_ASSERT_STRING_EQUAL("1234", data);
+    free((void*)data);
+
+    data = Service_GetProperty(service, "nationality");
+    CU_ASSERT_PTR_NOT_NULL(data);
+    CU_ASSERT_STRING_EQUAL("Canadian", data);
+    free((void*)data);
+
+    data = Service_GetProperty(service, "worksFor");
+    CU_ASSERT_PTR_NOT_NULL(data);
+    CU_ASSERT_EQUAL(strlen("[{\"type\":\"Organization\",\"name\":\"Skunkworks Creative Group Inc.\",\"sameAs\":[\"https://twitter.com/skunkworks_ca\",\"https://www.facebook.com/skunkworks.ca\"]}]"),
+            strlen(data));
+    free((void*)data);
+
+    data = Service_GetProperty(service, "alternateName");
+    CU_ASSERT_PTR_NOT_NULL(data);
+    CU_ASSERT_STRING_EQUAL("Jason Holtslander", data);
+    free((void*)data);
+
+    DIDURL_Destroy(id3);
+    DIDURL_Destroy(id2);
     DIDDocument_Destroy(customized_doc);
     TestData_Free();
 }

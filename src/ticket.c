@@ -52,14 +52,14 @@ static int Proof_ToJson(JsonGenerator *gen, TicketProof *proof)
     assert(gen->buffer);
     assert(proof);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "type", proof->type));
-    CHECK(JsonGenerator_WriteStringField(gen, "created",
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "type", proof->type));
+    CHECK(DIDJG_WriteStringField(gen, "created",
             get_time_string(_timestring, sizeof(_timestring), &proof->created)));
-    CHECK(JsonGenerator_WriteStringField(gen, "verificationMethod",
+    CHECK(DIDJG_WriteStringField(gen, "verificationMethod",
             DIDURL_ToString(&proof->verificationMethod, id, sizeof(id), false)));
-    CHECK(JsonGenerator_WriteStringField(gen, "signatureValue", proof->signatureValue));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "signatureValue", proof->signatureValue));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -76,7 +76,7 @@ static int ProofArray_ToJson(JsonGenerator *gen, TransferTicket *ticket)
     size = ticket->proofs.size;
     proofs = ticket->proofs.proofs;
     if (size > 1)
-        CHECK(JsonGenerator_WriteStartArray(gen));
+        CHECK(DIDJG_WriteStartArray(gen));
 
     qsort(proofs, size, sizeof(TicketProof), proof_cmp);
 
@@ -84,7 +84,7 @@ static int ProofArray_ToJson(JsonGenerator *gen, TransferTicket *ticket)
         CHECK(Proof_ToJson(gen, &proofs[i]));
 
     if (size > 1)
-        CHECK(JsonGenerator_WriteEndArray(gen));
+        CHECK(DIDJG_WriteEndArray(gen));
 
     return 0;
 }
@@ -98,16 +98,16 @@ static int ticket_tojson_internal(JsonGenerator *gen, TransferTicket *ticket,
     assert(gen->buffer);
     assert(ticket);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "id", DID_ToString(&ticket->did, id, sizeof(id))));
-    CHECK(JsonGenerator_WriteStringField(gen, "to", DID_ToString(&ticket->to, id, sizeof(id))));
-    CHECK(JsonGenerator_WriteStringField(gen, "txid", ticket->txid));
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "id", DID_ToString(&ticket->did, id, sizeof(id))));
+    CHECK(DIDJG_WriteStringField(gen, "to", DID_ToString(&ticket->to, id, sizeof(id))));
+    CHECK(DIDJG_WriteStringField(gen, "txid", ticket->txid));
 
     if (!forsign) {
-        CHECK(JsonGenerator_WriteFieldName(gen, "proof"));
+        CHECK(DIDJG_WriteFieldName(gen, "proof"));
         CHECK(ProofArray_ToJson(gen, ticket));
     }
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -117,7 +117,7 @@ static const char *ticket_tojson_forsign(TransferTicket *ticket, bool forsign)
 
     assert(ticket);
 
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
         return NULL;
@@ -125,11 +125,11 @@ static const char *ticket_tojson_forsign(TransferTicket *ticket, bool forsign)
 
     if (ticket_tojson_internal(gen, ticket, forsign) < 0) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize ticket to json failed.");
-        JsonGenerator_Destroy(gen);
+        DIDJG_Destroy(gen);
         return NULL;
     }
 
-    return JsonGenerator_Finish(gen);
+    return DIDJG_Finish(gen);
 }
 
 TransferTicket *TransferTicket_Construct(DID *owner, DID *to)

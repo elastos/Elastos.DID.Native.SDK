@@ -46,14 +46,14 @@ static int header_toJson(JsonGenerator *gen, DIDRequest *req)
     assert(gen);
     assert(req);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "specification", req->header.spec));
-    CHECK(JsonGenerator_WriteStringField(gen, "operation", req->header.op));
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "specification", req->header.spec));
+    CHECK(DIDJG_WriteStringField(gen, "operation", req->header.op));
     if (!strcmp(req->header.op, operation[RequestType_Update]))
-        CHECK(JsonGenerator_WriteStringField(gen, "previousTxid", req->header.prevtxid));
+        CHECK(DIDJG_WriteStringField(gen, "previousTxid", req->header.prevtxid));
     if (req->header.ticket && *req->header.ticket)
-        CHECK(JsonGenerator_WriteStringField(gen, "ticket", req->header.ticket));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+        CHECK(DIDJG_WriteStringField(gen, "ticket", req->header.ticket));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -68,10 +68,10 @@ static int proof_toJson(JsonGenerator *gen, DIDRequest *req)
     if (!method)
         return -1;
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteStringField(gen, "verificationMethod", method));
-    CHECK(JsonGenerator_WriteStringField(gen, "signature", req->proof.signatureValue));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "verificationMethod", method));
+    CHECK(DIDJG_WriteStringField(gen, "signature", req->proof.signatureValue));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -80,13 +80,13 @@ int DIDRequest_ToJson_Internal(JsonGenerator *gen, DIDRequest *req)
     assert(gen);
     assert(req);
 
-    CHECK(JsonGenerator_WriteStartObject(gen));
-    CHECK(JsonGenerator_WriteFieldName(gen, "header"));
+    CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteFieldName(gen, "header"));
     CHECK(header_toJson(gen, req));
-    CHECK(JsonGenerator_WriteStringField(gen, "payload", req->payload));
-    CHECK(JsonGenerator_WriteFieldName(gen, "proof"));
+    CHECK(DIDJG_WriteStringField(gen, "payload", req->payload));
+    CHECK(DIDJG_WriteFieldName(gen, "proof"));
     CHECK(proof_toJson(gen, req));
-    CHECK(JsonGenerator_WriteEndObject(gen));
+    CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
@@ -96,7 +96,7 @@ static const char *DIDRequest_ToJson(DIDRequest *req)
 
     assert(req);
 
-    gen = JsonGenerator_Initialize(&g);
+    gen = DIDJG_Initialize(&g);
     if (!gen) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
         return NULL;
@@ -104,11 +104,11 @@ static const char *DIDRequest_ToJson(DIDRequest *req)
 
     if (DIDRequest_ToJson_Internal(gen, req) < 0) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize DIDRequest to json failed.");
-        JsonGenerator_Destroy(gen);
+        DIDJG_Destroy(gen);
         return NULL;
     }
 
-    return JsonGenerator_Finish(gen);
+    return DIDJG_Finish(gen);
 }
 
 //document is for signkey. If DID is deactivated by authorizor, document is authorizor's document.

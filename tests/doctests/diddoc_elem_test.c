@@ -202,10 +202,10 @@ static void test_diddoc_remove_publickey(void)
                 DIDDocument_GetDefaultPublicKey(doc), true));
 
         sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
-        CU_ASSERT_PTR_NOT_NULL(sealeddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
         DIDDocumentBuilder_Destroy(builder);
+        CU_ASSERT_PTR_NOT_NULL_FATAL(sealeddoc);
 
+        CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
         // Check existence
         PublicKey *pk = DIDDocument_GetPublicKey(sealeddoc, recoveryid);
         CU_ASSERT_PTR_NULL(pk);
@@ -1052,9 +1052,21 @@ static void test_diddoc_add_service(void)
     DID *did;
     DIDDocument *sealeddoc;
     DIDDocumentBuilder *builder;
-    Service *services[3];
-    Service *service;
+    Property props1[4];
+    Service *services[3], *service;
+    const char *props2, *data;
     int j;
+
+    props1[0].key = "abc";
+    props1[0].value = "helloworld";
+    props1[1].key = "bar";
+    props1[1].value = "foobar";
+    props1[2].key = "lalala...";
+    props1[2].value = "ABC";
+    props1[3].key = "Helloworld";
+    props1[3].value = "English";
+
+    props2 = "{\"name\":\"Jay Holtslander\",\"alternateName\":\"Jason Holtslander\",\"booleanValue\":true,\"numberValue\":1234,\"doubleValue\":9.5,\"nationality\":\"Canadian\",\"Description\":\"Technologist\",\"disambiguatingDescription\":\"Co-founder of CodeCore Bootcamp\",\"jobTitle\":\"Technical Director\",\"worksFor\":[{\"type\":\"Organization\",\"name\":\"Skunkworks Creative Group Inc.\",\"sameAs\":[\"https://twitter.com/skunkworks_ca\",\"https://www.facebook.com/skunkworks.ca\"]}],\"url\":\"https://jay.holtslander.ca\",\"image\":\"https://s.gravatar.com/avatar/961997eb7fd5c22b3e12fb3c8ca14e11?s=512&r=g\"}";
 
     for (j = 0; j < 3; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
@@ -1069,19 +1081,25 @@ static void test_diddoc_add_service(void)
         DIDURL *id1 = DIDURL_NewByDid(did, "test-svc-1");
         CU_ASSERT_PTR_NOT_NULL(id1);
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, id1, "Service.Testing",
-                "https://www.elastos.org/testing1"));
+                "https://www.elastos.org/testing1", NULL, 0));
         DIDURL_Destroy(id1);
 
         DIDURL *id2 = DIDURL_NewByDid(did, "test-svc-2");
         CU_ASSERT_PTR_NOT_NULL(id2);
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, id2, "Service.Testing",
-                "https://www.elastos.org/testing2"));
-        DIDURL_Destroy(id2);
+                "https://www.elastos.org/testing2", props1, 4));
+
+
+        DIDURL *id3 = DIDURL_NewByDid(did, "test-svc-3");
+        CU_ASSERT_PTR_NOT_NULL(id3);
+        CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddServiceByString(builder, id3, "Service.Testing",
+                "https://www.elastos.org/testing3", props2));
 
         // Service id already exist, should failed.
         DIDURL *id = DIDURL_NewByDid(did, "vcr");
         CU_ASSERT_PTR_NOT_NULL(id1);
-        CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, id, "test", "https://www.elastos.org/test"));
+        CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, id,
+                "test", "https://www.elastos.org/test", NULL, 0));
         DIDURL_Destroy(id);
 
         sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -1090,17 +1108,62 @@ static void test_diddoc_add_service(void)
         DIDDocumentBuilder_Destroy(builder);
 
         //  Check the final count
-        CU_ASSERT_EQUAL(5, DIDDocument_GetServiceCount(sealeddoc));
+        CU_ASSERT_EQUAL(6, DIDDocument_GetServiceCount(sealeddoc));
 
         // Try to select new added 2 services
-        CU_ASSERT_EQUAL(2, DIDDocument_SelectServices(sealeddoc, "Service.Testing", NULL,
+        CU_ASSERT_EQUAL(3, DIDDocument_SelectServices(sealeddoc, "Service.Testing", NULL,
                 services, 3));
         CU_ASSERT_STRING_EQUAL("Service.Testing", Service_GetType(services[0]));
         CU_ASSERT_STRING_EQUAL("Service.Testing", Service_GetType(services[1]));
 
-        // Check the final count.
-        CU_ASSERT_EQUAL(5, DIDDocument_GetServiceCount(sealeddoc));
+        service = DIDDocument_GetService(sealeddoc, id2);
+        CU_ASSERT_PTR_NOT_NULL(service);
 
+        CU_ASSERT_EQUAL(4, Service_GetPropertyCount(service));
+        data = Service_GetProperty(service, "abc");
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL("helloworld", data);
+        free((void*)data);
+        data = Service_GetProperty(service, "bar");
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL("foobar", data);
+        free((void*)data);
+        data = Service_GetProperty(service, "lalala...");
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL("ABC", data);
+        free((void*)data);
+        data = Service_GetProperty(service, "Helloworld");
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL("English", data);
+        free((void*)data);
+
+        service = DIDDocument_GetService(sealeddoc, id3);
+        CU_ASSERT_PTR_NOT_NULL(service);
+
+        CU_ASSERT_EQUAL(12, Service_GetPropertyCount(service));
+        data = Service_GetProperty(service, "numberValue");
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL("1234", data);
+        free((void*)data);
+
+        data = Service_GetProperty(service, "nationality");
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL("Canadian", data);
+        free((void*)data);
+
+        data = Service_GetProperty(service, "worksFor");
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_EQUAL(strlen("[{\"type\":\"Organization\",\"name\":\"Skunkworks Creative Group Inc.\",\"sameAs\":[\"https://twitter.com/skunkworks_ca\",\"https://www.facebook.com/skunkworks.ca\"]}]"),
+               strlen(data));
+        free((void*)data);
+
+        data = Service_GetProperty(service, "alternateName");
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL("Jason Holtslander", data);
+        free((void*)data);
+
+        DIDURL_Destroy(id3);
+        DIDURL_Destroy(id2);
         DIDDocument_Destroy(sealeddoc);
     }
 }
@@ -1224,9 +1287,11 @@ static int diddoc_elem_test_suite_init(void)
     if (!store)
         return -1;
 
-    if (!TestData_GetDocument("issuer", NULL, 0)) {
-        TestData_Free();
-        return -1;
+    for (int version = 0; version < 3; version++) {
+        if (!TestData_GetDocument("issuer", NULL, version)) {
+            TestData_Free();
+            return -1;
+        }
     }
     return 0;
 }

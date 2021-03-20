@@ -108,6 +108,7 @@ const char *DefaultResolve_Resolve(const char *resolve_request)
 {
     HttpRequestBody request;
     HttpResponseBody response;
+    long httpcode;
 
     assert(resolve_request);
 
@@ -135,9 +136,11 @@ const char *DefaultResolve_Resolve(const char *resolve_request)
 
     memset(&response, 0, sizeof(response));
     CURLcode rc = curl_easy_perform(curl);
+    curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &httpcode);
+
     curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
-    if (rc != CURLE_OK) {
+    if (httpcode < 200 || httpcode > 250 || rc != CURLE_OK) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve error, status: %d, message: %s", rc, curl_easy_strerror(rc));
         if (response.data)
             free(response.data);
