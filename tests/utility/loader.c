@@ -21,6 +21,7 @@
 
 #include "ela_did.h"
 #include "dummyadapter.h"
+#include "simulateadapter.h"
 #include "constant.h"
 #include "loader.h"
 #include "crypto.h"
@@ -51,8 +52,6 @@ typedef struct CompatibleData {
 
     TestData testdata[512];
     int dsize;
-
-    const char *restoreMnemonic;
 } CompatibleData;
 
 typedef struct Dir_Copy_Helper {
@@ -61,6 +60,7 @@ typedef struct Dir_Copy_Helper {
 } Dir_Copy_Helper;
 
 CompatibleData compatibledata;
+static int gDummyType;
 
 static const char *getpassword(const char *walletDir, const char *walletId)
 {
@@ -724,7 +724,7 @@ Presentation *TestData_GetPresentation(char *did, char *vp, char *type, int vers
 }
 
 /////////////////////////////////////
-int TestData_Init(bool dummy)
+int TestData_Init(int dummy)
 {
     char walletDir[PATH_MAX];
     int rc = 0;
@@ -740,15 +740,20 @@ int TestData_Init(bool dummy)
         rc = TestDIDAdapter_Init(walletDir, walletId, network, getpassword);
 #endif
 
+    gDummyType = dummy;
     return rc;
 }
 
-void TestData_Deinit(int type)
+void TestData_Deinit(void)
 {
 #if !defined(_WIN32) && !defined(_WIN64)
     TestDIDAdapter_Cleanup();
 #endif
-    DummyAdapter_Cleanup(type);
+
+    if (gDummyType == 2)
+        SimulatedAdapter_Shutdown();
+    else
+        DummyAdapter_Cleanup(0);
 }
 
 static DIDStore *setup_store(bool dummybackend, const char *root)
@@ -768,8 +773,10 @@ static DIDStore *setup_store(bool dummybackend, const char *root)
 #endif
 
     if (dummybackend) {
-        DummyAdapter_Cleanup(0);
-        DummyAdapter_Set(cachedir);
+        if (gDummyType == 2)
+            SimulatedAdapter_Set(cachedir);
+        else
+            DummyAdapter_Set(cachedir);
     }
 
     return compatibledata.store;
@@ -809,6 +816,15 @@ DIDStore *TestData_SetupTestStore(bool dummybackend, int version)
     return setup_store(dummybackend, path);
 }
 
+DIDStore *TestData_GetStore(void)
+{
+    if (compatibledata.store)
+        return compatibledata.store;
+
+    compatibledata.store = TestData_SetupStore(true);
+    return compatibledata.store;
+}
+
 RootIdentity *TestData_InitIdentity(DIDStore *store)
 {
     const char *mnemonic;
@@ -846,6 +862,14 @@ void TestData_Cleanup(void)
     compatibledata.dsize = 0;
 }
 
+void TestData_Reset(int type)
+{
+    if (gDummyType == 2)
+        SimulatedAdapter_Reset(type);
+    else
+        DummyAdapter_Cleanup(type);
+}
+
 void TestData_Free(void)
 {
     DIDStore_Close(compatibledata.store);
@@ -853,10 +877,10 @@ void TestData_Free(void)
     if (compatibledata.rootidentity)
         RootIdentity_Destroy(compatibledata.rootidentity);
 
-    TestData_Cleanup();
-
-    if (compatibledata.restoreMnemonic)
-        free((void*)compatibledata.restoreMnemonic);
+    if (gDummyType == 2)
+        SimulatedAdapter_Reset(0);
+    else
+        TestData_Cleanup();
 
     memset(&compatibledata, 0, sizeof(compatibledata));
 }

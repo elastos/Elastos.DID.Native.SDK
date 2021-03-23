@@ -58,7 +58,7 @@ static int Proof_ToJson(JsonGenerator *gen, TicketProof *proof)
             get_time_string(_timestring, sizeof(_timestring), &proof->created)));
     CHECK(DIDJG_WriteStringField(gen, "verificationMethod",
             DIDURL_ToString(&proof->verificationMethod, id, sizeof(id), false)));
-    CHECK(DIDJG_WriteStringField(gen, "signatureValue", proof->signatureValue));
+    CHECK(DIDJG_WriteStringField(gen, "signature", proof->signatureValue));
     CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
@@ -334,7 +334,7 @@ static int Parse_Proof(TicketProof *proof, json_t *json)
         return -1;
     }
 
-    item = json_object_get(json, "signatureValue");
+    item = json_object_get(json, "signature");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Missing signature.");
         return -1;

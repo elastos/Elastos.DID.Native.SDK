@@ -594,7 +594,8 @@ static int listvcs_result_tojson(JsonGenerator *gen, DID *did, int skip, int _li
         if (count++ < skip)
             continue;
 
-        DIDURL_Copy(&vcs[size++], vcid);
+        if (!strcmp("declare", ct->request.header.op))
+            DIDURL_Copy(&vcs[size++], vcid);
     }
 
     CHECK(DIDJG_WriteStartObject(gen));
@@ -717,8 +718,8 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, DID *issuer)
                 }
 
                 if (!DIDDocument_IsAuthenticationKey(ownerdoc, signkey) &&
-                       (issuerdoc && !DIDDocument_IsAuthenticationKey(issuerdoc, signkey)))
-                    return -1;
+                           !DIDDocument_IsAuthenticationKey(issuerdoc, signkey))
+                    break;
 
                 infos[size++] = info;
                 status = CredentialStatus_Revoked;
