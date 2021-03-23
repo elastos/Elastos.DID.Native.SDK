@@ -19,28 +19,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#ifndef __SIMULATED_ADAPTER_H__
+#define __SIMULATED_ADAPTER_H__
 
-#ifndef __IDCHAIN_TEST_SUITES_H__
-#define __IDCHAIN_TEST_SUITES_H__
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-DECL_TESTSUITE(idchain_restore_test);
-DECL_TESTSUITE(idchain_dummyadapter_test);
-DECL_TESTSUITE(idchain_dummyadapter_forctmdid_test);
-DECL_TESTSUITE(idchain_operation_test);
-DECL_TESTSUITE(idchain_dummyadapter_forvc_test);
+int SimulatedAdapter_Set(const char *cachedir);
 
-#define DEFINE_IDCHAIN_TESTSUITES \
-    DEFINE_TESTSUITE(idchain_dummyadapter_test), \
-    DEFINE_TESTSUITE(idchain_dummyadapter_forctmdid_test), \
-    DEFINE_TESTSUITE(idchain_dummyadapter_forvc_test), \
-    DEFINE_TESTSUITE(idchain_restore_test), \
-    DEFINE_TESTSUITE(idchain_operation_test)
+bool SimulatedAdapter_Reset(int type);
 
-#endif /* __IDCHAIN_TEST_SUITES_H__ */
+bool SimulatedAdapter_Shutdown(void);
 
+#ifdef __cplusplus
+}
+#endif
 
-
-
-
-
-
+#endif /* __SIMULATED_ADAPTER_H__ */

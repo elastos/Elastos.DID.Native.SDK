@@ -519,6 +519,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     ticket = TransferTicket_FromJson(data);
     free((void*)data);
     CU_ASSERT_PTR_NOT_NULL(ticket);
+    CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));
 
     CU_ASSERT_TRUE(DIDDocument_TransferDID(customized_doc, ticket, signkey2, storepass));
     DIDDocument_Destroy(customized_doc);

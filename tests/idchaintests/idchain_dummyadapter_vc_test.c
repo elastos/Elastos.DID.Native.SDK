@@ -48,7 +48,7 @@ static void test_idchain_declarevc(void)
     CU_ASSERT_PTR_NOT_NULL(signkey3);
 
     for (i = 0; i < 2; i++) {
-        TestData_Deinit(2);
+        TestData_Reset(2);
 
         size = (i == 0 ? 3 : 6);
         paramlist = params[i];
@@ -184,7 +184,8 @@ static void test_idchain_revokevc(void)
     CU_ASSERT_PTR_NOT_NULL(signkey3);
 
     for (i = 0; i < 2; i++) {
-        TestData_Deinit(2);
+        TestData_Reset(2);
+
         size = (i == 0 ? 3 : 6);
         paramlist = params[i];
 
@@ -233,15 +234,26 @@ static void test_idchain_revokevc(void)
 
             resolvevc = Credential_Resolve(&vc->id, &status, true);
             CU_ASSERT_PTR_NULL(resolvevc);
-            CU_ASSERT_EQUAL(status, CredentialStatus_Revoked);
+
+            if (strcmp("passport", param->param) && strcmp("services", param->param)) {
+                CU_ASSERT_EQUAL(status, CredentialStatus_NotFound);
+            } else {
+                CU_ASSERT_EQUAL(status, CredentialStatus_Revoked);
+            }
+            CU_ASSERT_TRUE(Credential_ResolveRevocation(&vc->id, &issuerdoc->did));
 
             CU_ASSERT_FALSE(Credential_Declare(vc, signkey1, storepass));
             CU_ASSERT_STRING_EQUAL("The credential is revoked.", DIDError_GetMessage());
 
             CU_ASSERT_PTR_NULL(Credential_Resolve(&vc->id, &status, true));
-            CU_ASSERT_EQUAL(status, CredentialStatus_Revoked);
-
+            if (strcmp("passport", param->param) && strcmp("services", param->param)) {
+                CU_ASSERT_EQUAL(status, CredentialStatus_NotFound);
+            } else {
+                CU_ASSERT_EQUAL(status, CredentialStatus_Revoked);
+            }
             CU_ASSERT_TRUE(Credential_ResolveRevocation(&vc->id, &issuerdoc->did));
+            CU_ASSERT_TRUE(Credential_IsRevoked(vc));
+            CU_ASSERT_FALSE(Credential_WasDeclared(&vc->id));
         }
     }
 }
@@ -313,7 +325,7 @@ static void test_idchain_listvc(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     credid2 = DIDURL_NewByDid(&did, "selfvc");
-    CU_ASSERT_PTR_NOT_NULL(credid1);
+    CU_ASSERT_PTR_NOT_NULL(credid2);
 
     types[0] = "BasicProfileCredential";
     types[1] = "SelfClaimedCredential";
@@ -403,11 +415,10 @@ static void test_idchain_listvc(void)
     Credential_Destroy(resolvevc);
     DIDDocument_Destroy(resolvedoc);
 
-    CU_ASSERT_EQUAL(2, Credential_List(&did, buffer, sizeof(buffer), 0, 2));
+    CU_ASSERT_EQUAL(1, Credential_List(&did, buffer, sizeof(buffer), 0, 2));
     CU_ASSERT_TRUE(DIDURL_Equals(buffer[0], credid1) || DIDURL_Equals(buffer[0], credid2));
-    CU_ASSERT_TRUE(DIDURL_Equals(buffer[1], credid1) || DIDURL_Equals(buffer[1], credid2));
 
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < 1; i++)
         DIDURL_Destroy(buffer[i]);
 
     DIDDocument_Destroy(document);
@@ -432,7 +443,7 @@ static void test_idchain_listvc2(void)
         { 2, "foobar", "services", NULL },   { 2, "foo", "email", NULL       }
     };
 
-    TestData_Deinit(2);
+    TestData_Reset(2);
 
     for (i = 0; i < 6; i++) {
         param = &params[i];
@@ -518,7 +529,7 @@ static void test_idchain_listvc_pagination(void)
     int i, status = 0, skip, limit, index;
     ssize_t size;
 
-    TestData_Cleanup();
+    TestData_Reset(0);
 
     rootidentity = TestData_InitIdentity(store);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
@@ -543,6 +554,7 @@ static void test_idchain_listvc_pagination(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
 
     //create credential
+    printf("\n------------------------------------------------------------\ncreate 1028 credentials, please wait...\n");
     for (i = 0; i < 1028; i++) {
         sprintf(fragment, "test%d", i);
         credid = DIDURL_NewByDid(&did, fragment);
@@ -565,6 +577,7 @@ static void test_idchain_listvc_pagination(void)
         DIDURL_Destroy(credid);
     }
 
+    printf("successfully!\n------------------------------------------------------------\nlist credential 'skip = 0, limit = 0', wait...\n");
     size = Credential_List(&did, buffer, 560, 0, 0);
     CU_ASSERT_EQUAL(128, size);
     for (i = 0; i < size; i++) {
@@ -583,6 +596,7 @@ static void test_idchain_listvc_pagination(void)
         DIDURL_Destroy(vcid);
     }
 
+    printf("successfully!\n------------------------------------------------------------\nlist credential 'skip = 0, limit = 560', wait...\n");
     size = Credential_List(&did, buffer, 560, 0, 560);
     CU_ASSERT_EQUAL(512, size);
 
@@ -601,6 +615,8 @@ static void test_idchain_listvc_pagination(void)
         DIDURL_Destroy(credid);
         DIDURL_Destroy(vcid);
     }
+
+    printf("successfully!\n------------------------------------------------------------\nlist all credentials with 'skip = 0, limit = 256', wait...\n");
 
     CU_ASSERT_EQUAL(0, Credential_List(&did, buffer, 560, 1028, 100));
 
@@ -632,6 +648,7 @@ static void test_idchain_listvc_pagination(void)
         skip += size;
     }
 
+    printf("successfully!\n------------------------------------------------------------\nlist all credentials with 'skip = 200, limit = 100' , wait...\n");
     CU_ASSERT_EQUAL(0, index);
 
     skip = 200;
@@ -661,6 +678,8 @@ static void test_idchain_listvc_pagination(void)
         }
         skip += size;
     }
+
+    printf("successfully!\n");
 
     CU_ASSERT_EQUAL(0, index);
     Issuer_Destroy(issuer);

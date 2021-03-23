@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     char *memstats_file = NULL;
     char memstats_cmd[256];
     int wait_for_attach = 0;
-    bool dummy = false;
+    int dummy = 0;
 
     int opt;
     int idx;
@@ -99,6 +99,7 @@ int main(int argc, char *argv[])
         { "help",           no_argument,        NULL, 'h' },
         { "debug",          no_argument,        NULL,  1  },
         { "dummy",          no_argument,        NULL,  2  },
+        { "simulate",       no_argument,        NULL,  3  },
         { NULL,             0,                  NULL,  0  }
     };
 
@@ -120,9 +121,11 @@ int main(int argc, char *argv[])
             wait_for_attach = 1;
             break;
         case 2:
-            dummy = true;
+            dummy = 1;
             break;
-
+        case 3:
+            dummy = 2;
+            break;
         case 'h':
         case '?':
         default:
@@ -192,7 +195,7 @@ int main(int argc, char *argv[])
         CU_basic_run_tests();
         CU_cleanup_registry();
 
-        TestData_Deinit(0);
+        TestData_Deinit();
 
         if (memstats_file)
             system(memstats_cmd);

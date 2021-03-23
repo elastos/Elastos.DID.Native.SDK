@@ -50,15 +50,21 @@ const char *Generater_Publickey(char *publickeybase58, size_t size);
 HDKey *Generater_KeyPair(HDKey *hdkey);
 
 ////////////////////////////////////////
-int TestData_Init(bool dummy);
 
-void TestData_Deinit(int type);
+// 0: real idchain; 1: dummy adapter from native; 2: simulate adapter from java.
+int TestData_Init(int dummy);
+
+void TestData_Deinit(void);
 
 void TestData_Cleanup(void);
+
+void TestData_Reset(int type);
 
 DIDStore *TestData_SetupStore(bool dummybackend);
 
 DIDStore *TestData_SetupTestStore(bool dummybackend, int version);
+
+DIDStore *TestData_GetStore(void);
 
 void TestData_Free(void);
 
