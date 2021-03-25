@@ -314,7 +314,7 @@ static Presentation *parse_presentation(json_t *json)
             goto errorExit;
         }
 
-        if (Parse_DIDURL(&pre->id, json_string_value(item), NULL) < 0) {
+        if (DIDURL_Parse(&pre->id, json_string_value(item), NULL) < 0) {
             DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid id.");
             goto errorExit;
         }
@@ -363,7 +363,7 @@ static Presentation *parse_presentation(json_t *json)
             goto errorExit;
         }
 
-        if (Parse_DID(&pre->holder, json_string_value(item)) < 0) {
+        if (DID_Parse(&pre->holder, json_string_value(item)) < 0) {
             DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid holder.");
             goto errorExit;
         }

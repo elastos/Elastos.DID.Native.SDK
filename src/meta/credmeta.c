@@ -45,7 +45,7 @@ int CredentialMetadata_Store(CredentialMetadata *metadata)
     assert(metadata);
 
     if (metadata->base.store && *metadata->id) {
-        Parse_DIDURL(&id, metadata->id, NULL);
+        DIDURL_Parse(&id, metadata->id, NULL);
         return DIDStore_StoreCredMetadata(metadata->base.store, metadata, &id);
     }
 

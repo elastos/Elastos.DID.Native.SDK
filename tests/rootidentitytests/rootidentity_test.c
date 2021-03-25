@@ -91,7 +91,7 @@ static void test_rootidentitybyrootkey_newdid(void)
     CU_ASSERT_PTR_NOT_NULL(store);
     CU_ASSERT_FALSE(DIDStore_ContainsRootIdentities(store));
 
-    rootidentity = RootIdentity_CreateByFromRootKey(ExtendedkeyBase, true, store, storepass);
+    rootidentity = RootIdentity_CreateFromRootKey(ExtendedkeyBase, true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     doc = RootIdentity_NewDID(rootidentity,storepass, NULL);

@@ -728,10 +728,9 @@ int dids_upgrade(const char *dst, const char *src);
 
 static int dids_upgrade_helper(const char *path, void *context)
 {
-    char srcpath[PATH_MAX];
-    char dstpath[PATH_MAX];
+    char srcpath[PATH_MAX], dstpath[PATH_MAX];
     char *pos;
-    int i;
+    int i, len;
 
     Dir_Copy_Helper *dh = (Dir_Copy_Helper*)context;
 
@@ -741,7 +740,9 @@ static int dids_upgrade_helper(const char *path, void *context)
     if (strcmp(path, ".") == 0 || strcmp(path, "..") == 0)
         return 0;
 
-    sprintf(srcpath, "%s%s%s", dh->srcpath, PATH_SEP, path);
+    len = snprintf(srcpath, PATH_MAX, "%s%s%s", dh->srcpath, PATH_SEP, path);
+    if (len < 0 || len > PATH_MAX)
+        return -1;
 
     if (!strcmp(".meta", path))
         path = META_FILE;
@@ -749,12 +750,17 @@ static int dids_upgrade_helper(const char *path, void *context)
     for (i = 0; i < 2; i++) {
         pos = last_strstr(dh->srcpath, renames[i]);
         if (pos && !strcmp(pos, renames[i])) {
-            sprintf(dstpath, "%s%s%s%s", dh->dstpath, PATH_SEP, "#", path);
+            len = snprintf(dstpath, PATH_MAX, "%s%s%s%s", dh->dstpath, PATH_SEP, "#", path);
+            if (len < 0 || len > PATH_MAX)
+                return -1;
             break;
         }
 
-        if (i == 1)
-            sprintf(dstpath, "%s%s%s", dh->dstpath, PATH_SEP, path);
+        if (i == 1) {
+            len = snprintf(dstpath, PATH_MAX, "%s%s%s", dh->dstpath, PATH_SEP, path);
+            if (len < 0 || len > PATH_MAX)
+                return -1;
+        }
     }
 
     return dids_upgrade(dstpath, srcpath);
@@ -1000,7 +1006,7 @@ static int upgradeFromV2(DIDStore *store)
         goto errorExit;
     }
 
-    if (to_hexstring(id, sizeof(id), extendedkey, EXTENDEDKEY_BYTES) < 0) {
+    if (md5_hex(id, sizeof(id), extendedkey, EXTENDEDKEY_BYTES) < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Get id from public key failed.");
         free((void*)data);
         goto errorExit;
@@ -2301,7 +2307,7 @@ int DIDStore_StoreDefaultPrivateKey(DIDStore *store, const char *storepass,
     assert(idstring && *idstring);
     assert(privatekey);
 
-    if (Init_DIDURL_ByIdstring(&id, idstring, "primary") < 0)
+    if (DIDURL_InitFromString(&id, idstring, "primary") < 0)
         return -1;
 
     if (DIDStore_StorePrivateKey(store, storepass, &id, privatekey, size) == -1)
@@ -2767,8 +2773,8 @@ static int dir_copy(const char *dst, const char *src, const char *newpw, const c
 
 static int dir_copy_helper(const char *path, void *context)
 {
-    char srcpath[PATH_MAX];
-    char dstpath[PATH_MAX];
+    char srcpath[PATH_MAX], dstpath[PATH_MAX];
+    int len;
 
     Dir_Copy_Helper *dh = (Dir_Copy_Helper*)context;
 
@@ -2778,8 +2784,13 @@ static int dir_copy_helper(const char *path, void *context)
     if (strcmp(path, ".") == 0 || strcmp(path, "..") == 0)
         return 0;
 
-    sprintf(srcpath, "%s%s%s", dh->srcpath, PATH_SEP, path);
-    sprintf(dstpath, "%s%s%s", dh->dstpath, PATH_SEP, path);
+    len = snprintf(srcpath, PATH_MAX, "%s%s%s", dh->srcpath, PATH_SEP, path);
+    if (len < 0 || len > PATH_MAX)
+        return -1;
+
+    len = snprintf(dstpath, PATH_MAX, "%s%s%s", dh->dstpath, PATH_SEP, path);
+    if (len < 0 || len > PATH_MAX)
+        return -1;
 
     return dir_copy(dstpath, srcpath, dh->newpassword, dh->oldpassword);
 }
@@ -4087,7 +4098,7 @@ static int import_rootidentity_id(json_t *json, DIDStore *store, char *id, size_
         return -1;
     }
 
-    if (to_hexstringfrombase58(id, size, string) < 0) {
+    if (md5_hexfrombase58(id, size, string) < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Get root identity's id failed.");
         return -1;
     }

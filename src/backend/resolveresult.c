@@ -50,7 +50,7 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid resolved DID.");
         return -1;
     }
-    if (Parse_DID(&result->did, json_string_value(item)) == -1)
+    if (DID_Parse(&result->did, json_string_value(item)) == -1)
         return -1;
 
     item = json_object_get(json, "status");

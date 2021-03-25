@@ -435,7 +435,7 @@ int mkdirs(const char *path, mode_t mode)
     return rc;
 }
 
-int to_hexstring(char *id, size_t size, uint8_t *data, size_t datasize)
+int md5_hex(char *id, size_t size, uint8_t *data, size_t datasize)
 {
     uint8_t md[16];
     char step[10];
@@ -458,7 +458,7 @@ int to_hexstring(char *id, size_t size, uint8_t *data, size_t datasize)
     return 0;
 }
 
-int to_hexstringfrombase58(char *id, size_t size, const char *base58)
+int md5_hexfrombase58(char *id, size_t size, const char *base58)
 {
     uint8_t binkey[EXTENDEDKEY_BYTES];
     ssize_t len;
@@ -471,7 +471,7 @@ int to_hexstringfrombase58(char *id, size_t size, const char *base58)
     if (len != EXTENDEDKEY_BYTES)
         return -1;
 
-    return to_hexstring(id, size, binkey, len);
+    return md5_hex(id, size, binkey, len);
 }
 
 char *last_strstr(const char *haystack, const char *needle)

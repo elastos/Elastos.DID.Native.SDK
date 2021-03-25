@@ -1319,7 +1319,7 @@ DID_API RootIdentity *RootIdentity_Create(const char *mnemonic, const char *pass
  * @return
  *      the handle to RootIdentity, otherwise, return NULL.
  */
-DID_API RootIdentity *RootIdentity_CreateByFromRootKey(const char *extendedprvkey,
+DID_API RootIdentity *RootIdentity_CreateFromRootKey(const char *extendedprvkey,
         bool overwrite, DIDStore *store, const char *storepass);
 
 /**

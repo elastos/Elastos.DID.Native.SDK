@@ -336,7 +336,7 @@ static int Parse_PublicKey(DID *did, json_t *json, PublicKey **publickey)
         return -1;
     }
 
-    if (!json_is_string(field) || Parse_DIDURL(&pk->id, json_string_value(field), did) < 0) {
+    if (!json_is_string(field) || DIDURL_Parse(&pk->id, json_string_value(field), did) < 0) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid public key id.");
         PublicKey_Destroy(pk);
         return -1;
@@ -365,7 +365,7 @@ static int Parse_PublicKey(DID *did, json_t *json, PublicKey **publickey)
     //'controller' may be default
     field = json_object_get(json, "controller");
     if (field) {
-        if (!json_is_string(field) || Parse_DID(&pk->controller, json_string_value(field)) < 0) {
+        if (!json_is_string(field) || DID_Parse(&pk->controller, json_string_value(field)) < 0) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid publicKey controller.");
             PublicKey_Destroy(pk);
             return -1;
@@ -411,7 +411,7 @@ static int Parse_Controllers(DIDDocument *document, json_t *json)
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Wrong controller.");
             return -1;
         }
-        if (Parse_DID(&controller, json_string_value(field)) < 0) {
+        if (DID_Parse(&controller, json_string_value(field)) < 0) {
             DIDError_Set(DIDERR_OUT_OF_MEMORY, "Create controller failed.");
             return -1;
         }
@@ -504,7 +504,7 @@ int Parse_Auth_PublicKeys(DIDDocument *document, json_t *json, KeyType type)
 
         id_field = json_object_get(pk_item, "id");
         if (!id_field) {
-            if (Parse_DIDURL(&id, json_string_value(pk_item), &document->did) < 0)
+            if (DIDURL_Parse(&id, json_string_value(pk_item), &document->did) < 0)
                 continue;
 
             pk = DIDDocument_GetPublicKey(document, &id);
@@ -575,7 +575,7 @@ static int Parse_Services(DIDDocument *document, json_t *json)
             continue;
         }
 
-        if (Parse_DIDURL(&service->id, json_string_value(field), &document->did) < 0) {
+        if (DIDURL_Parse(&service->id, json_string_value(field), &document->did) < 0) {
             Service_Destroy(service);
             continue;
         }
@@ -677,7 +677,7 @@ static int Parse_Proofs(DIDDocument *document, json_t *json)
         field = json_object_get(item, "creator");
         if (field) {
             if (!json_is_string(field) ||
-                    Parse_DIDURL(&proof->creater, json_string_value(field), &document->did) == -1) {
+                    DIDURL_Parse(&proof->creater, json_string_value(field), &document->did) == -1) {
                 DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid document creater.");
                 return -1;
             }
@@ -911,7 +911,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
         goto errorExit;
     }
     if (!json_is_string(item) ||
-            Parse_DID(&doc->did, json_string_value(item)) == -1) {
+            DID_Parse(&doc->did, json_string_value(item)) == -1) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid document subject.");
         goto errorExit;
     }
@@ -4256,14 +4256,20 @@ int DIDDocument_SignTransferTicket(DIDDocument *controllerdoc,
     return TransferTicket_Seal(ticket, controllerdoc, storepass);
 }
 
-static bool controllers_equal(DIDDocument **docs1, size_t size1, DIDDocument **docs2, size_t size2)
+static bool controllers_equals(DIDDocument *_doc1, DIDDocument *_doc2)
 {
-    DIDDocument *doc1, *doc2;
+    DIDDocument **docs1, **docs2, *doc1, *doc2;
+    size_t size1, size2;
     int i, j;
     bool equal = false;
 
-    assert(docs1);
-    assert(docs2);
+    assert(doc1);
+    assert(doc2);
+
+    docs1 = _doc1->controllers.docs;
+    docs2 = _doc2->controllers.docs;
+    size1 = _doc1->controllers.size;
+    size2 = _doc2->controllers.size;
 
     if (size1 != size2)
         return false;
@@ -4352,8 +4358,7 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
         }
 
         if (DIDDocument_IsCustomizedDID(document)) {
-            if (!controllers_equal(document->controllers.docs, document->controllers.size,
-                   resolve_doc->controllers.docs, resolve_doc->controllers.size)) {
+            if (!controllers_equals(document, resolve_doc)) {
                 DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport publishing DID which is changed controller, please transfer it.");
                 goto errorExit;
             }
@@ -4742,7 +4747,7 @@ DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *controllerdoc,
         return NULL;
     }
 
-    if (Init_DID(&did, customizeddid) == -1)
+    if (DID_Init(&did, customizeddid) == -1)
         return NULL;
 
     //check the controllers if it has the same DID and the controller is include in the contrllers.

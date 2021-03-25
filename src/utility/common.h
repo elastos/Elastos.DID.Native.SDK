@@ -91,9 +91,9 @@ bool is_empty(const char *path);
 
 int mkdirs(const char *path, mode_t mode);
 
-int to_hexstring(char *id, size_t size, uint8_t *data, size_t datasize);
+int md5_hex(char *id, size_t size, uint8_t *data, size_t datasize);
 
-int to_hexstringfrombase58(char *id, size_t size, const char *base58);
+int md5_hexfrombase58(char *id, size_t size, const char *base58);
 
 char *last_strstr(const char *haystack, const char *needle);
 
