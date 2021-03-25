@@ -363,7 +363,7 @@ static int parser_proof(DIDRequest *request, json_t *json)
         return -1;
     }
 
-    if (Parse_DIDURL(&request->proof.verificationMethod,
+    if (DIDURL_Parse(&request->proof.verificationMethod,
             json_string_value(item), &request->did) < 0) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid sign key.");
         return -1;

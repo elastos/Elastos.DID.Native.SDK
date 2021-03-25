@@ -45,14 +45,14 @@ struct  DIDURL {
     CredentialMetadata metadata;
 };
 
-int Parse_DID(DID *did, const char *idstring);
-int Init_DID (DID *did, const char *idstring);
+int DID_Parse(DID *did, const char *idstring);
+int DID_Init (DID *did, const char *idstring);
 DID *DID_Copy(DID *dest, DID *src);
 
-int Parse_DIDURL(DIDURL *id, const char *idstring, DID *base);
+int DIDURL_Parse(DIDURL *id, const char *idstring, DID *base);
 //caller provide DIDURL object
-int Init_DIDURL(DIDURL *id, DID *did, const char *fragment);
-int Init_DIDURL_ByIdstring(DIDURL *id, const char *idstring, const char *fragment);
+int DIDURL_Init(DIDURL *id, DID *did, const char *fragment);
+int DIDURL_InitFromString(DIDURL *id, const char *idstring, const char *fragment);
 DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src);
 
 bool Contains_DID(DID **dids, size_t size, DID *did);

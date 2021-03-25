@@ -281,7 +281,7 @@ int CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
         goto errorExit;
     }
 
-    if (Parse_DIDURL(&request->proof.verificationMethod,
+    if (DIDURL_Parse(&request->proof.verificationMethod,
             json_string_value(field), NULL) < 0) {
         DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signing key.");
         goto errorExit;

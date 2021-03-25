@@ -50,7 +50,7 @@ int DIDMetadata_Store(DIDMetadata *metadata)
     assert(metadata);
 
     if (metadata->base.store && *metadata->did) {
-        Parse_DID(&did, metadata->did);
+        DID_Parse(&did, metadata->did);
         return DIDStore_StoreDIDMetadata(metadata->base.store, metadata, &did);
     }
 

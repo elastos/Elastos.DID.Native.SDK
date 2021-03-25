@@ -293,7 +293,7 @@ static void test_didstore_privateidentity_compatibility(void)
     DIDDocument_Destroy(doc);
     RootIdentity_Destroy(rootidentity);
 
-    rootidentity = RootIdentity_CreateByFromRootKey(ExtendedkeyBase, true, store, storepass);
+    rootidentity = RootIdentity_CreateFromRootKey(ExtendedkeyBase, true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     doc = RootIdentity_NewDID(rootidentity, storepass, "identity test2");

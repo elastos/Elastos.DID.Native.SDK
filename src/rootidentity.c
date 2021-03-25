@@ -34,8 +34,8 @@
 #include "rootidentity.h"
 #include "identitymeta.h"
 
-static RootIdentity *create_rootidentity(HDKey *hdkey, DIDStore *store, const char *storepass,
-        const char *mnemonic)
+static RootIdentity *create_rootidentity(const char *mnemonic, HDKey *hdkey,
+        DIDStore *store, const char *storepass)
 {
     RootIdentity *rootidentity = NULL;
     HDKey _derivedkey, *predeviedkey = NULL;
@@ -74,7 +74,7 @@ static RootIdentity *create_rootidentity(HDKey *hdkey, DIDStore *store, const ch
     }
 
     //set 'id'
-    if (to_hexstring((char*)rootidentity->id, sizeof(rootidentity->id), rootidentity->preDerivedPublicKey, EXTENDEDKEY_BYTES) < 0) {
+    if (md5_hex((char*)rootidentity->id, sizeof(rootidentity->id), rootidentity->preDerivedPublicKey, EXTENDEDKEY_BYTES) < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Get rootidentity's id failed.");
         goto errorExit;
     }
@@ -134,7 +134,7 @@ RootIdentity *RootIdentity_Create(const char *mnemonic, const char *passphrase,
         return NULL;
     }
 
-    rootidentity = create_rootidentity(hdkey, store, storepass, mnemonic);
+    rootidentity = create_rootidentity(mnemonic, hdkey, store, storepass);
     if (!rootidentity || store_rootidentity(rootidentity, store, storepass, overwrite) < 0)
         goto errorExit;
 
@@ -148,7 +148,7 @@ errorExit:
     return NULL;
 }
 
-RootIdentity *RootIdentity_CreateByFromRootKey(const char *extendedkey,
+RootIdentity *RootIdentity_CreateFromRootKey(const char *extendedkey,
         bool overwrite, DIDStore *store, const char *storepass)
 {
     RootIdentity *rootidentity = NULL;
@@ -165,7 +165,7 @@ RootIdentity *RootIdentity_CreateByFromRootKey(const char *extendedkey,
         return NULL;
     }
 
-    rootidentity = create_rootidentity(hdkey, store, storepass, NULL);
+    rootidentity = create_rootidentity(NULL, hdkey, store, storepass);
     if (!rootidentity || store_rootidentity(rootidentity, store, storepass, overwrite) < 0)
         goto errorExit;
 
@@ -318,7 +318,7 @@ static DIDDocument *create_document(DID *did, const char *key, const char *alias
     assert(store);
     assert(storepass && *storepass);
 
-    if (Init_DIDURL(&id, did, "primary") == -1)
+    if (DIDURL_Init(&id, did, "primary") == -1)
         return NULL;
 
     builder = DIDDocument_CreateBuilder(did, NULL, store);
@@ -366,7 +366,7 @@ static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index
     if (!derivedkey)
         return NULL;
 
-    Init_DID(&did, HDKey_GetAddress(derivedkey));
+    DID_Init(&did, HDKey_GetAddress(derivedkey));
 
     //check did is exist or not
     document = DIDStore_LoadDID(store, &did);

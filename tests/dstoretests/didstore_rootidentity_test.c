@@ -149,7 +149,7 @@ static void test_didstore_rootidentity(void)
     rootidentity2 = RootIdentity_Create(mnemonic2, "1234", language, true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity2);
 
-    rootidentity3 = RootIdentity_CreateByFromRootKey(ExtendedkeyBase, true, store, storepass);
+    rootidentity3 = RootIdentity_CreateFromRootKey(ExtendedkeyBase, true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity2);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store, get_identity, (void*)&count));

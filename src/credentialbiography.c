@@ -86,7 +86,7 @@ CredentialBiography *CredentialBiography_FromJson(json_t *json)
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid resolved DID.");
         goto errorExit;
     }
-    if (Parse_DIDURL(&biography->id, json_string_value(item), NULL) == -1)
+    if (DIDURL_Parse(&biography->id, json_string_value(item), NULL) == -1)
         goto errorExit;
 
     item = json_object_get(json, "status");

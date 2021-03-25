@@ -329,7 +329,7 @@ static int Parse_Proof(TicketProof *proof, json_t *json)
         return -1;
     }
     if (!json_is_string(item) ||
-            Parse_DIDURL(&proof->verificationMethod, json_string_value(item), NULL) == -1) {
+            DIDURL_Parse(&proof->verificationMethod, json_string_value(item), NULL) == -1) {
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Invalid sign key.");
         return -1;
     }
@@ -411,7 +411,7 @@ static TransferTicket *TransferTicket_FromJson_Internal(json_t *root)
         goto errorExit;
     }
     if (!json_is_string(item) ||
-            Parse_DID(&ticket->did, json_string_value(item)) == -1) {
+            DID_Parse(&ticket->did, json_string_value(item)) == -1) {
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Invalid ticket owner.");
         goto errorExit;
     }
@@ -422,7 +422,7 @@ static TransferTicket *TransferTicket_FromJson_Internal(json_t *root)
         goto errorExit;
     }
     if (!json_is_string(item) ||
-            Parse_DID(&ticket->to, json_string_value(item)) == -1) {
+            DID_Parse(&ticket->to, json_string_value(item)) == -1) {
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Invalid ticket receiver.");
         goto errorExit;
     }
