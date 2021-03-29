@@ -81,7 +81,6 @@ static void usage(void)
     fprintf(stdout, "\n");
 }
 
-
 int main(int argc, char *argv[])
 {
     TestSuite *ts;
@@ -124,7 +123,12 @@ int main(int argc, char *argv[])
             dummy = 1;
             break;
         case 3:
-            dummy = 2;
+            #if defined(_WIN32) || defined(_WIN64)
+                dummy = 1;
+            #else
+                dummy = 2;
+            #endif
+
             break;
         case 'h':
         case '?':

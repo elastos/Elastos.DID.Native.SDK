@@ -27,7 +27,6 @@ static void test_vc_local_verify(void)
     DIDDocument *doc;
     DID owner, kyc;
     time_t expires;
-    int rc;
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);

@@ -1403,7 +1403,7 @@ static void test_idchain_deactivedid_after_create(void)
     const char *mnemonic, *txid;
     bool success;
     DID did;
-    int i = 0, rc, status;
+    int i = 0, status;
 
     mnemonic = Mnemonic_Generate(language);
 

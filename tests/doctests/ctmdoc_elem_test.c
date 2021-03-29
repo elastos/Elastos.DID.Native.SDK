@@ -317,7 +317,6 @@ static void test_ctmdoc_remove_publickey(void)
     DIDDocumentBuilder *builder;
     DIDURL *recoveryid, *keyid1, *keyid2, *keyid;
     DID *did, *controller;
-    int rc;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -607,9 +606,6 @@ static void test_ctmdoc_remove_authentication_key(void)
     DIDDocumentBuilder *builder;
     DID *did, *controller;
     DIDURL *id1, *id2, *id;
-    char publickeybase58[PUBLICKEY_BASE58_BYTES];
-    const char *keybase;
-    int rc;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -757,8 +753,7 @@ static void test_ctmdoc_add_authorization_key(void)
     char publickeybase58[PUBLICKEY_BASE58_BYTES];
     HDKey _dkey, *dkey;
     const char *keybase, *idstring;
-    DID controller, *did, *_controller;
-    PublicKey *pk;
+    DID controller, *did;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -813,7 +808,7 @@ static void test_empty_multictmdoc_get_publickey(void)
     PublicKey *pks[8] = {0};
     PublicKey *pk;
     DIDURL *keyid1, *keyid2, *keyid, *primaryid1, *primaryid2, *primaryid3;
-    DID *customized_did, *controller, controller1, controller2, controller3;
+    DID *customized_did, controller1, controller2, controller3;
     ssize_t size;
     int i;
 
@@ -1160,7 +1155,6 @@ static void test_multictmdoc_remove_publickey(void)
     DIDURL *recoveryid, *keyid1, *keyid2, *keyid;
     PublicKey *pk;
     DID *customized_did, controller1, controller2, controller3;
-    int rc;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -1248,9 +1242,8 @@ static void test_multictmdoc_get_authentication_key(void)
     PublicKey *pks[7];
     ssize_t size;
     PublicKey *pk;
-    DIDURL *keyid1, *keyid2, *keyid3, *keyid, *primaryid1;
+    DIDURL *keyid1, *keyid2, *keyid, *primaryid1;
     DID *customized_did, controller1, controller2, controller3;
-    bool equal;
     int i;
 
     DIDStore *store = TestData_SetupStore(true);
@@ -1359,7 +1352,6 @@ static void test_multictmdoc_add_authentication_key(void)
     DIDURL *keyid1, *keyid2, *keyid3, *keyid4, *keyid;
     const char *keybase, *data;
     ssize_t size;
-    int rc;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -1571,7 +1563,7 @@ static void test_multictmdoc_remove_authentication_key(void)
 
 static void test_multictmdoc_add_authorization_key(void)
 {
-    DIDDocument *sealeddoc, *customized_doc, *controller2_doc;
+    DIDDocument *customized_doc, *controller2_doc;
     DIDDocumentBuilder *builder;
     DIDURL *keyid1;
     char publickeybase58[PUBLICKEY_BASE58_BYTES];
@@ -1760,10 +1752,7 @@ static void test_multictmdoc_remove_credential(void)
     DIDDocument *customized_doc, *controller1_doc, *controller2_doc, *controller3_doc;
     DIDDocumentBuilder *builder;
     DIDURL *credid, *signkey;
-    DID *controller1;
-    Credential *vcs[1];
     const char *data;
-    ssize_t size;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -1829,7 +1818,6 @@ static void test_multictmdoc_get_service(void)
     DIDDocument *customized_doc, *controller1_doc;
     DIDURL *serviceid;
     DID *controller1;
-    ssize_t size;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -1875,7 +1863,6 @@ static void test_multictmdoc_add_service(void)
     DIDURL *id1, *id2, *id3;
     DID *controller1;
     Property props1[4];
-    time_t expires;
     const char *data, *props2;
     Service *service;
 
@@ -2001,9 +1988,6 @@ static void test_multictmdoc_remove_service(void)
     DIDDocument *customized_doc, *controllerdoc;
     DIDDocumentBuilder *builder;
     DIDURL *serviceid;
-    DID *controller1;
-    Credential *vcs[1];
-    ssize_t size;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -2044,11 +2028,8 @@ static void test_multictmdoc_remove_service(void)
 static void test_multictmdoc_get_controller(void)
 {
     DIDDocument *customized_doc, *controller1_doc, *controller2_doc, *controller3_doc;
-    DIDURL *credid;
     DID *controller1, *controller2, *controller3;
     DID *controllers[3];
-    ssize_t size;
-    int i;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -2298,7 +2279,7 @@ static void test_multictmdoc_remove_controller(void)
 
 static void test_multictmdoc_remove_proof(void)
 {
-    DIDDocument *sealeddoc, *controller1_doc, *controller2_doc, *controller3_doc, *customized_doc;
+    DIDDocument *controller1_doc, *controller2_doc, *controller3_doc, *customized_doc;
     DIDDocumentBuilder *builder;
     DID customized_did, *controller1, *controller2, *controller3;
     DIDURL *signkey1, *signkey2, *signkey3;

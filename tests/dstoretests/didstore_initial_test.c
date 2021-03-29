@@ -38,7 +38,6 @@ static void test_didstore_newdid(void)
     DIDDocument *doc, *loaddoc;
     RootIdentity *rootidentity;
     DIDStore *store;
-    bool hasidentity;
     int rc;
 
     store = TestData_SetupStore(true);
@@ -82,9 +81,7 @@ static void test_didstore_newdid(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(loaddoc);
 
     CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(doc), DIDDocument_GetSubject(loaddoc)));
-
-    rc = strcmp(doc->proofs.proofs[0].signatureValue, loaddoc->proofs.proofs[0].signatureValue);
-    CU_ASSERT_EQUAL_FATAL(rc, 0);
+    CU_ASSERT_EQUAL_FATAL(0, strcmp(doc->proofs.proofs[0].signatureValue, loaddoc->proofs.proofs[0].signatureValue));
 
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(loaddoc));
 
@@ -101,7 +98,6 @@ static void test_didstore_newdid_byindex(void)
     DIDDocument *doc;
     DIDStore *store;
     DID did, *ndid;
-    int rc;
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -234,9 +230,6 @@ static void test_didstore_initial_error(void)
 
 static void test_didstore_privateIdentity_error(void)
 {
-    RootIdentity *rootidentity;
-    char _temp[PATH_MAX];
-    char *path;
     DIDStore *store;
     int count = 0;
 

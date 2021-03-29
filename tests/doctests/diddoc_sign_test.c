@@ -56,8 +56,8 @@ static void test_diddoc_sign_verify(void)
 static void test_ctmdoc_sign_verify(void)
 {
     DIDDocument *document, *user1_doc;
-    DIDURL *keyid1, keyid2, *keyid;
-    uint8_t data[124], digest[32];
+    DIDURL *keyid1, keyid2;
+    uint8_t data[124];
     char signature[MAX_SIGNATURE_LEN * 2 + 16];
     int i, j;
 

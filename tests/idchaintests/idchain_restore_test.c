@@ -118,7 +118,7 @@ static void test_idchain_restore(void)
 static void test_sync_with_localmodification1(void)
 {
     RootIdentity *rootidentity;
-    char _path[PATH_MAX], modified_signature[MAX_SIGNATURE_LEN], cachedir[PATH_MAX];
+    char _path[PATH_MAX], modified_signature[MAX_SIGNATURE_LEN];
     const char *path;
     DIDStore *cleanstore;
     DIDs redids;
@@ -194,7 +194,7 @@ static void test_sync_with_localmodification1(void)
 static void test_sync_with_localmodification2(void)
 {
     RootIdentity *rootidentity;
-    char _path[PATH_MAX], origin_signature[MAX_SIGNATURE_LEN], cachedir[PATH_MAX];
+    char _path[PATH_MAX], origin_signature[MAX_SIGNATURE_LEN];
     const char *path;
     DIDStore *cleanstore;
     DIDs redids;

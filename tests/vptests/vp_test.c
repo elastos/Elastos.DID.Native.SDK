@@ -27,7 +27,6 @@ static void test_vp_getelem(void)
     DIDURL*id;
     DID *holder;
     int i, version;
-    bool valid;
 
     for (version = 1; version <= 2; version++) {
         CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, version));
@@ -93,15 +92,13 @@ static void test_vp_getelem(void)
 
 static void test_vp_getelem_ctmid(void)
 {
-    DIDDocument *owner;
     Presentation *vp;
     DIDDocument *doc;
     ssize_t size;
     Credential *creds[4], **cred;
     const char *types[1] = {0};
-    DIDURL*id;
     DID *holder;
-    int i, version;
+    int i;
 
     CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 2));
     CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
@@ -361,7 +358,7 @@ static void test_vp_create(void)
 {
     DIDDocument *doc;
     Presentation *vp;
-    DID *did, *holder;
+    DID *holder;
     Credential *creds[4], **cred;
     const char *types[2] = {"Trail", "TestPresentation"};
     ssize_t size;
@@ -451,7 +448,6 @@ static void test_vp_create_ctmid(void)
     Credential *creds[4], **cred;
     const char *types[2] = {"Trail", "TestPresentation"};
     ssize_t size;
-    DID *holder;
     int i;
 
     user1doc = TestData_GetDocument("user1", NULL, 2);
@@ -634,7 +630,7 @@ static void test_vp_create_by_credarray_ctmid(void)
 {
     DIDDocument *doc, *user1doc;
     Presentation *vp;
-    DID *did, *holder;
+    DID *did;
     Credential *creds[4], **cred, *vcs[4] = {0};
     DIDURL *id, *credid1, *credid2, *signkey;
     const char *types[2] = {"Trail", "TestPresentation"};
@@ -739,7 +735,6 @@ static void test_vp_create_without_creds(void)
     DID *did;
     Credential *creds[4];
     const char *types[2] = {"Trail", "TestPresentation"};
-    ssize_t size;
     int i;
 
     doc = TestData_GetDocument("document", NULL, 0);

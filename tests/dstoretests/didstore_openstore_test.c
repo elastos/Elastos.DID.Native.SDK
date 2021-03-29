@@ -175,7 +175,6 @@ static int get_did(DID *did, void *context)
 static int get_identity(RootIdentity *identity, void *context)
 {
     int *count = (int*)context;
-    const char *id;
 
     if (!identity)
         return 0;

@@ -32,11 +32,10 @@ static void test_publish_ctmdid_with_onecontroller(void)
     const char *customized_string = "whisper", *keybase;
     char publickeybase58[PUBLICKEY_BASE58_BYTES];
     DIDDocument *resolve_doc, *customized_doc;
-    DID *controller, customizedid;
+    DID customizedid;
     DIDURL *keyid1, *keyid2, *credid;
     DIDDocumentBuilder *builder;
     HDKey _dkey, *dkey;
-    const char *data;
     int status;
 
     DID *controllers[1] = {0};
@@ -153,10 +152,10 @@ static void test_publish_ctmdid_with_onecontroller(void)
 //create - resolve - edit document - update - resolve
 static void test_publish_ctmdid_with_multicontroller(void)
 {
-    const char *customized_string = "cici", *keybase, *idrequest, *idrequest1;
+    const char *customized_string = "cici", *keybase;
     char publickeybase58[PUBLICKEY_BASE58_BYTES];
     DIDDocument *resolve_doc, *customized_doc;
-    DID *controller, customizedid;
+    DID customizedid;
     DIDURL *keyid1, *keyid2, *credid, *signkey1, *signkey2, *signkey3;
     DIDDocumentBuilder *builder;
     HDKey _dkey, *dkey;
@@ -327,7 +326,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     const char *customized_string = "tristan", *keybase;
     char publickeybase58[PUBLICKEY_BASE58_BYTES];
     DIDDocument *resolve_doc, *customized_doc;
-    DID *controller, customizedid;
+    DID customizedid;
     DIDURL *keyid1, *keyid2, *credid, *signkey1, *signkey2;
     DIDDocumentBuilder *builder;
     TransferTicket *ticket;
@@ -545,10 +544,10 @@ static void test_transfer_ctmdid_with_onecontroller(void)
 //add controller
 static void test_transfer_ctmdid_with_multicontroller(void)
 {
-    const char *customized_string = "jack", *keybase, *idrequest, *idrequest1;
+    const char *customized_string = "jack", *keybase;
     char publickeybase58[PUBLICKEY_BASE58_BYTES];
     DIDDocument *resolve_doc, *customized_doc;
-    DID *controller, customizedid;
+    DID customizedid;
     DIDURL *keyid1, *keyid2, *credid, *signkey1, *signkey2, *signkey3, *creater;
     DIDDocumentBuilder *builder;
     TransferTicket *ticket;
@@ -862,8 +861,6 @@ static void test_transfer_ctmdid_with_multicontroller(void)
 
 static int idchain_dummyadapter_forctmdid_test_suite_init(void)
 {
-    DIDDocument *doc;
-
     store = TestData_SetupStore(true);
     if (!store)
         return -1;

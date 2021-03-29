@@ -41,7 +41,6 @@ static void test_issuer_issuevc(void)
     DIDURL *credid;
     time_t expires;
     ssize_t size;
-    int rc;
     const char* provalue;
     Issuer *issuer;
 
@@ -576,7 +575,7 @@ static void test_issuer_issue_multicidvc(void)
 {
     DIDDocument *customizeddoc;
     Issuer *issuer;
-    DIDURL *credid, *signkey;
+    DIDURL *credid;
     time_t expires;
     DID *subject;
     Credential *vc;
@@ -999,7 +998,6 @@ static void test_multicidissuer_issue_selfvc2(void)
 static int issuer_issuevc_test_suite_init(void)
 {
     DIDURL *signkey;
-    int rc;
 
     store = TestData_SetupStore(true);
     if (!store)

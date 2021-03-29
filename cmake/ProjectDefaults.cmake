@@ -71,6 +71,14 @@ else()
     set(PATCH_EXE "patch")
 endif()
 
+if(WIN32)
+    set(SHARED_LIB_DECORATOR "")
+    set(STATIC_LIB_DECORATOR "_s")
+else()
+    set(SHARED_LIB_DECORATOR "")
+    set(STATIC_LIB_DECORATOR "")
+endif()
+
 ##Only suport for windows.
 if(WIN32)
 function(set_win_build_options build_options suffix)

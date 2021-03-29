@@ -87,8 +87,8 @@ static void test_new_customizedid_with_onecontroller(void)
 static void test_new_customizedid_with_multicontrollers(void)
 {
     RootIdentity *rootidentity;
-    DIDDocument *controller1_doc, *controller2_doc, *customized_doc, *resolve_doc;
-    DID *controller1, *controller2, *_controller, *subject;
+    DIDDocument *controller1_doc, *controller2_doc, *customized_doc;
+    DID *controller1, *controller2, *subject;
     DIDURL *signkey1, *signkey2;
     int rc;
 
@@ -162,11 +162,9 @@ static void test_new_customizedid_with_multicontrollers2(void)
 {
     RootIdentity *rootidentity;
     DIDDocument *controller1_doc, *controller2_doc, *customized_doc, *resolve_doc;
-    DIDDocumentBuilder *builder;
     DID *controller1, *controller2;
     DIDURL *signkey1, *signkey2;
     const char *data;
-    int rc;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -226,8 +224,6 @@ static void test_new_customizedid_with_existcontrollers(void)
     DIDURL *creater1, *creater2, *creater3;
     const char *data;
     DID *dids[3] = {0}, *controllers[3] = {0};
-    char *path, _path[PATH_MAX];
-    int rc;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -269,8 +265,7 @@ static void test_new_customizedid_with_existcontrollers(void)
 
     CU_ASSERT_EQUAL(3, DIDDocument_GetControllerCount(customized1_doc));
 
-    rc = DIDDocument_GetControllers(customized1_doc, controllers, 3);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDDocument_GetControllers(customized1_doc, controllers, 3));
     CU_ASSERT_TRUE(contains_did(controllers, 3, controller1));
     CU_ASSERT_TRUE(contains_did(controllers, 3, controller2));
     CU_ASSERT_TRUE(contains_did(controllers, 3, controller3));
@@ -302,8 +297,7 @@ static void test_new_customizedid_with_existcontrollers(void)
     CU_ASSERT_EQUAL(3, DIDDocument_GetControllerCount(customized2_doc));
 
     memset(controllers, 0, 3 *sizeof(DID*));
-    rc = DIDDocument_GetControllers(customized2_doc, controllers, 3);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDDocument_GetControllers(customized2_doc, controllers, 3));
     CU_ASSERT_TRUE(contains_did(controllers, 3, controller1));
     CU_ASSERT_TRUE(contains_did(controllers, 3, controller2));
     CU_ASSERT_TRUE(contains_did(controllers, 3, controller3));
@@ -346,8 +340,7 @@ static void test_new_customizedid_with_existcontrollers(void)
     CU_ASSERT_EQUAL(3, DIDDocument_GetControllerCount(customized3_doc));
 
     memset(controllers, 0, 3 *sizeof(DID*));
-    rc = DIDDocument_GetControllers(customized3_doc, controllers, 3);
-    CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDDocument_GetControllers(customized3_doc, controllers, 3));
     CU_ASSERT_TRUE(contains_did(controllers, 3, controller1));
     CU_ASSERT_TRUE(contains_did(controllers, 3, controller2));
     CU_ASSERT_TRUE(contains_did(controllers, 3, controller3));
@@ -376,14 +369,13 @@ static void test_new_customizedid_with_existcontrollers2(void)
     DIDURL *signkey1, *signkey2, *signkey3;
     DIDURL *creater1, *creater2, *creater3;
     DIDDocumentBuilder *builder;
-    DID *dids[3] = {0}, *controllers[3] = {0}, controller;
-    DIDURL *id1, *id2, *serviceid1, *serviceid2, *credid, *keyid;
+    DID *dids[3] = {0}, *controllers[3] = {0};
+    DIDURL *id1, *id2, *serviceid1, *serviceid2, *credid;
     HDKey *hdkey, _hdkey;
-    PublicKey *pk;
-    char publickeybase58[PUBLICKEY_BASE58_BYTES], privatekeybase58[256];
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     char publickeybase58_a[PUBLICKEY_BASE58_BYTES];
     char publickeybase58_b[PUBLICKEY_BASE58_BYTES];
-    const char *keybase1, *keybase2, *keybase3, *data;
+    const char *keybase1, *keybase2, *data;
     time_t expires;
     int rc;
 

@@ -560,7 +560,7 @@ int Metadata_Merge(Metadata *tometadata, Metadata *frommetadata)
 
 int Metadata_Upgrade(Metadata *newmetadata, Metadata *oldmetadata)
 {
-    json_t *value, *item, *json;
+    json_t *value, *json;
     const char *key;
     char *uskey;
 

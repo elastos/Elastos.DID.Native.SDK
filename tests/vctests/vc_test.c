@@ -180,7 +180,7 @@ static void test_vc_parse_kycvc(void)
 {
     const char *data, *normJson, *compactJson;
     Credential *compactvc, *normvc, *cred;
-    DIDDocument *doc, *issuerdoc;
+    DIDDocument *doc;
     DID *did;
     int version;
 

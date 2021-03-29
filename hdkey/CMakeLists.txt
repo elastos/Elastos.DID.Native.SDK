@@ -47,15 +47,12 @@ if(WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
 
     set(ENABLE_STATIC TRUE)
-    set(STATIC_OUTPUT "hdkey_s")
 
     set(LIBS
         ${LIBS}
         crystal
         pthread
         Ws2_32)
-else()
-    set(STATIC_OUTPUT "hdkey")
 endif()
 
 if(MSVC)
@@ -83,7 +80,7 @@ if(ENABLE_STATIC)
         target_compile_definitions(hdkey-static PRIVATE static_assert=_Static_assert)
     endif()
 
-    set_target_properties(hdkey-static PROPERTIES OUTPUT_NAME ${STATIC_OUTPUT})
+    set_target_properties(hdkey-static PROPERTIES OUTPUT_NAME hdkey${STATIC_LIB_DECORATOR})
     if(WIN32)
         set_target_properties(hdkey-static PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
     endif()
@@ -104,7 +101,7 @@ if(ENABLE_SHARED)
     endif()
 
     set_target_properties(hdkey-shared PROPERTIES
-        OUTPUT_NAME hdkey
+        OUTPUT_NAME hdkey${SHARED_LIB_DECORATOR}
         VERSION ${PROJECT_VERSION}
         SOVERSION ${PROJECT_VERSION_MAJOR})
     if(WIN32)

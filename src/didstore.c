@@ -958,7 +958,7 @@ static const char *load_index_string(DIDStore *store, const char *id)
 
 static int upgradeFromV2(DIDStore *store)
 {
-    char path[PATH_MAX], v2path[PATH_MAX * 2], id[MAX_ID_LEN] = {0}, buffer[120];
+    char path[PATH_MAX], v2path[PATH_MAX * 2], id[MAX_ID_LEN] = {0};
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
     StoreMetadata metadata;
     const char *data;
@@ -2523,7 +2523,6 @@ int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id)
 static int get_identity(RootIdentity *identity, void *context)
 {
     DefaultRootIdentity_Helper *helper = (DefaultRootIdentity_Helper*)context;
-    const char *id;
 
     if (!identity)
         return 0;

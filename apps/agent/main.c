@@ -476,7 +476,6 @@ static int gen_priv_identity(struct AgentCtx *ctx)
 {
     char passphrase[64] = {0};
     const char *mnemonic;
-    int rc;
 
     mnemonic = Mnemonic_Generate(ctx->lang);
     if (!mnemonic) {
