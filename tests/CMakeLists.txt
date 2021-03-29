@@ -54,7 +54,8 @@ file(GLOB JWT-TESTS "jwttests/*.c")
 file(GLOB TICKET-TESTS "tickettests/*.c")
 
 if(WIN32)
-    set(ADAPTER_SOURCE "testadapter/dummyadapter.c")
+    set(ADAPTER_SOURCE
+        "testadapter/dummyadapter.c")
 else()
     set(INCLUDE
         ../adapter/spvadapter
@@ -96,6 +97,7 @@ set(LIBS
 set(DEPS
     ela-did
     CUnit
+    libcurl
     hdkey)
 
 set(INCLUDE
@@ -127,8 +129,10 @@ if(WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
     set(LIBS
         ${LIBS}
-        crystal
+        crystal_s
+        pthread
         Ws2_32
+        crypt32
         Iphlpapi
         Shlwapi)
 

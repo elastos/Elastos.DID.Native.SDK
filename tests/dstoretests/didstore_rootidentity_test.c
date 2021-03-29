@@ -17,7 +17,6 @@
 static int get_identity(RootIdentity *identity, void *context)
 {
     int *count = (int*)context;
-    const char *id;
 
     if (!identity)
         return 0;
@@ -98,7 +97,6 @@ static void test_didstore_listrootidentity(void)
 {
     DIDStore *store;
     RootIdentity *rootidentity;
-    char _path[PATH_MAX], *path;
     const char *mnemonic;
     int i, count = 0;
 

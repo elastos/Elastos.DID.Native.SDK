@@ -21,7 +21,6 @@
 
 #include "ela_did.h"
 #include "dummyadapter.h"
-#include "simulateadapter.h"
 #include "constant.h"
 #include "loader.h"
 #include "crypto.h"
@@ -35,6 +34,7 @@
     #include <crystal.h>
 #else
     #include "testadapter.h"
+    #include "simulateadapter.h"
 #endif
 
 #define HARDENED                       0x80000000
@@ -310,7 +310,6 @@ static int dir_copy(const char *dst, const char *src)
 {
     Dir_Copy_Helper dh;
     const char *string;
-    char path[PATH_MAX];
     int rc = -1;
 
     assert(dst && *dst);
@@ -632,7 +631,7 @@ const char *TestData_GetCredentialJson(char *did, char *vc, char *type, int vers
 
 Credential *TestData_GetCredential(char *did, char *vc, char *type, int version)
 {
-    char path[PATH_MAX * 2], basekey[120] = {0};
+    char basekey[120] = {0};
     Credential *credential;
     const char *data;
     void *dvalue;
@@ -695,7 +694,7 @@ const char *TestData_GetPresentationJson(char *did, char *vp, char *type, int ve
 
 Presentation *TestData_GetPresentation(char *did, char *vp, char *type, int version)
 {
-    char path[PATH_MAX * 2], basekey[120] = {0};
+    char basekey[120] = {0};
     Presentation *presentation;
     const char *data;
     void *dvalue;
@@ -748,12 +747,11 @@ void TestData_Deinit(void)
 {
 #if !defined(_WIN32) && !defined(_WIN64)
     TestDIDAdapter_Cleanup();
-#endif
-
     if (gDummyType == 2)
         SimulatedAdapter_Shutdown();
-    else
-        DummyAdapter_Cleanup(0);
+#endif
+
+    DummyAdapter_Cleanup(0);
 }
 
 static DIDStore *setup_store(bool dummybackend, const char *root)
@@ -768,16 +766,17 @@ static DIDStore *setup_store(bool dummybackend, const char *root)
 #if defined(_WIN32) ||  defined(_WIN64)
     dummybackend = true;
 #else
-    if (!dummybackend)
+    if (!dummybackend) {
         DIDBackend_InitializeDefault(TestDIDAdapter_CreateIdTransaction, resolver, cachedir);
-#endif
-
-    if (dummybackend) {
+    } else {
         if (gDummyType == 2)
             SimulatedAdapter_Set(cachedir);
-        else
-            DummyAdapter_Set(cachedir);
     }
+
+#endif
+
+    if (dummybackend && gDummyType != 2)
+        DummyAdapter_Set(cachedir);
 
     return compatibledata.store;
 }
@@ -828,7 +827,6 @@ DIDStore *TestData_GetStore(void)
 RootIdentity *TestData_InitIdentity(DIDStore *store)
 {
     const char *mnemonic;
-    int rc;
 
     mnemonic = Mnemonic_Generate(language);
     compatibledata.rootidentity = RootIdentity_Create(mnemonic, passphrase, language, true, store, storepass);
@@ -864,10 +862,12 @@ void TestData_Cleanup(void)
 
 void TestData_Reset(int type)
 {
+#if !defined(_WIN32) && !defined(_WIN64)
     if (gDummyType == 2)
         SimulatedAdapter_Reset(type);
-    else
-        DummyAdapter_Cleanup(type);
+#endif
+
+    DummyAdapter_Cleanup(type);
 }
 
 void TestData_Free(void)
@@ -877,11 +877,12 @@ void TestData_Free(void)
     if (compatibledata.rootidentity)
         RootIdentity_Destroy(compatibledata.rootidentity);
 
+#if !defined(_WIN32) && !defined(_WIN64)
     if (gDummyType == 2)
         SimulatedAdapter_Reset(0);
-    else
-        TestData_Cleanup();
+#endif
 
+    TestData_Cleanup();
     memset(&compatibledata, 0, sizeof(compatibledata));
 }
 

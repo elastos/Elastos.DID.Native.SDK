@@ -307,7 +307,6 @@ errorExit:
 
 bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credential)
 {
-    DID *signer;
     DIDDocument *signerdoc = NULL, *ownerdoc = NULL, *issuerdoc = NULL;
     DIDURL *signkey;
     Credential *vc = NULL;

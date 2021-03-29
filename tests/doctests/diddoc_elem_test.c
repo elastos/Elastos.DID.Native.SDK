@@ -231,7 +231,7 @@ static void test_diddoc_get_authentication_key(void)
     PublicKey *pks[3];
     ssize_t size;
     PublicKey *pk;
-    DIDURL *keyid, *keyid3, *id;
+    DIDURL *keyid, *id;
     int i, j;
 
     for (j = 0; j < 3; j++) {

@@ -681,7 +681,6 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, DID *issuer)
     DIDDocument *ownerdoc, *issuerdoc = NULL;
     char idstring[ELA_MAX_DID_LEN];
     int i, size = 0, status = CredentialStatus_NotFound;
-    DID *signer;
     DIDURL *signkey;
 
     assert(gen);

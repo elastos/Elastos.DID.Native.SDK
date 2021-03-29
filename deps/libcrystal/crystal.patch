@@ -1,0 +1,32 @@
+diff -ruN libcrystal/src/CMakeLists.txt libcrystal-mode/src/CMakeLists.txt
+--- libcrystal/src/CMakeLists.txt	2021-03-29 15:29:21.000000000 +0800
++++ libcrystal-mode/src/CMakeLists.txt	2021-03-29 15:12:45.000000000 +0800
+@@ -159,10 +159,18 @@
+     list(APPEND SYSTEM_LIBS log)
+ endif()
+ 
++if(WIN32)
++    set(SHARED_LIB_DECORATOR "")
++    set(STATIC_LIB_DECORATOR "_s")
++else()
++    set(SHARED_LIB_DECORATOR "")
++    set(STATIC_LIB_DECORATOR "")
++endif()
++
+ if(ENABLE_STATIC)
+     add_library(crystal-static STATIC ${SRC})
+     target_compile_definitions(crystal-static PRIVATE CRYSTAL_STATIC)
+-    set_target_properties(crystal-static PROPERTIES OUTPUT_NAME crystal)
++    set_target_properties(crystal-static PROPERTIES OUTPUT_NAME crystal${STATIC_LIB_DECORATOR})
+ 
+     install(TARGETS crystal-static
+         RUNTIME DESTINATION "bin"
+@@ -184,7 +192,7 @@
+ 
+     add_library(crystal-shared SHARED ${SRC})
+     target_compile_definitions(crystal-shared PRIVATE CRYSTAL_DYNAMIC)
+-    set_target_properties(crystal-shared PROPERTIES OUTPUT_NAME crystal)
++    set_target_properties(crystal-shared PROPERTIES OUTPUT_NAME crystal${SHARED_LIB_DECORATOR})
+     target_link_libraries(crystal-shared ${SODIUM} ${SYSTEM_LIBS})
+ 
+     install(TARGETS crystal-shared

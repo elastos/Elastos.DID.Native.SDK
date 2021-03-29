@@ -535,7 +535,7 @@ static Presentation *create_presentation(DIDURL *id, DID *holder,
         const char *storepass)
 {
     Presentation *pre = NULL;
-    DIDDocument *doc = NULL, *signerdoc;
+    DIDDocument *doc = NULL;
     int rc, i;
 
     assert(id);
@@ -622,7 +622,7 @@ Presentation *Presentation_Create(DIDURL *id, DID *holder,
 {
     va_list list;
     Credential **creds;
-    int rc, i;
+    int i;
 
     if (!id || !holder || !nonce || !*nonce || !realm || !*realm || !store ||
             !storepass || !*storepass || count < 0) {
@@ -874,7 +874,6 @@ const char *Presentation_GetRealm(Presentation *pre)
 
 static bool check_presentation(Presentation *pre, bool validtype)
 {
-    DID *holder;
     DIDDocument *doc = NULL;
     int rc = -1, status, i;
     const char *data;

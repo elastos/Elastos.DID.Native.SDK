@@ -204,7 +204,7 @@ if(ENABLE_STATIC)
 
     #target_compile_definitions(eladid-static PRIVATE DID_STATIC CRYSTAL_STATIC)
     target_compile_definitions(eladid-static PRIVATE DID_STATIC CURL_STATICLIB)
-    set_target_properties(eladid-static PROPERTIES OUTPUT_NAME eladid)
+    set_target_properties(eladid-static PROPERTIES OUTPUT_NAME eladid${STATIC_LIB_DECORATOR})
     if(WIN32)
         set_target_properties(eladid-static PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
     endif()
@@ -224,7 +224,7 @@ if(ENABLE_SHARED)
     #target_compile_definitions(eladid-shared PRIVATE DID_DYNAMIC CRYSTAL_DYNAMIC)
     target_compile_definitions(eladid-shared PRIVATE DID_DYNAMIC CURL_STATICLIB)
     set_target_properties(eladid-shared PROPERTIES
-        OUTPUT_NAME eladid
+        OUTPUT_NAME eladid${SHARED_LIB_DECORATOR}
         VERSION ${PROJECT_VERSION}
         SOVERSION ${PROJECT_VERSION_MAJOR})
     if(WIN32)

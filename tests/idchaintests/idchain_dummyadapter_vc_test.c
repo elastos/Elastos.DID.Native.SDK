@@ -270,7 +270,7 @@ static void test_idchain_listvc(void)
     DID did, issuerid;
     time_t expires;
     const char* provalue;
-    int rc, i, status;
+    int i, status;
 
     rootidentity = TestData_InitIdentity(store);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
