@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <curl/curl.h>
 
+#include "ela_did.h"
 #include "simulateadapter.h"
 
 static const char *tx_url = "http://127.0.0.1:9123/idtx";
