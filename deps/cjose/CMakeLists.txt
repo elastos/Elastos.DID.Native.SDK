@@ -70,3 +70,7 @@ else()
         INSTALL_COMMAND ${INSTALL_CMD} ${INSTALL_ARGS}
     )
 endif()
+
+if(ENABLE_STATIC)
+    export_static_library(cjose)
+endif()

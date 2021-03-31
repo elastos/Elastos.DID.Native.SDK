@@ -28,3 +28,7 @@ if(WIN32)
         )
     endif()
 endif()
+
+if(ENABLE_STATIC)
+    export_static_library(jansson)
+endif()
