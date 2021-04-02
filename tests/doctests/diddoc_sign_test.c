@@ -101,6 +101,19 @@ static void test_diddoc_derive_fromidentifier(void)
 
     const char *identifier = "org.elastos.did.test";
 
+    const char *keys[10] = {
+        "xprvA5h72rSp6gmMZKBVUsMoBVcWq4sR6z1Nn2PTzjG17pFrHz9vniDVX1v2TthxpbSMaNoWXxZgX3srDzJEMQ7LYvwK6zvtQmCfhSUR51S55vU",
+        "xprvA5h72rSp6gmMcCdrFg6wC6gdEeiFy4YR9tsqPMqcBweuLUxD7KbBTHztJqZg8WgRSESD4gLTs78GguXKM2aX2CzxgpBdKNa11VpkDZtNUmh",
+        "xprvA5h72rSp6gmMeMdinKY2rCFcnx27Fxfc6cF4Pkr6rPwEVPQ2eJLQsZMQY1STLFwCVj7qFqWRK6xBN2rbBAcULtJCqxLejndHBwDPWfQgQyq",
+        "xprvA5h72rSp6gmMhnm3qS4GDkbrCmWgHNCX5ztxG9scLiCs1un3FhGVLFJRxNej5CC2Fv6TbxYvBfCdVPZX9gvQGuuT8U4ZvLZhF2wXzYJ1DMR",
+        "xprvA5h72rSp6gmMmAqZcnuZ6Vr9Q4QSFZ6cHmqpJ8TRhd1MLAAiRURj9ZTAPnAWRHNdEvBNpWXB8wo3KA7PMuRHkxCFndaQ7pdKCDFJbxX7riL",
+        "xprvA5h72rSp6gmMob1cUea7VsoyLBgwJYGg4kD62cPeJrz4paRY91JvG1sixsSi8yUZRBbF9bBzQD6RiHvdu3w99i8yWgQ6gr14ttLm5uYLJtW",
+        "xprvA5h72rSp6gmMq7PSS826cUqJcgaixD9RePBdnv9WhUVeMv3K9cFKrtSwdpFAsvxozf1d8VcsffCT4FD37LanFB58Z7ofQuxPcCvvW5GMbcW",
+        "xprvA5h72rSp6gmMsq6ZC4DvQvbHMMZ4cFcdvq7VLFuFGWaiVwPsAQRmPfJMGDhRrQkhwANc4ug95tEz4eBxusGo9TJFmaWqt3n3hzX7r29EznF",
+        "xprvA5h72rSp6gmMwRq8b3kJejTEyXxkLG7mYFPPta1ouzphnZEs4ZX2kztRsywthHuDuFnsse3j7Dvrgpa9uGDfm6jPTrGXJoLY9Rykdc7rJpC",
+        "xprvA5h72rSp6gmMyjiSoFiaVagDaa48iuzrUkwDCuxJ3nZXFLU2z4kEcA9tfReqeLM4QRrQ5JdzcnKjN9UGSFN2ChUN7yb7H3B46kuzgqYidPq"
+    };
+
     doc = TestData_GetDocument("user1", NULL, 2);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -125,9 +138,10 @@ static void test_diddoc_derive_fromidentifier(void)
         memset(sk, 0, sizeof(sk));
 
         //derive by index
-        if (i >= 0) {
-            strkey = DIDDocument_DeriveByIndex(doc, i, storepass);
+        if (i >= 0 && i <= 9) {
+            const char *strkey = DIDDocument_DeriveByIndex(doc, i, storepass);
             CU_ASSERT_PTR_NOT_NULL_FATAL(strkey);
+            CU_ASSERT_STRING_EQUAL(strkey, keys[i]);
 
             hdkey = HDKey_DeserializeBase58(&_hdkey, strkey, strlen(strkey) + 1);
             size_t size = b58_decode(binkey, sizeof(binkey), strkey);
@@ -158,33 +172,33 @@ static void test_diddoc_derive_fromidentifier(void)
 
 static void test_diddoc_derive_compatible_withjava(void)
 {
-    /*const char *key;
+    const char *key;
     DIDDocument *document;
 
     const char *identifier = "org.elastos.did.test";
-    const char *keybase1 = "xprvABa5HYokqCjsR5Pk9dvYLxHkYbFQtJ2rPKPjeousKdcsh87vTSFmj8KrrnQfocDYWbgXeT9c5wnBb281JxWv8X4Xm3vh5eCcRpjCuhYnY3V";   //security code: 10
-    const char *keybase2 = "xprvABa5HYokqCjtBrHFbHrLFuTNowffc6YoRN6aUQdMqA5AnrrFiDF4uoxC9qH1b5a1H3WbDUWnT58tcR47TTR8V77L2vjEJTVpfwA8dVKTk3V";   //security code: 28
-    const char *keybase3 = "xprvABa5HYp3WXoo6LXePBD5PxFskrNGyPhmyrxgqZzTK3Su3H2cQxNuo3sdVhB7WpJvjiEgWV9ypCcujKMSbkyrPkT54vErRAZ8XAua6124pjc";   //security code: -5
-    const char *keybase4 = "xprvABa5HYp3WXomZhF8qXBSvTWooy926aiEhNZH9AEufPwAP6XT97t59P5CvyJviE9ENpGh5jF84WLhp3DHV57ZUYzucWfkHkLwrGx3izaqzEu";   //security code: -40
+    const char *keybase1 = "xprvAKXRwZER2Fdm8rbtTUMx4BpFVVP99WYsfj23pqcSabgX7QaaV8dgHCXJUaVuywnF69SmzUrYeCxKiQEPZZ6dxs8nzNsqq5GLQs1HZVL5YRH";   //security code: 15
+    const char *keybase2 = "xprvAKXRwZER2Fdn4oDevwVqB7UR7Y5BCnyRT1fjDoWmVp26Smo8Uk5fyg4qwANVN6siPM1RLovziJPMiHXtivCVdaoQwkB9mJECrMag2SjRD2r";   //security code: 36
+    const char *keybase3 = "xprvAKXRwZER2FdsQ24vk3pTiSLvf2R5SiPk6xCEGJ2vXwDxtKqgrnvo3xh92QpQhz51CtpS8NsPA5CCUrMEnLMWosSu8jg2DzdKiozpxtssUcf";   //security code: 158
+    const char *keybase4 = "xprvAKXRwZER2FduCMn9e4NHcYS65mRyQqZXFTkoXdDochQGhyHRsfjKxNZBrHCJFnSRAEh4kbi7i4pWMptu3dnJhykCSCKgYXBBW4X7Bop6mhK";   //security code: 199
 
-    document = TestData_GetDocument("document", NULL, 0);
+    document = TestData_GetDocument("user1", NULL, 2);
     CU_ASSERT_PTR_NOT_NULL(document);
 
-    key = DIDDocument_DeriveByIdentifier(document, identifier, 10, storepass);
+    key = DIDDocument_DeriveByIdentifier(document, identifier, 15, storepass);
     CU_ASSERT_STRING_EQUAL(key, keybase1);
     free((void*)key);
 
-    key = DIDDocument_DeriveByIdentifier(document, identifier, 28, storepass);
+    key = DIDDocument_DeriveByIdentifier(document, identifier, 36, storepass);
     CU_ASSERT_STRING_EQUAL(key, keybase2);
     free((void*)key);
 
-    key = DIDDocument_DeriveByIdentifier(document, identifier, -5, storepass);
+    key = DIDDocument_DeriveByIdentifier(document, identifier, 158, storepass);
     CU_ASSERT_STRING_EQUAL(key, keybase3);
     free((void*)key);
 
-    key = DIDDocument_DeriveByIdentifier(document, identifier, -40, storepass);
+    key = DIDDocument_DeriveByIdentifier(document, identifier, 199, storepass);
     CU_ASSERT_STRING_EQUAL(key, keybase4);
-    free((void*)key);*/
+    free((void*)key);
 }
 
 static int diddoc_sign_test_suite_init(void)

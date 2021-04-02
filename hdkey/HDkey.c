@@ -405,6 +405,8 @@ static int getv_sub_publickeyonly(HDKey *hdkey, HDKey *derivedkey, int depth, va
     BRHash160(md20, parentPubKey, sizeof(parentPubKey));
     derivedkey->fingerPrint = md20[0] << 24 | md20[1] << 16 | md20[2] << 8 | md20[3] << 0;
     memcpy(derivedkey->pubChainCode, derivedkey->prvChainCode, sizeof(derivedkey->prvChainCode));
+
+    derivedkey->depth = hdkey->depth + (uint8_t)depth;
     return 0;
 }
 
@@ -468,7 +470,7 @@ static int getv_sub_privatekey_publickey(HDKey *hdkey, HDKey *derivedkey, int de
     memcpy(derivedkey->prvChainCode, chaincode.u8, sizeof(chaincode.u8));
     memcpy(derivedkey->pubChainCode, chaincode.u8, sizeof(chaincode.u8));
 
-    derivedkey->depth += (uint8_t)depth;
+    derivedkey->depth = hdkey->depth + (uint8_t)depth;
 
     var_clean(&chaincode);
     var_clean(&secret);
