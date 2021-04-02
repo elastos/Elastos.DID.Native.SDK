@@ -4263,8 +4263,8 @@ static bool controllers_equals(DIDDocument *_doc1, DIDDocument *_doc2)
     int i, j;
     bool equal = false;
 
-    assert(doc1);
-    assert(doc2);
+    assert(_doc1);
+    assert(_doc2);
 
     docs1 = _doc1->controllers.docs;
     docs2 = _doc2->controllers.docs;
