@@ -4361,6 +4361,10 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
                 DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport publishing DID which is changed controller, please transfer it.");
                 goto errorExit;
             }
+            if (document->multisig != resolve_doc->multisig)  {
+                DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport publishing DID which is changed multisig, please transfer it.");
+                goto errorExit;
+            }
         }
 
         resolve_signature = resolve_doc->proofs.proofs[0].signatureValue;
@@ -4443,6 +4447,11 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
 
     if (!DIDDocument_IsCustomizedDID(resolve_doc)) {
         DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport transfering normal DID.");
+        goto errorExit;
+    }
+
+    if (controllers_equals(document, resolve_doc) && document->multisig == resolve_doc->multisig) {
+        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport publishing DID which is changed controller, please transfer it.");
         goto errorExit;
     }
 
