@@ -55,7 +55,8 @@ static void test_new_customizedid_with_onecontroller(void)
     DID *controllers[1] = {0};
     controllers[0] = controller;
 
-    customized_doc = DIDDocument_NewCustomizedDID(controller_doc, customizedid, NULL, 0, 0, storepass);
+    customized_doc = DIDDocument_NewCustomizedDID(controller_doc, customizedid,
+            NULL, 0, 0, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     DIDDocument_Destroy(customized_doc);
 
@@ -125,7 +126,8 @@ static void test_new_customizedid_with_multicontrollers(void)
     subject = DID_New(customizedid);
     CU_ASSERT_PTR_NOT_NULL_FATAL(subject);
 
-    customized_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid, controllers, 2, 1, storepass);
+    customized_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid,
+            controllers, 2, 1, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
     CU_ASSERT_TRUE(DIDDocument_IsQualified(customized_doc));
@@ -196,7 +198,8 @@ static void test_new_customizedid_with_multicontrollers2(void)
     controllers[0] = controller1;
     controllers[1] = controller2;
 
-    customized_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid, controllers, 2, 2, storepass);
+    customized_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid,
+            controllers, 2, 2, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
 
     //counter sign
@@ -256,7 +259,8 @@ static void test_new_customizedid_with_existcontrollers(void)
     dids[2] = controller3;
 
     //1:3 ----------------------------------------------------------------------
-    customized1_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid, dids, 3, 1, storepass);
+    customized1_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid,
+            dids, 3, 1, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized1_doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized1_doc));
 
@@ -279,7 +283,8 @@ static void test_new_customizedid_with_existcontrollers(void)
     DIDStore_DeleteDID(store, &customized_did);
 
     //2:3 ----------------------------------------------------------------------
-    customized2_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid, dids, 3, 2, storepass);
+    customized2_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid,
+            dids, 3, 2, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized2_doc);
 
     data = DIDDocument_ToJson(customized2_doc, true);
@@ -314,7 +319,8 @@ static void test_new_customizedid_with_existcontrollers(void)
     DIDStore_DeleteDID(store, &customized_did);
 
     //3:3 ----------------------------------------------------------------------
-    customized3_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid, dids, 3, 3, storepass);
+    customized3_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid,
+            dids, 3, 3, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized3_doc);
 
     data = DIDDocument_ToJson(customized3_doc, true);
@@ -408,7 +414,8 @@ static void test_new_customizedid_with_existcontrollers2(void)
     dids[2] = controller3;
 
     //1:3 ----------------------------------------------------------------------
-    customized1_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid, dids, 3, 1, storepass);
+    customized1_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid,
+            dids, 3, 1, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized1_doc);
     DID_Copy(&customized_did, &customized1_doc->did);
 
@@ -502,7 +509,8 @@ static void test_new_customizedid_with_existcontrollers2(void)
     DIDStore_DeleteDID(store, &customized_did);
 
     //2:3 ----------------------------------------------------------------------
-    customized2_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid, dids, 3, 2, storepass);
+    customized2_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid,
+            dids, 3, 2, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized2_doc);
 
     expires = DIDDocument_GetExpires(customized2_doc);
@@ -569,7 +577,8 @@ static void test_new_customizedid_with_existcontrollers2(void)
     DIDStore_DeleteDID(store, &customized_did);
 
     //3:3 ----------------------------------------------------------------------
-    customized3_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid, dids, 3, 3, storepass);
+    customized3_doc = DIDDocument_NewCustomizedDID(controller1_doc, customizedid,
+            dids, 3, 3, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized3_doc);
 
     expires = DIDDocument_GetExpires(customized3_doc);

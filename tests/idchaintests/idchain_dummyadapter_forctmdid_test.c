@@ -41,7 +41,8 @@ static void test_publish_ctmdid_with_onecontroller(void)
     DID *controllers[1] = {0};
     controllers[0] = &controller1;
 
-    customized_doc = DIDDocument_NewCustomizedDID(controller1_doc, customized_string, NULL, 0, 0, storepass);
+    customized_doc = DIDDocument_NewCustomizedDID(controller1_doc, customized_string,
+            NULL, 0, 0, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
     DID_Copy(&customizedid, &customized_doc->did);
@@ -175,10 +176,12 @@ static void test_publish_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(signkey3);
 
     //create
-    customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string, controllers, 3, 0, storepass);
+    customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string,
+            controllers, 3, 0, false, storepass);
     CU_ASSERT_PTR_NULL(customized_doc);
 
-    customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string, controllers, 3, 2, storepass);
+    customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string,
+            controllers, 3, 2, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_FALSE(DIDDocument_IsValid(customized_doc));
     DID_Copy(&customizedid, &customized_doc->did);
@@ -344,7 +347,8 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     CU_ASSERT_PTR_NOT_NULL(signkey2);
 
     //create
-    customized_doc = DIDDocument_NewCustomizedDID(controller1_doc, customized_string, controllers, 1, 0, storepass);
+    customized_doc = DIDDocument_NewCustomizedDID(controller1_doc, customized_string,
+            controllers, 1, 0, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
     CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
     DID_Copy(&customizedid, &customized_doc->did);
@@ -570,10 +574,12 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(signkey3);
 
     //create -----------------------------------------
-    customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string, controllers, 3, 0, storepass);
+    customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string,
+            controllers, 3, 0, false, storepass);
     CU_ASSERT_PTR_NULL(customized_doc);
 
-    customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string, controllers, 3, 2, storepass);
+    customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string,
+            controllers, 3, 2, false, storepass);
     CU_ASSERT_PTR_NOT_NULL(customized_doc);
     CU_ASSERT_FALSE(DIDDocument_IsValid(customized_doc));
     DID_Copy(&customizedid, &customized_doc->did);

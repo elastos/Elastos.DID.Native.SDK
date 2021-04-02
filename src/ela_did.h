@@ -2447,6 +2447,8 @@ DID_API time_t DIDDocument_GetExpires(DIDDocument *document);
  * @param
  *      multisig                  [in] Multisig number.
  * @param
+ *      force                     [in] Force mode.
+ * @param
  *      storepass                 [in] Password for DIDStore stored controller's document.
  * tip: if the count of controllers is one, 'controller' supports NULL. Otherwise,
  * the error occures.
@@ -2457,7 +2459,7 @@ DID_API time_t DIDDocument_GetExpires(DIDDocument *document);
  */
 DID_API DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *document,
         const char *customizeddid, DID **controllers, size_t size, int multisig,
-        const char *storepass);
+        bool force, const char *storepass);
 
 /**
  * \~English
