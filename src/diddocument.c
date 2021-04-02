@@ -4725,7 +4725,7 @@ static DIDDocument *create_customized_document(DID *did, DID **controllers, size
 
 DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *controllerdoc,
         const char *customizeddid, DID **controllers, size_t size, int multisig,
-        const char *storepass)
+        bool force, const char *storepass)
 {
     DIDDocument *doc;
     DIDStore *store;
@@ -4792,11 +4792,13 @@ DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *controllerdoc,
         return NULL;
     }
 
-    doc = DID_Resolve(&did, &status, true);
-    if (doc) {
-        DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exist.");
-        DIDDocument_Destroy(doc);
-        return NULL;
+    if (!force) {
+        doc = DID_Resolve(&did, &status, true);
+        if (doc) {
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exist.");
+            DIDDocument_Destroy(doc);
+            return NULL;
+        }
     }
 
     key = DIDDocument_GetDefaultPublicKey(controllerdoc);
