@@ -4086,8 +4086,7 @@ static const char *document_derive(DIDDocument *document, const char *identifier
         derivedkey = HDKey_GetDerivedKey(hdkey, &_dkey, 9, paths[0], paths[1], paths[2], paths[3],
                 paths[4], paths[5], paths[6], paths[7], index);
     } else {
-        derivedkey = HDKey_GetDerivedKey(hdkey, &_dkey, 5, 44 | HARDENED, 0 | HARDENED,
-                0 | HARDENED, 0, index);
+        derivedkey = HDKey_GetDerivedKey(hdkey, &_dkey, 1, index);
     }
 
     if (!derivedkey) {

@@ -43,7 +43,7 @@ static void test_rootkey_with_diff_method(void)
 
     size = b58_decode(extendedkey, sizeof(extendedkey), extendedpubbase58);
     CU_ASSERT_EQUAL(size, EXTENDEDKEY_BYTES);
-    CU_ASSERT_NSTRING_EQUAL(extendedkey, _extendedkey, EXTENDEDKEY_BYTES - 4);
+    CU_ASSERT_NSTRING_EQUAL(extendedkey, _extendedkey, EXTENDEDKEY_BYTES);
 }
 
 static void test_derive_publiconly(void)
