@@ -416,7 +416,7 @@ static int Parse_Controllers(DIDDocument *document, json_t *json)
             return -1;
         }
 
-        controllerdoc = DID_Resolve(&controller, &status, true);
+        controllerdoc = DID_Resolve(&controller, &status, false);
         if (!controllerdoc)
             return -1;
 
@@ -1303,9 +1303,7 @@ const char *DIDDocument_GetProofSignature(DIDDocument *document, int index)
 
 bool DIDDocument_IsDeactivated(DIDDocument *document)
 {
-    DIDDocument *resolvedoc;
     bool deactived;
-    int status;
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1313,39 +1311,6 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
     }
 
     deactived = DIDMetadata_GetDeactivated(&document->metadata);
-    if (deactived)
-        return deactived;
-
-    resolvedoc = DID_Resolve(&document->did, &status, true);
-    if (!resolvedoc)
-        return false;
-
-    deactived = DIDMetadata_GetDeactivated(&resolvedoc->metadata);
-    if (deactived)
-        goto storeexit;
-
-    //todo: check the controller deactivated or not ????
-    /*if (document->controllers.size && document->controllers.docs) {
-        controller_doc = DID_Resolve(document->controller, true);
-        if (!controller_doc) {
-            isdeactived = true;
-            goto storeexit;
-        }
-
-        if (document->controllerdoc)
-            DIDDocument_Destroy(document->controllerdoc);
-        document->controllerdoc = controller_doc;
-
-        isdeactived = DIDMetadata_GetDeactivated(&controller_doc->metadata);
-        if (isdeactived)
-            goto storeexit;
-    }*/
-
-storeexit:
-    if (deactived)
-        DIDMetadata_SetDeactivated(&resolvedoc->metadata, true);
-
-    DIDDocument_Destroy(resolvedoc);
     return deactived;
 }
 
@@ -2393,7 +2358,7 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
         }
     }
 
-    controllerdoc = DID_Resolve(controller, &status, true);
+    controllerdoc = DID_Resolve(controller, &status, false);
     if (!controllerdoc)
         return -1;
 

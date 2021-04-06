@@ -454,7 +454,7 @@ static TransferTicket *TransferTicket_FromJson_Internal(json_t *root)
     if (Parse_Proofs(ticket, item) == -1)
         goto errorExit;
 
-    ticket->doc = DID_Resolve(&ticket->did, &status, true);
+    ticket->doc = DID_Resolve(&ticket->did, &status, false);
     if (!ticket->doc) {
         if (status == DIDStatus_NotFound)
             DIDError_Set(DIDERR_NOT_EXISTS, "The ticket's owner does not already exist.");
