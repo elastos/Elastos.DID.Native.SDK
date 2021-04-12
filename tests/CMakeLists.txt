@@ -57,9 +57,18 @@ if(WIN32)
     set(ADAPTER_SOURCE
         "testadapter/dummyadapter.c")
 else()
-    set(INCLUDE
-        ../adapter/spvadapter
-        ${INCLUDE})
+    set(NODEJS "${CMAKE_CURRENT_BINARY_DIR}/../deps/nodejs/external/src/nodejs")
+
+    add_custom_command(
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../outputs/bin
+        COMMAND echo "export PATH=$PATH:${NODEJS}/bin" > ${NODEJS}/bin/nodejs.env
+        COMMAND source ${NODEJS}/bin/nodejs.env && npm install --save web3
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/../outputs/bin/node_modules/web3
+        VERBATIM)
+
+    add_custom_target(web3 ALL
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/../outputs/bin/node_modules/web3
+    )
 
     file(GLOB ADAPTER_SOURCE "testadapter/*.c")
 endif()
@@ -101,7 +110,6 @@ set(DEPS
     hdkey)
 
 set(INCLUDE
-    ${INCLUDE}
     utility
     testadapter
     .
@@ -141,18 +149,9 @@ if(WIN32)
         libcrystal)
 else()
     set(LIBS
-        spvadapter-shared
         ${LIBS}
         pthread
         m)
-
-    set(DEPS
-        ${DEPS}
-        spvadapter)
-
-    set(LINK
-        ${CMAKE_CURRENT_BINARY_DIR}/../adapter/spvadapter
-        ${LINK})
 endif()
 
 include_directories(${INCLUDE})

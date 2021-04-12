@@ -25,7 +25,7 @@
 static const char elastos_did_prefix[] = "did:elastos:";
 static const char *didspec = "elastos/did/1.0";
 static const char *vcspec = "elastos/credential/1.0";
-static const char *methods[3] = {"resolvedid", "listcredentials", "resolvecredential"};
+static const char *methods[3] = {"did_resolveDID", "did_listCredentials", "did_resolveCredential"};
 
 static DIDTransaction *infos[256];
 static CredentialTransaction *vcinfos[1500];
@@ -821,24 +821,28 @@ const char* DummyAdapter_Resolve(const char *request)
         return NULL;
     }
 
+    item = json_object_get(root, "id");
+    if (!item)
+        goto errorExit;
+
     item = json_object_get(root, "method");
     if (!item || !json_is_string(item))
        goto errorExit;
 
     method = json_string_value(item);
     item = json_object_get(root, "params");
-    if (!item || !json_is_object(item))
+    if (!item || !json_is_array(item))
        goto errorExit;
 
     switch (get_method(method)) {
         case 0:
-           data = parse_resolvedid(item);
+           data = parse_resolvedid(json_array_get(item, 0));
            break;
         case 1:
-           data = parse_listvcs(item);
+           data = parse_listvcs(json_array_get(item, 0));
            break;
         case 2:
-           data = parse_resolvevc(item);
+           data = parse_resolvevc(json_array_get(item, 0));
            break;
         default:
            break;

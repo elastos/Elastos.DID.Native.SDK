@@ -40,16 +40,29 @@
 #include "credentialbiography.h"
 
 #define DEFAULT_TTL    (24 * 60 * 60 * 1000)
-#define DID_RESOLVE_REQUEST "{\"method\":\"resolvedid\",\"params\":{\"did\":\"%s\",\"all\":%s}}"
-#define DID_RESOLVEVC_REQUEST "{\"method\":\"listcredentials\",\"params\":{\"did\":\"%s\",\"skip\":%d,\"limit\":%d}}"
-#define VC_RESOLVE_REQUEST "{\"method\":\"resolvecredential\",\"params\":{\"id\":\"%s\"}}"
-#define VC_RESOLVE_WITH_ISSUER_REQUEST "{\"method\":\"resolvecredential\",\"params\":{\"id\":\"%s\", \"issuer\":\"%s\"}}"
+#define DID_RESOLVE_REQUEST "{\"method\":\"did_resolveDID\",\"params\":[{\"did\":\"%s\",\"all\":%s}], \"id\":\"%s\"}"
+#define DID_RESOLVEVC_REQUEST "{\"method\":\"did_listCredentials\",\"params\":[{\"did\":\"%s\",\"skip\":%d,\"limit\":%d}], \"id\":\"%s\"}"
+#define VC_RESOLVE_REQUEST "{\"method\":\"did_resolveCredential\",\"params\":[{\"id\":\"%s\"}], \"id\":\"%s\"}"
+#define VC_RESOLVE_WITH_ISSUER_REQUEST "{\"method\":\"did_resolveCredential\",\"params\":[{\"id\":\"%s\", \"issuer\":\"%s\"}], \"id\":\"%s\"}"
 
 static DIDLocalResovleHandle *gLocalResolveHandle;
 static CreateIdTransaction_Callback *gCreateIdTransaction;
 static Resolve_Callback *gResolve;
 
 long ttl = DEFAULT_TTL;
+
+static void get_txid(char *txid)
+{
+    static char *chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    int i;
+
+    assert(txid);
+
+    for (i = 0; i < 31; i++)
+        txid[i] = chars[rand() % 62];
+
+    txid[31] = 0;
+}
 
 int DIDBackend_InitializeDefault(CreateIdTransaction_Callback *createtransaction,
         const char *url, const char *cachedir)
@@ -266,7 +279,7 @@ static int resolvedid_from_backend(ResolveResult *result, DID *did, bool all)
     const char *data = NULL, *forAll;
     json_t *root = NULL, *item;
     json_error_t error;
-    char _idstring[ELA_MAX_DID_LEN], request[256], *didstring;
+    char _idstring[ELA_MAX_DID_LEN], request[256], *didstring, txid[32];
     int rc = -1;
 
     assert(result);
@@ -277,7 +290,8 @@ static int resolvedid_from_backend(ResolveResult *result, DID *did, bool all)
         return rc;
 
     forAll = !all ? "false" : "true";
-    if (sprintf(request, DID_RESOLVE_REQUEST, didstring, forAll) == -1)
+    get_txid(txid);
+    if (sprintf(request, DID_RESOLVE_REQUEST, didstring, forAll, txid) == -1)
         return rc;
 
     data = gResolve(request);
@@ -361,7 +375,7 @@ static ssize_t listvcs_from_backend(DID *did, DIDURL **buffer, size_t size, int 
     const char *data = NULL;
     json_t *root = NULL, *item;
     json_error_t error;
-    char _idstring[ELA_MAX_DID_LEN], request[256], *didstring;
+    char _idstring[ELA_MAX_DID_LEN], request[256], txid[32], *didstring;
     ssize_t rc = -1, len = 0;
 
     assert(buffer);
@@ -374,7 +388,8 @@ static ssize_t listvcs_from_backend(DID *did, DIDURL **buffer, size_t size, int 
     if (!didstring)
         return rc;
 
-    if (sprintf(request, DID_RESOLVEVC_REQUEST, didstring, skip, limit) == -1)
+    get_txid(txid);
+    if (sprintf(request, DID_RESOLVEVC_REQUEST, didstring, skip, limit, txid) == -1)
         return rc;
 
     data = gResolve(request);
@@ -409,7 +424,8 @@ static CredentialBiography *resolvevc_from_backend(DIDURL *id, DID *issuer)
     const char *data = NULL;
     json_t *root = NULL, *item;
     json_error_t error;
-    char _idstring[ELA_MAX_DIDURL_LEN], _didstring[ELA_MAX_DID_LEN], request[256], *idstring, *didstring = NULL;
+    char _idstring[ELA_MAX_DIDURL_LEN], _didstring[ELA_MAX_DID_LEN], request[256], txid[32];
+    char *idstring, *didstring = NULL;
 
     assert(id);
 
@@ -417,12 +433,13 @@ static CredentialBiography *resolvevc_from_backend(DIDURL *id, DID *issuer)
     if (!idstring)
         return NULL;
 
+    get_txid(txid);
     if (issuer) {
         didstring = DID_ToString(issuer, _didstring, sizeof(_didstring));
-        if (!didstring || sprintf(request, VC_RESOLVE_WITH_ISSUER_REQUEST, idstring, didstring) == -1)
+        if (!didstring || sprintf(request, VC_RESOLVE_WITH_ISSUER_REQUEST, idstring, didstring, txid) == -1)
             return NULL;
     } else {
-        if (sprintf(request, VC_RESOLVE_REQUEST, idstring) == -1)
+        if (sprintf(request, VC_RESOLVE_REQUEST, idstring, txid) == -1)
             return NULL;
     }
 

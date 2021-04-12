@@ -173,10 +173,7 @@ int main(int argc, char *argv[])
 #endif
 
     do {
-        if (TestData_Init(dummy) == -1) {
-            printf("If you run test cases without wallet dir, please use command option: --dummy. But there are no cases to publishing DID into real chain.\n");
-            exit(-1);
-        }
+        TestData_Init(dummy);
 
         if (CUE_SUCCESS != CU_initialize_registry()) {
             return CU_get_error();

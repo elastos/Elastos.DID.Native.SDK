@@ -1805,7 +1805,7 @@ DID_API int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder,
  * @return
  *      0 on success, -1 if an error occurred.
  */
-DID_API int DIDDocumentBuilder_AuthorizationDid(DIDDocumentBuilder *builder,
+DID_API int DIDDocumentBuilder_AuthorizeDid(DIDDocumentBuilder *builder,
         DIDURL *keyid, DID *controller, DIDURL *authorkeyid);
 
 /**

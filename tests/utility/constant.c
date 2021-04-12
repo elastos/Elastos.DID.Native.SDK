@@ -14,16 +14,10 @@
 
 #include "constant.h"
 
-const char *walletdir = ".elawallet";
-//const char *walletdir = "Projects/did/Elastos.DID.Native.cy/.elawallet";
-const char *walletId = "cywallet";
-const char *network = "TestNet";
-const char *resolver = "http://api.elastos.io:21606";
-const char *walletpass = "12345678";
+const char *resolver = "http://52.80.107.251:1111";
 
-//const char *storepass = "123456";
 const char *storepass = "passwd";
-const char *passphrase = "";
+const char *passphrase = "12345678";
 const char *default_type = "ECDSAsecp256r1";
 const char *service_type = "CarrierAddress";
 

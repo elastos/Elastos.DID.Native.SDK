@@ -15,11 +15,6 @@
 
 static const char *alias = "littlefish";
 
-static const char *getpassword(const char *walletDir, const char *walletId)
-{
-    return walletpass;
-}
-
 static int get_did(DID *did, void *context)
 {
     int *count = (int*)context;
