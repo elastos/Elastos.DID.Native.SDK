@@ -284,6 +284,7 @@ static void test_idchain_listvc(void)
 
     //create issuer
     issuerdoc = RootIdentity_NewDID(rootidentity, storepass, NULL);
+    RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(issuerdoc);
     DID_Copy(&issuerid, &issuerdoc->did);
     CU_ASSERT_TRUE(DIDDocument_PublishDID(issuerdoc, NULL, true, storepass));
