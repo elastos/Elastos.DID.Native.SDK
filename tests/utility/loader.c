@@ -62,11 +62,6 @@ typedef struct Dir_Copy_Helper {
 CompatibleData compatibledata;
 static int gDummyType;
 
-static const char *getpassword(const char *walletDir, const char *walletId)
-{
-    return walletpass;
-}
-
 char *get_store_path(char* path, const char *dir)
 {
     assert(path);
@@ -723,30 +718,14 @@ Presentation *TestData_GetPresentation(char *did, char *vp, char *type, int vers
 }
 
 /////////////////////////////////////
-int TestData_Init(int dummy)
+void TestData_Init(int dummy)
 {
-    char walletDir[PATH_MAX];
-    int rc = 0;
-
-    sprintf(walletDir, "%s%s%s", getenv("HOME"), PATH_STEP, walletdir);
-    if (!dummy && !dir_exist(walletDir)) {
-        printf("Wallet Dir doesn't exist: %s\n", walletDir);
-        return -1;
-    }
-
-#if !defined(_WIN32) && !defined(_WIN64)
-    if (!dummy)
-        rc = TestDIDAdapter_Init(walletDir, walletId, network, getpassword);
-#endif
-
     gDummyType = dummy;
-    return rc;
 }
 
 void TestData_Deinit(void)
 {
 #if !defined(_WIN32) && !defined(_WIN64)
-    TestDIDAdapter_Cleanup();
     if (gDummyType == 2)
         SimulatedAdapter_Shutdown();
 #endif

@@ -2208,7 +2208,7 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
     return 0;
 }
 
-int DIDDocumentBuilder_AuthorizationDid(DIDDocumentBuilder *builder, DIDURL *keyid,
+int DIDDocumentBuilder_AuthorizeDid(DIDDocumentBuilder *builder, DIDURL *keyid,
         DID *controller, DIDURL *authorkeyid)
 {
     DIDDocument *doc, *document;

@@ -1623,7 +1623,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     DIDURL *keyid = DIDURL_NewByDid(&did, "recovery");
     CU_ASSERT_PTR_NOT_NULL(keyid);
 
-    rc = DIDDocumentBuilder_AuthorizationDid(builder, keyid, &controller, NULL);
+    rc = DIDDocumentBuilder_AuthorizeDid(builder, keyid, &controller, NULL);
     CU_ASSERT_NOT_EQUAL(rc, -1);
     DIDURL_Destroy(keyid);
 

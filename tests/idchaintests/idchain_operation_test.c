@@ -54,7 +54,7 @@ static void test_idchain_publishdid_and_resolve(void)
         resolvedoc = DID_Resolve(&did, &status, true);
         if (!resolvedoc) {
             printf(".");
-            sleep(30);
+            sleep(5);
             if (++i >= 20)
                 CU_FAIL_FATAL("publish did timeout!!!!\n");
         }
@@ -111,7 +111,7 @@ static void test_idchain_publishdid_and_resolve(void)
         if (resolvedoc)
             DIDDocument_Destroy(resolvedoc);
 
-        sleep(30);
+        sleep(5);
         resolvedoc = DID_Resolve(&did, &status, true);
         if (!resolvedoc) {
             break;
@@ -171,7 +171,7 @@ static void test_idchain_publishdid_and_resolve(void)
         if (resolvedoc)
             DIDDocument_Destroy(resolvedoc);
 
-        sleep(30);
+        sleep(5);
         resolvedoc = DID_Resolve(&did, &status, true);
         if (!resolvedoc) {
             break;
@@ -226,7 +226,7 @@ static void test_idchain_publishdid_with_credential(void)
         resolvedoc = DID_Resolve(&did, &status, true);
         if (!resolvedoc) {
             printf(".");
-            sleep(30);
+            sleep(5);
             ++i;
             if (i >= 20)
                 CU_FAIL_FATAL("publish did timeout!!!!\n");
@@ -285,7 +285,7 @@ static void test_idchain_publishdid_with_credential(void)
         if (resolvedoc)
             DIDDocument_Destroy(resolvedoc);
 
-        sleep(30);
+        sleep(5);
         resolvedoc = DID_Resolve(&did, &status, true);
         if (!resolvedoc) {
             break;

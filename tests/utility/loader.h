@@ -52,7 +52,7 @@ HDKey *Generater_KeyPair(HDKey *hdkey);
 ////////////////////////////////////////
 
 // 0: real idchain; 1: dummy adapter from native; 2: simulate adapter from java.
-int TestData_Init(int dummy);
+void TestData_Init(int dummy);
 
 void TestData_Deinit(void);
 
