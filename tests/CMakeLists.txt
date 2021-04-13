@@ -54,15 +54,15 @@ file(GLOB JWT-TESTS "jwttests/*.c")
 file(GLOB TICKET-TESTS "tickettests/*.c")
 
 if(WIN32)
-    set(ADAPTER_SOURCE
-        "testadapter/dummyadapter.c")
-else()
     set(NODEJS "${CMAKE_CURRENT_BINARY_DIR}/../deps/nodejs/external/src/nodejs")
+else()
+    set(NODEJS "${CMAKE_CURRENT_BINARY_DIR}/../deps/nodejs/external/src/nodejs/bin")
+endif()
 
     file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
     add_custom_command(
         WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin
-        COMMAND echo "export PATH=$PATH:${NODEJS}/bin" > ${CMAKE_INSTALL_PREFIX}/bin/nodejs.env
+        COMMAND echo "export PATH=$PATH:${NODEJS}" > ${CMAKE_INSTALL_PREFIX}/bin/nodejs.env
         COMMAND source ${CMAKE_INSTALL_PREFIX}/bin/nodejs.env && npm install --save web3
         OUTPUT ${CMAKE_INSTALL_PREFIX}/bin/node_modules/web3/package.json
         VERBATIM)
@@ -72,7 +72,6 @@ else()
     )
 
     file(GLOB ADAPTER_SOURCE "testadapter/*.c")
-endif()
 
 set(SRC
     tests.c
