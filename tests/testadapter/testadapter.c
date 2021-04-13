@@ -93,7 +93,7 @@ static const char *generate_ethdata(const char *payload)
 bool TestDIDAdapter_CreateIdTransaction(const char *payload, const char *memo)
 {
     const char *data;
-    char path[512], *_path;
+    char path[512], *_path, buffer[512];
     int rc;
 
     if (!payload)
@@ -102,18 +102,19 @@ bool TestDIDAdapter_CreateIdTransaction(const char *payload, const char *memo)
     _path = get_current_path(path);
     if (!_path)
         return false;
-    strcat(path, "/ethdata.js");
 
+    snprintf(buffer, sizeof(buffer), "%s/ethdata.js", _path);
     data = generate_ethdata(payload);
     if (!data)
         return false;
 
-    rc = store_file(path, data);
+    rc = store_file(buffer, data);
     free((void*)data);
     if (rc < 0)
         return false;
 
-    system("source ../../deps/nodejs/external/src/nodejs/bin/nodejs.env && node ethdata.js");
+    snprintf(buffer, sizeof(buffer), "source %s/nodejs.env && node ethdata.js", _path);
+    system(buffer);
     return true;
 }
 

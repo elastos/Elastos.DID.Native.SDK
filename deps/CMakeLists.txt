@@ -9,6 +9,7 @@ add_submodule(libcrystal
 if (ENABLE_TESTS)
     add_submodule(CUnit
         DEPENDS platform-specific)
+    add_submodule(nodejs)
 endif()
 
 if(NOT HDKEY_ONLY)
