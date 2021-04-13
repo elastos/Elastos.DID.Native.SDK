@@ -14,7 +14,7 @@ if(UNIX)
 
 elseif(WIN32)
     set(PACKAGE_PREFIX "win-x64.zip")
-    set(PACKAGE_HASH 386978c7219f8bf50af9785ff376c997ece0285a71d951e9bd9440eff7fecb7a)
+    set(PACKAGE_HASH e469db37b4df74627842d809566c651042d86f0e6006688f0f5fe3532c6dfa41)
 else()
 endif()
 
