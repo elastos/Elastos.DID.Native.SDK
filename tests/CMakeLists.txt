@@ -59,15 +59,16 @@ if(WIN32)
 else()
     set(NODEJS "${CMAKE_CURRENT_BINARY_DIR}/../deps/nodejs/external/src/nodejs")
 
+    file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
     add_custom_command(
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../outputs/bin
-        COMMAND echo "export PATH=$PATH:${NODEJS}/bin" > ${NODEJS}/bin/nodejs.env
-        COMMAND source ${NODEJS}/bin/nodejs.env && npm install --save web3
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/../outputs/bin/node_modules/web3
+        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin
+        COMMAND echo "export PATH=$PATH:${NODEJS}/bin" > ${CMAKE_INSTALL_PREFIX}/bin/nodejs.env
+        COMMAND source ${CMAKE_INSTALL_PREFIX}/bin/nodejs.env && npm install --save web3
+        OUTPUT ${CMAKE_INSTALL_PREFIX}/bin/node_modules/web3/package.json
         VERBATIM)
 
     add_custom_target(web3 ALL
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/../outputs/bin/node_modules/web3
+        DEPENDS ${CMAKE_INSTALL_PREFIX}/bin/node_modules/web3/package.json
     )
 
     file(GLOB ADAPTER_SOURCE "testadapter/*.c")
