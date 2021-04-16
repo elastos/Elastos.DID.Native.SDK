@@ -997,8 +997,6 @@ static void test_multicidissuer_issue_selfvc2(void)
 
 static int issuer_issuevc_test_suite_init(void)
 {
-    DIDURL *signkey;
-
     store = TestData_SetupStore(true);
     if (!store)
         return -1;

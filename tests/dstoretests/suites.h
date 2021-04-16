@@ -47,7 +47,3 @@ DECL_TESTSUITE(didstore_rootidentity_test);
 
 
 
-
-
-
-

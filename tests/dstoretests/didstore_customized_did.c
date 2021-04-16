@@ -163,7 +163,7 @@ static void test_new_customizedid_with_multicontrollers(void)
 static void test_new_customizedid_with_multicontrollers2(void)
 {
     RootIdentity *rootidentity;
-    DIDDocument *controller1_doc, *controller2_doc, *customized_doc, *resolve_doc;
+    DIDDocument *controller1_doc, *controller2_doc, *customized_doc;
     DID *controller1, *controller2;
     DIDURL *signkey1, *signkey2;
     const char *data;
@@ -380,7 +380,6 @@ static void test_new_customizedid_with_existcontrollers2(void)
     HDKey *hdkey, _hdkey;
     char publickeybase58[PUBLICKEY_BASE58_BYTES];
     char publickeybase58_a[PUBLICKEY_BASE58_BYTES];
-    char publickeybase58_b[PUBLICKEY_BASE58_BYTES];
     const char *keybase1, *keybase2, *data;
     time_t expires;
     int rc;

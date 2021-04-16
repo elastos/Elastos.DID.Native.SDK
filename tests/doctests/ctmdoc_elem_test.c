@@ -1351,7 +1351,6 @@ static void test_multictmdoc_add_authentication_key(void)
     char publickeybase58[PUBLICKEY_BASE58_BYTES];
     DIDURL *keyid1, *keyid2, *keyid3, *keyid4, *keyid;
     const char *keybase, *data;
-    ssize_t size;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -1472,10 +1471,8 @@ static void test_multictmdoc_remove_authentication_key(void)
     DIDDocument *sealeddoc, *controller1_doc, *controller2_doc, *controller3_doc, *customized_doc;
     DIDDocumentBuilder *builder;
     DID *customized_did, *controller1, *controller2, *controller3;
-    char publickeybase58[PUBLICKEY_BASE58_BYTES];
     DIDURL *keyid1, *keyid2, *keyid;
-    const char *keybase, *data;
-    ssize_t size;
+    const char *data;
 
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -1673,8 +1670,6 @@ static void test_multictmdoc_add_credential(void)
     DIDDocument *customized_doc, *controller1_doc, *controller2_doc, *controller3_doc;
     DIDDocumentBuilder *builder;
     DIDURL *credid, *signkey;
-    DID *controller1;
-    Credential *vcs[1];
     time_t expires;
     const char *data;
 
@@ -1861,7 +1856,6 @@ static void test_multictmdoc_add_service(void)
     DIDDocument *customized_doc, *controller1_doc, *controller3_doc;
     DIDDocumentBuilder *builder;
     DIDURL *id1, *id2, *id3;
-    DID *controller1;
     Property props1[4];
     const char *data, *props2;
     Service *service;

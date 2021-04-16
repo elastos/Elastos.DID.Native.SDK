@@ -33,7 +33,6 @@ static void test_didstore_newdid(void)
     DIDDocument *doc, *loaddoc;
     RootIdentity *rootidentity;
     DIDStore *store;
-    int rc;
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
@@ -261,7 +260,6 @@ static void test_didstore_privateidentity_compatibility(void)
     DIDStore *store;
     DIDDocument *doc;
     DID did;
-    int rc;
 
     const char *mnemonic = "pact reject sick voyage foster fence warm luggage cabbage any subject carbon";
     const char *ExtendedkeyBase = "xprv9s21ZrQH143K4biiQbUq8369meTb1R8KnstYFAKtfwk3vF8uvFd1EC2s49bMQsbdbmdJxUWRkuC48CXPutFfynYFVGnoeq8LJZhfd9QjvUt";

@@ -55,23 +55,36 @@ file(GLOB TICKET-TESTS "tickettests/*.c")
 
 if(WIN32)
     set(NODEJS "${CMAKE_CURRENT_BINARY_DIR}/../deps/nodejs/external/src/nodejs")
+    set(ENV_CMD set)
+    set(NODE_PATH ${NODEJS} %windir% %windir%\\SYSTEM32)
+    set(INSTALL_SCRIPT ${CMAKE_INSTALL_PREFIX}/bin/install_web3.bat)
+    set(CHMOD_CMD echo)
 else()
     set(NODEJS "${CMAKE_CURRENT_BINARY_DIR}/../deps/nodejs/external/src/nodejs/bin")
+    set(ENV_CMD export)
+    set(NODE_PATH "$PATH:${NODEJS}")
+    set(INSTALL_SCRIPT ${CMAKE_INSTALL_PREFIX}/bin/install_web3.sh)
+    set(CHMOD_CMD chmod)
 endif()
 
-    file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
-    add_custom_command(
-        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin
-        COMMAND echo "export PATH=$PATH:${NODEJS}" > ${CMAKE_INSTALL_PREFIX}/bin/nodejs.env
-        COMMAND source ${CMAKE_INSTALL_PREFIX}/bin/nodejs.env && npm install --save web3
-        OUTPUT ${CMAKE_INSTALL_PREFIX}/bin/node_modules/web3/package.json
-        VERBATIM)
+set(INSTALL_ENV PATH=${NODE_PATH})
+set(INSTALL_CMD npm install --save web3)
 
-    add_custom_target(web3 ALL
-        DEPENDS ${CMAKE_INSTALL_PREFIX}/bin/node_modules/web3/package.json
-    )
+file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
+add_custom_command(
+    WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin
+    COMMAND echo ${ENV_CMD} "${INSTALL_ENV}" > ${INSTALL_SCRIPT}
+    COMMAND echo ${INSTALL_CMD} >> ${INSTALL_SCRIPT}
+    COMMAND ${CHMOD_CMD} 755 ${INSTALL_SCRIPT}
+    COMMAND ${INSTALL_SCRIPT}
+    OUTPUT ${CMAKE_INSTALL_PREFIX}/bin/node_modules/web3/package.json
+    VERBATIM)
 
-    file(GLOB ADAPTER_SOURCE "testadapter/*.c")
+add_custom_target(web3 ALL
+    DEPENDS ${CMAKE_INSTALL_PREFIX}/bin/node_modules/web3/package.json
+)
+
+file(GLOB ADAPTER_SOURCE "testadapter/*.c")
 
 set(SRC
     tests.c
