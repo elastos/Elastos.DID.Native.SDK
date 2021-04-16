@@ -165,13 +165,6 @@ int main(int argc, char *argv[])
         snprintf(memstats_cmd, sizeof(memstats_cmd), "ps -o vsz,rss -p %d >> %s", pid, memstats_file);
     }
 
-#if defined(_WIN32) || defined(_WIN64)
-    if (!dummy) {
-        dummy = true;
-        printf("Windows only support dummy adapter to run test cases.\n");
-    }
-#endif
-
     do {
         TestData_Init(dummy);
 
@@ -180,9 +173,6 @@ int main(int argc, char *argv[])
         }
 
         for (ts = suites; ts->fileName != NULL; ts++) {
-            if ((stress_test > 0 || dummy) && !strcmp(ts->fileName, IDCHAIN))
-                continue;
-
             CU_SuiteInfo *si = ts->getSuiteInfo();
             rc = CU_register_nsuites(1, si);
 

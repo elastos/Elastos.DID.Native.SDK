@@ -558,7 +558,7 @@ static int listvcs_result_tojson(JsonGenerator *gen, DID *did, int skip, int _li
     CredentialTransaction *ct;
     DIDURL *vcs, *vcid;
     DID *vcowner;
-    int i, j, count = 0, limit, size = 0;
+    int i, count = 0, limit, size = 0;
     bool equal = false;
     char idstring[ELA_MAX_DIDURL_LEN];
 

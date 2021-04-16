@@ -571,10 +571,12 @@ static int post_changepassword(DIDStore *store)
         if (get_dir(data_journal_dir, 0, 2, store->root, DATA_JOURNAL) == 0) {
             if (get_dir(data_dir, 0, 2, store->root, DATA_DIR) == 0) {
                 sprintf(buffer, "%s_%ld", DATA_DIR, (long)time(NULL));
-                if (get_dir(data_deprecated_dir, 1, 2, store->root, buffer) == 0)
-                    rename(data_dir, data_deprecated_dir);
+                get_dir(data_deprecated_dir, 0, 2, store->root, buffer);
+                if (rename(data_dir, data_deprecated_dir) < 0)
+                    return -1;
             }
-            rename(data_journal_dir, data_dir);
+            if (rename(data_journal_dir, data_dir) < 0)
+                return -1;
         }
         delete_file(post_file);
     } else {

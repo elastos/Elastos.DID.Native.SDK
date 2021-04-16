@@ -75,7 +75,12 @@ static char *get_current_path(char* path)
 static const char *generate_ethdata(const char *payload)
 {
     size_t len;
-    char *write, buffer[strlen(payload) + 100];
+    char *write, *buffer;
+
+    assert(payload);
+    buffer = (char*)alloca(strlen(payload) + 100);
+    if (!buffer)
+        return NULL;
 
     sprintf(buffer, DATA_OP, payload);
 
@@ -113,7 +118,11 @@ bool TestDIDAdapter_CreateIdTransaction(const char *payload, const char *memo)
     if (rc < 0)
         return false;
 
-    snprintf(buffer, sizeof(buffer), "source %s/nodejs.env && node ethdata.js", _path);
+#if defined(_WIN32) || defined(_WIN64)
+    snprintf(buffer, sizeof(buffer), "set PATH=%s/../../deps/nodejs/external/src/nodejs;%%windir%%;%%windir%%/SYSTEM32 && node ethdata.js", _path);
+#else
+    snprintf(buffer, sizeof(buffer), "export PATH=$PATH:%s/../../deps/nodejs/external/src/nodejs/bin && node ethdata.js", _path);
+#endif
     system(buffer);
     return true;
 }

@@ -29,11 +29,11 @@
 #include "diddocument.h"
 #include "credential.h"
 #include "credmeta.h"
+#include "testadapter.h"
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <crystal.h>
 #else
-    #include "testadapter.h"
     #include "simulateadapter.h"
 #endif
 
@@ -742,20 +742,15 @@ static DIDStore *setup_store(bool dummybackend, const char *root)
     sprintf(cachedir, "%s%s%s", getenv("HOME"), PATH_STEP, ".cache.did.elastos");
     compatibledata.store = DIDStore_Open(root);
 
-#if defined(_WIN32) ||  defined(_WIN64)
-    dummybackend = true;
-#else
     if (!dummybackend) {
-        DIDBackend_InitializeDefault(TestDIDAdapter_CreateIdTransaction, resolver, cachedir);
+        if (DIDBackend_InitializeDefault(TestDIDAdapter_CreateIdTransaction, resolver, cachedir) < 0)
+            return NULL;
     } else {
         if (gDummyType == 2)
             SimulatedAdapter_Set(cachedir);
+        else
+            DummyAdapter_Set(cachedir);
     }
-
-#endif
-
-    if (dummybackend && gDummyType != 2)
-        DummyAdapter_Set(cachedir);
 
     return compatibledata.store;
 }

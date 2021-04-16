@@ -103,14 +103,14 @@ int PublicKey_ToJson(JsonGenerator *gen, PublicKey *pk, int compact)
 
 static int didurl_func(const void *a, const void *b)
 {
-    char _stringa[ELA_MAX_DID_LEN], _stringb[ELA_MAX_DID_LEN];
+    char _stringa[ELA_MAX_DIDURL_LEN], _stringb[ELA_MAX_DIDURL_LEN];
     char *stringa, *stringb;
 
     PublicKey *keya = *(PublicKey**)a;
     PublicKey *keyb = *(PublicKey**)b;
 
-    stringa = DIDURL_ToString(&keya->id, _stringa, ELA_MAX_DID_LEN, true);
-    stringb = DIDURL_ToString(&keyb->id, _stringb, ELA_MAX_DID_LEN, true);
+    stringa = DIDURL_ToString(&keya->id, _stringa, ELA_MAX_DIDURL_LEN, true);
+    stringb = DIDURL_ToString(&keyb->id, _stringb, ELA_MAX_DIDURL_LEN, true);
 
     return strcmp(stringa, stringb);
 }
@@ -263,10 +263,21 @@ static int Proof_ToJson(JsonGenerator *gen, DocumentProof *proof, DIDDocument *d
 
 static int proof_cmp(const void *a, const void *b)
 {
+    char _stringa[ELA_MAX_DIDURL_LEN], _stringb[ELA_MAX_DIDURL_LEN];
+    char *stringa, *stringb;
+    int equals;
+
     DocumentProof *proofa = (DocumentProof*)a;
     DocumentProof *proofb = (DocumentProof*)b;
 
-    return (int)(proofa->created - proofb->created);
+    equals = (int)(proofa->created - proofb->created);
+    if (equals != 0)
+        return equals;
+
+    stringa = DIDURL_ToString(&proofa->creater, _stringa, ELA_MAX_DIDURL_LEN, false);
+    stringb = DIDURL_ToString(&proofb->creater, _stringb, ELA_MAX_DIDURL_LEN, false);
+
+    return strcmp(stringa, stringb);
 }
 
 static int ProofArray_ToJson(JsonGenerator *gen, DIDDocument *document, int compact)

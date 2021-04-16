@@ -38,12 +38,27 @@ static char *get_tmp_file(char *path, const char *filename)
            "tmp", PATH_STEP, filename);
 }
 
+static char *get_current_path(char* path)
+{
+    assert(path);
+
+    if(!getcwd(path, PATH_MAX)) {
+        printf("\nCan't get current dir.");
+        return NULL;
+    }
+
+    return path;
+}
+
 static void test_didstore_export_import_did(void)
 {
     DIDStore *store, *store2;
     char _path[PATH_MAX], _path2[PATH_MAX], command[512];
+    char current[PATH_MAX], *_current;
     char *path, *path2, *file;
     DID did;
+
+    _current = get_current_path(current);
 
     store = TestData_SetupTestStore(true, 2);
     CU_ASSERT_PTR_NOT_NULL(store);
@@ -79,7 +94,11 @@ static void test_didstore_export_import_did(void)
     CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
     // to diff directory
+#if defined(_WIN32) || defined(_WIN64)
+    sprintf(command, "set PATH=%s/../../host/usr/bin;%%windir%%;%%windir%%/SYSTEM32 && diff -r %s %s", _current, path, path2);
+#else
     sprintf(command, "diff -r %s %s", path, path2);
+#endif
     CU_ASSERT_EQUAL(system(command), 0);
 
     DIDStore_Close(store2);
@@ -90,8 +109,11 @@ static void test_didstore_export_import_rootidentity(void)
 {
     DIDStore *store, *store2;
     char _path[PATH_MAX], _path2[PATH_MAX], command[512];
+    char current[PATH_MAX], *_current;
     char *path, *path2, *file;
     const char *defaultidentity;
+
+    _current = get_current_path(current);
 
     store = TestData_SetupTestStore(true, 2);
     CU_ASSERT_PTR_NOT_NULL(store);
@@ -124,7 +146,11 @@ static void test_didstore_export_import_rootidentity(void)
     CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
     // to diff directory
+#if defined(_WIN32) || defined(_WIN64)
+    sprintf(command, "set PATH=%s/../../host/usr/bin;%%windir%%;%%windir%%/SYSTEM32 && diff -r %s %s", _current, path, path2);
+#else
     sprintf(command, "diff -r %s %s", path, path2);
+#endif
     CU_ASSERT_EQUAL(system(command), 0);
 
     free((void*)defaultidentity);
@@ -136,7 +162,10 @@ static void test_didstore_export_import_store(void)
 {
     DIDStore *store, *store2;
     char _path[PATH_MAX], _path2[PATH_MAX], command[512];
+    char current[PATH_MAX], *_current;
     char *path, *path2, *file;
+
+    _current = get_current_path(current);
 
     store = TestData_SetupTestStore(true, 2);
     CU_ASSERT_PTR_NOT_NULL(store);
@@ -168,7 +197,11 @@ static void test_didstore_export_import_store(void)
     CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
     // to diff directory
+#if defined(_WIN32) || defined(_WIN64)
+    sprintf(command, "set PATH=%s/../../host/usr/bin;%%windir%%;%%windir%%/SYSTEM32 && diff -r %s %s", _current, path, path2);
+#else
     sprintf(command, "diff -r %s %s", path, path2);
+#endif
     CU_ASSERT_EQUAL(system(command), 0);
 
     DIDStore_Close(store2);
