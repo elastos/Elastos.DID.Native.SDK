@@ -1770,7 +1770,7 @@ typedef enum DIDLogLevel {
  * @return
  *      0 on success, -1 if an error occurred.
  */
-/* DID_API */ int DIDDocumentBuilder_AuthorizationDid(DIDDocumentBuilder *builder,
+/* DID_API */ int DIDDocumentBuilder_AuthorizeDid(DIDDocumentBuilder *builder,
         DIDURL *keyid, DID *controller, DIDURL *authorkeyid);
 
 /**
@@ -2413,6 +2413,8 @@ typedef enum DIDLogLevel {
  * @param
  *      multisig                  [in] Multisig number.
  * @param
+ *      force                     [in] Force mode.
+ * @param
  *      storepass                 [in] Password for DIDStore stored controller's document.
  * tip: if the count of controllers is one, 'controller' supports NULL. Otherwise,
  * the error occures.
@@ -2423,7 +2425,7 @@ typedef enum DIDLogLevel {
  */
 /* DID_API */ DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *document,
         const char *customizeddid, DID **controllers, size_t size, int multisig,
-        const char *storepass);
+        bool force, const char *storepass);
 
 /**
  * \~English
@@ -2436,7 +2438,7 @@ typedef enum DIDLogLevel {
  *                                   If key = NULL, sdk will get default key from
  *                                   DID Document.
  * @param
- *      storepass                [in] Pass word to sign.
+ *      storepass                [in] The password for DIDStore.
  * @param
  *      sig                      [out] The buffer will receive signature data.
  * @param
@@ -2458,7 +2460,7 @@ typedef enum DIDLogLevel {
  *                               If keyid is null, then will sign with
  *                               the default key of this DID document.
  * @param
- *      storepass                [in] Pass word to sign.
+ *      storepass                [in] The password for DIDStore.
  * @param
  *      sig                      [out] The buffer will receive signature data.
  * @param
