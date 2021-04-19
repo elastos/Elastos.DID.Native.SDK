@@ -1336,9 +1336,7 @@ DID_API void RootIdentity_Destroy(RootIdentity *rootidentity);
  * Set default rootidentity.
  *
  * @param
- *      store                [in] The handle to DIDStore.
- * @param
- *      id                   [in] The root identity's id string.
+ *      identity             [in] A handle to RootIdentity.
  * @return
  *      0 on success, -1 if an error occurred.
  */
@@ -1466,8 +1464,8 @@ DID_API DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index);
  * @param
  *      rootidentity           [in] The handle to RootIdentity.
  * @param
- *      callback               [in] The method to merge document.
- *                              callback == NULL, use default method supported by sdk.
+ *      handle                 [in] The method to merge document.
+ *                              handle == NULL, use default method supported by sdk.
  * @return
  *      true on success, false if an error occurred.
  */
@@ -1482,8 +1480,8 @@ DID_API bool RootIdentity_Synchronize(RootIdentity *rootidentity, DIDDocument_Co
  * @param
  *      index                  [in] The index number.
  * @param
- *      callback               [in] The method to merge document.
- *                              callback == NULL, use default method supported by sdk.
+ *      handle                 [in] The method to merge document.
+ *                              handle == NULL, use default method supported by sdk.
  * @return
  *      true on success, false if an error occurred.
  */
@@ -3559,7 +3557,7 @@ DID_API void DIDStore_Close(DIDStore *store);
  * @param
  *      store                 [in] The handle to DIDStore.
   * @param
- *      store                 [in] The specified root identity's id.
+ *      id                    [in] The specified root identity's id.
  * @return
  *      ture if it has identity, false if it has not.
  */
