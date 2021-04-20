@@ -1243,7 +1243,7 @@ static void test_diddoc_add_controller(void)
         builder = DIDDocument_Edit(doc, NULL);
         CU_ASSERT_PTR_NOT_NULL(builder);
         CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, &controllerdoc->did));
-        CU_ASSERT_STRING_EQUAL("Unsupported add controller into normal DID.", DIDError_GetMessage());
+        CU_ASSERT_STRING_EQUAL("Unsupported add controller into normal DID.", DIDError_GetLastErrorMessage());
 
         CU_ASSERT_PTR_NULL(DIDDocumentBuilder_Seal(builder, storepass));
         DIDDocumentBuilder_Destroy(builder);

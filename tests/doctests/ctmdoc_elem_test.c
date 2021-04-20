@@ -1117,7 +1117,7 @@ static void test_multictmdoc_add_publickey(void)
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddPublicKey(builder, keyid, customized_did, keybase));
-    CU_ASSERT_STRING_EQUAL("The key id does not owned by this DID.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("The key id does not owned by this DID.", DIDError_GetLastErrorMessage());
     DIDURL_Destroy(keyid);
 
     sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -1188,14 +1188,14 @@ static void test_multictmdoc_remove_publickey(void)
     CU_ASSERT_PTR_NOT_NULL(keyid);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid, false));
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid, true));
-    CU_ASSERT_STRING_EQUAL("Can't remove other DID's key or controller's key!!!!", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("Can't remove other DID's key or controller's key!!!!", DIDError_GetLastErrorMessage());
     DIDURL_Destroy(keyid);
 
     keyid = DIDURL_NewByDid(&controller2, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid, false));
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid, true));
-    CU_ASSERT_STRING_EQUAL("Can't remove other DID's key or controller's key!!!!", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("Can't remove other DID's key or controller's key!!!!", DIDError_GetLastErrorMessage());
 
     keyid1 = DIDURL_NewByDid(customized_did, "k1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
@@ -2094,16 +2094,16 @@ static void test_multictmdoc_add_controller(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
 
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, controller1));
-    CU_ASSERT_STRING_EQUAL("The controller already exists in the document.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("The controller already exists in the document.", DIDError_GetLastErrorMessage());
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, controller2));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, controller3));
 
     sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NULL(sealeddoc);
-    CU_ASSERT_STRING_EQUAL("Please set multisig first for multi-controller DID.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("Please set multisig first for multi-controller DID.", DIDError_GetLastErrorMessage());
 
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_SetMultisig(builder, 4));
-    CU_ASSERT_STRING_EQUAL("Unsupport multisig is larger than the count of controllers.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("Unsupport multisig is larger than the count of controllers.", DIDError_GetLastErrorMessage());
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_SetMultisig(builder, 2));
 
     sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -2126,7 +2126,7 @@ static void test_multictmdoc_add_controller(void)
     customized_doc = DIDDocument_SignDIDDocument(controller3_doc, data, storepass);
     free((void*)data);
     CU_ASSERT_PTR_NULL(customized_doc);
-    CU_ASSERT_STRING_EQUAL("The signers are enough.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("The signers are enough.", DIDError_GetLastErrorMessage());
 
     CU_ASSERT_EQUAL_FATAL(3, DIDDocument_GetControllerCount(sealeddoc));
     CU_ASSERT_TRUE(DIDDocument_ContainsController(sealeddoc, controller1));
@@ -2200,14 +2200,14 @@ static void test_multictmdoc_remove_controller(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
 
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, controller3));
-    CU_ASSERT_STRING_EQUAL("There are self-proclaimed credentials signed by controller, please remove or renew these credentials at first.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("There are self-proclaimed credentials signed by controller, please remove or renew these credentials at first.", DIDError_GetLastErrorMessage());
 
     CU_ASSERT_NOT_EQUAL(-1,
             DIDDocumentBuilder_RenewSelfProclaimedCredential(builder, controller3, signkey2, storepass));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, controller3));
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, controller2));
     CU_ASSERT_STRING_EQUAL("Can't remove the controller specified to seal document builder.",
-           DIDError_GetMessage());
+           DIDError_GetLastErrorMessage());
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_SetMultisig(builder, 2));
 
     sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -2246,7 +2246,7 @@ static void test_multictmdoc_remove_controller(void)
             DIDDocumentBuilder_RemoveSelfProclaimedCredential(builder, controller2));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, controller2));
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, controller1));
-    CU_ASSERT_STRING_EQUAL("Can't remove the controller specified to seal document builder.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("Can't remove the controller specified to seal document builder.", DIDError_GetLastErrorMessage());
 
     sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
     DIDDocumentBuilder_Destroy(builder);

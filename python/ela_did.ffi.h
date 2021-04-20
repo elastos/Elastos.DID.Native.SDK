@@ -4669,33 +4669,17 @@ typedef enum DIDLogLevel {
 
 /**
  * \~English
- * Clear the last-error code.
- */
-/* DID_API */ void DIDError_Clear(void);
-/**
- * \~English
  * Print the whole information of last-error code.
  */
-/* DID_API */ void DIDError_Print(void);
-
+/* DID_API */ void DIDError_Print(FILE *out);
 /**
  * \~English
  * Get the last-error code.
  */
-/* DID_API */ int DIDError_GetCode(void);
+/* DID_API */ int DIDError_GetLastErrorCode(void);
 /**
  * \~English
  * Get the last-error message.
  */
-/* DID_API */ const char *DIDError_GetMessage(void);
+/* DID_API */ const char *DIDError_GetLastErrorMessage(void);
 
-/**
- * \~English
- * Get the file for last-error.
- */
-/* DID_API */ const char *DIDError_GetFile(void);
-/**
- * \~English
- * Get line for last-error.
- */
-/* DID_API */ int DIDError_GetLine(void);

@@ -24,6 +24,7 @@
 #include <string.h>
 #include <limits.h>
 #include <stdarg.h>
+#include <assert.h>
 
 #include "ela_did.h"
 #include "diderror.h"
@@ -33,70 +34,102 @@
 #define __thread        __declspec(thread)
 #endif
 
-struct DIDError {
-    int code;
+typedef struct ErrorInfo {
     char file[PATH_MAX];
     int line;
+    int code;
     char message[256];
-};
+    struct ErrorInfo *next;
+} ErrorInfo;
 
-static __thread struct DIDError de;
+typedef struct ErrorContext {
+    int depth;
+    ErrorInfo *info;
+} ErrorContext;
+
+static __thread struct ErrorContext errorContext;
+
+void DIDError_Initialize(void)
+{
+    ErrorInfo *info, *next;
+
+    if (errorContext.depth == 0) {
+        info = errorContext.info;
+        while(info) {
+            next = info->next;
+            free((void*)info);
+            memset(info, 0, sizeof(ErrorInfo));
+            info = next;
+        }
+        errorContext.info = NULL;
+    }
+
+    errorContext.depth++;
+}
+
+void DIDError_Finialize(void)
+{
+    errorContext.depth--;
+}
 
 void DIDError_SetEx(const char *file, int line, int code, const char *msg, ...)
 {
-    de.code = code;
+    ErrorInfo *info;
 
+    info = (ErrorInfo*)calloc(1, sizeof(ErrorInfo));
+    if (!info)
+        return;
+
+    info->code = code;
     if (msg && *msg) {
         va_list args;
         va_start(args, msg);
-        vsnprintf(de.message, sizeof(de.message), msg, args);
+        vsnprintf(info->message, sizeof(info->message), msg, args);
         va_end(args);
     } else {
-        *de.message = 0;
+        *info->message = 0;
     }
 
     if (file && *file) {
-        strncpy(de.file, file, sizeof(de.file));
-        de.file[sizeof(de.file) - 1] = 0;
+        strncpy(info->file, file, sizeof(info->file));
+        info->file[sizeof(info->file) - 1] = 0;
     } else {
-        *de.file = 0;
+        *info->file = 0;
     }
 
-    de.line = line;
+    info->line = line;
+    info->next = errorContext.info;
+    errorContext.info = info;
 }
 
-int DIDError_GetCode(void)
+void DIDError_Print(FILE *out)
 {
-    return de.code;
+    ErrorInfo *info;
+
+    if (!out)
+        return;
+
+    assert(errorContext.depth == 0);
+
+    info = errorContext.info;
+    while(info) {
+        fprintf(out, "Error(%x): %s\n\t[%s:%d]\n", info->code, info->message, info->file, info->line);
+        info = info->next;
+    }
 }
 
-const char *DIDError_GetMessage(void)
+int DIDError_GetLastErrorCode(void)
 {
-    return de.message;
+    if (!errorContext.info)
+        return 0;
+
+    return errorContext.info->code;
 }
 
-const char *DIDError_GetFile(void)
+const char *DIDError_GetLastErrorMessage(void)
 {
-    return de.file;
-}
+    if (!errorContext.info)
+        return 0;
 
-int DIDError_GetLine(void)
-{
-    return de.line;
-}
-
-void DIDError_Clear(void)
-{
-    de.code = 0;
-    *de.message = 0;
-    *de.file = 0;
-    de.line = 0;
-}
-
-void DIDError_Print(void)
-{
-    if (de.code == 0)
-        printf("No error.\n");
-    else
-        printf("Error(%x): %s\n\t[%s:%d]\n", de.code, de.message, de.file, de.line);
+    return errorContext.info->message;
 }

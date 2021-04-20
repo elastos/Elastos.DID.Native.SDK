@@ -129,7 +129,7 @@ static void test_jwt_compatible(void)
     const char *token = "eyJ0eXAiOiJKV1QiLCJjdHkiOiJqc29uIiwibGlicmFyeSI6IkVsYXN0b3MgRElEIiwidmVyc2lvbiI6IjEuMCIsImFsZyI6Im5vbmUifQ.eyJzdWIiOiJKd3RUZXN0IiwianRpIjoiMCIsImF1ZCI6IlRlc3QgY2FzZXMiLCJpYXQiOjE1OTA1NjE1MDQsImV4cCI6MTU5ODUxMDMwNCwibmJmIjoxNTg3OTY5NTA0LCJmb28iOiJiYXIiLCJpc3MiOiJkaWQ6ZWxhc3RvczppV0ZBVVloVGEzNWMxZlBlM2lDSnZpaFpIeDZxdXVtbnltIn0.";
     jwt = DefaultJWSParser_Parse(token);
     CU_ASSERT_PTR_NULL(jwt);
-    CU_ASSERT_STRING_EQUAL("Not support JWT token.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("Not support JWT token.", DIDError_GetLastErrorMessage());
 
     jwt = JWTParser_Parse(token);
     CU_ASSERT_PTR_NOT_NULL(jwt);
@@ -341,7 +341,7 @@ static void test_jws_compatible(void)
     const char *token = "eyJ0eXAiOiJKV1QiLCJjdHkiOiJqc29uIiwibGlicmFyeSI6IkVsYXN0b3MgRElEIiwidmVyc2lvbiI6IjEuMCIsImtpZCI6IiNrZXkyIiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJkaWQ6ZWxhc3RvczppV0ZBVVloVGEzNWMxZlBlM2lDSnZpaFpIeDZxdXVtbnltIiwic3ViIjoiSnd0VGVzdCIsImp0aSI6IjAiLCJhdWQiOiJUZXN0IGNhc2VzIiwiaWF0IjoxNjAwMDczOTUwLCJleHAiOjE3NTUxNjE5NTAsIm5iZiI6MTU5NzM5NTU1MCwiZm9vIjoiYmFyIn0.qzo5joBg_89JoIO5ERSXrRZvBxa9CtHYyrkc8jFdo4hO_LpEDbZ8Y8rXOGw-h4-1rVX2Q5xqRexuEpApTAsWkw";
     jwt = JWTParser_Parse(token);
     CU_ASSERT_PTR_NULL(jwt);
-    CU_ASSERT_STRING_EQUAL("Not support JWS token.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("Not support JWS token.", DIDError_GetLastErrorMessage());
 
     jwt = DefaultJWSParser_Parse(token);
     CU_ASSERT_PTR_NOT_NULL_FATAL(jwt);

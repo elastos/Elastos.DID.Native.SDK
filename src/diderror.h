@@ -29,9 +29,23 @@
 extern "C" {
 #endif
 
+#define RETURN_(v)                                  do { \
+        DIDError_Finialize();                            \
+        return v;                                        \
+    } while(0)
+
+#define RETURN                                      do { \
+        DIDError_Finialize();                            \
+        return;                                          \
+    } while(0)
+
 #define DIDError_Set(code, msg, ...)    DIDError_SetEx(__FILE__, __LINE__, (code), (msg), ##__VA_ARGS__)
 
 void DIDError_SetEx(const char *file, int line, int code, const char *msg, ...);
+
+void DIDError_Initialize(void);
+
+void DIDError_Finialize(void);
 
 #ifdef __cplusplus
 } // extern "C"

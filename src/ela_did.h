@@ -24,6 +24,7 @@
 #define __ELA_DID_H__
 
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdarg.h>
 #include <sys/types.h>
 #include <stdint.h>
@@ -4709,56 +4710,28 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
  * \~English
  * Get the last error code.
  */
-#define DIDERRCODE                                 (DIDError_GetCode())
+#define DIDERRCODE                                 (DIDError_GetLastErrorCode())
 /**
  * \~English
  * Get the last error message.
  */
-#define DIDERRMSG                                  (DIDError_GetMessage())
-/**
- * \~English
- * Get file about the last error.
- */
-#define DIDERRFILE                                 (DIDError_GetFile())
-/**
- * \~English
- * Get line about the last error.
- */
-#define DIDERRLINE                                 (DIDError_GetLine())
-
-/**
- * \~English
- * Clear the last-error code.
- */
-DID_API void DIDError_Clear(void);
+#define DIDERRMSG                                  (DIDError_GetLastErrorMessage())
 /**
  * \~English
  * Print the whole information of last-error code.
  */
-DID_API void DIDError_Print(void);
+DID_API void DIDError_Print(FILE *out);
 
 /**
  * \~English
  * Get the last-error code.
  */
-DID_API int DIDError_GetCode(void);
+DID_API int DIDError_GetLastErrorCode(void);
 /**
  * \~English
  * Get the last-error message.
  */
-DID_API const char *DIDError_GetMessage(void);
-
-/**
- * \~English
- * Get the file for last-error.
- */
-DID_API const char *DIDError_GetFile(void);
-/**
- * \~English
- * Get line for last-error.
- */
-DID_API int DIDError_GetLine(void);
-
+DID_API const char *DIDError_GetLastErrorMessage(void);
 
 #ifdef __cplusplus
 }
