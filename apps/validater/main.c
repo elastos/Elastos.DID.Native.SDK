@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 
     sprintf(cachedir, "%s%s", getenv("HOME"), "/.cache.did.elastos");
     if (DIDBackend_InitializeDefault(NULL, url, cachedir) < 0) {
-        fprintf(stderr, "Initial resolver failed. Error: %s\n", DIDError_GetMessage());
+        fprintf(stderr, "Initial resolver failed. Error: %s\n", DIDError_GetLastErrorMessage());
         goto cleanup;
     }
 
@@ -147,14 +147,14 @@ int main(int argc, char *argv[])
         Credential *vc = Credential_FromJson(data, NULL);
         free((void*)data);
         if (!vc) {
-            fprintf(stderr, "File content is wrong to credential. Error: %s\n", DIDError_GetMessage());
+            fprintf(stderr, "File content is wrong to credential. Error: %s\n", DIDError_GetLastErrorMessage());
             goto cleanup;
         }
 
         bool validate = Credential_IsValid(vc);
         Credential_Destroy(vc);
         if (!validate) {
-            fprintf(stdout, "The credential is invalid. Error: %s\n", DIDError_GetMessage());
+            fprintf(stdout, "The credential is invalid. Error: %s\n", DIDError_GetLastErrorMessage());
             goto cleanup;
         } else {
             fprintf(stdout, "The credential is valid. \n");
@@ -172,14 +172,14 @@ int main(int argc, char *argv[])
         DIDDocument *doc = DIDDocument_FromJson(data);
         free((void*)data);
         if (!doc) {
-            fprintf(stderr, "File content is wrong to document. Error: %s\n", DIDError_GetMessage());
+            fprintf(stderr, "File content is wrong to document. Error: %s\n", DIDError_GetLastErrorMessage());
             goto cleanup;
         }
 
         bool validate = DIDDocument_IsValid(doc);
         DIDDocument_Destroy(doc);
         if (!validate) {
-            fprintf(stdout, "The document is invalid. Error: %s\n", DIDError_GetMessage());
+            fprintf(stdout, "The document is invalid. Error: %s\n", DIDError_GetLastErrorMessage());
             goto cleanup;
         } else {
             fprintf(stdout, "The document is valid. \n");

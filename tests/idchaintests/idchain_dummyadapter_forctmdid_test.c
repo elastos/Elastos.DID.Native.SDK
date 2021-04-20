@@ -258,13 +258,13 @@ static void test_publish_ctmdid_with_multicontroller(void)
     builder = DIDDocument_Edit(customized_doc, controller1_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
     CU_ASSERT_PTR_NULL(DIDDocumentBuilder_Seal(builder, storepass));
-    CU_ASSERT_STRING_EQUAL("The signers are enough.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("The signers are enough.", DIDError_GetLastErrorMessage());
     DIDDocumentBuilder_Destroy(builder);
 
     //must be sepcify the sign key
     CU_ASSERT_FALSE(DIDDocument_PublishDID(customized_doc, NULL, true, storepass));
     CU_ASSERT_STRING_EQUAL("Multi-controller customized DID must have sign key to publish.",
-            DIDError_GetMessage());
+            DIDError_GetLastErrorMessage());
     CU_ASSERT_TRUE(DIDDocument_PublishDID(customized_doc, signkey1, true, storepass));
     DIDDocument_Destroy(customized_doc);
 
@@ -413,7 +413,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_SetMultisig(builder, 1));
     CU_ASSERT_PTR_NULL(DIDDocumentBuilder_Seal(builder, storepass));
     CU_ASSERT_STRING_EQUAL("Please specify the controller to seal multi-controller DID Document.",
-           DIDError_GetMessage());
+           DIDError_GetLastErrorMessage());
     DIDDocumentBuilder_Destroy(builder);
 
     //Not set multisig for multi-controller DID, fail.
@@ -422,7 +422,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, &controller2));
     CU_ASSERT_PTR_NULL(DIDDocumentBuilder_Seal(builder, storepass));
     CU_ASSERT_STRING_EQUAL("Please set multisig first for multi-controller DID.",
-           DIDError_GetMessage());
+           DIDError_GetLastErrorMessage());
     DIDDocumentBuilder_Destroy(builder);
 
     //success
@@ -490,7 +490,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, &controller1));
-    CU_ASSERT_STRING_EQUAL("There are self-proclaimed credentials signed by controller, please remove or renew these credentials at first.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("There are self-proclaimed credentials signed by controller, please remove or renew these credentials at first.", DIDError_GetLastErrorMessage());
     CU_ASSERT_NOT_EQUAL(-1,
             DIDDocumentBuilder_RenewSelfProclaimedCredential(builder, &controller1, signkey2, storepass));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, &controller1));
@@ -617,7 +617,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     customized_doc = DIDDocument_SignDIDDocument(controller2_doc, data, storepass);
     CU_ASSERT_PTR_NULL(customized_doc);
     CU_ASSERT_STRING_EQUAL("The controller already signed the DID.",
-           DIDError_GetMessage());
+           DIDError_GetLastErrorMessage());
 
     customized_doc = DIDDocument_SignDIDDocument(controller1_doc, data, storepass);
     free((void*)data);
@@ -666,7 +666,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, &controller1));
-    CU_ASSERT_STRING_EQUAL("There are self-proclaimed credentials signed by controller, please remove or renew these credentials at first.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("There are self-proclaimed credentials signed by controller, please remove or renew these credentials at first.", DIDError_GetLastErrorMessage());
     CU_ASSERT_NOT_EQUAL(-1,
             DIDDocumentBuilder_RenewSelfProclaimedCredential(builder, &controller1, signkey2, storepass));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, &controller1));
@@ -710,7 +710,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_FALSE(DIDDocument_PublishDID(customized_doc, signkey2, false, storepass));
 
     CU_ASSERT_STRING_EQUAL("Unsupport publishing DID which is changed controller, please transfer it.",
-            DIDError_GetMessage());
+            DIDError_GetLastErrorMessage());
 
     //the DID sign ticket is only one, fail.
     ticket = DIDDocument_CreateTransferTicket(controller1_doc, &customizedid,
@@ -728,7 +728,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
 
     CU_ASSERT_FALSE(DIDDocument_TransferDID(customized_doc, ticket, signkey2, storepass));
     TransferTicket_Destroy(ticket);
-    CU_ASSERT_STRING_EQUAL("Ticket is not qualified.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("Ticket is not qualified.", DIDError_GetLastErrorMessage());
 
     //controller1 is removed, fail.
     ticket = DIDDocument_CreateTransferTicket(controller1_doc, &customizedid,
@@ -749,7 +749,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_FALSE(DIDDocument_TransferDID(customized_doc, ticket, signkey2, storepass));
     TransferTicket_Destroy(ticket);
     CU_ASSERT_STRING_EQUAL("The DID to receive ticket is not the document's signer.",
-            DIDError_GetMessage());
+            DIDError_GetLastErrorMessage());
 
     //success
     ticket = DIDDocument_CreateTransferTicket(controller1_doc, &customizedid,
@@ -795,14 +795,14 @@ static void test_transfer_ctmdid_with_multicontroller(void)
 
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, &controller3));
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, &controller2));
-    CU_ASSERT_STRING_EQUAL("There are self-proclaimed credentials signed by controller, please remove or renew these credentials at first.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("There are self-proclaimed credentials signed by controller, please remove or renew these credentials at first.", DIDError_GetLastErrorMessage());
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveSelfProclaimedCredential(builder,
             &controller2));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, &controller2));
 
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_SetMultisig(builder, 2));
     CU_ASSERT_STRING_EQUAL("Unsupport multisig is larger than the count of controllers.",
-            DIDError_GetMessage());
+            DIDError_GetLastErrorMessage());
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveAuthenticationKey(builder, keyid1));
 
@@ -837,7 +837,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_FALSE(TransferTicket_IsValid(ticket));
 
     CU_ASSERT_FALSE(DIDDocument_TransferDID(customized_doc, ticket, keyid2, storepass));
-    CU_ASSERT_STRING_EQUAL("Ticket is not qualified.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("Ticket is not qualified.", DIDError_GetLastErrorMessage());
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocument_SignTransferTicket(controller3_doc, ticket, storepass));
     CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));

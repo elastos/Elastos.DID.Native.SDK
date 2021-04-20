@@ -780,7 +780,7 @@ static void test_idchain_publishdid_without_prevsignature_and_signature(void)
     DIDDocument_Destroy(doc);
     CU_ASSERT_FALSE(success);
     CU_ASSERT_STRING_EQUAL("Missing signatures information, DID SDK dosen't know how to handle it, use force mode to ignore checks.",
-           DIDError_GetMessage());
+           DIDError_GetLastErrorMessage());
 }
 
 static void test_force_updatedid_without_prevsignature_and_signature(void)
@@ -1202,7 +1202,7 @@ static void test_updatedid_with_diff_prevsignature_and_signature(void)
     DIDDocument_Destroy(doc);
     CU_ASSERT_FALSE(success);
     CU_ASSERT_STRING_EQUAL("Current copy not based on the lastest on-chain copy.",
-            DIDError_GetMessage());
+            DIDError_GetLastErrorMessage());
 }
 
 static void test_force_updatedid_with_wrongsignature(void)

@@ -167,7 +167,7 @@ static void test_diddoc_derive_fromidentifier(void)
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     CU_ASSERT_PTR_NULL(DIDDocument_DeriveByIdentifier(doc, identifier, i, storepass));
-    CU_ASSERT_STRING_EQUAL("Unsupport customized did to derive.", DIDError_GetMessage());
+    CU_ASSERT_STRING_EQUAL("Unsupport customized did to derive.", DIDError_GetLastErrorMessage());
 }
 
 static void test_diddoc_derive_compatible_withjava(void)
