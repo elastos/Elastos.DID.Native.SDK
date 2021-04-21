@@ -254,26 +254,36 @@ bool DIDMetadata_AttachedStore(DIDMetadata *metadata)
 //******** DID_API
 time_t DIDMetadata_GetPublished(DIDMetadata *metadata)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
     return (time_t)Metadata_GetDefaultExtraAsInteger(&metadata->base, PUBLISHED);
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDMetadata_GetDeactivated(DIDMetadata *metadata)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
     return Metadata_GetDefaultExtraAsBoolean(&metadata->base, DEACTIVATED);
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDMetadata_SetAlias(DIDMetadata *metadata, const char *alias)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -284,20 +294,28 @@ int DIDMetadata_SetAlias(DIDMetadata *metadata, const char *alias)
         return -1;
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *DIDMetadata_GetAlias(DIDMetadata *metadata)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return Metadata_GetDefaultExtra(&metadata->base, ALIAS);
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDMetadata_SetExtra(DIDMetadata *metadata, const char* key, const char *value)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -308,10 +326,14 @@ int DIDMetadata_SetExtra(DIDMetadata *metadata, const char* key, const char *val
         return -1;
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDMetadata_SetExtraWithBoolean(DIDMetadata *metadata, const char *key, bool value)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -322,10 +344,14 @@ int DIDMetadata_SetExtraWithBoolean(DIDMetadata *metadata, const char *key, bool
         return -1;
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDMetadata_SetExtraWithDouble(DIDMetadata *metadata, const char *key, double value)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -336,10 +362,14 @@ int DIDMetadata_SetExtraWithDouble(DIDMetadata *metadata, const char *key, doubl
         return -1;
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *DIDMetadata_GetExtra(DIDMetadata *metadata, const char *key)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -347,24 +377,34 @@ const char *DIDMetadata_GetExtra(DIDMetadata *metadata, const char *key)
 
 
     return Metadata_GetExtra(&metadata->base, key);
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDMetadata_GetExtraAsBoolean(DIDMetadata *metadata, const char *key)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
     return Metadata_GetExtraAsBoolean(&metadata->base, key);
+
+    DIDERROR_FINALIZE();
 }
 
 double DIDMetadata_GetExtraAsDouble(DIDMetadata *metadata, const char *key)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
     return Metadata_GetExtraAsDouble(&metadata->base, key);
+
+    DIDERROR_FINALIZE();
 }

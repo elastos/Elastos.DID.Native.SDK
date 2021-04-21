@@ -25,6 +25,7 @@
 #include <limits.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "ela_did.h"
 #include "diderror.h"
@@ -67,7 +68,7 @@ void DIDError_Initialize(void)
     errorContext.depth++;
 }
 
-void DIDError_Finialize(void)
+void DIDError_Finalize(void)
 {
     errorContext.depth--;
 }
@@ -129,7 +130,12 @@ int DIDError_GetLastErrorCode(void)
 const char *DIDError_GetLastErrorMessage(void)
 {
     if (!errorContext.info)
-        return 0;
+        return NULL;
 
     return errorContext.info->message;
+}
+
+void __diderror_finalize_helper(int *p)
+{
+    DIDError_Finalize();
 }

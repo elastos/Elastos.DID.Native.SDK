@@ -1629,6 +1629,8 @@ DIDStore* DIDStore_Open(const char *root)
     char path[PATH_MAX];
     DIDStore *store;
 
+    DIDERROR_INITIALIZE();
+
     if (!root || !*root) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -1661,14 +1663,20 @@ errorExit:
     DIDError_Set(DIDERR_DIDSTORE_ERROR, "Open DIDStore failed.");
     DIDStore_Close(store);
     return NULL;
+
+    DIDERROR_FINALIZE();
 }
 
 void DIDStore_Close(DIDStore *store)
 {
+    DIDERROR_INITIALIZE();
+
     if (store) {
         StoreMetadata_Free(&store->metadata);
         free(store);
     }
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
@@ -1678,6 +1686,8 @@ int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
     DIDMetadata meta;
     ssize_t count;
     int rc;
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1733,6 +1743,8 @@ errorExit:
             delete_file(path);
     }
     return -1;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *load_didfile(DIDStore *store, DID *did)
@@ -1775,6 +1787,8 @@ DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did)
     DIDDocument *document;
     const char *data;
 
+    DIDERROR_INITIALIZE();
+
     if (!store || !did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -1800,12 +1814,16 @@ DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did)
     memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetadata));
 
     return document;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDStore_ContainsDID(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];
     int rc;
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1830,11 +1848,15 @@ bool DIDStore_ContainsDID(DIDStore *store, DID *did)
     }
 
     return true;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDStore_DeleteDID(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1853,6 +1875,8 @@ bool DIDStore_DeleteDID(DIDStore *store, DID *did)
         DIDError_Set(DIDERR_IO_ERROR, "File error.");
         return false;
     }
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDStore_ListDIDs(DIDStore *store, ELA_DID_FILTER filter,
@@ -1861,6 +1885,8 @@ int DIDStore_ListDIDs(DIDStore *store, ELA_DID_FILTER filter,
     char path[PATH_MAX];
     DID_List_Helper dh;
     int rc;
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !callback) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1892,12 +1918,16 @@ int DIDStore_ListDIDs(DIDStore *store, ELA_DID_FILTER filter,
     }
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDStore_StoreCredential(DIDStore *store, Credential *credential)
 {
     CredentialMetadata meta;
     DIDURL *id;
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !credential) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1924,6 +1954,8 @@ int DIDStore_StoreCredential(DIDStore *store, Credential *credential)
         return -1;
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
@@ -1932,6 +1964,8 @@ Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
     char path[PATH_MAX], filename[128];
     Credential *credential;
     int rc;
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !did ||!id)
         return NULL;
@@ -1973,6 +2007,8 @@ Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
 
     memcpy(&credential->id.metadata, &credential->metadata, sizeof(CredentialMetadata));
     return credential;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDStore_ContainsCredentials(DIDStore *store, DID *did)
@@ -1980,6 +2016,8 @@ bool DIDStore_ContainsCredentials(DIDStore *store, DID *did)
     char path[PATH_MAX];
     int rc;
     bool empty;
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2008,6 +2046,8 @@ bool DIDStore_ContainsCredentials(DIDStore *store, DID *did)
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "The directory stored credentials is empty.");
 
     return !empty;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDStore_ContainsCredential(DIDStore *store, DID *did, DIDURL *id)
@@ -2046,6 +2086,8 @@ bool DIDStore_DeleteCredential(DIDStore *store, DID *did, DIDURL *id)
 {
     char path[PATH_MAX], filename[128];
 
+    DIDERROR_INITIALIZE();
+
     if (!store || !did || !id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
@@ -2069,6 +2111,8 @@ bool DIDStore_DeleteCredential(DIDStore *store, DID *did, DIDURL *id)
             delete_file(path);
     }
     return true;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDStore_ListCredentials(DIDStore *store, DID *did,
@@ -2078,6 +2122,8 @@ int DIDStore_ListCredentials(DIDStore *store, DID *did,
     char path[PATH_MAX];
     Cred_List_Helper ch;
     int rc;
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !did || !callback) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2111,6 +2157,8 @@ int DIDStore_ListCredentials(DIDStore *store, DID *did,
     }
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *id,
@@ -2119,6 +2167,8 @@ int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *id,
     char path[PATH_MAX], filename[128];
     Cred_List_Helper ch;
     int rc;
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !did || !callback) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2183,12 +2233,16 @@ int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *id,
     }
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];
     bool empty;
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2205,12 +2259,16 @@ bool DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did)
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "The directory stored private keys is empty.");
 
     return !empty;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
 {
     char path[PATH_MAX], filename[128];
     int rc;
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !did || !id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2237,6 +2295,8 @@ bool DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
     }
 
     return true;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDStore_StorePrivateKey_Internal(DIDStore *store, DIDURL *id, const char *prvkey)
@@ -2268,6 +2328,8 @@ int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass, DIDURL *id,
 {
     char base64[MAX_PRIVATEKEY_BASE64];
 
+    DIDERROR_INITIALIZE();
+
     if (!store || !storepass || !*storepass || !id || !privatekey || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -2279,11 +2341,15 @@ int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass, DIDURL *id,
     }
 
     return DIDStore_StorePrivateKey_Internal(store, id, base64);
+
+    DIDERROR_FINALIZE();
 }
 
 void DIDStore_DeletePrivateKey(DIDStore *store, DIDURL *id)
 {
     char path[PATH_MAX], filename[128];
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !id)
         return;
@@ -2296,7 +2362,7 @@ void DIDStore_DeletePrivateKey(DIDStore *store, DIDURL *id)
     if (test_path(path) > 0)
         delete_file(path);
 
-    return;
+    DIDERROR_FINALIZE();
 }
 
 int DIDStore_StoreDefaultPrivateKey(DIDStore *store, const char *storepass,
@@ -2322,6 +2388,8 @@ bool DIDStore_ContainsRootIdentity(DIDStore *store, const char *id)
 {
     char path[PATH_MAX];
 
+    DIDERROR_INITIALIZE();
+
     if (!store || !id || !*id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
@@ -2331,11 +2399,15 @@ bool DIDStore_ContainsRootIdentity(DIDStore *store, const char *id)
         return false;
 
     return true;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDStore_ContainsRootIdentities(DIDStore *store)
 {
     char path[PATH_MAX];
+
+    DIDERROR_INITIALIZE();
 
     if (!store) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2346,6 +2418,8 @@ bool DIDStore_ContainsRootIdentities(DIDStore *store)
         return false;
 
     return !is_empty(path);
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDStore_StoreRootIdentityWithElem(DIDStore *store, const char *storepass, const char *id,
@@ -2401,6 +2475,8 @@ RootIdentity *DIDStore_LoadRootIdentity(DIDStore *store, const char *id)
 {
     RootIdentity *rootidentity = NULL;
 
+    DIDERROR_INITIALIZE();
+
     if (!store || !id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -2431,12 +2507,16 @@ RootIdentity *DIDStore_LoadRootIdentity(DIDStore *store, const char *id)
 errorExit:
     RootIdentity_Destroy(rootidentity);
     return NULL;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDStore_DeleteRootIdentity(DIDStore *store, const char *id)
 {
     char path[PATH_MAX];
     const char *defaultid;
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2458,6 +2538,8 @@ bool DIDStore_DeleteRootIdentity(DIDStore *store, const char *id)
         free((void*)defaultid);
     }
     return true;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDStore_ListRootIdentities(DIDStore *store,
@@ -2466,6 +2548,8 @@ ssize_t DIDStore_ListRootIdentities(DIDStore *store,
     char path[PATH_MAX];
     RootIdentity_List_Helper rh;
     int rc;
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !callback) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2498,6 +2582,8 @@ ssize_t DIDStore_ListRootIdentities(DIDStore *store,
     }
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id)
@@ -2542,6 +2628,8 @@ const char *DIDStore_GetDefaultRootIdentity(DIDStore *store)
     const char *id, *_id = NULL;
     int count = 0;
 
+    DIDERROR_INITIALIZE();
+
     if (!store) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -2567,23 +2655,31 @@ const char *DIDStore_GetDefaultRootIdentity(DIDStore *store)
     }
 
     return strdup(helper.id);
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDStore_ExportRootIdentityMnemonic(DIDStore *store, const char *storepass,
         const char *id, char *mnemonic, size_t size)
 {
+    DIDERROR_INITIALIZE();
+
     if (!store || !storepass || !*storepass || !id || !mnemonic || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return load_mnemonic(store, storepass, id, mnemonic, size);
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDStore_ContainsRootIdentityMnemonic(DIDStore *store, const char *id)
 {
     char path[PATH_MAX];
     struct stat st;
+
+    DIDERROR_INITIALIZE();
 
     if (!store || !id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2606,6 +2702,8 @@ bool DIDStore_ContainsRootIdentityMnemonic(DIDStore *store, const char *id)
     }
 
     return true;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDStore_LoadIndex(DIDStore *store, const char *id)
@@ -2918,6 +3016,8 @@ int DIDStore_ChangePassword(DIDStore *store, const char *newpw, const char *oldp
 {
     char fingerprint[64] = {0};
 
+    DIDERROR_INITIALIZE();
+
     if (!store || !oldpw || !*oldpw || !newpw || !*newpw) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -2944,6 +3044,8 @@ int DIDStore_ChangePassword(DIDStore *store, const char *newpw, const char *oldp
         return -1;
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 //--------export and import store
@@ -3294,6 +3396,8 @@ int DIDStore_ExportDID(DIDStore *store, const char *storepass, DID *did,
     const char *data;
     int rc;
 
+    DIDERROR_INITIALIZE();
+
     if (!store || !storepass || !*storepass || !did || !file || !*file ||
             !password || !*password) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3326,6 +3430,8 @@ int DIDStore_ExportDID(DIDStore *store, const char *storepass, DID *did,
     }
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 static int import_type(json_t *json, Sha256_Digest *digest)
@@ -3767,6 +3873,8 @@ int DIDStore_ImportDID(DIDStore *store, const char *storepass,
     int rc = -1;
     size_t i;
 
+    DIDERROR_INITIALIZE();
+
     if (!store || !storepass || !*storepass || !file || !*file ||
             !password || !*password) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3868,6 +3976,8 @@ errorExit:
     }
 
     return rc;
+
+    DIDERROR_FINALIZE();
 }
 
 static int export_mnemonic(JsonGenerator *gen, DIDStore *store, const char *storepass,
@@ -4026,6 +4136,8 @@ int DIDStore_ExportRootIdentity(DIDStore *store, const char *storepass,
     int rc = -1;
     JsonGenerator g, *gen;
 
+    DIDERROR_INITIALIZE();
+
     if (!store || !storepass || !*storepass || !id || !file || !*file ||
             !password || !*password) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4071,6 +4183,8 @@ errorExit:
        free((void*)pubKey);
 
     return rc;
+
+    DIDERROR_FINALIZE();
 }
 
 static int import_rootidentity_id(json_t *json, DIDStore *store, char *id, size_t size)
@@ -4267,6 +4381,8 @@ int DIDStore_ImportRootIdentity(DIDStore *store, const char *storepass,
     bool isDefault, toDelete = true;
     int rc = -1;
 
+    DIDERROR_INITIALIZE();
+
     if (!store || !storepass || !*storepass || !file || !*file ||
             !password || !*password) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4329,6 +4445,8 @@ errorExit:
         delete_file(path);
     }
     return rc;
+
+    DIDERROR_FINALIZE();
 }
 
 static zip_t *create_zip(const char *file)
@@ -4453,6 +4571,8 @@ int DIDStore_ExportStore(DIDStore *store, const char *storepass,
     char tmpdir[PATH_MAX];
     int rc = -1;
 
+    DIDERROR_INITIALIZE();
+
     if (!store || !storepass || !*storepass || !zipfile || !*zipfile ||
             !password || !*password) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4493,6 +4613,8 @@ errorExit:
 
     delete_file(tmpdir);
     return rc;
+
+    DIDERROR_FINALIZE();
 }
 
 static zip_t *open_zip(const char *file)
@@ -4519,6 +4641,8 @@ int DIDStore_ImportStore(DIDStore *store, const char *storepass, const char *zip
     zip_int64_t count, i;
     zip_stat_t stat;
     int rc = -1;
+
+    DIDERROR_INITIALIZE();
 
 #if defined(_WIN32) || defined(_WIN64)
     char filename[] = "\\tmp\\storeexport.json";
@@ -4598,4 +4722,6 @@ errorExit:
         zip_close(zip);
 
     return rc;
+
+    DIDERROR_FINALIZE();
 }

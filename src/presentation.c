@@ -624,6 +624,8 @@ Presentation *Presentation_Create(DIDURL *id, DID *holder,
     Credential **creds;
     int i;
 
+    DIDERROR_INITIALIZE();
+
     if (!id || !holder || !nonce || !*nonce || !realm || !*realm || !store ||
             !storepass || !*storepass || count < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -648,6 +650,8 @@ Presentation *Presentation_Create(DIDURL *id, DID *holder,
 
     return create_presentation(id, holder, types, size, nonce, realm, creds, count,
             signkey, store, storepass);
+
+    DIDERROR_FINALIZE();
 }
 
 Presentation *Presentation_CreateByCredentials(DIDURL *id, DID *holder,
@@ -655,6 +659,8 @@ Presentation *Presentation_CreateByCredentials(DIDURL *id, DID *holder,
         Credential **creds, size_t count, DIDURL *signkey, DIDStore *store,
         const char *storepass)
 {
+    DIDERROR_INITIALIZE();
+
     if (!id || !holder || !nonce || !*nonce || !realm || !*realm || count < 0 ||
             !store || !storepass || !*storepass ) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -663,11 +669,15 @@ Presentation *Presentation_CreateByCredentials(DIDURL *id, DID *holder,
 
     return create_presentation(id, holder, types, size, nonce, realm, creds, count,
             signkey, store, storepass);
+
+    DIDERROR_FINALIZE();
 }
 
 void Presentation_Destroy(Presentation *pre)
 {
     size_t i;
+
+    DIDERROR_INITIALIZE();
 
     if (!pre)
         return;
@@ -688,11 +698,17 @@ void Presentation_Destroy(Presentation *pre)
         free(pre->credentials.credentials);
     }
     free(pre);
+
+    DIDERROR_FINALIZE();
 }
 
 const char* Presentation_ToJson(Presentation *pre, bool normalized)
 {
+    DIDERROR_INITIALIZE();
+
     return presentation_tojson_forsign(pre, !normalized, false);
+
+    DIDERROR_FINALIZE();
 }
 
 Presentation *Presentation_FromJson(const char *json)
@@ -700,6 +716,8 @@ Presentation *Presentation_FromJson(const char *json)
     json_t *root;
     json_error_t error;
     Presentation *pre;
+
+    DIDERROR_INITIALIZE();
 
     if (!json) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -720,10 +738,14 @@ Presentation *Presentation_FromJson(const char *json)
 
     json_decref(root);
     return pre;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *Presentation_GetId(Presentation *pre)
 {
+    DIDERROR_INITIALIZE();
+
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -733,10 +755,14 @@ DIDURL *Presentation_GetId(Presentation *pre)
         return &pre->id;
 
     return NULL;
+
+    DIDERROR_FINALIZE();
 }
 
 DID *Presentation_GetHolder(Presentation *pre)
 {
+    DIDERROR_INITIALIZE();
+
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -746,21 +772,29 @@ DID *Presentation_GetHolder(Presentation *pre)
         return &pre->holder;
 
     return &pre->proof.verificationMethod.did;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t Presentation_GetCredentialCount(Presentation *pre)
 {
+    DIDERROR_INITIALIZE();
+
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return pre->credentials.size;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t Presentation_GetCredentials(Presentation *pre, Credential **creds, size_t size)
 {
     size_t actual_size;
+
+    DIDERROR_INITIALIZE();
 
     if (!pre || !creds || size < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -778,10 +812,14 @@ ssize_t Presentation_GetCredentials(Presentation *pre, Credential **creds, size_
 
     memcpy(creds, pre->credentials.credentials, sizeof(Credential*) * actual_size);
     return (ssize_t)actual_size;
+
+    DIDERROR_FINALIZE();
 }
 
 Credential *Presentation_GetCredential(Presentation *pre, DIDURL *credid)
 {
+    DIDERROR_INITIALIZE();
+
     Credential *cred;
     size_t i;
 
@@ -801,21 +839,29 @@ Credential *Presentation_GetCredential(Presentation *pre, DIDURL *credid)
     }
 
     return NULL;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t Presentation_GetTypeCount(Presentation *pre)
 {
+    DIDERROR_INITIALIZE();
+
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return pre->type.size;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t Presentation_GetTypes(Presentation *pre, const char **types, size_t size)
 {
     size_t actual_size;
+
+    DIDERROR_INITIALIZE();
 
     if (!pre || !types || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -830,46 +876,64 @@ ssize_t Presentation_GetTypes(Presentation *pre, const char **types, size_t size
 
     memcpy((void*)types, pre->type.types, sizeof(char*) * actual_size);
     return (ssize_t)actual_size;
+
+    DIDERROR_FINALIZE();
 }
 
 time_t Presentation_GetCreatedTime(Presentation *pre)
 {
+    DIDERROR_INITIALIZE();
+
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
     return pre->created;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *Presentation_GetVerificationMethod(Presentation *pre)
 {
+    DIDERROR_INITIALIZE();
+
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &pre->proof.verificationMethod;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *Presentation_GetNonce(Presentation *pre)
 {
+    DIDERROR_INITIALIZE();
+
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return pre->proof.nonce;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *Presentation_GetRealm(Presentation *pre)
 {
+    DIDERROR_INITIALIZE();
+
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return pre->proof.realm;
+
+    DIDERROR_FINALIZE();
 }
 
 static bool check_presentation(Presentation *pre, bool validtype)
@@ -945,20 +1009,28 @@ errorExit:
 
 bool Presentation_IsGenuine(Presentation *pre)
 {
+    DIDERROR_INITIALIZE();
+
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
     return check_presentation(pre, false);
+
+    DIDERROR_FINALIZE();
 }
 
 bool Presentation_IsValid(Presentation *pre)
 {
+    DIDERROR_INITIALIZE();
+
     if (!pre) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
     return check_presentation(pre, true);
+
+    DIDERROR_FINALIZE();
 }

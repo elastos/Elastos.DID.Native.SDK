@@ -36,6 +36,8 @@
 
 void CredentialBiography_Destroy(CredentialBiography *biography)
 {
+    DIDERROR_INITIALIZE();
+
     size_t i;
 
     if (!biography)
@@ -45,6 +47,8 @@ void CredentialBiography_Destroy(CredentialBiography *biography)
         CredentialTransaction_Destroy(&biography->txs.txs[i]);
 
     free((void*)biography);
+
+    DIDERROR_FINALIZE();
 }
 
 void CredentialBiography_Free(CredentialBiography *biography)
@@ -199,47 +203,65 @@ const char *Credentialbiography_ToJson(CredentialBiography *biography)
 
 DIDURL *CredentialBiography_GetId(CredentialBiography *biography)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &biography->id;
+
+    DIDERROR_FINALIZE();
 }
 
 DID *CredentialBiography_GetOwner(CredentialBiography *biography)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &biography->id.did;
+
+    DIDERROR_FINALIZE();
 }
 
 int CredentialBiography_GetStatus(CredentialBiography *biography)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return biography->status;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t CredentialBiography_GetTransactionCount(CredentialBiography *biography)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return biography->txs.size;
+
+    DIDERROR_FINALIZE();
 }
 
 Credential *CredentialBiography_GetCredentialByIndex(CredentialBiography *biography, int index)
 {
     Credential *cred;
+
+    DIDERROR_INITIALIZE();
 
     if (!biography || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -267,10 +289,14 @@ Credential *CredentialBiography_GetCredentialByIndex(CredentialBiography *biogra
     }
 
     return NULL;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *CredentialBiography_GetTransactionIdByIndex(CredentialBiography *biography, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -282,10 +308,14 @@ const char *CredentialBiography_GetTransactionIdByIndex(CredentialBiography *bio
     }
 
     return biography->txs.txs[index].txid;
+
+    DIDERROR_FINALIZE();
 }
 
 time_t CredentialBiography_GetPublishedByIndex(CredentialBiography *biography, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
@@ -297,10 +327,14 @@ time_t CredentialBiography_GetPublishedByIndex(CredentialBiography *biography, i
     }
 
     return biography->txs.txs[index].timestamp;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *CredentialBiography_GetOperationByIndex(CredentialBiography *biography, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -312,10 +346,14 @@ const char *CredentialBiography_GetOperationByIndex(CredentialBiography *biograp
     }
 
     return biography->txs.txs[index].request.header.op;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *CredentialBiography_GetTransactionSignkeyByIndex(CredentialBiography *biography, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -327,4 +365,6 @@ DIDURL *CredentialBiography_GetTransactionSignkeyByIndex(CredentialBiography *bi
     }
 
     return &biography->txs.txs[index].request.proof.verificationMethod;
+
+    DIDERROR_FINALIZE();
 }

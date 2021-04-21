@@ -29,15 +29,27 @@
 extern "C" {
 #endif
 
-#define RETURN_(v)                                  do { \
-        DIDError_Finialize();                            \
-        return v;                                        \
-    } while(0)
+#if defined(__GNUC__) || defined(__clang__)
+    #define DIDERROR_INITIALIZE()   \
+        int p __attribute__((cleanup(__diderror_finalize_helper))); \
+        DIDError_Initialize()
 
-#define RETURN                                      do { \
-        DIDError_Finialize();                            \
-        return;                                          \
-    } while(0)
+    #define DIDERROR_FINALIZE()     \
+        ((void)0)
+#elif defined(_MSC_VER)
+    #define DIDERROR_INITIALIZE()   \
+        DIDError_Initialize();      \
+        __try {                     \
+            ((void)0)
+
+    #define DIDERROR_FINALIZE()     \
+        } __finally {               \
+            DIDError_Finalize();    \
+        }                           \
+        ((void)0)
+#else
+    #error "Unknown toolchain"
+#endif
 
 #define DIDError_Set(code, msg, ...)    DIDError_SetEx(__FILE__, __LINE__, (code), (msg), ##__VA_ARGS__)
 
@@ -45,7 +57,9 @@ void DIDError_SetEx(const char *file, int line, int code, const char *msg, ...);
 
 void DIDError_Initialize(void);
 
-void DIDError_Finialize(void);
+void DIDError_Finalize(void);
+
+void __diderror_finalize_helper(int *p);
 
 #ifdef __cplusplus
 } // extern "C"

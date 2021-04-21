@@ -128,6 +128,8 @@ DID *DID_FromString(const char *idstring)
 {
     DID *did;
 
+    DIDERROR_INITIALIZE();
+
     if (!idstring || !*idstring) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -145,11 +147,15 @@ DID *DID_FromString(const char *idstring)
     }
 
     return did;
+
+    DIDERROR_FINALIZE();
 }
 
 DID *DID_New(const char *method_specific_string)
 {
     DID *did;
+
+    DIDERROR_INITIALIZE();
 
     if (!method_specific_string || !*method_specific_string) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -169,30 +175,42 @@ DID *DID_New(const char *method_specific_string)
 
     strcpy(did->idstring, method_specific_string);
     return did;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *DID_GetMethod(DID *did)
 {
+    DIDERROR_INITIALIZE();
+
     if (!did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return did_method;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *DID_GetMethodSpecificId(DID *did)
 {
+    DIDERROR_INITIALIZE();
+
     if (!did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return (const char *)did->idstring;
+
+    DIDERROR_FINALIZE();
 }
 
 char *DID_ToString(DID *did, char *idstring, size_t len)
 {
+    DIDERROR_INITIALIZE();
+
     if (!did || !idstring) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -207,6 +225,8 @@ char *DID_ToString(DID *did, char *idstring, size_t len)
     strcat(idstring, did->idstring);
 
     return idstring;
+
+    DIDERROR_FINALIZE();
 }
 
 DID *DID_Copy(DID *dest, DID *src)
@@ -220,59 +240,83 @@ DID *DID_Copy(DID *dest, DID *src)
 
 bool DID_Equals(DID *did1, DID *did2)
 {
+    DIDERROR_INITIALIZE();
+
     if (!did1 || !did2) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
     return strcmp(did1->idstring, did2->idstring) == 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DID_Compare(DID *did1, DID *did2)
 {
+    DIDERROR_INITIALIZE();
+
     if (!did1 || !did2) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return strcmp(did1->idstring, did2->idstring);
+
+    DIDERROR_FINALIZE();
 }
 
 void DID_Destroy(DID *did)
 {
+    DIDERROR_INITIALIZE();
+
     if (did) {
         DIDMetadata_Free(&did->metadata);
         free(did);
     }
+
+    DIDERROR_FINALIZE();
 }
 
 DIDBiography *DID_ResolveBiography(DID *did)
 {
+    DIDERROR_INITIALIZE();
+
     if (!did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return DIDBackend_ResolveDIDBiography(did);
+
+    DIDERROR_FINALIZE();
 }
 
 DIDDocument *DID_Resolve(DID *did, int *status, bool force)
 {
+    DIDERROR_INITIALIZE();
+
     if (!did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return DIDBackend_ResolveDID(did, status, force);
+
+    DIDERROR_FINALIZE();
 }
 
 DIDMetadata *DID_GetMetadata(DID *did)
 {
+    DIDERROR_INITIALIZE();
+
     if (!did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
     return &did->metadata;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDURL_Parse(DIDURL *id, const char *idstring, DID *base)
@@ -317,6 +361,8 @@ DIDURL *DIDURL_FromString(const char *idstring, DID *ref)
 {
     DIDURL *id;
 
+    DIDERROR_INITIALIZE();
+
     if (!idstring || !*idstring) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -334,11 +380,15 @@ DIDURL *DIDURL_FromString(const char *idstring, DID *ref)
     }
 
     return id;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *DIDURL_New(const char *method_specific_string, const char *fragment)
 {
     DIDURL *id;
+
+    DIDERROR_INITIALIZE();
 
     if (!method_specific_string || !*method_specific_string ||
         !fragment || !*fragment)  {
@@ -366,11 +416,15 @@ DIDURL *DIDURL_New(const char *method_specific_string, const char *fragment)
     strcpy(id->fragment, fragment);
 
     return id;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *DIDURL_NewByDid(DID *did, const char *fragment)
 {
     DIDURL *id;
+
+    DIDERROR_INITIALIZE();
 
     if (!did || !fragment || !*fragment) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -395,32 +449,44 @@ DIDURL *DIDURL_NewByDid(DID *did, const char *fragment)
 
     strcpy(id->fragment, fragment);
     return id;
+
+    DIDERROR_FINALIZE();
 }
 
 DID *DIDURL_GetDid(DIDURL *id)
 {
+    DIDERROR_INITIALIZE();
+
     if (!id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &(id->did);
+
+    DIDERROR_FINALIZE();
 }
 
 const char *DIDURL_GetFragment(DIDURL *id)
 {
+    DIDERROR_INITIALIZE();
+
     if (!id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return (const char*)id->fragment;
+
+    DIDERROR_FINALIZE();
 }
 
 char *DIDURL_ToString(DIDURL *id, char *idstring, size_t len, bool compact)
 {
     size_t expect_len = 0;
     int size;
+
+    DIDERROR_INITIALIZE();
 
     if (!id || !idstring) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -451,10 +517,14 @@ char *DIDURL_ToString(DIDURL *id, char *idstring, size_t len, bool compact)
     }
 
     return idstring;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDURL_Equals(DIDURL *id1, DIDURL *id2)
 {
+    DIDERROR_INITIALIZE();
+
     if (!id1 || !id2) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
@@ -462,12 +532,16 @@ bool DIDURL_Equals(DIDURL *id1, DIDURL *id2)
 
     return (strcmp(id1->did.idstring, id2->did.idstring) == 0 &&
             strcmp(id1->fragment, id2->fragment) == 0);
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDURL_Compare(DIDURL *id1, DIDURL *id2)
 {
     char _idstring1[ELA_MAX_DIDURL_LEN], _idstring2[ELA_MAX_DIDURL_LEN];
     char *idstring1, *idstring2;
+
+    DIDERROR_INITIALIZE();
 
     if (!id1 || !id2) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -480,6 +554,8 @@ int DIDURL_Compare(DIDURL *id1, DIDURL *id2)
         return -1;
 
     return strcmp(idstring1, idstring2);
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src)
@@ -497,20 +573,28 @@ DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src)
 
 void DIDURL_Destroy(DIDURL *id)
 {
+    DIDERROR_INITIALIZE();
+
     if (!id)
         return;
 
     CredentialMetadata_Free(&id->metadata);
     free(id);
+
+    DIDERROR_FINALIZE();
 }
 
 CredentialMetadata *DIDURL_GetMetadata(DIDURL *id)
 {
+    DIDERROR_INITIALIZE();
+
     if (!id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
     return &id->metadata;
+
+    DIDERROR_FINALIZE();
 }
 
 bool Contains_DID(DID **dids, size_t size, DID *did)

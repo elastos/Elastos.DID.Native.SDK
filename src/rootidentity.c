@@ -115,6 +115,8 @@ RootIdentity *RootIdentity_Create(const char *mnemonic, const char *passphrase,
     RootIdentity *rootidentity = NULL;
     HDKey _hdkey, *hdkey = NULL;
 
+    DIDERROR_INITIALIZE();
+
     if (!mnemonic || !*mnemonic || !store || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -146,6 +148,8 @@ errorExit:
     HDKey_Wipe(hdkey);
     RootIdentity_Destroy(rootidentity);
     return NULL;
+
+    DIDERROR_FINALIZE();
 }
 
 RootIdentity *RootIdentity_CreateFromRootKey(const char *extendedkey,
@@ -153,6 +157,8 @@ RootIdentity *RootIdentity_CreateFromRootKey(const char *extendedkey,
 {
     RootIdentity *rootidentity = NULL;
     HDKey _hdkey, *hdkey = NULL;
+
+    DIDERROR_INITIALIZE();
 
     if (!extendedkey || !*extendedkey || !store || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -177,15 +183,21 @@ errorExit:
     HDKey_Wipe(hdkey);
     RootIdentity_Destroy(rootidentity);
     return NULL;
+
+    DIDERROR_FINALIZE();
 }
 
 void RootIdentity_Destroy(RootIdentity *rootidentity)
 {
+    DIDERROR_INITIALIZE();
+
     if (rootidentity) {
         IdentityMetadata_Free(&rootidentity->metadata);
         memset(rootidentity, 0, sizeof(RootIdentity));
         free((void*)rootidentity);
     }
+
+    DIDERROR_FINALIZE();
 }
 
 void RootIdentity_Wipe(RootIdentity *rootidentity)
@@ -198,37 +210,51 @@ void RootIdentity_Wipe(RootIdentity *rootidentity)
 
 const char *RootIdentity_GetId(RootIdentity *rootidentity)
 {
+    DIDERROR_INITIALIZE();
+
     if (!rootidentity) {
         DIDError_Set(DIDERR_INVALID_ARGS, "No rootidentity.");
         return NULL;
     }
 
     return rootidentity->id;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *RootIdentity_GetAlias(RootIdentity *rootidentity)
 {
+    DIDERROR_INITIALIZE();
+
     if (!rootidentity) {
         DIDError_Set(DIDERR_INVALID_ARGS, "No rootidentity.");
         return NULL;
     }
 
     return IdentityMetadata_GetAlias(&rootidentity->metadata);
+
+    DIDERROR_FINALIZE();
 }
 
 int RootIdentity_SetAlias(RootIdentity *rootidentity, const char *alias)
 {
+    DIDERROR_INITIALIZE();
+
     if (!rootidentity) {
         DIDError_Set(DIDERR_INVALID_ARGS, "No rootidentity.");
         return -1;
     }
 
     return IdentityMetadata_SetAlias(&rootidentity->metadata, alias);
+
+    DIDERROR_FINALIZE();
 }
 
 int RootIdentity_SetDefaultDID(RootIdentity *rootidentity, DID *did)
 {
     char idstring[ELA_MAX_DID_LEN];
+
+    DIDERROR_INITIALIZE();
 
     if (!rootidentity || !did) {
         DIDError_Set(DIDERR_INVALID_ARGS, "No rootidentity or default DID.");
@@ -236,11 +262,15 @@ int RootIdentity_SetDefaultDID(RootIdentity *rootidentity, DID *did)
     }
 
     return IdentityMetadata_SetDefaultDID(&rootidentity->metadata, DID_ToString(did, idstring, sizeof(idstring)));
+
+    DIDERROR_FINALIZE();
 }
 
 DID *RootIdentity_GetDefaultDID(RootIdentity *rootidentity)
 {
     const char *idstring;
+
+    DIDERROR_INITIALIZE();
 
     if (!rootidentity) {
         DIDError_Set(DIDERR_INVALID_ARGS, "No rootidentity or default DID.");
@@ -254,6 +284,8 @@ DID *RootIdentity_GetDefaultDID(RootIdentity *rootidentity)
     }
 
     return DID_FromString(idstring);
+
+    DIDERROR_FINALIZE();
 }
 
 static HDKey *get_derivedkey(uint8_t *extendedkey, size_t size, int index,
@@ -428,6 +460,8 @@ DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepa
     char didstring[ELA_MAX_DID_LEN];
     int index;
 
+    DIDERROR_INITIALIZE();
+
     if (!rootidentity || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -456,6 +490,8 @@ DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepa
         IdentityMetadata_SetDefaultDID(&rootidentity->metadata, DID_ToString(&document->did, didstring, sizeof(didstring)));
 
     return document;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
@@ -464,6 +500,8 @@ DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
     DIDStore *store;
     DIDDocument *document;
     char didstring[ELA_MAX_DID_LEN];
+
+    DIDERROR_INITIALIZE();
 
     if (!rootidentity || !storepass || !*storepass || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -484,6 +522,8 @@ DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
         IdentityMetadata_SetDefaultDID(&rootidentity->metadata, DID_ToString(&document->did, didstring, sizeof(didstring)));
 
     return document;
+
+    DIDERROR_FINALIZE();
 }
 
 DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index)
@@ -491,6 +531,8 @@ DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index)
     DID *did;
     DIDStore *store;
     HDKey _derivedkey, *derivedkey;
+
+    DIDERROR_INITIALIZE();
 
     if (!rootidentity || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -510,10 +552,14 @@ DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index)
     did = DID_New(HDKey_GetAddress(derivedkey));
     HDKey_Wipe(derivedkey);
     return did;
+
+    DIDERROR_FINALIZE();
 }
 
 int RootIdentity_SetAsDefault(RootIdentity *identity)
 {
+    DIDERROR_INITIALIZE();
+
     if (!identity) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -525,6 +571,8 @@ int RootIdentity_SetAsDefault(RootIdentity *identity)
     }
 
     return DIDStore_SetDefaultRootIdentity(identity->metadata.base.store, identity->id);
+
+    DIDERROR_FINALIZE();
 }
 
 static DIDDocument* diddocument_conflict_merge(DIDDocument *chaincopy, DIDDocument *localcopy)
@@ -544,7 +592,9 @@ bool RootIdentity_Synchronize(RootIdentity *rootidentity, DIDDocument_ConflictHa
     int lastindex, i = 0, blanks = 0;
     bool exists;
 
-     if (!rootidentity) {
+    DIDERROR_INITIALIZE();
+
+    if (!rootidentity) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
@@ -572,6 +622,8 @@ bool RootIdentity_Synchronize(RootIdentity *rootidentity, DIDDocument_ConflictHa
         rootidentity->index = lastindex + 1;
 
     return true;
+
+    DIDERROR_FINALIZE();
 }
 
 bool RootIdentity_SynchronizeByIndex(RootIdentity *rootidentity, int index,
@@ -583,6 +635,8 @@ bool RootIdentity_SynchronizeByIndex(RootIdentity *rootidentity, int index,
     const char *local_signature;
     int status;
     bool success = false;
+
+    DIDERROR_INITIALIZE();
 
     if (!rootidentity || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -632,6 +686,8 @@ errorExit:
     DIDDocument_Destroy(localcopy);
     DID_Destroy(did);
     return success;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t RootIdentity_LazyCreatePrivateKey(DIDURL *key, DIDStore *store, const char *storepass,
