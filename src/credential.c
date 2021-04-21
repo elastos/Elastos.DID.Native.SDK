@@ -226,6 +226,8 @@ int Credential_ToJson_Internal(JsonGenerator *gen, Credential *cred, DID *did,
 ///////////////////////////////////////////////////////////////////////////
 void Credential_Destroy(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred)
         return;
 
@@ -235,50 +237,70 @@ void Credential_Destroy(Credential *cred)
 
     CredentialMetadata_Free(&cred->metadata);
     free(cred);
+
+    DIDERROR_FINALIZE();
 }
 
 bool Credential_IsSelfProclaimed(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
     return DID_Equals(&cred->subject.id, &cred->issuer);
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *Credential_GetId(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &cred->id;
+
+    DIDERROR_FINALIZE();
 }
 
 DID *Credential_GetOwner(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &cred->subject.id;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t Credential_GetTypeCount(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return cred->type.size;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t Credential_GetTypes(Credential *cred, const char **types, size_t size)
 {
+    DIDERROR_INITIALIZE();
+
     size_t actual_size;
 
     if (!cred || !types || size == 0) {
@@ -294,26 +316,36 @@ ssize_t Credential_GetTypes(Credential *cred, const char **types, size_t size)
 
     memcpy((void*)types, cred->type.types, sizeof(char*) * actual_size);
     return (ssize_t)actual_size;
+
+    DIDERROR_FINALIZE();
 }
 
 DID *Credential_GetIssuer(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &cred->issuer;
+
+    DIDERROR_FINALIZE();
 }
 
 time_t Credential_GetIssuanceDate(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return cred->issuanceDate;
+
+    DIDERROR_FINALIZE();
 }
 
 time_t Credential_GetExpirationDate_Internal(Credential *cred, DIDDocument *document)
@@ -369,6 +401,8 @@ time_t Credential_GetExpirationDate(Credential *cred)
 
 ssize_t Credential_GetPropertyCount(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -379,11 +413,15 @@ ssize_t Credential_GetPropertyCount(Credential *cred)
     }
 
     return json_object_size(cred->subject.properties);
+
+    DIDERROR_FINALIZE();
 }
 
 const char *Credential_GetProperties(Credential *cred)
 {
     const char *data;
+
+    DIDERROR_INITIALIZE();
 
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -399,11 +437,15 @@ const char *Credential_GetProperties(Credential *cred)
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Serialize properties to json failed.");
 
     return data;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *Credential_GetProperty(Credential *cred, const char *name)
 {
     json_t *item;
+
+    DIDERROR_INITIALIZE();
 
     if (!cred || !name || !*name) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -422,46 +464,64 @@ const char *Credential_GetProperty(Credential *cred, const char *name)
     }
 
     return json_astext(item);
+
+    DIDERROR_FINALIZE();
 }
 
 time_t Credential_GetProofCreatedTime(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
     return cred->proof.created;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *Credential_GetProofMethod(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &cred->proof.verificationMethod;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *Credential_GetProofType(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return cred->proof.type;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *Credential_GetProofSignture(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return cred->proof.signatureValue;
+
+    DIDERROR_FINALIZE();
 }
 
 Credential *Parse_Credential(json_t *json, DID *did)
@@ -728,7 +788,11 @@ const char* Credential_ToJson_ForSign(Credential *cred, bool compact, bool forsi
 
 const char* Credential_ToJson(Credential *cred, bool normalized)
 {
+    DIDERROR_INITIALIZE();
+
     return Credential_ToJson_ForSign(cred, !normalized, false);
+
+    DIDERROR_FINALIZE();
 }
 
 const char *Credential_ToString(Credential *cred, bool normalized)
@@ -736,6 +800,8 @@ const char *Credential_ToString(Credential *cred, bool normalized)
     const char *data;
     json_t *json;
     json_error_t error;
+
+    DIDERROR_INITIALIZE();
 
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -754,6 +820,8 @@ const char *Credential_ToString(Credential *cred, bool normalized)
     }
 
     return json_dumps(json, JSON_COMPACT);
+
+    DIDERROR_FINALIZE();
 }
 
 Credential *Credential_FromJson(const char *json, DID *did)
@@ -761,6 +829,8 @@ Credential *Credential_FromJson(const char *json, DID *did)
     json_t *root;
     json_error_t error;
     Credential *cred;
+
+    DIDERROR_INITIALIZE();
 
     if (!json) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -777,6 +847,8 @@ Credential *Credential_FromJson(const char *json, DID *did)
     json_decref(root);
 
     return cred;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *Credential_GetVerificationMethod(Credential *cred)
@@ -840,6 +912,8 @@ bool Credential_IsExpired(Credential *cred)
     time_t expires;
     time_t now;
 
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return true;
@@ -852,6 +926,8 @@ bool Credential_IsExpired(Credential *cred)
         return true;
 
     return false;
+
+    DIDERROR_FINALIZE();
 }
 
 bool Credential_IsGenuine_Internal(Credential *cred, DIDDocument *document)
@@ -897,12 +973,16 @@ errorExit:
 
 bool Credential_IsGenuine(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
     return Credential_IsGenuine_Internal(cred, NULL);
+
+    DIDERROR_FINALIZE();
 }
 
 bool Credential_IsValid_Internal(Credential *cred, DIDDocument *document)
@@ -945,6 +1025,8 @@ bool Credential_IsValid(Credential *cred)
     bool valid;
     int status;
 
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
@@ -962,16 +1044,22 @@ bool Credential_IsValid(Credential *cred)
     valid = Credential_IsValid_Internal(cred, doc);
     DIDDocument_Destroy(doc);
     return valid;
+
+    DIDERROR_FINALIZE();
 }
 
 CredentialMetadata *Credential_GetMetadata(Credential *cred)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cred) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &cred->metadata;
+
+    DIDERROR_FINALIZE();
 }
 
 int Credential_Copy(Credential *dest, Credential *src)
@@ -1015,6 +1103,8 @@ bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *sto
     DIDStore *store;
     bool success = false;
     int status;
+
+    DIDERROR_INITIALIZE();
 
     if (!credential || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1069,6 +1159,8 @@ bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *sto
 errorExit:
     DIDDocument_Destroy(doc);
     return success;
+
+    DIDERROR_FINALIZE();
 }
 
 bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *storepass)
@@ -1077,6 +1169,8 @@ bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *stor
     DIDStore *store;
     bool success = false;
     int status;
+
+    DIDERROR_INITIALIZE();
 
     if (!credential || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1147,6 +1241,8 @@ errorExit:
     DIDDocument_Destroy(issuerdoc);
     DIDDocument_Destroy(signerdoc);
     return success;
+
+    DIDERROR_FINALIZE();
 }
 
 bool Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
@@ -1156,6 +1252,8 @@ bool Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
     DIDStore *store;
     Credential *local_vc;
     bool success = false, brevoked;
+
+    DIDERROR_INITIALIZE();
 
     if (!id || !document || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1195,26 +1293,36 @@ bool Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
     }
 
     return DIDBackend_RevokeCredential(id, signkey, document, storepass);
+
+    DIDERROR_FINALIZE();
 }
 
 Credential *Credential_Resolve(DIDURL *id, int *status, bool force)
 {
+    DIDERROR_INITIALIZE();
+
     if (!id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
     return DIDBackend_ResolveCredential(id, status, force);
+
+    DIDERROR_FINALIZE();
 }
 
 bool Credential_ResolveRevocation(DIDURL *id, DID *issuer)
 {
+    DIDERROR_INITIALIZE();
+
     if (!id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
     return DIDBackend_ResolveRevocation(id, issuer);
+
+    DIDERROR_FINALIZE();
 }
 
 CredentialBiography *Credential_ResolveBiography(DIDURL *id, DID *issuer)
@@ -1231,6 +1339,8 @@ bool Credential_WasDeclared(DIDURL *id)
     Credential *credential;
     int status;
 
+    DIDERROR_INITIALIZE();
+
     if (!id) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
@@ -1242,10 +1352,14 @@ bool Credential_WasDeclared(DIDURL *id)
 
     Credential_Destroy(credential);
     return true;
+
+    DIDERROR_FINALIZE();
 }
 
 bool Credential_IsRevoked(Credential *credential)
 {
+    DIDERROR_INITIALIZE();
+
     if (!credential) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
@@ -1256,10 +1370,14 @@ bool Credential_IsRevoked(Credential *credential)
 
     return Credential_ResolveRevocation(&credential->id, &credential->issuer) ||
             Credential_ResolveRevocation(&credential->id, &credential->subject.id);
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t Credential_List(DID *did, DIDURL **buffer, size_t size, int skip, int limit)
 {
+    DIDERROR_INITIALIZE();
+
     if (!did || !buffer || size == 0 || skip < 0 || limit < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -1271,4 +1389,6 @@ ssize_t Credential_List(DID *did, DIDURL **buffer, size_t size, int skip, int li
     }
 
     return DIDBackend_ListCredentials(did, buffer, size, skip, limit);
+
+    DIDERROR_FINALIZE();
 }

@@ -35,4 +35,3 @@ DECL_TESTSUITE(didurl_operation_test);
     DEFINE_TESTSUITE(didurl_operation_test)
 
 #endif /* __DID_TEST_SUITES_H__ */
-

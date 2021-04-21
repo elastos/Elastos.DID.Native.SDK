@@ -31,6 +31,8 @@
 
 void DIDBiography_Destroy(DIDBiography *biography)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography)
         return;
 
@@ -43,41 +45,57 @@ void DIDBiography_Destroy(DIDBiography *biography)
         free(biography->txs.txs);
     }
     free(biography);
+
+    DIDERROR_FINALIZE();
 }
 
 DID *DIDBiography_GetOwner(DIDBiography *biography)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &biography->did;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDBiography_GetStatus(DIDBiography *biography)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return biography->status;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDBiography_GetTransactionCount(DIDBiography *biography)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return biography->txs.size;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDDocument *DIDBiography_GetDocumentByIndex(DIDBiography *biography, int index)
 {
     DIDDocument *doc;
+
+    DIDERROR_INITIALIZE();
 
     if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -106,10 +124,14 @@ DIDDocument *DIDBiography_GetDocumentByIndex(DIDBiography *biography, int index)
     }
 
     return doc;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *DIDBiography_GetTransactionIdByIndex(DIDBiography *biography, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -121,10 +143,14 @@ const char *DIDBiography_GetTransactionIdByIndex(DIDBiography *biography, int in
     }
 
     return biography->txs.txs[index].txid;
+
+    DIDERROR_FINALIZE();
 }
 
 time_t DIDBiography_GetPublishedByIndex(DIDBiography *biography, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
@@ -136,10 +162,14 @@ time_t DIDBiography_GetPublishedByIndex(DIDBiography *biography, int index)
     }
 
     return biography->txs.txs[index].timestamp;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *DIDBiography_GetOperationByIndex(DIDBiography *biography, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!biography) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -151,4 +181,6 @@ const char *DIDBiography_GetOperationByIndex(DIDBiography *biography, int index)
     }
 
     return biography->txs.txs[index].request.header.op;
+
+    DIDERROR_FINALIZE();
 }

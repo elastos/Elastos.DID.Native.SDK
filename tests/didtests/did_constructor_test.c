@@ -22,6 +22,8 @@ static void test_did_fromString_error(void)
 {
     DID *did = DID_FromString("did:example:iYpQMwheDxySqivocSJaoprcoDTqQsDYAu");
     CU_ASSERT_PTR_NULL(did);
+
+    DIDError_Print(stdout);
     DID_Destroy(did);
 
     did = DID_FromString("did:elastos:");

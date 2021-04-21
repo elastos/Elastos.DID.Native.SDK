@@ -277,6 +277,8 @@ int TransferTicket_Seal(TransferTicket *ticket, DIDDocument *controllerdoc,
 
 void TransferTicket_Destroy(TransferTicket *ticket)
 {
+    DIDERROR_INITIALIZE();
+
     if (!ticket)
         return;
 
@@ -286,11 +288,17 @@ void TransferTicket_Destroy(TransferTicket *ticket)
         free((void*)ticket->proofs.proofs);
 
     free((void*)ticket);
+
+    DIDERROR_FINALIZE();
 }
 
 const char *TransferTicket_ToJson(TransferTicket *ticket)
 {
+    DIDERROR_INITIALIZE();
+
     return ticket_tojson_forsign(ticket, false);
+
+    DIDERROR_FINALIZE();
 }
 
 static int Parse_Proof(TicketProof *proof, json_t *json)
@@ -474,6 +482,8 @@ TransferTicket *TransferTicket_FromJson(const char *json)
     json_t *root;
     json_error_t error;
 
+    DIDERROR_INITIALIZE();
+
     if (!json) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -488,10 +498,14 @@ TransferTicket *TransferTicket_FromJson(const char *json)
     ticket = TransferTicket_FromJson_Internal(root);
     json_decref(root);
     return ticket;
+
+    DIDERROR_FINALIZE();
 }
 
 bool TransferTicket_IsValid(TransferTicket *ticket)
 {
+    DIDERROR_INITIALIZE();
+
     if (!ticket) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
@@ -516,10 +530,14 @@ bool TransferTicket_IsValid(TransferTicket *ticket)
     }
 
     return true;
+
+    DIDERROR_FINALIZE();
 }
 
 bool TransferTicket_IsQualified(TransferTicket *ticket)
 {
+    DIDERROR_INITIALIZE();
+
     if (!ticket) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
@@ -529,6 +547,8 @@ bool TransferTicket_IsQualified(TransferTicket *ticket)
             (ticket->proofs.size > 0 && ticket->proofs.proofs));
 
     return ticket->proofs.size == (ticket->doc->controllers.size > 1 ? ticket->doc->multisig : 1) ? true : false;
+
+    DIDERROR_FINALIZE();
 }
 
 bool TransferTicket_IsGenuine(TransferTicket *ticket)
@@ -540,6 +560,8 @@ bool TransferTicket_IsGenuine(TransferTicket *ticket)
     bool isgeninue = false;
     size_t size;
     int i;
+
+    DIDERROR_INITIALIZE();
 
     if (!ticket) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -609,20 +631,28 @@ errorExit:
        free((void*)data);
 
     return isgeninue;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t TransferTicket_GetProofCount(TransferTicket *ticket)
 {
+    DIDERROR_INITIALIZE();
+
     if (!ticket) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return ticket->proofs.size;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *TransferTicket_GetProofType(TransferTicket *ticket, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!ticket || index <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -634,10 +664,14 @@ const char *TransferTicket_GetProofType(TransferTicket *ticket, int index)
     }
 
     return ticket->proofs.proofs[index].type;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *TransferTicket_GetSignKey(TransferTicket *ticket, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!ticket || index < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -649,10 +683,14 @@ DIDURL *TransferTicket_GetSignKey(TransferTicket *ticket, int index)
     }
 
     return &ticket->proofs.proofs[index].verificationMethod;
+
+    DIDERROR_FINALIZE();
 }
 
 time_t TransferTicket_GetProofCreatedTime(TransferTicket *ticket, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!ticket || index <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
@@ -664,10 +702,14 @@ time_t TransferTicket_GetProofCreatedTime(TransferTicket *ticket, int index)
     }
 
     return ticket->proofs.proofs[index].created;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *TransferTicket_GetProofSignature(TransferTicket *ticket, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!ticket || index <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -679,4 +721,6 @@ const char *TransferTicket_GetProofSignature(TransferTicket *ticket, int index)
     }
 
     return ticket->proofs.proofs[index].signatureValue;
+
+    DIDERROR_FINALIZE();
 }

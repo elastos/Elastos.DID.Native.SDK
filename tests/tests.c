@@ -173,6 +173,9 @@ int main(int argc, char *argv[])
         }
 
         for (ts = suites; ts->fileName != NULL; ts++) {
+            if ((stress_test > 0 || dummy != 0) && !strcmp(ts->fileName, IDCHAIN))
+                continue;
+
             CU_SuiteInfo *si = ts->getSuiteInfo();
             rc = CU_register_nsuites(1, si);
 

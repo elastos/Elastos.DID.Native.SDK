@@ -41,6 +41,8 @@ Issuer *Issuer_Create(DID *did, DIDURL *signkey, DIDStore *store)
     Issuer *issuer;
     DIDDocument *doc;
 
+    DIDERROR_INITIALIZE();
+
     if (!did || !store) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -79,10 +81,14 @@ Issuer *Issuer_Create(DID *did, DIDURL *signkey, DIDStore *store)
     issuer->signer = doc;
     DIDURL_Copy(&issuer->signkey, signkey);
     return issuer;
+
+    DIDERROR_FINALIZE();
 }
 
 void Issuer_Destroy(Issuer *issuer)
 {
+    DIDERROR_INITIALIZE();
+
     if (!issuer)
         return;
 
@@ -90,26 +96,36 @@ void Issuer_Destroy(Issuer *issuer)
         DIDDocument_Destroy(issuer->signer);
 
     free(issuer);
+
+    DIDERROR_FINALIZE();
 }
 
 DID *Issuer_GetSigner(Issuer *issuer)
 {
+    DIDERROR_INITIALIZE();
+
     if (!issuer) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &issuer->signer->did;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *Issuer_GetSignKey(Issuer *issuer)
 {
+    DIDERROR_INITIALIZE();
+
     if (!issuer) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &issuer->signkey;
+
+    DIDERROR_FINALIZE();
 }
 
 Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
@@ -200,6 +216,8 @@ Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *credid,
     json_t *root;
     int i;
 
+    DIDERROR_INITIALIZE();
+
     if (!issuer ||!owner || !credid || !types || typesize == 0||
             !subject || size <= 0 || expires <= 0 || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -225,6 +243,8 @@ Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *credid,
             expires, storepass);
     json_decref(root);
     return cred;
+
+    DIDERROR_FINALIZE();
 }
 
 Credential *Issuer_CreateCredentialByString(Issuer *issuer, DID *owner,
@@ -234,6 +254,8 @@ Credential *Issuer_CreateCredentialByString(Issuer *issuer, DID *owner,
     Credential *cred;
     json_t *root;
     json_error_t error;
+
+    DIDERROR_INITIALIZE();
 
     if (!issuer ||!owner || !credid || !types || typesize == 0||
             !subject || !*subject || expires <= 0 || !storepass || !*storepass) {
@@ -251,4 +273,6 @@ Credential *Issuer_CreateCredentialByString(Issuer *issuer, DID *owner,
             expires, storepass);
     json_decref(root);
     return cred;
+
+    DIDERROR_FINALIZE();
 }

@@ -727,8 +727,8 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_FALSE(TransferTicket_IsValid(ticket));
 
     CU_ASSERT_FALSE(DIDDocument_TransferDID(customized_doc, ticket, signkey2, storepass));
-    TransferTicket_Destroy(ticket);
     CU_ASSERT_STRING_EQUAL("Ticket is not qualified.", DIDError_GetLastErrorMessage());
+    TransferTicket_Destroy(ticket);
 
     //controller1 is removed, fail.
     ticket = DIDDocument_CreateTransferTicket(controller1_doc, &customizedid,
@@ -747,9 +747,9 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));
 
     CU_ASSERT_FALSE(DIDDocument_TransferDID(customized_doc, ticket, signkey2, storepass));
-    TransferTicket_Destroy(ticket);
     CU_ASSERT_STRING_EQUAL("The DID to receive ticket is not the document's signer.",
             DIDError_GetLastErrorMessage());
+    TransferTicket_Destroy(ticket);
 
     //success
     ticket = DIDDocument_CreateTransferTicket(controller1_doc, &customizedid,

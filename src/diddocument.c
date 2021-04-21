@@ -837,11 +837,15 @@ bool DIDDocument_IsCustomizedDID(DIDDocument *document)
 
     assert(document);
 
+    DIDERROR_INITIALIZE();
+
     signkey = DIDDocument_GetDefaultPublicKey(document);
     if (signkey && DID_Equals(&signkey->did, &document->did))
         return false;
 
     return true;
+
+    DIDERROR_FINALIZE();
 }
 
 bool controllers_check(DIDDocument *document)
@@ -1062,6 +1066,8 @@ DIDDocument *DIDDocument_FromJson(const char *json)
     json_t *root;
     json_error_t error;
 
+    DIDERROR_INITIALIZE();
+
     if (!json) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -1076,6 +1082,8 @@ DIDDocument *DIDDocument_FromJson(const char *json)
     doc = DIDDocument_FromJson_Internal(root);
     json_decref(root);
     return doc;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
@@ -1166,7 +1174,11 @@ static const char *diddocument_tojson_forsign(DIDDocument *document, bool compac
 
 const char *DIDDocument_ToJson(DIDDocument *document, bool normalized)
 {
+    DIDERROR_INITIALIZE();
+
     return diddocument_tojson_forsign(document, !normalized, false);
+
+    DIDERROR_FINALIZE();
 }
 
 const char *DIDDocument_ToString(DIDDocument *document, bool normalized)
@@ -1174,6 +1186,8 @@ const char *DIDDocument_ToString(DIDDocument *document, bool normalized)
     const char *data;
     json_t *json;
     json_error_t error;
+
+    DIDERROR_INITIALIZE();
 
     if (!document){
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1192,11 +1206,15 @@ const char *DIDDocument_ToString(DIDDocument *document, bool normalized)
     }
 
     return json_dumps(json, JSON_INDENT(4));
+
+    DIDERROR_FINALIZE();
 }
 
 void DIDDocument_Destroy(DIDDocument *document)
 {
     size_t i;
+
+    DIDERROR_INITIALIZE();
 
     if (!document)
         return;
@@ -1230,30 +1248,42 @@ void DIDDocument_Destroy(DIDDocument *document)
 
     DIDMetadata_Free(&document->metadata);
     free(document);
+
+    DIDERROR_FINALIZE();
 }
 
 DIDMetadata *DIDDocument_GetMetadata(DIDDocument *document)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &document->metadata;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_GetProofCount(DIDDocument *document)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return document->proofs.size;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *DIDDocument_GetProofType(DIDDocument *document, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -1265,10 +1295,14 @@ const char *DIDDocument_GetProofType(DIDDocument *document, int index)
     }
 
     return document->proofs.proofs[index].type;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *DIDDocument_GetProofCreater(DIDDocument *document, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -1280,10 +1314,14 @@ DIDURL *DIDDocument_GetProofCreater(DIDDocument *document, int index)
     }
 
     return &document->proofs.proofs[index].creater;
+
+    DIDERROR_FINALIZE();
 }
 
 time_t DIDDocument_GetProofCreatedTime(DIDDocument *document, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
@@ -1295,10 +1333,14 @@ time_t DIDDocument_GetProofCreatedTime(DIDDocument *document, int index)
     }
 
     return document->proofs.proofs[index].created;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *DIDDocument_GetProofSignature(DIDDocument *document, int index)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -1310,11 +1352,15 @@ const char *DIDDocument_GetProofSignature(DIDDocument *document, int index)
     }
 
     return document->proofs.proofs[index].signatureValue;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDDocument_IsDeactivated(DIDDocument *document)
 {
     bool deactived;
+
+    DIDERROR_INITIALIZE();
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1323,6 +1369,8 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
 
     deactived = DIDMetadata_GetDeactivated(&document->metadata);
     return deactived;
+
+    DIDERROR_FINALIZE();
 }
 
 static bool DIDDocument_IsGenuine_Internal(DIDDocument *document, bool qualified)
@@ -1405,17 +1453,23 @@ errorExit:
 
 bool DIDDocument_IsGenuine(DIDDocument *document)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
     return DIDDocument_IsGenuine_Internal(document, true);
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDDocument_IsExpired(DIDDocument *document)
 {
     time_t curtime;
+
+    DIDERROR_INITIALIZE();
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1427,16 +1481,22 @@ bool DIDDocument_IsExpired(DIDDocument *document)
         return true;
 
     return false;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDDocument_IsQualified(DIDDocument *document)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
     return document->proofs.size == (document->controllers.size > 1 ? document->multisig : 1) ? true : false;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDDocument_IsValid_Internal(DIDDocument *document, bool isqualified)
@@ -1671,6 +1731,8 @@ DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document, DIDDocument *control
 {
     DIDDocumentBuilder *builder;
 
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -1716,10 +1778,14 @@ DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document, DIDDocument *control
     }
 
     return builder;
+
+    DIDERROR_FINALIZE();
 }
 
 void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder)
 {
+    DIDERROR_INITIALIZE();
+
     if (!builder)
         return;
 
@@ -1727,6 +1793,8 @@ void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder)
         DIDDocument_Destroy(builder->document);
 
     free(builder);
+
+    DIDERROR_FINALIZE();
 }
 
 DIDDocument *DIDDocument_GetControllerDocument(DIDDocument *document, DID *controller)
@@ -1793,6 +1861,8 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
     char signature[SIGNATURE_BYTES * 2 + 16];
     Credential *cred;
     int rc, i;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -1879,6 +1949,8 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
 
     builder->document = NULL;
     return doc;
+
+    DIDERROR_FINALIZE();
 }
 
 static PublicKey *create_publickey(DIDURL *id, DID *controller, const char *publickey,
@@ -1930,6 +2002,8 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
     uint8_t binkey[PUBLICKEY_BYTES];
     size_t i;
 
+    DIDERROR_INITIALIZE();
+
     if (!builder || !builder->document || !keyid || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -1975,12 +2049,16 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
 
     clean_proofs(document);
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_RemovePublicKey(DIDDocumentBuilder *builder, DIDURL *keyid, bool force)
 {
     DIDDocument* document;
     DIDURL *key;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !keyid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2010,6 +2088,8 @@ int DIDDocumentBuilder_RemovePublicKey(DIDDocumentBuilder *builder, DIDURL *keyi
 
     clean_proofs(document);
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 //authentication keys are all did's own key.
@@ -2020,6 +2100,8 @@ int DIDDocumentBuilder_AddAuthenticationKey(DIDDocumentBuilder *builder,
     PublicKey *pk;
     uint8_t binkey[PUBLICKEY_BYTES];
     DID *controller;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !keyid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2078,6 +2160,8 @@ int DIDDocumentBuilder_AddAuthenticationKey(DIDDocumentBuilder *builder,
 
     clean_proofs(document);
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_RemoveAuthenticationKey(DIDDocumentBuilder *builder, DIDURL *keyid)
@@ -2085,6 +2169,8 @@ int DIDDocumentBuilder_RemoveAuthenticationKey(DIDDocumentBuilder *builder, DIDU
     DIDDocument *document;
     DIDURL *key;
     PublicKey *pk;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !keyid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2112,11 +2198,15 @@ int DIDDocumentBuilder_RemoveAuthenticationKey(DIDDocumentBuilder *builder, DIDU
     pk->authenticationKey = false;
     clean_proofs(document);
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDDocument_IsAuthenticationKey(DIDDocument *document, DIDURL *keyid)
 {
     PublicKey *pk;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !keyid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2128,11 +2218,15 @@ bool DIDDocument_IsAuthenticationKey(DIDDocument *document, DIDURL *keyid)
         return false;
 
     return pk->authenticationKey;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDDocument_IsAuthorizationKey(DIDDocument *document, DIDURL *keyid)
 {
     PublicKey *pk;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !keyid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2144,6 +2238,8 @@ bool DIDDocument_IsAuthorizationKey(DIDDocument *document, DIDURL *keyid)
         return false;
 
     return pk->authorizationKey;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *keyid,
@@ -2152,6 +2248,8 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
     DIDDocument *document;
     PublicKey *pk = NULL;
     uint8_t binkey[PUBLICKEY_BYTES];
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !keyid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2217,6 +2315,8 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
 
     clean_proofs(document);
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_AuthorizeDid(DIDDocumentBuilder *builder, DIDURL *keyid,
@@ -2225,6 +2325,8 @@ int DIDDocumentBuilder_AuthorizeDid(DIDDocumentBuilder *builder, DIDURL *keyid,
     DIDDocument *doc, *document;
     PublicKey *pk;
     int rc, status;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !keyid || !controller) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2262,6 +2364,8 @@ int DIDDocumentBuilder_AuthorizeDid(DIDDocumentBuilder *builder, DIDURL *keyid,
             pk->publicKeyBase58);
     DIDDocument_Destroy(doc);
     return rc;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_RemoveAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *keyid)
@@ -2269,6 +2373,8 @@ int DIDDocumentBuilder_RemoveAuthorizationKey(DIDDocumentBuilder *builder, DIDUR
     DIDDocument *document;
     PublicKey *pk;
     DIDURL *key;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !keyid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2294,6 +2400,8 @@ int DIDDocumentBuilder_RemoveAuthorizationKey(DIDDocumentBuilder *builder, DIDUR
     pk->authorizationKey = false;
     clean_proofs(document);
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 static int diddocument_addcredential(DIDDocument *document, Credential *credential)
@@ -2345,6 +2453,8 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
     DIDDocument *controllerdoc, *document;
     int i, status;
 
+    DIDERROR_INITIALIZE();
+
     if (!builder || !builder->document || !controller) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -2379,6 +2489,8 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
     document->multisig = 0;
     clean_proofs(document);
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *controller)
@@ -2387,6 +2499,8 @@ int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *contro
     Credential *cred;
     size_t size;
     int i, j;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !controller) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2443,6 +2557,8 @@ int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *contro
 
     DIDError_Set(DIDERR_NOT_EXISTS, "No this controller in document.");
     return -1;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder, Credential *credential)
@@ -2452,6 +2568,8 @@ int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder, Credential *cr
     Credential *cred;
     DIDURL *credid;
     size_t i;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !credential) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2487,6 +2605,8 @@ int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder, Credential *cr
 
     clean_proofs(document);
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_AddSelfProclaimedCredential(DIDDocumentBuilder *builder,
@@ -2499,6 +2619,8 @@ int DIDDocumentBuilder_AddSelfProclaimedCredential(DIDDocumentBuilder *builder,
     Issuer *issuer;
     const char *defaulttypes[] = {"SelfProclaimedCredential"};
     int i;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !credid || !properties || propsize <= 0 ||
             !storepass || !*storepass) {
@@ -2561,6 +2683,8 @@ int DIDDocumentBuilder_AddSelfProclaimedCredential(DIDDocumentBuilder *builder,
 
     clean_proofs(document);
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_RenewSelfProclaimedCredential(DIDDocumentBuilder *builder,
@@ -2570,6 +2694,8 @@ int DIDDocumentBuilder_RenewSelfProclaimedCredential(DIDDocumentBuilder *builder
     Credential *cred;
     Issuer *issuer = NULL;
     int i, rc = -1;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !controller || !signkey || !storepass
             || !*storepass) {
@@ -2611,6 +2737,8 @@ int DIDDocumentBuilder_RenewSelfProclaimedCredential(DIDDocumentBuilder *builder
 pointexit:
     Issuer_Destroy(issuer);
     return rc;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_RemoveSelfProclaimedCredential(DIDDocumentBuilder *builder,
@@ -2619,6 +2747,8 @@ int DIDDocumentBuilder_RemoveSelfProclaimedCredential(DIDDocumentBuilder *builde
     DIDDocument *document;
     Credential *cred;
     int i;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !controller) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2653,6 +2783,8 @@ int DIDDocumentBuilder_RemoveSelfProclaimedCredential(DIDDocumentBuilder *builde
 
     clean_proofs(document);
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_RemoveCredential(DIDDocumentBuilder *builder, DIDURL *credid)
@@ -2661,6 +2793,8 @@ int DIDDocumentBuilder_RemoveCredential(DIDDocumentBuilder *builder, DIDURL *cre
     Credential *cred = NULL;
     size_t size;
     size_t i;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !credid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2693,6 +2827,8 @@ int DIDDocumentBuilder_RemoveCredential(DIDDocumentBuilder *builder, DIDURL *cre
 
     DIDError_Set(DIDERR_NOT_EXISTS, "No this credential in document.");
     return -1;
+
+    DIDERROR_FINALIZE();
 }
 
 static int document_addservice(DIDDocumentBuilder *builder, DIDURL *serviceid,
@@ -2763,6 +2899,8 @@ int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder, DIDURL *serviceid
     json_t *root = NULL;
     int i, rc;
 
+    DIDERROR_INITIALIZE();
+
     if (!builder || !builder->document || !serviceid || !type || !*type ||
         !endpoint || !*endpoint || (properties && size <= 0)) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2792,6 +2930,8 @@ int DIDDocumentBuilder_AddService(DIDDocumentBuilder *builder, DIDURL *serviceid
     }
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_AddServiceByString(DIDDocumentBuilder *builder,
@@ -2801,6 +2941,8 @@ int DIDDocumentBuilder_AddServiceByString(DIDDocumentBuilder *builder,
     json_t *root = NULL;
     json_error_t error;
     int rc;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !serviceid || !type || !*type ||
             !endpoint || !*endpoint) {
@@ -2823,6 +2965,8 @@ int DIDDocumentBuilder_AddServiceByString(DIDDocumentBuilder *builder,
     }
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_RemoveService(DIDDocumentBuilder *builder, DIDURL *serviceid)
@@ -2831,6 +2975,8 @@ int DIDDocumentBuilder_RemoveService(DIDDocumentBuilder *builder, DIDURL *servic
     Service *service = NULL;
     size_t size;
     size_t i;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document || !serviceid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2863,6 +3009,8 @@ int DIDDocumentBuilder_RemoveService(DIDDocumentBuilder *builder, DIDURL *servic
 
     DIDError_Set(DIDERR_NOT_EXISTS, "This service is not exist.");
     return -1;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_RemoveProof(DIDDocumentBuilder *builder, DID *controller)
@@ -2870,6 +3018,8 @@ int DIDDocumentBuilder_RemoveProof(DIDDocumentBuilder *builder, DID *controller)
     DIDDocument *document;
     size_t size;
     int i, index = -1;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !builder->document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2913,6 +3063,8 @@ int DIDDocumentBuilder_RemoveProof(DIDDocumentBuilder *builder, DID *controller)
     }
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires)
@@ -2920,6 +3072,8 @@ int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires)
     time_t max_expires;
     struct tm *tm = NULL;
     DIDDocument *document;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || expires < 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2955,11 +3109,15 @@ int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires)
     document->expires = expires;
     clean_proofs(document);
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_SetMultisig(DIDDocumentBuilder *builder, int multisig)
 {
     DIDDocument *document;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || multisig <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -2985,21 +3143,29 @@ int DIDDocumentBuilder_SetMultisig(DIDDocumentBuilder *builder, int multisig)
     document->multisig = multisig;
     clean_proofs(document);
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 //////////////////////////DIDDocument//////////////////////////////////////////
 DID* DIDDocument_GetSubject(DIDDocument *document)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &document->did;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocument_GetMultisig(DIDDocument *document)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -3012,21 +3178,29 @@ int DIDDocument_GetMultisig(DIDDocument *document)
         return 0;
 
     return document->multisig;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_GetControllerCount(DIDDocument *document)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return document->controllers.size;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_GetControllers(DIDDocument *document, DID **controllers, size_t size)
 {
     int i;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !controllers || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3042,16 +3216,22 @@ ssize_t DIDDocument_GetControllers(DIDDocument *document, DID **controllers, siz
         controllers[i] = DIDDocument_GetSubject(document->controllers.docs[i]);
 
     return document->controllers.size;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDDocument_ContainsController(DIDDocument *document, DID *controller)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document || !controller) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return !DIDDocument_GetControllerDocument(document, controller) ? false : true;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_GetPublicKeyCount(DIDDocument *document)
@@ -3059,6 +3239,8 @@ ssize_t DIDDocument_GetPublicKeyCount(DIDDocument *document)
     size_t count;
     int i;
     DIDDocument *doc;
+
+    DIDERROR_INITIALIZE();
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3076,6 +3258,8 @@ ssize_t DIDDocument_GetPublicKeyCount(DIDDocument *document)
     }
 
     return (ssize_t)count;
+
+    DIDERROR_FINALIZE();
 }
 
 PublicKey *DIDDocument_GetPublicKey(DIDDocument *document, DIDURL *keyid)
@@ -3083,6 +3267,8 @@ PublicKey *DIDDocument_GetPublicKey(DIDDocument *document, DIDURL *keyid)
     PublicKey *pk;
     DIDDocument *doc;
     size_t i;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !keyid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3116,6 +3302,8 @@ PublicKey *DIDDocument_GetPublicKey(DIDDocument *document, DIDURL *keyid)
 
     DIDError_Set(DIDERR_NOT_EXISTS, "No this public key in document.");
     return NULL;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_GetPublicKeys(DIDDocument *document, PublicKey **pks,
@@ -3124,6 +3312,8 @@ ssize_t DIDDocument_GetPublicKeys(DIDDocument *document, PublicKey **pks,
     size_t actual_size, pk_size = 0;
     DIDDocument *doc;
     int i;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3152,6 +3342,8 @@ ssize_t DIDDocument_GetPublicKeys(DIDDocument *document, PublicKey **pks,
     }
 
     return (ssize_t)actual_size;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_SelectPublicKeys(DIDDocument *document, const char *type,
@@ -3159,6 +3351,8 @@ ssize_t DIDDocument_SelectPublicKeys(DIDDocument *document, const char *type,
 {
     DIDDocument *doc;
     size_t actual_size = 0, total_size, i;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3205,6 +3399,8 @@ ssize_t DIDDocument_SelectPublicKeys(DIDDocument *document, const char *type,
     }
 
     return (ssize_t)actual_size;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
@@ -3214,6 +3410,8 @@ DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
     uint8_t binkey[PUBLICKEY_BYTES];
     PublicKey *pk;
     size_t i;
+
+    DIDERROR_INITIALIZE();
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3244,6 +3442,8 @@ DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
 
     DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "No default public key.");
     return NULL;
+
+    DIDERROR_FINALIZE();
 }
 
 ///////////////////////Authentications/////////////////////////////
@@ -3251,6 +3451,8 @@ ssize_t DIDDocument_GetAuthenticationCount(DIDDocument *document)
 {
     size_t size, i, pk_size;
     DIDDocument *doc;
+
+    DIDERROR_INITIALIZE();
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3268,6 +3470,8 @@ ssize_t DIDDocument_GetAuthenticationCount(DIDDocument *document)
     }
 
     return (ssize_t)size;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_GetAuthenticationKeys(DIDDocument *document, PublicKey **pks,
@@ -3275,6 +3479,8 @@ ssize_t DIDDocument_GetAuthenticationKeys(DIDDocument *document, PublicKey **pks
 {
     size_t actual_size = 0, i, pk_size;
     DIDDocument *doc;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3307,11 +3513,15 @@ ssize_t DIDDocument_GetAuthenticationKeys(DIDDocument *document, PublicKey **pks
     }
 
     return (ssize_t)actual_size;
+
+    DIDERROR_FINALIZE();
 }
 
 PublicKey *DIDDocument_GetAuthenticationKey(DIDDocument *document, DIDURL *keyid)
 {
     PublicKey *pk;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !keyid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3333,6 +3543,8 @@ PublicKey *DIDDocument_GetAuthenticationKey(DIDDocument *document, DIDURL *keyid
     }
 
     return pk;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
@@ -3341,6 +3553,8 @@ ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
     size_t actual_size = 0, i, pk_size;
     PublicKey *pk;
     DIDDocument *doc;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3384,6 +3598,8 @@ ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
     }
 
     return (ssize_t)actual_size;
+
+    DIDERROR_FINALIZE();
 }
 
 ////////////////////////////Authorization//////////////////////////
@@ -3392,6 +3608,8 @@ ssize_t DIDDocument_GetAuthorizationCount(DIDDocument *document)
     DIDDocument *doc;
     size_t size, pk_size;
     int i;
+
+    DIDERROR_INITIALIZE();
 
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3409,6 +3627,8 @@ ssize_t DIDDocument_GetAuthorizationCount(DIDDocument *document)
     }
 
     return (ssize_t)size;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
@@ -3416,6 +3636,8 @@ ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
 {
     size_t actual_size = 0, i, pk_size;
     DIDDocument *doc;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3448,11 +3670,15 @@ ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
     }
 
     return (ssize_t)actual_size;
+
+    DIDERROR_FINALIZE();
 }
 
 PublicKey *DIDDocument_GetAuthorizationKey(DIDDocument *document, DIDURL *keyid)
 {
     PublicKey *pk;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !keyid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3469,6 +3695,8 @@ PublicKey *DIDDocument_GetAuthorizationKey(DIDDocument *document, DIDURL *keyid)
     }
 
     return pk;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_SelectAuthorizationKeys(DIDDocument *document,
@@ -3477,6 +3705,8 @@ ssize_t DIDDocument_SelectAuthorizationKeys(DIDDocument *document,
     size_t actual_size = 0, i, pk_size;
     PublicKey *pk;
     DIDDocument *doc;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !pks || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3520,23 +3750,31 @@ ssize_t DIDDocument_SelectAuthorizationKeys(DIDDocument *document,
     }
 
     return (ssize_t)actual_size;
+
+    DIDERROR_FINALIZE();
 }
 
 //////////////////////////Credential///////////////////////////
 ssize_t DIDDocument_GetCredentialCount(DIDDocument *document)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return (ssize_t)document->credentials.size;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_GetCredentials(DIDDocument *document, Credential **creds,
         size_t size)
 {
     size_t actual_size;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !creds || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3551,12 +3789,16 @@ ssize_t DIDDocument_GetCredentials(DIDDocument *document, Credential **creds,
 
     memcpy(creds, document->credentials.credentials, sizeof(Credential*) * actual_size);
     return (ssize_t)actual_size;
+
+    DIDERROR_FINALIZE();
 }
 
 Credential *DIDDocument_GetCredential(DIDDocument *document, DIDURL *credid)
 {
     Credential *credential = NULL;
     size_t size, i;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !credid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3582,6 +3824,8 @@ Credential *DIDDocument_GetCredential(DIDDocument *document, DIDURL *credid)
 
     DIDError_Set(DIDERR_NOT_EXISTS, "No this credential.");
     return NULL;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_SelectCredentials(DIDDocument *document, const char *type,
@@ -3589,6 +3833,8 @@ ssize_t DIDDocument_SelectCredentials(DIDDocument *document, const char *type,
 {
     size_t actual_size = 0, total_size, i, j;
     bool flag;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !creds || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3642,23 +3888,31 @@ ssize_t DIDDocument_SelectCredentials(DIDDocument *document, const char *type,
     }
 
     return (ssize_t)actual_size;
+
+    DIDERROR_FINALIZE();
 }
 
 ////////////////////////////////service//////////////////////
 ssize_t DIDDocument_GetServiceCount(DIDDocument *document)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
     }
 
     return (ssize_t)document->services.size;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_GetServices(DIDDocument *document, Service **services,
         size_t size)
 {
     size_t actual_size;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !services || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3673,12 +3927,16 @@ ssize_t DIDDocument_GetServices(DIDDocument *document, Service **services,
 
     memcpy(services, document->services.services, sizeof(Service*) * actual_size);
     return (ssize_t)actual_size;
+
+    DIDERROR_FINALIZE();
 }
 
 Service *DIDDocument_GetService(DIDDocument *document, DIDURL *serviceid)
 {
     Service *service = NULL;
     size_t size, i;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !serviceid) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3704,12 +3962,16 @@ Service *DIDDocument_GetService(DIDDocument *document, DIDURL *serviceid)
 
     DIDError_Set(DIDERR_NOT_EXISTS, "This service is in document.");
     return NULL;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_SelectServices(DIDDocument *document,
         const char *type, DIDURL *serviceid, Service **services, size_t size)
 {
     size_t actual_size = 0, total_size, i;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !services || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3751,17 +4013,23 @@ ssize_t DIDDocument_SelectServices(DIDDocument *document,
     }
 
     return (ssize_t)actual_size;
+
+    DIDERROR_FINALIZE();
 }
 
 ///////////////////////////////expires////////////////////////
 time_t DIDDocument_GetExpires(DIDDocument *document)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
     return document->expires;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t DIDDocument_GetDigest(DIDDocument *document, uint8_t *digest, size_t size)
@@ -3786,6 +4054,8 @@ int DIDDocument_Sign(DIDDocument *document, DIDURL *keyid, const char *storepass
     va_list inputs;
     ssize_t size;
 
+    DIDERROR_INITIALIZE();
+
     if (!document || !storepass || !*storepass || !sig || count <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -3800,6 +4070,8 @@ int DIDDocument_Sign(DIDDocument *document, DIDURL *keyid, const char *storepass
     }
 
     return DIDDocument_SignDigest(document, keyid, storepass, sig, digest, sizeof(digest));
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
@@ -3808,6 +4080,8 @@ int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
     DID *signer;
     PublicKey *pk;
     DIDDocument *doc;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !storepass || !*storepass || !sig || !digest || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3849,6 +4123,8 @@ int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
 
     return DIDStore_Sign(document->metadata.base.store, storepass,
             signer, keyid, sig, digest, size);
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocument_Verify(DIDDocument *document, DIDURL *keyid, char *sig,
@@ -3857,6 +4133,8 @@ int DIDDocument_Verify(DIDDocument *document, DIDURL *keyid, char *sig,
     va_list inputs;
     uint8_t digest[SHA256_BYTES];
     ssize_t size;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !sig || count <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3872,6 +4150,8 @@ int DIDDocument_Verify(DIDDocument *document, DIDURL *keyid, char *sig,
     }
 
     return DIDDocument_VerifyDigest(document, keyid, sig, digest, sizeof(digest));
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
@@ -3879,6 +4159,8 @@ int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
 {
     PublicKey *publickey;
     uint8_t binkey[PUBLICKEY_BYTES];
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !sig || !digest || size == 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -3907,6 +4189,8 @@ int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
     }
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 static bool proof_isexist(DocumentProof **proofs, size_t size, DocumentProof *proof)
@@ -3975,6 +4259,8 @@ JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document)
     DID *did;
     JWTBuilder *builder;
 
+    DIDERROR_INITIALIZE();
+
     if (!document) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -3989,11 +4275,17 @@ JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document)
         return NULL;
 
     return builder;
+
+    DIDERROR_FINALIZE();
 }
 
 JWSParser *DIDDocument_GetJwsParser(DIDDocument *document)
 {
+    DIDERROR_INITIALIZE();
+
     return JWSParser_Create(document);
+
+    DIDERROR_FINALIZE();
 }
 #endif
 
@@ -4081,23 +4373,31 @@ static const char *document_derive(DIDDocument *document, const char *identifier
 const char *DIDDocument_DeriveByIdentifier(DIDDocument *document, const char *identifier,
         int securityCode, const char *storepass)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document || !identifier || !*identifier || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return document_derive(document, identifier, securityCode, storepass);
+
+    DIDERROR_FINALIZE();
 }
 
 const char *DIDDocument_DeriveByIndex(DIDDocument *document, int index,
         const char *storepass)
 {
+    DIDERROR_INITIALIZE();
+
     if (!document || index < 0 || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return document_derive(document, NULL, index, storepass);
+
+    DIDERROR_FINALIZE();
 }
 
 DIDDocument *DIDDocument_SignDIDDocument(DIDDocument* controllerdoc,
@@ -4105,6 +4405,8 @@ DIDDocument *DIDDocument_SignDIDDocument(DIDDocument* controllerdoc,
 {
     DIDDocument *doc;
     DIDDocumentBuilder *builder;
+
+    DIDERROR_INITIALIZE();
 
     if (!controllerdoc || !document || !*document || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4129,6 +4431,8 @@ DIDDocument *DIDDocument_SignDIDDocument(DIDDocument* controllerdoc,
     doc = DIDDocumentBuilder_Seal(builder, storepass);
     DIDDocumentBuilder_Destroy(builder);
     return doc;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *DIDDocument_MergeDIDDocuments(int count, ...)
@@ -4138,6 +4442,8 @@ const char *DIDDocument_MergeDIDDocuments(int count, ...)
     DIDDocument *document = NULL, **documents;
     uint8_t digest[SHA256_BYTES], digest1[SHA256_BYTES];
     int i, actual_count = 0;
+
+    DIDERROR_INITIALIZE();
 
     if (count <= 0) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4196,12 +4502,16 @@ pointexit:
         DIDDocument_Destroy(documents[i]);
 
     return merged_doc;
+
+    DIDERROR_FINALIZE();
 }
 
 TransferTicket *DIDDocument_CreateTransferTicket(DIDDocument *controllerdoc, DID *owner,
         DID *to, const char *storepass)
 {
     TransferTicket *ticket;
+
+    DIDERROR_INITIALIZE();
 
     if (!controllerdoc || !owner || !to || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4218,6 +4528,8 @@ TransferTicket *DIDDocument_CreateTransferTicket(DIDDocument *controllerdoc, DID
     }
 
     return ticket;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocument_SignTransferTicket(DIDDocument *controllerdoc,
@@ -4274,6 +4586,8 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
     DIDStore *store;
     bool success = false;
     int rc = -1, status;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4392,6 +4706,8 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
 errorExit:
     DIDDocument_Destroy(resolve_doc);
     return success;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
@@ -4402,6 +4718,8 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
     DIDStore *store;
     bool equal = false, success = false;
     int rc = -1, i, status;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !storepass || !*storepass || !ticket || !signkey) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4471,6 +4789,8 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
 errorExit:
     DIDDocument_Destroy(resolve_doc);
     return success;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
@@ -4480,6 +4800,8 @@ bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const cha
     bool localcopy = false;
     int rc = 0, status;
     bool success;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4533,6 +4855,8 @@ bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const cha
         ResolveCache_InvalidateDID(&document->did);
 
     return success;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
@@ -4545,6 +4869,8 @@ bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
     bool success = false, exist = false;
     size_t size;
     int i, j, status;
+
+    DIDERROR_INITIALIZE();
 
     if (!document || !target || !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4609,6 +4935,8 @@ bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
 errorExit:
     DIDDocument_Destroy(targetdoc);
     return success;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDDocumentBuilder* DIDDocument_CreateBuilder(DID *did, DIDDocument *controllerdoc, DIDStore *store)
@@ -4709,6 +5037,8 @@ DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *controllerdoc,
     DID **checkcontrollers = NULL, did;
     int status, i, checksize = 0;
 
+    DIDERROR_INITIALIZE();
+
     if (!controllerdoc || !customizeddid || !*customizeddid || multisig < 0 ||
             !storepass || !*storepass) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4796,50 +5126,70 @@ DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *controllerdoc,
 
     DIDDocument_SetStore(doc, store);
     return doc;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *PublicKey_GetId(PublicKey *publickey)
 {
+    DIDERROR_INITIALIZE();
+
     if (!publickey) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &publickey->id;
+
+    DIDERROR_FINALIZE();
 }
 
 DID *PublicKey_GetController(PublicKey *publickey)
 {
+    DIDERROR_INITIALIZE();
+
     if (!publickey) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &publickey->controller;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *PublicKey_GetPublicKeyBase58(PublicKey *publickey)
 {
+    DIDERROR_INITIALIZE();
+
     if (!publickey) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return publickey->publicKeyBase58;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *PublicKey_GetType(PublicKey *publickey)
 {
+    DIDERROR_INITIALIZE();
+
     if (!publickey) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return publickey->type;
+
+    DIDERROR_FINALIZE();
 }
 
 bool PublicKey_IsAuthenticationKey(PublicKey *publickey)
 {
+    DIDERROR_INITIALIZE();
+
     if (!publickey) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
@@ -4849,10 +5199,14 @@ bool PublicKey_IsAuthenticationKey(PublicKey *publickey)
         DIDError_Set(DIDERR_INVALID_KEY, "This is not an authentication key.");
 
     return publickey->authenticationKey;
+
+    DIDERROR_FINALIZE();
 }
 
 bool PublicKey_IsAuthorizationKey(PublicKey *publickey)
 {
+    DIDERROR_INITIALIZE();
+
     if (!publickey) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
@@ -4862,40 +5216,56 @@ bool PublicKey_IsAuthorizationKey(PublicKey *publickey)
         DIDError_Set(DIDERR_INVALID_KEY, "This is not an authorization key.");
 
     return publickey->authorizationKey;
+
+    DIDERROR_FINALIZE();
 }
 
 DIDURL *Service_GetId(Service *service)
 {
+    DIDERROR_INITIALIZE();
+
     if (!service) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return &service->id;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *Service_GetEndpoint(Service *service)
 {
+    DIDERROR_INITIALIZE();
+
     if (!service) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return service->endpoint;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *Service_GetType(Service *service)
 {
+    DIDERROR_INITIALIZE();
+
     if (!service) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return service->type;
+
+    DIDERROR_FINALIZE();
 }
 
 ssize_t Service_GetPropertyCount(Service *service)
 {
+    DIDERROR_INITIALIZE();
+
     if (!service) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -4904,11 +5274,15 @@ ssize_t Service_GetPropertyCount(Service *service)
         return 0;
 
     return json_object_size(service->properties);
+
+    DIDERROR_FINALIZE();
 }
 
 const char *Service_GetProperties(Service *service)
 {
     const char *data;
+
+    DIDERROR_INITIALIZE();
 
     if (!service) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4923,11 +5297,15 @@ const char *Service_GetProperties(Service *service)
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Serialize properties to json failed.");
 
     return data;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *Service_GetProperty(Service *service, const char *name)
 {
     json_t *item;
+
+    DIDERROR_INITIALIZE();
 
     if (!service || !name || !*name) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -4944,5 +5322,7 @@ const char *Service_GetProperty(Service *service, const char *name)
     }
 
     return json_astext(item);
+
+    DIDERROR_FINALIZE();
 }
 

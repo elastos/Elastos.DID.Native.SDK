@@ -29,18 +29,31 @@
 
 #include "ela_did.h"
 #include "HDkey.h"
+#include "diderror.h"
 
 const char *Mnemonic_Generate(const char *language)
 {
+    DIDERROR_INITIALIZE();
+
     return HDKey_GenerateMnemonic(language);
+
+    DIDERROR_FINALIZE();
 }
 
 void Mnemonic_Free(void *mnemonic)
 {
+    DIDERROR_INITIALIZE();
+
     HDKey_FreeMnemonic(mnemonic);
+
+    DIDERROR_FINALIZE();
 }
 
 bool Mnemonic_IsValid(const char *mnemonic, const char *language)
 {
+    DIDERROR_INITIALIZE();
+
     return HDKey_MnemonicIsValid(mnemonic, language);
+
+    DIDERROR_FINALIZE();
 }

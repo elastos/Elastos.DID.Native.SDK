@@ -189,6 +189,8 @@ const char *CredentialMetadata_GetTxid(CredentialMetadata *metadata)
 //****** DID_API
 int CredentialMetadata_SetAlias(CredentialMetadata *metadata, const char *alias)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -199,20 +201,28 @@ int CredentialMetadata_SetAlias(CredentialMetadata *metadata, const char *alias)
         return -1;
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *CredentialMetadata_GetAlias(CredentialMetadata *metadata)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return Metadata_GetDefaultExtra(&metadata->base, ALIAS);
+
+    DIDERROR_FINALIZE();
 }
 
 int CredentialMetadata_SetExtra(CredentialMetadata *metadata, const char* key, const char *value)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -223,10 +233,14 @@ int CredentialMetadata_SetExtra(CredentialMetadata *metadata, const char* key, c
         return -1;
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int CredentialMetadata_SetExtraWithBoolean(CredentialMetadata *metadata, const char *key, bool value)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -237,10 +251,14 @@ int CredentialMetadata_SetExtraWithBoolean(CredentialMetadata *metadata, const c
         return -1;
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int CredentialMetadata_SetExtraWithDouble(CredentialMetadata *metadata, const char *key, double value)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -251,34 +269,48 @@ int CredentialMetadata_SetExtraWithDouble(CredentialMetadata *metadata, const ch
         return -1;
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *CredentialMetadata_GetExtra(CredentialMetadata *metadata, const char *key)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
     }
 
     return Metadata_GetExtra(&metadata->base, key);
+
+    DIDERROR_FINALIZE();
 }
 
 bool CredentialMetadata_GetExtraAsBoolean(CredentialMetadata *metadata, const char *key)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return false;
     }
 
     return Metadata_GetExtraAsBoolean(&metadata->base, key);
+
+    DIDERROR_FINALIZE();
 }
 
 double CredentialMetadata_GetExtraAsDouble(CredentialMetadata *metadata, const char *key)
 {
+    DIDERROR_INITIALIZE();
+
     if (!metadata || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return 0;
     }
 
     return Metadata_GetExtraAsDouble(&metadata->base, key);
+
+    DIDERROR_FINALIZE();
 }

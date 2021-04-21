@@ -67,6 +67,8 @@ static void get_txid(char *txid)
 int DIDBackend_InitializeDefault(CreateIdTransaction_Callback *createtransaction,
         const char *url, const char *cachedir)
 {
+    DIDERROR_INITIALIZE();
+
     if (!url || !*url || !cachedir || !*cachedir) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -91,11 +93,15 @@ int DIDBackend_InitializeDefault(CreateIdTransaction_Callback *createtransaction
     }
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDBackend_Initialize(CreateIdTransaction_Callback *createtransaction,
         Resolve_Callback *resolve, const char *cachedir)
 {
+    DIDERROR_INITIALIZE();
+
     if (!cachedir || !*cachedir) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -112,6 +118,8 @@ int DIDBackend_Initialize(CreateIdTransaction_Callback *createtransaction,
     }
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
@@ -860,10 +868,18 @@ CredentialBiography *DIDBackend_ResolveCredentialBiography(DIDURL *id, DID *issu
 
 void DIDBackend_SetTTL(long _ttl)
 {
+    DIDERROR_INITIALIZE();
+
     ttl = _ttl;
+
+    DIDERROR_FINALIZE();
 }
 
 void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle)
 {
+    DIDERROR_INITIALIZE();
+
     gLocalResolveHandle = handle;
+
+    DIDERROR_FINALIZE();
 }
