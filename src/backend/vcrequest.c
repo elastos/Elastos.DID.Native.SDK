@@ -171,25 +171,25 @@ int CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
     memset(request, 0, sizeof(CredentialRequest));
     item = json_object_get(json, "header");
     if (!item) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing header.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Missing header.");
         return -1;
     }
     if (!json_is_object(item)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid header.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid header.");
         return -1;
     }
 
     field = json_object_get(item, "specification");
     if (!field) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing specification.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Missing specification.");
         return -1;
     }
     if (!json_is_string(field)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid specification.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid specification.");
         return -1;
     }
     if (strcmp(json_string_value(field), spec)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Unknown Credential specification. \
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Unknown Credential specification. \
                 excepted: %s, actual: %s", spec, json_string_value(field));
         return -1;
     }
@@ -197,11 +197,11 @@ int CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
 
     field = json_object_get(item, "operation");
     if (!field) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing operation.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Missing operation.");
         return -1;
     }
     if (!json_is_string(field)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid operation.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid operation.");
         return -1;
     }
     op = json_string_value(field);
@@ -214,21 +214,21 @@ int CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
 
     item = json_object_get(json, "payload");
     if (!item) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing payload.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Missing payload.");
         return -1;
     }
     if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid payload.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid payload.");
         return -1;
     }
     payload = json_string_value(item);
     if (!payload) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "No payload.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "No payload.");
         return -1;
     }
     request->payload = strdup(payload);
     if (!request->payload) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Record payload failed.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Record payload failed.");
         return -1;
     }
 
@@ -246,7 +246,7 @@ int CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
         request->vc = Credential_FromJson(vcJson, NULL);
         free(vcJson);
         if (!request->vc) {
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "Deserialize transaction payload from json failed.");
+            DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Deserialize transaction payload from json failed.");
             goto errorExit;
         }
 
@@ -263,37 +263,37 @@ int CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
 
     item = json_object_get(json, "proof");
     if (!item) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing proof.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Missing proof.");
         goto errorExit;
     }
     if (!json_is_object(item)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid proof.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid proof.");
         goto errorExit;
     }
 
     field = json_object_get(item, "verificationMethod");
     if (!field) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing signing key.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Missing signing key.");
         goto errorExit;
     }
     if (!json_is_string(field)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signing key.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid signing key.");
         goto errorExit;
     }
 
     if (DIDURL_Parse(&request->proof.verificationMethod,
             json_string_value(field), NULL) < 0) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signing key.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid signing key.");
         goto errorExit;
     }
 
     field = json_object_get(item, "signature");
     if (!field) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing signature.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Missing signature.");
         goto errorExit;
     }
     if (!json_is_string(field) || strlen(json_string_value(field)) >= MAX_SIGNATURE_LEN) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid signature.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid signature.");
         goto errorExit;
     }
     strcpy(request->proof.signature, json_string_value(field));
@@ -328,12 +328,12 @@ bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credentia
     if (!strcmp("declare", request->header.op)) {
         vc = request->vc;
         if (!vc) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "Miss credential in the transaction.");
+            DIDError_Set(DIDERR_MALFORMED_IDCHAINTRANSACTION, "Miss credential in the transaction.");
             goto errorExit;
         }
 
         if (!DIDDocument_IsAuthenticationKey(ownerdoc, signkey)) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "The signer is not the controller of customized did.");
+            DIDError_Set(DIDERR_MALFORMED_IDCHAINTRANSACTION, "The signer is not the controller of customized did.");
             goto errorExit;
         }
     } else {
@@ -344,7 +344,7 @@ bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credentia
         if (vc) {
             issuerdoc = DID_Resolve(&vc->issuer, &status, false);
             if (!issuerdoc) {
-               DIDError_Set(DIDERR_TRANSACTION_ERROR, "Issuer of credential does not exist.");
+               DIDError_Set(DIDERR_MALFORMED_IDCHAINTRANSACTION, "Issuer of credential does not exist.");
                goto errorExit;
             }
         }
@@ -355,7 +355,7 @@ bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credentia
     }
 
     if (vc && !Credential_IsValid(vc)) {
-        DIDError_Set(DIDERR_TRANSACTION_ERROR, "Credential in request is invalid.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINTRANSACTION, "Credential in request is invalid.");
         goto errorExit;
     }
 

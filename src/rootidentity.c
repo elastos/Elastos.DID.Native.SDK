@@ -279,7 +279,7 @@ DID *RootIdentity_GetDefaultDID(RootIdentity *rootidentity)
 
     idstring = IdentityMetadata_GetDefaultDID(&rootidentity->metadata);
     if (!idstring) {
-        DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "No default DID.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "No default DID.");
         return NULL;
     }
 
@@ -469,7 +469,7 @@ DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepa
 
     store = rootidentity->metadata.base.store;
     if (!store) {
-        DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "No store attached with root identity.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "No store attached with root identity.");
         return NULL;
     }
 
@@ -510,7 +510,7 @@ DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
 
     store = rootidentity->metadata.base.store;
     if (!store) {
-        DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "No store attached with root identity.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "No store attached with root identity.");
         return NULL;
     }
 
@@ -541,7 +541,7 @@ DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index)
 
     store = rootidentity->metadata.base.store;
     if (!store) {
-        DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "No store attached with root identity.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "No store attached with root identity.");
         return NULL;
     }
 
@@ -566,7 +566,7 @@ int RootIdentity_SetAsDefault(RootIdentity *identity)
     }
 
     if (!identity->metadata.base.store) {
-        DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "No attache store to root identity.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "No attache store to root identity.");
         return -1;
     }
 
@@ -689,7 +689,7 @@ errorExit:
 
     DIDERROR_FINALIZE();
 }
-
+//checked
 ssize_t RootIdentity_LazyCreatePrivateKey(DIDURL *key, DIDStore *store, const char *storepass,
         uint8_t *extendedkey, size_t size)
 {
@@ -709,18 +709,20 @@ ssize_t RootIdentity_LazyCreatePrivateKey(DIDURL *key, DIDStore *store, const ch
     assert(size >= EXTENDEDKEY_BYTES);
 
     doc = DIDStore_LoadDID(store, &key->did);
-    if (!doc)
+    if (!doc) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "No owner's document of key.");
         return -1;
+    }
 
     id = DIDMetadata_GetRootIdentity(&doc->metadata);
     if (!id) {
-        DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "Missing id.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "Missing rootidentity id owned to key.");
         goto errorExit;
     }
 
     index = DIDMetadata_GetIndex(&doc->metadata);
     if (index < 0) {
-        DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "Missing index.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "Missing index for owner's document.");
         goto errorExit;
     }
 
@@ -731,12 +733,14 @@ ssize_t RootIdentity_LazyCreatePrivateKey(DIDURL *key, DIDStore *store, const ch
 
     derivedkey = get_derivedkey(rootPrvkey, len, index, &_derivedkey);
     memset(rootPrvkey, 0, sizeof(rootPrvkey));
-    if (!derivedkey)
+    if (!derivedkey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get hdkey for owner's document failed.");
         goto errorExit;
+    }
 
     if (b58_encode(publickeybase58, sizeof(publickeybase58),
             derivedkey->publickey, PUBLICKEY_BYTES) < 0) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Encode extended public key failed.");
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Encode extended publicKey failed.");
         goto errorExit;
     }
 

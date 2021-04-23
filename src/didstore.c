@@ -1148,7 +1148,7 @@ static int check_store(DIDStore *store)
     }
 
     if (strcmp(DIDSTORE_VERSION, StoreMetadata_GetVersion(&store->metadata))) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Unsupported DIDStore version");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Unsupported DIDStore version");
         return -1;
     }
 
@@ -2591,7 +2591,7 @@ int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id)
     assert(store);
 
     if (id && !DIDStore_ContainsRootIdentity(store, id)) {
-        DIDError_Set(DIDERR_MALFORMED_ROOTIDENTITY, "No this root identity.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "No this root identity.");
         return -1;
     }
 
@@ -2793,8 +2793,9 @@ ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass,
     rc = get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring, PRIVATEKEYS_DIR, filename);
     if (rc == 0) {
         privatekey_str = load_file(path);
-        if (!privatekey_str)
+        if (!privatekey_str) {
             rc = -1;
+        }
     }
 
     if (rc == -1)
@@ -2807,20 +2808,23 @@ ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass,
 
     return len;
 }
-
+//checked
 int DIDStore_Sign(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, char *sig, uint8_t *digest, size_t size)
 {
     uint8_t binkey[PRIVATEKEY_BYTES];
 
-    if (!store || !storepass || !*storepass || !did || !key
-            || !sig || !digest || size != SHA256_BYTES) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+    assert(store);
+    assert(storepass && *storepass);
+    assert(did);
+    assert(key);
+    assert(sig);
+    assert(digest && size == SHA256_BYTES);
+
+    if (DIDStore_LoadPrivateKey(store, storepass, did, key, binkey, sizeof(binkey)) == -1) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "No private key to sign in the store.");
         return -1;
     }
-
-    if (DIDStore_LoadPrivateKey(store, storepass, did, key, binkey, sizeof(binkey)) == -1)
-        return -1;
 
     if (ecdsa_sign_base64(sig, binkey, digest, size) == -1) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "ECDSA sign failed.");
@@ -3447,12 +3451,12 @@ static int import_type(json_t *json, Sha256_Digest *digest)
         return -1;
     }
     if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid export did type.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid export did type.");
         return -1;
     }
 
     if (strcmp(json_string_value(item), DID_EXPORT)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid export data, unknown type.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid export data, unknown type.");
         return -1;
     }
 
@@ -3475,7 +3479,7 @@ static DID *import_id(json_t *json, Sha256_Digest *digest)
         return NULL;
     }
     if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid export did.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid export did.");
         return NULL;
     }
 
@@ -3500,7 +3504,7 @@ static int import_created(json_t *json, Sha256_Digest *digest)
         return -1;
     }
     if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid created time.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid created time.");
         return -1;
     }
 
@@ -3529,7 +3533,7 @@ static DIDDocument *import_document(json_t *json, DID *did, Sha256_Digest *diges
         return NULL;
     }
     if (!json_is_object(item)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'document'.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'document'.");
         return NULL;
     }
 
@@ -3539,7 +3543,7 @@ static DIDDocument *import_document(json_t *json, DID *did, Sha256_Digest *diges
         return NULL;
     }
     if (!json_is_object(field)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid document 'content'.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid document 'content'.");
         return NULL;
     }
 
@@ -3548,7 +3552,7 @@ static DIDDocument *import_document(json_t *json, DID *did, Sha256_Digest *diges
         return NULL;
 
     if (!DID_Equals(&doc->did, did) || !DIDDocument_IsGenuine(doc)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid DID document in the export data.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid DID document in the export data.");
         goto errorExit;
     }
 
@@ -3562,7 +3566,7 @@ static DIDDocument *import_document(json_t *json, DID *did, Sha256_Digest *diges
         goto errorExit;
     }
     if (!json_is_object(field)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'metadata'.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'metadata'.");
         goto errorExit;
     }
 
@@ -3637,7 +3641,7 @@ static ssize_t import_creds(json_t *json, DID *did, Credential **creds, size_t s
 
     count = json_array_size(item);
     if (count == 0 || count > (int)size) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'credential'.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'credential'.");
         return -1;
     }
 
@@ -3649,7 +3653,7 @@ static ssize_t import_creds(json_t *json, DID *did, Credential **creds, size_t s
             goto errorExit;
         }
         if (!json_is_object(child_field)) {
-            DIDError_Set(DIDERR_UNSUPPOTED, "Invalid credential 'content'.");
+            DIDError_Set(DIDERR_UNSUPPORTED, "Invalid credential 'content'.");
             goto errorExit;
         }
 
@@ -3670,7 +3674,7 @@ static ssize_t import_creds(json_t *json, DID *did, Credential **creds, size_t s
         child_field = json_object_get(field, "metadata");
         if (child_field) {
             if (!json_is_object(child_field)) {
-                DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'metadata'.");
+                DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'metadata'.");
                 goto errorExit;
             }
             if (CredentialMetadata_FromJson_Internal(&cred->metadata, child_field) < 0)
@@ -3709,7 +3713,7 @@ static ssize_t import_privatekey_count(json_t *json)
         return 0;
 
     if (!json_is_array(item)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'privatekey'.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'privatekey'.");
         return -1;
     }
 
@@ -3738,17 +3742,17 @@ static ssize_t import_privatekey(json_t *json, const char *storepass, const char
         return -1;
     }
     if (!json_is_array(item)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'privatekey' array.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'privatekey' array.");
         return -1;
     }
 
     count = json_array_size(item);
     if (count == 0) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'privatekey' array.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'privatekey' array.");
         return -1;
     }
     if (count > size) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Please give larger buffer for private keys.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Please give larger buffer for private keys.");
         return -1;
     }
 
@@ -3759,7 +3763,7 @@ static ssize_t import_privatekey(json_t *json, const char *storepass, const char
             return -1;
         }
         if (!json_is_object(field)) {
-            DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'privatekey'.");
+            DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'privatekey'.");
             return -1;
         }
         id_field = json_object_get(field, "id");
@@ -3768,7 +3772,7 @@ static ssize_t import_privatekey(json_t *json, const char *storepass, const char
             return -1;
         }
         if (!json_is_string(id_field)) {
-            DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'id' in 'privatekey' failed.");
+            DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'id' in 'privatekey' failed.");
             return -1;
         }
 
@@ -3785,7 +3789,7 @@ static ssize_t import_privatekey(json_t *json, const char *storepass, const char
             return -1;
         }
         if (!json_is_string(key_field)) {
-            DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'key' in 'privatekey'.");
+            DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'key' in 'privatekey'.");
             return -1;
         }
 
@@ -3828,7 +3832,7 @@ static int import_fingerprint(json_t *json, Sha256_Digest *digest)
         return -1;
     }
     if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'fingerprint'.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'fingerprint'.");
         return -1;
     }
 
@@ -4264,7 +4268,7 @@ static int import_prvkey(json_t *json, DIDStore *store, const char *storepass,
         return -1;
     }
     if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'privatekey'.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'privatekey'.");
         return -1;
     }
     memset(extendedkey, 0, sizeof(extendedkey));
@@ -4332,7 +4336,7 @@ static int import_index(json_t *json, DIDStore *store, const char *id, Sha256_Di
         return -1;
     }
     if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'index'.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'index'.");
         return -1;
     }
     CHECK(store_index_string(store, NULL, id, json_string_value(item)));
@@ -4358,7 +4362,7 @@ static int import_defaultId(json_t *json, DIDStore *store, const char *id,
         return -1;
     }
     if (!json_is_boolean(item)) {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Invalid 'default'.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid 'default'.");
         return -1;
     }
 

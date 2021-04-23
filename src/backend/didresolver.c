@@ -138,7 +138,7 @@ const char *DefaultResolve_Resolve(const char *resolve_request)
     CURLcode rc = curl_easy_perform(curl);
     curl_slist_free_all(headers);
     if (rc != CURLE_OK) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Resolve error, status: %d, message: %s", rc, curl_easy_strerror(rc));
+        DIDError_Set(DIDERR_NETWORK, "Resolve error, status: %d, message: %s", rc, curl_easy_strerror(rc));
         curl_easy_cleanup(curl);
         if (response.data)
             free(response.data);
@@ -149,7 +149,7 @@ const char *DefaultResolve_Resolve(const char *resolve_request)
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &httpcode);
     curl_easy_cleanup(curl);
     if (httpcode < 200 || httpcode > 250) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Http error, code: %d", httpcode);
+        DIDError_Set(DIDERR_NETWORK, "Http error, code: %d", httpcode);
         if (response.data)
             free(response.data);
         return NULL;

@@ -110,7 +110,7 @@ static int ticket_tojson_internal(JsonGenerator *gen, TransferTicket *ticket,
     CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
-
+//checked
 static const char *ticket_tojson_forsign(TransferTicket *ticket, bool forsign)
 {
     JsonGenerator g, *gen;
@@ -119,7 +119,7 @@ static const char *ticket_tojson_forsign(TransferTicket *ticket, bool forsign)
 
     gen = DIDJG_Initialize(&g);
     if (!gen) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator for ticket initialize failed.");
         return NULL;
     }
 
@@ -131,7 +131,7 @@ static const char *ticket_tojson_forsign(TransferTicket *ticket, bool forsign)
 
     return DIDJG_Finish(gen);
 }
-
+//checked
 TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
 {
     TransferTicket *ticket = NULL;
@@ -151,8 +151,7 @@ TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
 
     document = DID_Resolve(to, &status, false);
     if (!document) {
-        if (status == DIDStatus_NotFound)
-            DIDError_Set(DIDERR_NOT_EXISTS, "The ticket's receiver does not exist.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Receiver of ticket %s %s", DIDSTR(to), DIDSTATUS_MSG(status));
         goto errorExit;
     }
 
@@ -163,19 +162,18 @@ TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
 
     ticket->doc = DID_Resolve(owner, &status, false);
     if (!ticket->doc) {
-        if (status == DIDStatus_NotFound)
-            DIDError_Set(DIDERR_NOT_EXISTS, "The ticket's owner does not exist.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Owner of ticket %s %s", DIDSTR(owner), DIDSTATUS_MSG(status));
         goto errorExit;
     }
 
     if (!DIDDocument_IsCustomizedDID(ticket->doc)) {
-        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Ticket supports only for customized did.");
+        DIDError_Set(DIDERR_INVALID_ARGS, "Ticket supports only for customized did.");
         goto errorExit;
     }
 
     txid = DIDMetadata_GetTxid(&ticket->doc->metadata);
     if (!txid) {
-        DIDError_Set(DIDERR_MALFORMED_META, "No transaction id from resolving.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "No transaction id from resolving.");
         goto errorExit;
     }
 
@@ -188,7 +186,7 @@ errorExit:
     TransferTicket_Destroy(ticket);
     return NULL;
 }
-
+//checked
 static int ticket_addproof(TransferTicket *ticket, char *signature, DIDURL *signkey, time_t created)
 {
     int i;
@@ -203,7 +201,7 @@ static int ticket_addproof(TransferTicket *ticket, char *signature, DIDURL *sign
     for (i = 0; i < size; i++) {
         p = &ticket->proofs.proofs[i];
         if (DID_Equals(&p->verificationMethod.did, &signkey->did)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "The signkey already exist.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "The signkey already exist.");
             return -1;
         }
     }
@@ -222,7 +220,7 @@ static int ticket_addproof(TransferTicket *ticket, char *signature, DIDURL *sign
     ticket->proofs.size++;
     return 0;
 }
-
+//checked
 int TransferTicket_Seal(TransferTicket *ticket, DIDDocument *controllerdoc,
         const char *storepass)
 {
@@ -236,22 +234,22 @@ int TransferTicket_Seal(TransferTicket *ticket, DIDDocument *controllerdoc,
     assert(storepass && *storepass);
 
     if (TransferTicket_IsQualified(ticket)) {
-        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "The signer is enough.");
+        DIDError_Set(DIDERR_ALREADY_SEALED, "The signer of ticket is enough.");
         return -1;
     }
 
     if (DIDDocument_IsCustomizedDID(controllerdoc)) {
-        DIDError_Set(DIDERR_INVALID_CONTROLLER, "The signer is not customized DID.");
+        DIDError_Set(DIDERR_INVALID_CONTROLLER, "The signer of ticket is not customized DID.");
         return -1;
     }
 
     if (!DIDDocument_GetControllerDocument(ticket->doc, &controllerdoc->did)) {
-        DIDError_Set(DIDERR_INVALID_CONTROLLER, "The signer isn't the one of owner.");
+        DIDError_Set(DIDERR_INVALID_CONTROLLER, "The signer of ticket isn't the one of owner.");
         return -1;
     }
 
     if (!DIDMetadata_AttachedStore(&controllerdoc->metadata)) {
-        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "No attached store with controller document.");
         return -1;
     }
 
@@ -266,8 +264,10 @@ int TransferTicket_Seal(TransferTicket *ticket, DIDDocument *controllerdoc,
     rc = DIDDocument_Sign(controllerdoc, NULL, storepass, signature,
             1, (unsigned char*)data, strlen(data));
     free((void*)data);
-    if (rc < 0)
+    if (rc < 0) {
+        DIDError_Set(DIDERR_SIGN_ERROR, "Sign ticket failed.");
         return -1;
+    }
 
     if (ticket_addproof(ticket, signature, signkey, time(NULL)) < 0)
         return -1;

@@ -58,8 +58,8 @@ void DIDError_Initialize(void)
         info = errorContext.info;
         while(info) {
             next = info->next;
-            free((void*)info);
             memset(info, 0, sizeof(ErrorInfo));
+            free((void*)info);
             info = next;
         }
         errorContext.info = NULL;
@@ -138,4 +138,27 @@ const char *DIDError_GetLastErrorMessage(void)
 void __diderror_finalize_helper(int *p)
 {
     DIDError_Finalize();
+}
+
+inline const char *DIDSTR(DID *did)
+{
+    __thread static char buffer[ELA_MAX_DID_LEN] = {0};
+    return DID_ToString(did, buffer, sizeof(buffer));
+}
+
+inline const char *DIDURLSTR(DIDURL *id)
+{
+    __thread static char buffer[ELA_MAX_DIDURL_LEN] = {0};
+    return DIDURL_ToString(id, buffer, sizeof(buffer), false);
+}
+
+const char *DIDSTATUS_MSG(int status)
+{
+    if (status == DIDStatus_Deactivated)
+        return "is deactivated";
+    if (status == DIDStatus_NotFound)
+        return "is not found";
+    if (status == DIDStatus_Error)
+        return "resolved error";
+    return "";
 }

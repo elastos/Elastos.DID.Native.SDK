@@ -95,15 +95,15 @@ CredentialBiography *CredentialBiography_FromJson(json_t *json)
 
     item = json_object_get(json, "status");
     if (!item) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing credential status.");
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Missing credential status.");
         goto errorExit;
     }
     if (!json_is_integer(item)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid credential status.");
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid credential status.");
         goto errorExit;
     }
     if (json_integer_value(item) > CredentialStatus_NotFound) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Unknown credential status code.");
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Unknown credential status code.");
         goto errorExit;
     }
     biography->status = json_integer_value(item);
@@ -111,28 +111,28 @@ CredentialBiography *CredentialBiography_FromJson(json_t *json)
     item = json_object_get(json, "transaction");
     if (item) {
         if (biography->status == CredentialStatus_NotFound) {
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing transaction.");
+            DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Missing transaction.");
             goto errorExit;
         }
         if (!json_is_array(item)) {
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid transaction.");
+            DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid transaction.");
             goto errorExit;
         }
 
         size = json_array_size(item);
         if (size > 2 || size == 0) {
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "Wrong transaction.");
+            DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Wrong transaction.");
             goto errorExit;
         }
 
         for (i = 0; i < size; i++) {
             field = json_array_get(item, i);
             if (!field) {
-                DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing resovled transaction.");
+                DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Missing resovled transaction.");
                 goto errorExit;
             }
             if (!json_is_object(field)) {
-                DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid resovled transaction.");
+                DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid resovled transaction.");
                 goto errorExit;
             }
 

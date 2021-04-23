@@ -761,19 +761,16 @@ int CredentialArray_ToJson(JsonGenerator *gen, Credential **creds, size_t size,
 
     return 0;
 }
-
+//checked
 const char* Credential_ToJson_ForSign(Credential *cred, bool compact, bool forsign)
 {
     JsonGenerator g, *gen;
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!cred, "No credential to generate data.", NULL);
 
     gen = DIDJG_Initialize(&g);
     if (!gen) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator for credential initialize failed.");
         return NULL;
     }
 
