@@ -49,24 +49,28 @@ Issuer *Issuer_Create(DID *did, DIDURL *signkey, DIDStore *store)
     }
 
     doc = DIDStore_LoadDID(store, did);
-    if (!doc)
+    if (!doc) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "No issuer document in the store.");
         return NULL;
+    }
 
     if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(doc);
         if (!signkey) {
+            DIDError_Set(DIDERR_NOT_EXISTS, "There is no default key of issuer.");
             DIDDocument_Destroy(doc);
             return NULL;
         }
     } else {
         if (!DIDDocument_IsAuthenticationKey(doc, signkey)) {
+            DIDError_Set(DIDERR_INVALID_KEY, "The issuer's sign key is not an authentication key.");
             DIDDocument_Destroy(doc);
             return NULL;
         }
     }
 
     if (!DIDStore_ContainsPrivateKey(store, DIDURL_GetDid(signkey), signkey)) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Missing private key paired with signkey.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "Missing private key paired with signkey for issuer.");
         DIDDocument_Destroy(doc);
         return NULL;
     }
@@ -127,7 +131,7 @@ DIDURL *Issuer_GetSignKey(Issuer *issuer)
 
     DIDERROR_FINALIZE();
 }
-
+//checked
 Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
         DIDURL *credid, const char **types, size_t typesize, json_t *json,
         time_t expires, const char *storepass)
@@ -188,8 +192,10 @@ Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
     rc = DIDDocument_Sign(issuer->signer, &issuer->signkey, storepass, signature,
             1, (unsigned char*)data, strlen(data));
     free((void*)data);
-    if (rc)
+    if (rc) {
+        DIDError_Set(DIDERR_SIGN_ERROR, "Sign credential failed.");
         goto errorExit;
+    }
 
     strcpy(cred->proof.type, ProofType);
     DIDURL_Copy(&cred->proof.verificationMethod, &issuer->signkey);
@@ -218,22 +224,24 @@ Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *credid,
 
     DIDERROR_INITIALIZE();
 
-    if (!issuer ||!owner || !credid || !types || typesize == 0||
-            !subject || size <= 0 || expires <= 0 || !storepass || !*storepass) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!issuer, "No issuer object.", NULL);
+    CHECK_ARG(!owner, "No owner of credential.", NULL);
+    CHECK_ARG(!credid, "No credential id.", NULL);
+    CHECK_ARG(!types || typesize == 0, "No types for credential.", NULL);
+    CHECK_ARG(!subject || size <= 0, "No subject for credential.", NULL);
+    CHECK_ARG(expires <= 0, "No expires time for credential, please specify one.", NULL);
+    CHECK_PASSWORD(storepass, NULL);
 
     root = json_object();
     if (!root) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Create property json failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Create credential's property json failed.");
         return NULL;
     }
 
     for (i = 0; i < size; i++) {
         int rc = json_object_set_new(root, subject[i].key, json_string(subject[i].value));
         if (rc < 0) {
-           DIDError_Set(DIDERR_OUT_OF_MEMORY, "Add property failed.");
+           DIDError_Set(DIDERR_OUT_OF_MEMORY, "Add credential's property failed.");
            json_decref(root);
            return NULL;
         }

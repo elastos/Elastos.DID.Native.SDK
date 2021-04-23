@@ -243,25 +243,25 @@ static bool create_didtransaction(json_t *json)
     //create
     if (!strcmp(info->request.header.op, "create")) {
         if (lastinfo) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID already exist.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "DID already exist.");
             goto errorExit;
         }
         if (!DIDRequest_IsValid(&info->request, NULL)) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID transaction is not valid.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "DID transaction is not valid.");
             goto errorExit;
         }
     //update
     } else if (!strcmp(info->request.header.op, "update")) {
         if (!lastinfo) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID not exist.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "DID not exist.");
             goto errorExit;
         }
         if (!strcmp(lastinfo->request.header.op, "deactivate")) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID already deactivate.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "DID already deactivate.");
             goto errorExit;
         }
         if (strcmp(info->request.header.prevtxid, lastinfo->txid)) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "Previous transaction id missmatch.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Previous transaction id missmatch.");
             goto errorExit;
         }
         if (DIDDocument_IsCustomizedDID(info->request.doc) &&
@@ -269,25 +269,25 @@ static bool create_didtransaction(json_t *json)
             goto errorExit;
 
         if (!DIDRequest_IsValid(&info->request, NULL)) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID transaction is not valid.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "DID transaction is not valid.");
             goto errorExit;
         }
     //transfer
     } else if (!strcmp(info->request.header.op, "transfer")) {
         if (!lastinfo) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID not exist.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "DID not exist.");
             goto errorExit;
         }
         if (!strcmp(lastinfo->request.header.op, "deactivate")) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID already deactivate.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "DID already deactivate.");
             goto errorExit;
         }
         if (!info->request.header.ticket) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "Transfer operation must attach the ticket.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Transfer operation must attach the ticket.");
             goto errorExit;
         }
         if (controllers_equals(info->request.doc, lastinfo->request.doc)) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "Transfer operation is only for changing controller.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Transfer operation is only for changing controller.");
             goto errorExit;
         }
         //check ticket
@@ -295,30 +295,30 @@ static bool create_didtransaction(json_t *json)
             goto errorExit;
 
         if (!DIDRequest_IsValid(&info->request, NULL)) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID transaction is not valid.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "DID transaction is not valid.");
             goto errorExit;
         }
     //deactivate
     } else if (!strcmp(info->request.header.op, "deactivate")) {
         if (!lastinfo) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID not exist.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "DID not exist.");
             goto errorExit;
         }
         if (!strcmp(lastinfo->request.header.op, "deactivate")) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID already dactivated.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "DID already dactivated.");
             goto errorExit;
         }
         if (!DIDRequest_IsValid(&info->request, lastinfo->request.doc)) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "DID transaction is not valid.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "DID transaction is not valid.");
             goto errorExit;
         }
     } else {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Unknown operation.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Unknown operation.");
         goto errorExit;
     }
 
     if (get_txid(info->txid) == -1) {
-        DIDError_Set(DIDERR_TRANSACTION_ERROR, "Generate transaction id failed.");
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Generate transaction id failed.");
         goto errorExit;
     }
 
@@ -355,7 +355,7 @@ static bool create_vctransaction(json_t *json)
             goto errorExit;
 
         if (!credential_readydeclare(&info->request.vc->id, &info->request.vc->issuer)) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "Credential already exist.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Credential already exist.");
             goto errorExit;
         }
     } else if (!strcmp(info->request.header.op, "revoke")) {
@@ -364,23 +364,23 @@ static bool create_vctransaction(json_t *json)
 
         ownerdoc = get_lastdocument(&info->request.id.did);
         if (!ownerdoc) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "The owner of credential is not in chain.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "The owner of credential is not in chain.");
             goto errorExit;
         }
 
         issuerdoc = get_issuerdoc(&info->request.id);
         if (!credential_readyrevoke(&info->request.id,
                 &info->request.proof.verificationMethod, ownerdoc, issuerdoc)) {
-            DIDError_Set(DIDERR_TRANSACTION_ERROR, "Don't revoke the inexistence credential.");
+            DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Don't revoke the inexistence credential.");
             goto errorExit;
         }
     } else {
-        DIDError_Set(DIDERR_UNSUPPOTED, "Unknown operation.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Unknown operation.");
         goto errorExit;
     }
 
     if (get_txid(info->txid) == -1) {
-        DIDError_Set(DIDERR_TRANSACTION_ERROR, "Generate transaction id failed.");
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Generate transaction id failed.");
         goto errorExit;
     }
 
@@ -412,7 +412,7 @@ static bool DummyAdapter_CreateIdTransaction(const char *payload, const char *me
 
     root = json_loads(payload, JSON_COMPACT, &error);
     if (!root) {
-        DIDError_Set(DIDERR_TRANSACTION_ERROR, "Get payload json failed, error: %s.", error.text);
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Get payload json failed, error: %s.", error.text);
         return false;
     }
 
@@ -817,7 +817,7 @@ const char* DummyAdapter_Resolve(const char *request)
 
     root = json_loads(request, JSON_COMPACT, &error);
     if (!root) {
-        DIDError_Set(DIDERR_TRANSACTION_ERROR, "Get payload json failed, error: %s.", error.text);
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Get payload json failed, error: %s.", error.text);
         return NULL;
     }
 

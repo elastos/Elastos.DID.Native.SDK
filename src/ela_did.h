@@ -4570,137 +4570,199 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
 #define DIDERR_IO_ERROR                             0x8D000003
 /**
  * \~English
- * DID is malformed.
+ * DID object/Credential/RootIdentity already exists.
+ * The key already sign document, so it already exists in doc's proof.
  */
-#define DIDERR_MALFORMED_DID                        0x8D000004
-/**
- * \~English
- * DIDURL is malformed.
- */
-#define DIDERR_MALFORMED_DIDURL                     0x8D000005
-/**
- * \~English
- * DIDDocument is malformed.
- */
-#define DIDERR_MALFORMED_DOCUMENT                   0x8D000006
-/**
- * \~English
- * Credential is malformed.
- */
-#define DIDERR_MALFORMED_CREDENTIAL                 0x8D000007
-/**
- * \~English
- * Presentation is malformed.
- */
-#define DIDERR_MALFORMED_PRESENTATION               0x8D000008
-/**
- * \~English
- * Metadata is malformed.
- */
-#define DIDERR_MALFORMED_META                       0x8D000009
-/**
- * \~English
- * DID object already exists.
- */
-#define DIDERR_ALREADY_EXISTS                       0x8D00000A
+#define DIDERR_ALREADY_EXISTS                       0x8D000004
 /**
  * \~English
  * DID object doesn't already exists.
  */
-#define DIDERR_NOT_EXISTS                           0x8D00000B
-/**
- * \~English
- * DID is expired.
- */
-#define DIDERR_EXPIRED                              0x8D00000C
-/**
- * \~English
- * DID is deactivated.
- */
-#define DIDERR_DID_DEACTIVATED                      0x8D00000D
-/**
- * \~English
- * DID is not genuine.
- */
-#define DIDERR_NOT_GENUINE                          0x8D00000E
-/**
- * \~English
- * Crypto failed.
- */
-#define DIDERR_CRYPTO_ERROR                         0x8D00000F
-/**
- * \~English
- * Error from DIDStore.
- */
-#define DIDERR_DIDSTORE_ERROR                       0x8D000010
-/**
- * \~English
- * key is invalid.
- */
-#define DIDERR_INVALID_KEY                          0x8D000011
-/**
- * \~English
- * No valid backend to resolve.
- */
-#define DIDERR_INVALID_BACKEND                      0x8D000012
-/**
- * \~English
- * Resolve DID info failed.
- */
-#define DIDERR_RESOLVE_ERROR                        0x8D000013
-/**
- * \~English
- * Resolve result is malformed.
- */
-#define DIDERR_MALFORMED_RESOLVE_RESULT             0x8D000014
-/**
- * \~English
- * Error from id transaction.
- */
-#define DIDERR_TRANSACTION_ERROR                    0x8D000015
+#define DIDERR_NOT_EXISTS                           0x8D000005
 /**
  * \~English
  * Unsupported error.
  */
-#define DIDERR_UNSUPPOTED                           0x8D000016
+#define DIDERR_UNSUPPORTED                           0x8D000006
+/**
+ * \~English
+ * DID is malformed.
+ */
+#define DIDERR_MALFORMED_DID                        0x8D000007
+/**
+ * \~English
+ * DIDURL is malformed.
+ */
+#define DIDERR_MALFORMED_DIDURL                     0x8D000008
+/**
+ * \~English
+ * DIDDocument is malformed.
+ */
+#define DIDERR_MALFORMED_DOCUMENT                   0x8D000009
+/**
+ * \~English
+ * Credential is malformed.
+ */
+#define DIDERR_MALFORMED_CREDENTIAL                 0x8D00000A
+/**
+ * \~English
+ * Presentation is malformed.
+ */
+#define DIDERR_MALFORMED_PRESENTATION               0x8D00000B
+/**
+ * \~English
+ * Transfer ticket error.
+ */
+#define DIDERR_MALFORMED_TRANSFERTICKET             0x8D00000C
+/**
+ * \~English
+ * DID is not founded in chain.
+ */
+#define DIDERR_DID_NOTFOUNDED                       0x8D00000D
+/**
+ * \~English
+ * DID is the customized did which is expected be not a customized did.
+ * DID is not the customized did which is expected be a customized did.
+ */
+#define DIDERR_NOT_EXPECTEDDID                      0x8D00000E
+/**
+ * \~English
+ * DID/Credential is expired.
+ */
+#define DIDERR_EXPIRED                              0x8D00000F
+/**
+ * \~English
+ * DID is deactivated.
+ */
+#define DIDERR_DID_DEACTIVATED                      0x8D000010
+/**
+ * \~English
+ * Credential is revoked.
+ */
+#define DIDERR_CREDENTIAL_REVOKED                   0x8D000011
+/**
+ * \~English
+ * DID/Credential is not genuine.
+ */
+#define DIDERR_NOT_GENUINE                          0x8D000012
+/**
+ * \~English
+ * DID/Credential/Presentation is sealed.
+ */
+#define DIDERR_ALREADY_SEALED                       0x8D000013
+/**
+ * \~English
+ * Controller error.
+ */
+#define DIDERR_INVALID_CONTROLLER                   0x8D000014
+/**
+ * \~English
+ * key is invalid.
+ */
+#define DIDERR_INVALID_KEY                          0x8D000015
+/**
+ * \~English
+ * Error from DIDStore.
+ */
+#define DIDERR_DIDSTORE_ERROR                       0x8D000016
+/**
+ * \~English
+ * DID object doesn't attach DIDStore.
+ */
+#define DIDERR_NOT_ATTACHEDSTORE                     0x8D000017
+/**
+ * \~English
+ * Wrong password for DIDStore.
+ */
+#define DIDERR_WRONG_PASSWORD                       0x8D000018
+/**
+ * \~English
+ * Export DID error.
+ */
+#define DIDERR_MALFORMED_EXPORTDID                  0x8D000019
+/**
+ * \~English
+ * Publish a DID document which is not up to date.
+ */
+#define DIDERR_NOT_UPTODATE                         0x8D00001A
+/**
+ * \~English
+ * IDChainRequest is malformed.
+ */
+#define DIDERR_MALFORMED_IDCHAINREQUEST             0x8D00001B
+/**
+ * \~English
+ * IDChainTransaction is malformed.
+ */
+#define DIDERR_MALFORMED_IDCHAINTRANSACTION         0x8D00001C
+/**
+ * \~English
+ * Resolve request is malformed.
+ */
+#define DIDERR_MALFORMED_RESOLVE_REQUEST            0x8D00001D
+/**
+ * \~English
+ * Resolve response is malformed.
+ */
+#define DIDERR_MALFORMED_RESOLVE_RESPONSE           0x8D00001E
+/**
+ * \~English
+ * Resolve result is malformed.
+ */
+#define DIDERR_MALFORMED_RESOLVE_RESULT             0x8D00001F
+/**
+ * \~English
+ * Network error.
+ */
+#define DIDERR_NETWORK                              0x8D000020
+/**
+ * \~English
+ * DID resolve error.
+ */
+#define DIDERR_DID_RESOLVE_ERROR                    0x8D000021
+/**
+ * \~English
+ * Publish did error.
+ */
+#define DIDERR_DID_TRANSACTION_ERROR                0x8D000022
+/**
+ * \~English
+ * Crypto failed.
+ */
+#define DIDERR_CRYPTO_ERROR                         0x8D000023
+/**
+ * \~English
+ * Mnemonic error.
+ */
+#define DIDERR_MNEMONIC                             0x8D000024
+/**
+ * \~English
+ * Illegal use error.
+ */
+#define DIDERR_ILLEGALUSAGE                         0x8D000025
+/**
+ * \~English
+ * Sign data failed.
+ */
+#define DIDERR_SIGN_ERROR                           0x8D000026
+/**
+ * \~English
+ * Verify data failed.
+ */
+#define DIDERR_VERIFY_ERROR                         0x8D000027
+/**
+ * \~English
+ * Metadata error.
+ */
+#define DIDERR_MALFORMED_META                       0x8D000028
 
 #ifndef DISABLE_JWT
 /**
  * \~English
  * JWT error.
  */
-#define DIDERR_JWT                                  0x8D000017
+#define DIDERR_JWT                                  0x8D000029
 #endif
-/**
- * \~English
- * Export DID error.
- */
-#define DIDERR_MALFORMED_EXPORTDID                  0x8D000018
-/**
- * \~English
- * Credential is revoked.
- */
-#define DIDERR_CREDENTIAL_REVOKED                   0x8D000019
-/**
- * \~English
- * Controller error.
- */
-#define DIDERR_INVALID_CONTROLLER                   0x8D00001A
-/**
- * \~English
- * Transfer ticket error.
- */
-#define DIDERR_MALFORMED_TRANSFERTICKET             0x8D00001B
-/**
- * \~English
- * RootIdentity error.
- */
-#define DIDERR_MALFORMED_ROOTIDENTITY               0x8D00001C
-/**
- * \~English
- * Illegal use error.
- */
-#define DIDERR_ILLEGALUSAGE                         0x8D00001D
 /**
  * \~English
  * Unknown error.

@@ -70,13 +70,10 @@ static int init_jwtbuilder(JWTBuilder *builder)
 
 JWTBuilder *JWTBuilder_Create(DID *issuer)
 {
-    if (!issuer) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!issuer, "No issuer argument to create jwtbuilder.", NULL);
 
     if (!DIDMetadata_AttachedStore(&issuer->metadata)) {
-        DIDError_Set(DIDERR_MALFORMED_DID, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
         return NULL;
     }
 
@@ -89,6 +86,7 @@ JWTBuilder *JWTBuilder_Create(DID *issuer)
     DID_Copy(&builder->issuer, issuer);
     builder->doc = DIDStore_LoadDID(issuer->metadata.base.store, issuer);
     if (!builder->doc) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "No issuer document in the store.");
         JWTBuilder_Destroy(builder);
         return NULL;
     }

@@ -55,15 +55,15 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
 
     item = json_object_get(json, "status");
     if (!item) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing resolve result status.");
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Missing resolve result status.");
         return -1;
     }
     if (!json_is_integer(item)) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid resolve result status.");
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid resolve result status.");
         return -1;
     }
     if (json_integer_value(item) > DIDStatus_NotFound) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "Unknown DID status code.");
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Unknown DID status code.");
         return -1;
     }
     result->status = json_integer_value(item);
@@ -71,11 +71,11 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
     if (result->status != DIDStatus_NotFound) {
         item = json_object_get(json, "transaction");
         if (!item) {
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing transaction.");
+            DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Missing transaction.");
             return -1;
         }
         if (!json_is_array(item)) {
-            DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid transaction.");
+            DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid transaction.");
             return -1;
         }
 
@@ -84,7 +84,7 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
         } else {
             size = json_array_size(item);
             if (size <= 0) {
-                DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing transaction.");
+                DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Missing transaction.");
                 return -1;
             }
         }
@@ -98,18 +98,17 @@ int ResolveResult_FromJson(ResolveResult *result, json_t *json, bool all)
         for (i = 0; i < size; i++) {
             field = json_array_get(item, i);
             if (!field) {
-                DIDError_Set(DIDERR_RESOLVE_ERROR, "Missing resovled transaction.");
+                DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Missing resovled transaction.");
                 return -1;
             }
             if (!json_is_object(field)) {
-                DIDError_Set(DIDERR_RESOLVE_ERROR, "Invalid resovled transaction.");
+                DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid resovled transaction.");
                 return -1;
             }
 
             DIDTransaction *txinfo = &result->txs.txs[i];
-            if (DIDTransaction_FromJson(txinfo, field) == -1) {
+            if (DIDTransaction_FromJson(txinfo, field) == -1)
                 return -1;
-            }
 
             DIDDocument *doc = txinfo->request.doc;
             if (doc) {
@@ -184,10 +183,13 @@ const char *ResolveResult_ToJson(ResolveResult *result)
     assert(result);
 
     gen = DIDJG_Initialize(&g);
-    if (!gen)
+    if (!gen) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator for resolve result initialize failed.");
         return NULL;
+    }
 
     if (resolveresult_tojson_internal(gen, result) < 0) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize resolve result to json failed.");
         DIDJG_Destroy(gen);
         return NULL;
     }
@@ -233,7 +235,7 @@ DIDBiography *ResolveResult_ToDIDBiography(ResolveResult *result)
 
     size = result->txs.size;
     if (size == 0) {
-        DIDError_Set(DIDERR_RESOLVE_ERROR, "No transaction from resolve result.");
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "No transaction from resolve result.");
         return NULL;
     }
 

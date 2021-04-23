@@ -42,7 +42,7 @@ int ResolverCache_SetCacheDir(const char *root)
     assert(root && *root);
 
     if (strlen(root) >= sizeof(rootpath)) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid cache root.");
         return -1;
     }
 

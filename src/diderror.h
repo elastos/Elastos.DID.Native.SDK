@@ -24,6 +24,7 @@
 #define __DID_ERROR_H__
 
 #include <stdio.h>
+#include "ela_did.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,7 +32,7 @@ extern "C" {
 
 #if defined(__GNUC__) || defined(__clang__)
     #define DIDERROR_INITIALIZE()   \
-        int p __attribute__((cleanup(__diderror_finalize_helper))); \
+        int __cleanup_var __attribute__((cleanup(__diderror_finalize_helper))); \
         DIDError_Initialize()
 
     #define DIDERROR_FINALIZE()     \
@@ -51,6 +52,20 @@ extern "C" {
     #error "Unknown toolchain"
 #endif
 
+#define CHECK_ARG(a, msg, ret)                                      do { \
+    if ((a)) {                                                           \
+        DIDError_Set(DIDERR_INVALID_ARGS, msg);                          \
+        return ret;                                                      \
+    }                                                                    \
+} while(0)
+
+#define CHECK_PASSWORD(pw, ret)                                     do { \
+    if (!pw || !*pw) {                                                   \
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid storepass.");         \
+        return ret;                                                      \
+    }                                                                    \
+} while(0)
+
 #define DIDError_Set(code, msg, ...)    DIDError_SetEx(__FILE__, __LINE__, (code), (msg), ##__VA_ARGS__)
 
 void DIDError_SetEx(const char *file, int line, int code, const char *msg, ...);
@@ -60,6 +75,12 @@ void DIDError_Initialize(void);
 void DIDError_Finalize(void);
 
 void __diderror_finalize_helper(int *p);
+
+const char *DIDSTR(DID *did);
+
+const char *DIDURLSTR(DIDURL *id);
+
+const char *DIDSTATUS_MSG(int status);
 
 #ifdef __cplusplus
 } // extern "C"

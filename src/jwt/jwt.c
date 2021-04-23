@@ -134,7 +134,7 @@ const char *JWT_GetClaimAsJson(JWT *jwt, const char *key)
         return data;
     }
 
-    DIDError_Set(DIDERR_UNSUPPOTED, "Unsupport this claim type.");
+    DIDError_Set(DIDERR_UNSUPPORTED, "Unsupport this claim type.");
     return NULL;
 }
 

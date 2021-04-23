@@ -246,7 +246,7 @@ bool DIDMetadata_AttachedStore(DIDMetadata *metadata)
 
     attached = Metadata_AttachedStore(&metadata->base);
     if (!attached)
-        DIDError_Set(DIDERR_MALFORMED_META, "No attached did store.");
+        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "No attached did store.");
 
     return attached;
 }
