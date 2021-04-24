@@ -348,7 +348,7 @@ int DIDURL_InitFromString(DIDURL *id, const char *idstring, const char *fragment
     assert(fragment && *fragment);
 
     if (strlen(fragment) >= sizeof(id->fragment)) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The fragment is too long.");
+        DIDError_Set(DIDERR_MALFORMED_DIDURL, "The fragment is too long.");
         return -1;
     }
 

@@ -46,7 +46,7 @@ int Metadata_ToJson_Internal(Metadata *metadata, JsonGenerator *gen)
     if (metadata->data) {
         rc = JsonHelper_ToJson(gen, metadata->data, false);
         if (rc < 0)
-            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize DID metadata to json failed.");
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize metadata to json failed.");
     }
 
     return rc;
@@ -61,7 +61,7 @@ const char *Metadata_ToJson(Metadata *metadata)
     if (metadata->data) {
         gen = DIDJG_Initialize(&g);
         if (!gen) {
-            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator for metadata initialize failed.");
             return NULL;
         }
 
@@ -85,7 +85,7 @@ int Metadata_FromJson_Internal(Metadata *metadata, json_t *json)
 
     copy = json_deep_copy(json);
     if (!copy) {
-       DIDError_Set(DIDERR_MALFORMED_META, "Duplicate metadata content failed.");
+       DIDError_Set(DIDERR_METADATA_ERROR, "Duplicate metadata content failed.");
         return -1;
     }
 
@@ -112,7 +112,7 @@ int Metadata_FromJson(Metadata *metadata, const char *data)
 
     root = json_loads(data, JSON_COMPACT, &error);
     if (!root) {
-        DIDError_Set(DIDERR_MALFORMED_META, "Deserialize did metadata failed, error: %s.", error.text);
+        DIDError_Set(DIDERR_METADATA_ERROR, "Deserialize metadata failed, error: %s.", error.text);
         return -1;
     }
 
@@ -138,8 +138,10 @@ static int Metadata_Set(Metadata *metadata, const char* key, json_t *value)
 
     if (!metadata->data) {
         metadata->data = json_object();
-        if (!metadata->data)
+        if (!metadata->data) {
+            DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
             return -1;
+        }
     }
 
     json_object_del(metadata->data, key);
@@ -211,7 +213,6 @@ int Metadata_SetExtraWithBoolean(Metadata *metadata, const char *key, bool value
 
     rc = Metadata_Set(metadata, uskey, json);
     json_decref(json);
-
     return rc;
 }
 
@@ -229,7 +230,6 @@ int Metadata_SetDefaultExtraWithBoolean(Metadata *metadata, const char *key, boo
 
     rc = Metadata_Set(metadata, key, json);
     json_decref(json);
-
     return rc;
 }
 
@@ -255,7 +255,6 @@ int Metadata_SetExtraWithDouble(Metadata *metadata, const char *key, double valu
 
     rc = Metadata_Set(metadata, uskey, json);
     json_decref(json);
-
     return rc;
 }
 
@@ -273,7 +272,6 @@ int Metadata_SetDefaultExtraWithDouble(Metadata *metadata, const char *key, doub
 
     rc = Metadata_Set(metadata, key, json);
     json_decref(json);
-
     return rc;
 }
 
@@ -299,7 +297,6 @@ int Metadata_SetExtraWithInteger(Metadata *metadata, const char *key, int value)
 
     rc = Metadata_Set(metadata, uskey, json);
     json_decref(json);
-
     return rc;
 }
 
@@ -317,7 +314,6 @@ int Metadata_SetDefaultExtraWithInteger(Metadata *metadata, const char *key, int
 
     rc = Metadata_Set(metadata, key, json);
     json_decref(json);
-
     return rc;
 }
 
@@ -329,13 +325,13 @@ static json_t *Metadata_Get(Metadata *metadata, const char *key)
     assert(key);
 
     if (!metadata->data) {
-        DIDError_Set(DIDERR_MALFORMED_META, "No content in metadata.");
+        DIDError_Set(DIDERR_METADATA_ERROR, "No content in metadata.");
         return NULL;
     }
 
     json = json_object_get(metadata->data, key);
     if (!json) {
-        DIDError_Set(DIDERR_MALFORMED_META, "No '%s' elem in metadata.", key);
+        DIDError_Set(DIDERR_METADATA_ERROR, "No '%s' elem in metadata.", key);
         return NULL;
     }
 
@@ -362,7 +358,7 @@ const char *Metadata_GetExtra(Metadata *metadata, const char *key)
         return NULL;
 
     if (!json_is_string(json)) {
-        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not string type.", key);
+        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not string type.", key);
         return NULL;
     }
 
@@ -381,7 +377,7 @@ const char *Metadata_GetDefaultExtra(Metadata *metadata, const char *key)
         return NULL;
 
     if (!json_is_string(json)) {
-        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not string type.", key);
+        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not string type.", key);
         return NULL;
     }
 
@@ -408,7 +404,7 @@ bool Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key)
         return false;
 
     if (!json_is_boolean(json)) {
-        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not boolean type.", key);
+        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not boolean type.", key);
         return false;
     }
 
@@ -427,7 +423,7 @@ bool Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key)
         return false;
 
     if (!json_is_boolean(json)) {
-        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not boolean type.", key);
+        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not boolean type.", key);
         return false;
     }
 
@@ -454,7 +450,7 @@ double Metadata_GetExtraAsDouble(Metadata *metadata, const char *key)
         return 0;
 
     if (!json_is_real(json)) {
-        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not double type.", key);
+        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not double type.", key);
         return 0;
     }
 
@@ -473,7 +469,7 @@ double Metadata_GetDefaultExtraAsDouble(Metadata *metadata, const char *key)
         return 0;
 
     if (!json_is_real(json)) {
-        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not double type.", key);
+        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not double type.", key);
         return 0;
     }
 
@@ -500,7 +496,7 @@ int Metadata_GetExtraAsInteger(Metadata *metadata, const char *key)
         return 0;
 
     if (!json_is_integer(json)) {
-        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not double type.", key);
+        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not double type.", key);
         return 0;
     }
 
@@ -519,7 +515,7 @@ int Metadata_GetDefaultExtraAsInteger(Metadata *metadata, const char *key)
         return 0;
 
     if (!json_is_integer(json)) {
-        DIDError_Set(DIDERR_MALFORMED_META, "'%s' elem is not double type.", key);
+        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not double type.", key);
         return 0;
     }
 
@@ -543,13 +539,13 @@ int Metadata_Merge(Metadata *tometadata, Metadata *frommetadata)
         } else {
             item = json_deep_copy(json);
             if (!item) {
-                DIDError_Set(DIDERR_MALFORMED_META, "Copy '%s' to metadata failed.", key);
+                DIDError_Set(DIDERR_METADATA_ERROR, "Copy '%s' to metadata failed.", key);
                 return -1;
             }
             rc = Metadata_Set(tometadata, key, item);
             json_decref(item);
             if (rc < 0) {
-                DIDError_Set(DIDERR_MALFORMED_META, "Add '%s' to metadata failed.", key);
+                DIDError_Set(DIDERR_METADATA_ERROR, "Add '%s' to metadata failed.", key);
                 return -1;
             }
         }
@@ -602,7 +598,7 @@ int Metadata_Copy(Metadata *dest, Metadata *src)
     if (src->data) {
         data = json_deep_copy(src->data);
         if (!data) {
-            DIDError_Set(DIDERR_MALFORMED_META, "metadata duplication failed.");
+            DIDError_Set(DIDERR_METADATA_ERROR, "metadata duplication failed.");
             return -1;
         }
     }

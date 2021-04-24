@@ -249,7 +249,7 @@ int TransferTicket_Seal(TransferTicket *ticket, DIDDocument *controllerdoc,
     }
 
     if (!DIDMetadata_AttachedStore(&controllerdoc->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "No attached store with controller document.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with controller document.");
         return -1;
     }
 

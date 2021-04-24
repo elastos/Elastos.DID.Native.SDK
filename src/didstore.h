@@ -46,9 +46,9 @@ struct DIDStore {
     StoreMetadata metadata;
 };
 
-int DIDStore_StoreDIDMetadata(DIDStore *store, DIDMetadata *meta, DID *did);
+int DIDStore_StoreDIDMetadata(DIDStore *store, DIDMetadata *metadata, DID *did);
 
-int DIDStore_StoreCredMetadata(DIDStore *store, CredentialMetadata *meta, DIDURL *id);
+int DIDStore_StoreCredMetadata(DIDStore *store, CredentialMetadata *metadata, DIDURL *id);
 
 int DIDStore_Sign(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, char *sig, uint8_t *digest, size_t size);
