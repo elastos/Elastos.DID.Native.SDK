@@ -137,7 +137,7 @@ int ResolveCache_StoreDID(ResolveResult *result, DID *did)
     rc = store_file(path, data);
     free((void*)data);
     if (rc < 0)
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store resolver result data failed.");
+        DIDError_Set(DIDERR_IO_ERROR, "Store resolver result data failed.");
 
     return rc;
 }
@@ -244,7 +244,7 @@ int ResolveCache_StoreCredential(CredentialBiography *biography, DIDURL *id)
     rc = store_file(path, data);
     free((void*)data);
     if (rc < 0)
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store credential resolve result data failed.");
+        DIDError_Set(DIDERR_IO_ERROR, "Store credential resolve result data failed.");
 
     return rc;
 }

@@ -29,7 +29,6 @@
 #include "JsonGenerator.h"
 #include "common.h"
 #include "diderror.h"
-#include "meta.h"
 
 static const char *ALIAS = "alias";
 static const char *DEFAULTDID = "default";
@@ -139,7 +138,7 @@ bool IdentityMetadata_AttachedStore(IdentityMetadata *metadata)
 
     attached = Metadata_AttachedStore(&metadata->base);
     if (!attached)
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "No attached did store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with identity metadata.");
 
     return attached;
 }

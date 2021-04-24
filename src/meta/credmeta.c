@@ -126,7 +126,7 @@ int CredentialMetadata_SetRevoke(CredentialMetadata *metadata, bool revoke)
 bool CredentialMetadata_GetRevoke(CredentialMetadata *metadata)
 {
     if (!metadata) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "There is not meta data for credential.");
+        DIDError_Set(DIDERR_INVALID_ARGS, "There is not metadata for credential.");
         return false;
     }
 

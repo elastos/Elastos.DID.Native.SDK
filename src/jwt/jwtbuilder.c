@@ -73,7 +73,7 @@ JWTBuilder *JWTBuilder_Create(DID *issuer)
     CHECK_ARG(!issuer, "No issuer argument to create jwtbuilder.", NULL);
 
     if (!DIDMetadata_AttachedStore(&issuer->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with issuer.");
         return NULL;
     }
 

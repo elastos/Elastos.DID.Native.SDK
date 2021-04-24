@@ -954,7 +954,7 @@ DID_API int CredentialMetadata_SetExtraWithDouble(CredentialMetadata *metadata,
 
 /**
  * \~English
- * Get alias from credential by meta data.
+ * Get alias from credential by metadata.
  *
  * @param
  *      metadata                     [in] The handle of CredentialMetadata.
@@ -965,7 +965,7 @@ DID_API const char *CredentialMetadata_GetAlias(CredentialMetadata *metadata);
 
 /**
  * \~English
- * Get alias from credential by meta data.
+ * Get alias from credential by metadata.
  *
  * @param
  *      metadata                     [in] The handle of CredentialMetadata.
@@ -976,7 +976,7 @@ DID_API time_t CredentialMetadata_GetPublished(CredentialMetadata *metadata);
 
 /**
  * \~English
- * Get revoked status from credential by meta data.
+ * Get revoked status from credential by metadata.
  *
  * @param
  *      metadata                     [in] The handle of CredentialMetadata.
@@ -987,7 +987,7 @@ DID_API bool CredentialMetadata_GetRevoke(CredentialMetadata *metadata);
 
 /**
  * \~English
- * Get transaction id from credential by meta data.
+ * Get transaction id from credential by metadata.
  *
  * @param
  *      metadata                     [in] The handle of CredentialMetadata.
@@ -3927,7 +3927,7 @@ DID_API int DIDStore_ChangePassword(DIDStore *store, const char *newpw, const ch
 /**
  * \~English
  * Export DID information into file with json format. The json content include document,
- * credentials, private keys and meta.
+ * credentials, private keys and metadata.
  *
  * @param
  *      store                   [in] The handle to DIDStore.
@@ -4669,7 +4669,7 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
  * \~English
  * DID object doesn't attach DIDStore.
  */
-#define DIDERR_NOT_ATTACHEDSTORE                     0x8D000017
+#define DIDERR_NO_ATTACHEDSTORE                     0x8D000017
 /**
  * \~English
  * Wrong password for DIDStore.
@@ -4754,7 +4754,7 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
  * \~English
  * Metadata error.
  */
-#define DIDERR_MALFORMED_META                       0x8D000028
+#define DIDERR_METADATA_ERROR                       0x8D000028
 
 #ifndef DISABLE_JWT
 /**

@@ -4632,7 +4632,7 @@ typedef enum DIDLogLevel {
  * \~English
  * DID object doesn't attach DIDStore.
  */
-#define DIDERR_NOT_ATTACHEDSTORE                     0x8D000017
+#define DIDERR_NO_ATTACHEDSTORE                     0x8D000017
 /**
  * \~English
  * Wrong password for DIDStore.
@@ -4717,7 +4717,7 @@ typedef enum DIDLogLevel {
  * \~English
  * Metadata error.
  */
-#define DIDERR_MALFORMED_META                       0x8D000028
+#define DIDERR_METADATA_ERROR                       0x8D000028
 /**
  * \~English
  * JWT error.

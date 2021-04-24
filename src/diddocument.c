@@ -1152,7 +1152,7 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
 
     return 0;
 }
-
+//checked
 static const char *diddocument_tojson_forsign(DIDDocument *document, bool compact, bool forsign)
 {
     JsonGenerator g, *gen;
@@ -3888,7 +3888,7 @@ int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
     CHECK_ARG(!digest || size == 0, "Invalid digest to sign.", -1);
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         return -1;
     }
 
@@ -4123,7 +4123,7 @@ static const char *document_derive(DIDDocument *document, const char *identifier
     assert(storepass && *storepass);
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         return NULL;
     }
 
@@ -4383,7 +4383,7 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
     CHECK_PASSWORD(storepass, false);
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         return false;
     }
 
@@ -4521,7 +4521,7 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
     CHECK_PASSWORD(storepass, false);
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         return false;
     }
 
@@ -4616,7 +4616,7 @@ bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const cha
     DIDDocument_Destroy(resolve_doc);
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         return false;
     }
 
@@ -4680,7 +4680,7 @@ bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         goto errorExit;
     }
 
@@ -4840,7 +4840,7 @@ DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *controllerdoc,
     CHECK_PASSWORD(storepass, NULL);
 
     if (!DIDMetadata_AttachedStore(&controllerdoc->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with controller document.");
         return NULL;
     }
 

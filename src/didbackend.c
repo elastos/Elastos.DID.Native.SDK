@@ -134,7 +134,7 @@ bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *st
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         return false;
     }
 
@@ -166,7 +166,7 @@ bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *st
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         return false;
     }
 
@@ -200,7 +200,7 @@ bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         return false;
     }
 
@@ -235,7 +235,7 @@ bool DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
     }
 
     if (!DIDMetadata_AttachedStore(&signerdoc->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         return false;
     }
 
@@ -674,7 +674,7 @@ bool DIDBackend_DeclareCredential(Credential *vc, DIDURL *signkey,
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store.");
         return false;
     }
 
@@ -708,7 +708,7 @@ bool DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey, DIDDocument *d
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_NOT_ATTACHEDSTORE, "Not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         return false;
     }
 

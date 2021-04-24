@@ -66,7 +66,7 @@ static void free_types(Credential *credential)
     }
     free(credential->type.types);
 }
-
+//checked
 static int parse_types(Credential *credential, json_t *json)
 {
     size_t i, size, index = 0;
@@ -259,11 +259,7 @@ DIDURL *Credential_GetId(Credential *cred)
 {
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!cred, "No credential to get id.", NULL);
     return &cred->id;
 
     DIDERROR_FINALIZE();
@@ -820,7 +816,7 @@ const char *Credential_ToString(Credential *cred, bool normalized)
 
     DIDERROR_FINALIZE();
 }
-
+//checked
 Credential *Credential_FromJson(const char *json, DID *did)
 {
     json_t *root;
@@ -829,10 +825,7 @@ Credential *Credential_FromJson(const char *json, DID *did)
 
     DIDERROR_INITIALIZE();
 
-    if (!json) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!json, "No json to get credential.", NULL);
 
     root = json_loads(json, JSON_COMPACT, &error);
     if (!root) {
@@ -1258,7 +1251,7 @@ bool Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Document does not attached with DID store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         return false;
     }
 
