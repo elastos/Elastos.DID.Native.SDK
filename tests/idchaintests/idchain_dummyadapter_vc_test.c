@@ -109,7 +109,7 @@ static void test_idchain_declarevc(void)
 
             //declare again, fail.
             CU_ASSERT_FALSE(Credential_Declare(vc, signkey1, storepass));
-            CU_ASSERT_STRING_EQUAL("The credential already exist.", DIDError_GetLastErrorMessage());
+            CU_ASSERT_STRING_EQUAL("Credential was already declared.", DIDError_GetLastErrorMessage());
 
             //revoke by random DID at first, success.
             CU_ASSERT_FALSE(Credential_RevokeById(&vc->id, repealerdoc, signkey3, storepass));
@@ -119,11 +119,11 @@ static void test_idchain_declarevc(void)
             CU_ASSERT_TRUE(Credential_IsRevoked(vc));
             //revoke by issuer again, fail.
             CU_ASSERT_FALSE(Credential_RevokeById(&vc->id, issuerdoc, signkey2, storepass));
-            CU_ASSERT_STRING_EQUAL("Credential is already revoked.", DIDError_GetLastErrorMessage());
+            CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
 
             //try to declare again, fail.
             CU_ASSERT_FALSE(Credential_Declare(resolve_vc1, signkey1, storepass));
-            CU_ASSERT_STRING_EQUAL("The credential is revoked.", DIDError_GetLastErrorMessage());
+            CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
 
             resolve_vc2 = Credential_Resolve(&vc->id, &status, true);
             CU_ASSERT_PTR_NOT_NULL(resolve_vc2);
@@ -243,7 +243,7 @@ static void test_idchain_revokevc(void)
             CU_ASSERT_TRUE(Credential_ResolveRevocation(&vc->id, &issuerdoc->did));
 
             CU_ASSERT_FALSE(Credential_Declare(vc, signkey1, storepass));
-            CU_ASSERT_STRING_EQUAL("The credential is revoked.", DIDError_GetLastErrorMessage());
+            CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
 
             CU_ASSERT_PTR_NULL(Credential_Resolve(&vc->id, &status, true));
             if (strcmp("passport", param->param) && strcmp("services", param->param)) {

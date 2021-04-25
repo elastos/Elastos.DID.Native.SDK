@@ -194,7 +194,8 @@ static void test_didstore_rootidentity(void)
     //delete default rootidentity
     CU_ASSERT_TRUE(DIDStore_DeleteRootIdentity(store, rootidentity1->id));
     CU_ASSERT_PTR_NULL(DIDStore_GetDefaultRootIdentity(store));
-    CU_ASSERT_STRING_EQUAL("There are more root identities, please specify one.", DIDError_GetLastErrorMessage());
+    CU_ASSERT_STRING_EQUAL(
+           "There is no default rootidentity, but one more rootidentities in didstore.Please specify one.", DIDError_GetLastErrorMessage());
 
     count = 0;
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store, get_identity, (void*)&count));
@@ -202,7 +203,6 @@ static void test_didstore_rootidentity(void)
 
     //set one not-existed root identity to default, failed.
     CU_ASSERT_EQUAL(-1, RootIdentity_SetAsDefault(rootidentity1));
-    CU_ASSERT_STRING_EQUAL("No this root identity.", DIDError_GetLastErrorMessage());
 
     CU_ASSERT_NOT_EQUAL(-1, RootIdentity_SetAsDefault(rootidentity3));
     defaultid = DIDStore_GetDefaultRootIdentity(store);

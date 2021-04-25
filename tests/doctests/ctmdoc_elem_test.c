@@ -2103,7 +2103,6 @@ static void test_multictmdoc_add_controller(void)
     CU_ASSERT_STRING_EQUAL("Please set multisig first for multi-controller DID.", DIDError_GetLastErrorMessage());
 
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_SetMultisig(builder, 4));
-    CU_ASSERT_STRING_EQUAL("Unsupport multisig is larger than the count of controllers.", DIDError_GetLastErrorMessage());
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_SetMultisig(builder, 2));
 
     sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);

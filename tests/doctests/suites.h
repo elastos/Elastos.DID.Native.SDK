@@ -35,3 +35,4 @@ DECL_TESTSUITE(diddoc_sign_test);
     DEFINE_TESTSUITE(diddoc_sign_test)
 
 #endif /* __DOC_TEST_SUITES_H__ */
+
