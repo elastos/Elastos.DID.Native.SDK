@@ -624,8 +624,8 @@ static int post_upgrade(DIDStore *store)
             sprintf(path, "%s%s%s", data_deprecated_dir, PATH_SEP, IDS_DIR);
             rename(data_dir, path);
         }
-        if (get_file(data_dir, 0, 2, store->root, ".metadata") == 0) {
-            sprintf(path, "%s%s%s", data_deprecated_dir, PATH_SEP, ".metadata");
+        if (get_file(data_dir, 0, 2, store->root, ".meta") == 0) {
+            sprintf(path, "%s%s%s", data_deprecated_dir, PATH_SEP, ".meta");
             rename(data_dir, path);
         }
 
@@ -655,7 +655,7 @@ static bool check_old_store(DIDStore *store)
     if (test_path(store->root) != S_IFDIR)
         return false;
 
-    if (get_file(path, 0, 2, store->root, ".metadata") == -1)
+    if (get_file(path, 0, 2, store->root, ".meta") == -1)
         return false;
 
     fd = open(path, O_RDONLY);
@@ -744,7 +744,7 @@ static int dids_upgrade_helper(const char *path, void *context)
     if (len < 0 || len > PATH_MAX)
         return -1;
 
-    if (!strcmp(".metadata", path))
+    if (!strcmp(".meta", path))
         path = META_FILE;
 
     for (i = 0; i < 2; i++) {
@@ -802,7 +802,7 @@ int dids_upgrade(const char *dst, const char *src)
     }
 
     //src is file
-    if (last_strstr(src, ".metadata")) {
+    if (last_strstr(src, ".meta")) {
         data = upgradeMetadataV2(src);
         if (!data)
             return 0;
@@ -1143,7 +1143,7 @@ static int check_store(DIDStore *store)
 
     //data does not already exist.
     if (get_dir(path, 0, 2, store->root, DATA_DIR) == -1) {
-        if (get_file(metapath, 0, 2, store->root, ".metadata") == -1 || test_path(metapath) != S_IFREG) {
+        if (get_file(metapath, 0, 2, store->root, ".meta") == -1 || test_path(metapath) != S_IFREG) {
             DIDError_Set(DIDERR_DIDSTORE_ERROR, "Invalid DID store.");
             return -1;
         }
@@ -2634,8 +2634,8 @@ const char *DIDStore_GetDefaultRootIdentity(DIDStore *store)
         return NULL;
     }
     if (helper.count > 1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "There is no default rootidentity, but one more rootidentities in didstore.\
-                Please specify one.");
+        DIDError_Set(DIDERR_NOT_EXISTS,
+                "There is no default rootidentity, but one more rootidentities in didstore.Please specify one.");
         return NULL;
     }
 

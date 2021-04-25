@@ -1055,12 +1055,12 @@ bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *sto
         return false;
 
     if (Credential_IsRevoked(credential)) {
-        DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "The credential is revoked.");
+        DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "Credential is revoked.");
         return false;
     }
 
     if (Credential_WasDeclared(&credential->id)) {
-        DIDError_Set(DIDERR_ALREADY_EXISTS, "The credential was already declared.");
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "Credential was already declared.");
         return false;
     }
 

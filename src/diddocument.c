@@ -1178,7 +1178,7 @@ const char *DIDDocument_ToJson(DIDDocument *document, bool normalized)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to serialize json", NULL);
+    CHECK_ARG(!document, "No document to serialize json", NULL);
     return diddocument_tojson_forsign(document, !normalized, false);
 
     DIDERROR_FINALIZE();
@@ -1192,7 +1192,7 @@ const char *DIDDocument_ToString(DIDDocument *document, bool normalized)
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to serialize string", NULL);
+    CHECK_ARG(!document, "No document to serialize string", NULL);
 
     data = diddocument_tojson_forsign(document, !normalized, false);
     if (!data)
@@ -1256,7 +1256,7 @@ DIDMetadata *DIDDocument_GetMetadata(DIDDocument *document)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to get metadata.", NULL);
+    CHECK_ARG(!document, "No document to get metadata.", NULL);
     return &document->metadata;
 
     DIDERROR_FINALIZE();
@@ -1266,7 +1266,7 @@ ssize_t DIDDocument_GetProofCount(DIDDocument *document)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to get count of proof.", -1);
+    CHECK_ARG(!document, "No document to get count of proof.", -1);
     return document->proofs.size;
 
     DIDERROR_FINALIZE();
@@ -1276,7 +1276,7 @@ const char *DIDDocument_GetProofType(DIDDocument *document, int index)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to get proof type.", NULL);
+    CHECK_ARG(!document, "No document to get proof type.", NULL);
     CHECK_ARG(index >= document->proofs.size, "Index is larger than the count of proofs.", NULL);
     return document->proofs.proofs[index].type;
 
@@ -1287,7 +1287,7 @@ DIDURL *DIDDocument_GetProofCreater(DIDDocument *document, int index)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to get creater of proof.", NULL);
+    CHECK_ARG(!document, "No document to get creater of proof.", NULL);
     CHECK_ARG(index >= document->proofs.size, "Index is larger than the count of proofs.", NULL);
     return &document->proofs.proofs[index].creater;
 
@@ -1298,7 +1298,7 @@ time_t DIDDocument_GetProofCreatedTime(DIDDocument *document, int index)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to get create time of proof.", 0);
+    CHECK_ARG(!document, "No document to get create time of proof.", 0);
     CHECK_ARG(index >= document->proofs.size, "Index is larger than the count of proofs.", 0);
     return document->proofs.proofs[index].created;
 
@@ -1309,7 +1309,7 @@ const char *DIDDocument_GetProofSignature(DIDDocument *document, int index)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to get signature.", NULL);
+    CHECK_ARG(!document, "No document to get signature.", NULL);
     CHECK_ARG(index >= document->proofs.size, "Index is larger than the count of proofs.", NULL);
     return document->proofs.proofs[index].signatureValue;
 
@@ -1322,7 +1322,7 @@ bool DIDDocument_IsDeactivated(DIDDocument *document)
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to check be deactivated or not.", true);
+    CHECK_ARG(!document, "No document to check be deactivated or not.", true);
 
     deactived = DIDMetadata_GetDeactivated(&document->metadata);
     return deactived;
@@ -1414,7 +1414,7 @@ bool DIDDocument_IsGenuine(DIDDocument *document)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to check geninue.", false);
+    CHECK_ARG(!document, "No document to check geninue.", false);
     return DIDDocument_IsGenuine_Internal(document, true);
 
     DIDERROR_FINALIZE();
@@ -1426,7 +1426,7 @@ bool DIDDocument_IsExpired(DIDDocument *document)
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to check expired status.", true);
+    CHECK_ARG(!document, "No document to check expired status.", false);
 
     curtime = time(NULL);
     if (curtime > document->expires)
@@ -1441,7 +1441,7 @@ bool DIDDocument_IsQualified(DIDDocument *document)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to check be qualified or not.", false);
+    CHECK_ARG(!document, "No document to check be qualified or not.", false);
     return document->proofs.size == (document->controllers.size > 1 ? document->multisig : 1) ? true : false;
 
     DIDERROR_FINALIZE();
@@ -3855,7 +3855,7 @@ int DIDDocument_Sign(DIDDocument *document, DIDURL *keyid, const char *storepass
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to sign.", -1);
+    CHECK_ARG(!document, "No document to sign.", -1);
     CHECK_PASSWORD(storepass, -1);
     CHECK_ARG(!sig, "No buffer to store signature.", -1);
     CHECK_ARG(count <= 0, "No datas to sign.", -1);
@@ -3882,7 +3882,7 @@ int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to sign.", -1);
+    CHECK_ARG(!document, "No document to sign.", -1);
     CHECK_PASSWORD(storepass, -1);
     CHECK_ARG(!sig, "No buffer to store signature.", -1);
     CHECK_ARG(!digest || size == 0, "Invalid digest to sign.", -1);
@@ -3938,7 +3938,7 @@ int DIDDocument_Verify(DIDDocument *document, DIDURL *keyid, char *sig,
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to verify signature.", -1);
+    CHECK_ARG(!document, "No document to verify signature.", -1);
     CHECK_ARG(!sig, "No signature to verify", -1);
     CHECK_ARG(count <= 0, "No data to verify", -1);
 
@@ -3963,7 +3963,7 @@ int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(document, "No document to verify signature.", -1);
+    CHECK_ARG(!document, "No document to verify signature.", -1);
     CHECK_ARG(!sig, "No signature to verify", -1);
     CHECK_ARG(!digest || size == 0, "Invalid digest to verify", -1);
 
@@ -4394,12 +4394,12 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
     }
 
     if (!DIDDocument_IsQualified(document)) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Did document is not qualified.");
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Document is not qualified.");
         return false;
     }
 
     if (!DIDDocument_IsGenuine(document)) {
-        DIDError_Set(DIDERR_NOT_GENUINE, "Did document is not genuine.");
+        DIDError_Set(DIDERR_NOT_GENUINE, "Document is not genuine.");
         return false;
     }
 
@@ -4421,7 +4421,7 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
         }
     } else {
         if (!DIDDocument_IsAuthenticationKey(document, signkey)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "The sign key isn't an authentication key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Sign key isn't an authentication key.");
             return false;
         }
     }

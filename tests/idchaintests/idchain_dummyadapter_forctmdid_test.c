@@ -709,7 +709,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     //publish DID after changing controller, fail.
     CU_ASSERT_FALSE(DIDDocument_PublishDID(customized_doc, signkey2, false, storepass));
 
-    CU_ASSERT_STRING_EQUAL("Unsupport publishing DID which is changed controller, please transfer it.",
+    CU_ASSERT_STRING_EQUAL("Can't publish DID which is changed controller, please transfer it.",
             DIDError_GetLastErrorMessage());
 
     //the DID sign ticket is only one, fail.
@@ -801,9 +801,6 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveController(builder, &controller2));
 
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_SetMultisig(builder, 2));
-    CU_ASSERT_STRING_EQUAL("Unsupport multisig is larger than the count of controllers.",
-            DIDError_GetLastErrorMessage());
-
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveAuthenticationKey(builder, keyid1));
 
     customized_doc = DIDDocumentBuilder_Seal(builder, storepass);

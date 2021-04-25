@@ -140,13 +140,13 @@ void __diderror_finalize_helper(int *p)
     DIDError_Finalize();
 }
 
-inline const char *DIDSTR(DID *did)
+const char *DIDSTR(DID *did)
 {
     static __thread char buffer[ELA_MAX_DID_LEN] = {0};
     return DID_ToString(did, buffer, sizeof(buffer));
 }
 
-inline const char *DIDURLSTR(DIDURL *id)
+const char *DIDURLSTR(DIDURL *id)
 {
     static __thread char buffer[ELA_MAX_DIDURL_LEN] = {0};
     return DIDURL_ToString(id, buffer, sizeof(buffer), false);
