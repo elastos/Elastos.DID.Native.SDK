@@ -190,10 +190,13 @@ const char *Credentialbiography_ToJson(CredentialBiography *biography)
     assert(biography);
 
     gen = DIDJG_Initialize(&g);
-    if (!gen)
+    if (!gen) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator for credential biography initialize failed.");
         return NULL;
+    }
 
     if (credentialbiography_toJson_internal(gen, biography) < 0) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize credential biography failed.");
         DIDJG_Destroy(gen);
         return NULL;
     }
@@ -205,11 +208,7 @@ DIDURL *CredentialBiography_GetId(CredentialBiography *biography)
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!biography, "No credential biography to get id.", NULL);
     return &biography->id;
 
     DIDERROR_FINALIZE();
@@ -219,11 +218,7 @@ DID *CredentialBiography_GetOwner(CredentialBiography *biography)
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!biography, "No credential biography to get owner.", NULL);
     return &biography->id.did;
 
     DIDERROR_FINALIZE();
@@ -233,11 +228,7 @@ int CredentialBiography_GetStatus(CredentialBiography *biography)
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
+    CHECK_ARG(!biography, "No credential biography to get status.", -1);
     return biography->status;
 
     DIDERROR_FINALIZE();
@@ -247,11 +238,7 @@ ssize_t CredentialBiography_GetTransactionCount(CredentialBiography *biography)
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
+    CHECK_ARG(!biography, "No credential biography to get transaction count.", -1);
     return biography->txs.size;
 
     DIDERROR_FINALIZE();
@@ -263,15 +250,10 @@ Credential *CredentialBiography_GetCredentialByIndex(CredentialBiography *biogra
 
     DIDERROR_INITIALIZE();
 
-    if (!biography || index < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (index >= biography->txs.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than transactions' size, please check index.");
-        return NULL;
-    }
+    CHECK_ARG(!biography, "No credential biography to get credential.", NULL);
+    CHECK_ARG(index < 0, "Invalid index.", NULL);
+    CHECK_ARG(index >= biography->txs.size, "The count of credential transaction \
+            isn't larger than size of transactions, please check index.", NULL);
 
     if (biography->txs.txs[index].request.vc) {
         cred = (Credential*)calloc(1, sizeof(Credential));
@@ -297,15 +279,10 @@ const char *CredentialBiography_GetTransactionIdByIndex(CredentialBiography *bio
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography || index < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (index >= biography->txs.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than transactions' size, please check index.");
-        return NULL;
-    }
+    CHECK_ARG(!biography, "No credential biography to get transaction id.", NULL);
+    CHECK_ARG(index < 0, "Invalid index.", NULL);
+    CHECK_ARG(index >= biography->txs.size, "The count of credential transaction \
+            isn't larger than size of transactions, please check index.", NULL);
 
     return biography->txs.txs[index].txid;
 
@@ -316,15 +293,10 @@ time_t CredentialBiography_GetPublishedByIndex(CredentialBiography *biography, i
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography || index < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return 0;
-    }
-
-    if (index >= biography->txs.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than transactions' size, please check index.");
-        return 0;
-    }
+    CHECK_ARG(!biography, "No credential biography to get published status.", 0);
+    CHECK_ARG(index < 0, "Invalid index.", 0);
+    CHECK_ARG(index >= biography->txs.size, "The count of credential transaction \
+            isn't larger than size of transactions, please check index.", 0);
 
     return biography->txs.txs[index].timestamp;
 
@@ -335,15 +307,10 @@ const char *CredentialBiography_GetOperationByIndex(CredentialBiography *biograp
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography || index < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (index >= biography->txs.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than transactions' size, please check index.");
-        return NULL;
-    }
+    CHECK_ARG(!biography, "No credential biography to get operation status.", NULL);
+    CHECK_ARG(index < 0, "Invalid index.", NULL);
+    CHECK_ARG(index >= biography->txs.size, "The count of credential transaction \
+            isn't larger than size of transactions, please check index.", NULL);
 
     return biography->txs.txs[index].request.header.op;
 
@@ -354,15 +321,10 @@ DIDURL *CredentialBiography_GetTransactionSignkeyByIndex(CredentialBiography *bi
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography || index < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (index >= biography->txs.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The count of Credential transaction isn't larger than transactions' size, please check index.");
-        return NULL;
-    }
+    CHECK_ARG(!biography, "No credential biography to get operation status.", NULL);
+    CHECK_ARG(index < 0, "Invalid index.", NULL);
+    CHECK_ARG(index >= biography->txs.size, "The count of credential transaction \
+            isn't larger than size of transactions, please check index.", NULL);
 
     return &biography->txs.txs[index].request.proof.verificationMethod;
 

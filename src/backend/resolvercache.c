@@ -41,27 +41,18 @@ int ResolverCache_SetCacheDir(const char *root)
 
     assert(root && *root);
 
-    if (strlen(root) >= sizeof(rootpath)) {
-        DIDError_Set(DIDERR_UNSUPPORTED, "Invalid cache root.");
+    if (strlen(root) >= sizeof(rootpath))
         return -1;
-    }
 
     rc = mkdirs(root, S_IRWXU);
-    if (rc < 0) {
-        DIDError_Set(DIDERR_IO_ERROR, "Create cache directory (%s) failed", root);
-        return rc;
-    }
-
     strcpy(rootpath, root);
     return rc;
 }
 
 const char *ResolverCache_GetCacheDir(void)
 {
-    if (!*rootpath) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "No cache directory.");
+    if (!*rootpath)
         return NULL;
-    }
 
     return rootpath;
 }
@@ -92,7 +83,7 @@ int ResolverCache_LoadDID(ResolveResult *result, DID *did, long ttl)
     if (get_file(path, 0, 2, rootpath, did->idstring) == -1)
         return -1;
 
-    //check the lasted modify time
+    //check the last modify time
     if (stat(path, &s) < 0)
         return -1;
 
@@ -123,22 +114,15 @@ int ResolveCache_StoreDID(ResolveResult *result, DID *did)
     assert(result);
     assert(did);
 
-    if (get_file(path, 1, 2, rootpath, did->idstring) == -1) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create resolver cache entry failed.");
+    if (get_file(path, 1, 2, rootpath, did->idstring) == -1)
         return -1;
-    }
 
     data = ResolveResult_ToJson(result);
-    if (!data) {
-        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Serialize the resolve result to json failed.");
+    if (!data)
         return -1;
-    }
 
     rc = store_file(path, data);
     free((void*)data);
-    if (rc < 0)
-        DIDError_Set(DIDERR_IO_ERROR, "Store resolver result data failed.");
-
     return rc;
 }
 
@@ -169,10 +153,8 @@ CredentialBiography *ResolverCache_LoadCredential(DIDURL *id, DID *issuer, long 
     assert(ttl >= 0);
 
     size = snprintf(buffer, ELA_MAX_DIDURL_LEN, "%s_%s", id->did.idstring, id->fragment);
-    if (size < 0 || size > sizeof(buffer)) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize the name for credential cache failed.");
+    if (size < 0 || size > sizeof(buffer))
         return NULL;
-    }
 
     if (get_file(path, 0, 2, rootpath, buffer) == -1)
         return NULL;
@@ -225,27 +207,18 @@ int ResolveCache_StoreCredential(CredentialBiography *biography, DIDURL *id)
     assert(id);
 
     size = snprintf(buffer, ELA_MAX_DIDURL_LEN, "%s_%s", id->did.idstring, id->fragment);
-    if (size < 0 || size > sizeof(buffer)) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize the name for credential cache failed.");
+    if (size < 0 || size > sizeof(buffer))
         return -1;
-    }
 
-    if (get_file(path, 1, 2, rootpath, buffer) == -1) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create resolver cache entry failed.");
+    if (get_file(path, 1, 2, rootpath, buffer) == -1)
         return -1;
-    }
 
     data = Credentialbiography_ToJson(biography);
-    if (!data) {
-        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Serialize the credential resolve result to json failed.");
+    if (!data)
         return -1;
-    }
 
     rc = store_file(path, data);
     free((void*)data);
-    if (rc < 0)
-        DIDError_Set(DIDERR_IO_ERROR, "Store credential resolve result data failed.");
-
     return rc;
 }
 

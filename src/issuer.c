@@ -43,10 +43,8 @@ Issuer *Issuer_Create(DID *did, DIDURL *signkey, DIDStore *store)
 
     DIDERROR_INITIALIZE();
 
-    if (!did || !store) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!did, "No did to become issuer.", NULL);
+    CHECK_ARG(!store, "No store argument.", NULL);
 
     doc = DIDStore_LoadDID(store, did);
     if (!doc) {
@@ -57,20 +55,20 @@ Issuer *Issuer_Create(DID *did, DIDURL *signkey, DIDStore *store)
     if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(doc);
         if (!signkey) {
-            DIDError_Set(DIDERR_NOT_EXISTS, "There is no default key of issuer.");
+            DIDError_Set(DIDERR_NOT_EXISTS, "No default key of issuer.");
             DIDDocument_Destroy(doc);
             return NULL;
         }
     } else {
         if (!DIDDocument_IsAuthenticationKey(doc, signkey)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "The issuer's sign key is not an authentication key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "The issuer's sign key isn't an authentication key.");
             DIDDocument_Destroy(doc);
             return NULL;
         }
     }
 
     if (!DIDStore_ContainsPrivateKey(store, DIDURL_GetDid(signkey), signkey)) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Missing private key paired with signkey for issuer.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "Missing private key paired with sign key of issuer.");
         DIDDocument_Destroy(doc);
         return NULL;
     }
@@ -108,11 +106,7 @@ DID *Issuer_GetSigner(Issuer *issuer)
 {
     DIDERROR_INITIALIZE();
 
-    if (!issuer) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!issuer, "No issuer argument.", NULL);
     return &issuer->signer->did;
 
     DIDERROR_FINALIZE();
@@ -122,11 +116,7 @@ DIDURL *Issuer_GetSignKey(Issuer *issuer)
 {
     DIDERROR_INITIALIZE();
 
-    if (!issuer) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!issuer, "No issuer argument.", NULL);
     return &issuer->signkey;
 
     DIDERROR_FINALIZE();
@@ -150,7 +140,7 @@ Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
     assert(storepass && *storepass);
 
     if (!DID_Equals(owner, &credid->did)) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Credential owner is not match with credential did.");
+        DIDError_Set(DIDERR_INVALID_ARGS, "Credential owner isn't match with credential did.");
         goto errorExit;
     }
 
@@ -265,11 +255,13 @@ Credential *Issuer_CreateCredentialByString(Issuer *issuer, DID *owner,
 
     DIDERROR_INITIALIZE();
 
-    if (!issuer ||!owner || !credid || !types || typesize == 0||
-            !subject || !*subject || expires <= 0 || !storepass || !*storepass) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!issuer, "No issuer object.", NULL);
+    CHECK_ARG(!owner, "No owner of credential.", NULL);
+    CHECK_ARG(!credid, "No credential id.", NULL);
+    CHECK_ARG(!types || typesize == 0, "No types for credential.", NULL);
+    CHECK_ARG(!subject || !*subject, "No subject for credential.", NULL);
+    CHECK_ARG(expires <= 0, "No expires time for credential, please specify one.", NULL);
+    CHECK_PASSWORD(storepass, NULL);
 
     root = json_loads(subject, JSON_COMPACT, &error);
     if (!root) {

@@ -125,10 +125,7 @@ int CredentialMetadata_SetRevoke(CredentialMetadata *metadata, bool revoke)
 
 bool CredentialMetadata_GetRevoke(CredentialMetadata *metadata)
 {
-    if (!metadata) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "There is not metadata for credential.");
-        return false;
-    }
+    CHECK_ARG(!metadata, "No credential metadata argument.", false);
 
     return Metadata_GetDefaultExtraAsBoolean(&metadata->base, REVOKED);
 }
@@ -146,10 +143,7 @@ int CredentialMetadata_SetPublished(CredentialMetadata *metadata, time_t time)
 
 time_t CredentialMetadata_GetPublished(CredentialMetadata *metadata)
 {
-    if (!metadata) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return 0;
-    }
+    CHECK_ARG(!metadata, "No credential metadata argument.", 0);
 
     return (time_t)Metadata_GetDefaultExtraAsInteger(&metadata->base, PUBLISHED);
 }
@@ -191,10 +185,7 @@ int CredentialMetadata_SetAlias(CredentialMetadata *metadata, const char *alias)
 {
     DIDERROR_INITIALIZE();
 
-    if (!metadata) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!metadata, "No credential metadata argument.", -1);
 
     if (Metadata_SetDefaultExtra(&metadata->base, ALIAS, alias) < 0 ||
             CredentialMetadata_Store(metadata) < 0)
@@ -209,10 +200,7 @@ const char *CredentialMetadata_GetAlias(CredentialMetadata *metadata)
 {
     DIDERROR_INITIALIZE();
 
-    if (!metadata) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!metadata, "No credential metadata argument.", NULL);
 
     return Metadata_GetDefaultExtra(&metadata->base, ALIAS);
 
@@ -223,10 +211,8 @@ int CredentialMetadata_SetExtra(CredentialMetadata *metadata, const char* key, c
 {
     DIDERROR_INITIALIZE();
 
-    if (!metadata || !key || !*key) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!metadata, "No credential metadata argument.", -1);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", -1);
 
     if (Metadata_SetExtra(&metadata->base, key, value) < 0 ||
             CredentialMetadata_Store(metadata) < 0)
@@ -241,10 +227,8 @@ int CredentialMetadata_SetExtraWithBoolean(CredentialMetadata *metadata, const c
 {
     DIDERROR_INITIALIZE();
 
-    if (!metadata || !key || !*key) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!metadata, "No credential metadata argument.", -1);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", -1);
 
     if (Metadata_SetExtraWithBoolean(&metadata->base, key, value) < 0 ||
             CredentialMetadata_Store(metadata) < 0)
@@ -259,10 +243,8 @@ int CredentialMetadata_SetExtraWithDouble(CredentialMetadata *metadata, const ch
 {
     DIDERROR_INITIALIZE();
 
-    if (!metadata || !key || !*key) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!metadata, "No credential metadata argument.", -1);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", -1);
 
     if (Metadata_SetExtraWithDouble(&metadata->base, key, value) < 0 ||
             CredentialMetadata_Store(metadata) < 0)
@@ -277,10 +259,8 @@ const char *CredentialMetadata_GetExtra(CredentialMetadata *metadata, const char
 {
     DIDERROR_INITIALIZE();
 
-    if (!metadata || !key || !*key) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!metadata, "No credential metadata argument.", NULL);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", NULL);
 
     return Metadata_GetExtra(&metadata->base, key);
 
@@ -291,10 +271,8 @@ bool CredentialMetadata_GetExtraAsBoolean(CredentialMetadata *metadata, const ch
 {
     DIDERROR_INITIALIZE();
 
-    if (!metadata || !key || !*key) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
+    CHECK_ARG(!metadata, "No credential metadata argument.", false);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", false);
 
     return Metadata_GetExtraAsBoolean(&metadata->base, key);
 
@@ -305,10 +283,8 @@ double CredentialMetadata_GetExtraAsDouble(CredentialMetadata *metadata, const c
 {
     DIDERROR_INITIALIZE();
 
-    if (!metadata || !key || !*key) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return 0;
-    }
+    CHECK_ARG(!metadata, "No credential metadata argument.", 0);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", 0);
 
     return Metadata_GetExtraAsDouble(&metadata->base, key);
 

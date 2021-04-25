@@ -321,7 +321,7 @@ static int parser_payload(DIDRequest *request, json_t *json)
         docJson = (char*)malloc(len);
         len = b64_url_decode((uint8_t *)docJson, request->payload);
         if (len <= 0) {
-            DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode the payload failed");
+            DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode payload failed");
             free(docJson);
             return -1;
         }
@@ -330,7 +330,7 @@ static int parser_payload(DIDRequest *request, json_t *json)
         request->doc = DIDDocument_FromJson(docJson);
         free(docJson);
         if (!request->doc) {
-            DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Deserialize transaction payload from json failed.");
+            DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Deserialize payload from json failed.");
             return -1;
         }
 

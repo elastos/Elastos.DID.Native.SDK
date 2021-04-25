@@ -117,22 +117,17 @@ RootIdentity *RootIdentity_Create(const char *mnemonic, const char *passphrase,
 
     DIDERROR_INITIALIZE();
 
-    if (!mnemonic || !*mnemonic || !store || !storepass || !*storepass) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (strlen(mnemonic) + 1 > ELA_MAX_MNEMONIC_LEN) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Mnemonic is too long.");
-        return NULL;
-    }
+    CHECK_ARG(!mnemonic || !*mnemonic, "No mnemonic string.", NULL);
+    CHECK_ARG(!store, "No store argument.", NULL);
+    CHECK_PASSWORD(storepass, NULL);
+    CHECK_ARG(strlen(mnemonic) + 1 > ELA_MAX_MNEMONIC_LEN, "Mnemonic is too long.", NULL);
 
     if (!passphrase)
         passphrase = "";
 
     hdkey = HDKey_FromMnemonic(mnemonic, passphrase, language, &_hdkey);
     if (!hdkey) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get private identity failed.");
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial private identity failed.");
         return NULL;
     }
 
@@ -160,10 +155,9 @@ RootIdentity *RootIdentity_CreateFromRootKey(const char *extendedkey,
 
     DIDERROR_INITIALIZE();
 
-    if (!extendedkey || !*extendedkey || !store || !storepass || !*storepass) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!extendedkey || !*extendedkey, "No extendedkey string.", NULL);
+    CHECK_ARG(!store, "No store argument.", NULL);
+    CHECK_PASSWORD(storepass, NULL);
 
     hdkey = HDKey_FromExtendedKeyBase58(extendedkey, strlen(extendedkey) + 1, &_hdkey);
     if (!hdkey) {
@@ -212,11 +206,7 @@ const char *RootIdentity_GetId(RootIdentity *rootidentity)
 {
     DIDERROR_INITIALIZE();
 
-    if (!rootidentity) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "No rootidentity.");
-        return NULL;
-    }
-
+    CHECK_ARG(!rootidentity, "No rootidentity argument.", NULL);
     return rootidentity->id;
 
     DIDERROR_FINALIZE();
@@ -226,11 +216,7 @@ const char *RootIdentity_GetAlias(RootIdentity *rootidentity)
 {
     DIDERROR_INITIALIZE();
 
-    if (!rootidentity) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "No rootidentity.");
-        return NULL;
-    }
-
+    CHECK_ARG(!rootidentity, "No rootidentity argument.", NULL);
     return IdentityMetadata_GetAlias(&rootidentity->metadata);
 
     DIDERROR_FINALIZE();
@@ -240,11 +226,7 @@ int RootIdentity_SetAlias(RootIdentity *rootidentity, const char *alias)
 {
     DIDERROR_INITIALIZE();
 
-    if (!rootidentity) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "No rootidentity.");
-        return -1;
-    }
-
+    CHECK_ARG(!rootidentity, "No rootidentity argument.", -1);
     return IdentityMetadata_SetAlias(&rootidentity->metadata, alias);
 
     DIDERROR_FINALIZE();
@@ -256,10 +238,8 @@ int RootIdentity_SetDefaultDID(RootIdentity *rootidentity, DID *did)
 
     DIDERROR_INITIALIZE();
 
-    if (!rootidentity || !did) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "No rootidentity or default DID.");
-        return -1;
-    }
+    CHECK_ARG(!rootidentity, "No rootidentity argument.", -1);
+    CHECK_ARG(!did, "No did to become default did.", -1);
 
     return IdentityMetadata_SetDefaultDID(&rootidentity->metadata, DID_ToString(did, idstring, sizeof(idstring)));
 
@@ -272,10 +252,7 @@ DID *RootIdentity_GetDefaultDID(RootIdentity *rootidentity)
 
     DIDERROR_INITIALIZE();
 
-    if (!rootidentity) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "No rootidentity or default DID.");
-        return NULL;
-    }
+    CHECK_ARG(!rootidentity, "No rootidentity argument.", NULL);
 
     idstring = IdentityMetadata_GetDefaultDID(&rootidentity->metadata);
     if (!idstring) {
@@ -395,8 +372,10 @@ static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index
     assert(store);
 
     derivedkey = get_derive(rootidentity, index, store, storepass, &_derivedkey);
-    if (!derivedkey)
+    if (!derivedkey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Derive private key failed.");
         return NULL;
+    }
 
     DID_Init(&did, HDKey_GetAddress(derivedkey));
 
@@ -444,6 +423,7 @@ static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index
     memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetadata));
 
     if (DIDStore_StoreDID(store, document) == -1) {
+        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store document(%s) failed.", DIDSTR(&document->did));
         DIDStore_DeleteDID(store, &did);
         DIDDocument_Destroy(document);
         return NULL;
@@ -462,14 +442,12 @@ DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepa
 
     DIDERROR_INITIALIZE();
 
-    if (!rootidentity || !storepass || !*storepass) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!rootidentity, "No rootidentity to new did.", NULL);
+    CHECK_PASSWORD(storepass, NULL);
 
     store = rootidentity->metadata.base.store;
     if (!store) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "No store attached with root identity.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with rootidentity.");
         return NULL;
     }
 
@@ -503,14 +481,13 @@ DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
 
     DIDERROR_INITIALIZE();
 
-    if (!rootidentity || !storepass || !*storepass || index < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!rootidentity, "No rootidentity to new did.", NULL);
+    CHECK_ARG(index < 0, "Invalid index.", NULL);
+    CHECK_PASSWORD(storepass, NULL);
 
     store = rootidentity->metadata.base.store;
     if (!store) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "No store attached with root identity.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with rootidentity.");
         return NULL;
     }
 
@@ -534,20 +511,20 @@ DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index)
 
     DIDERROR_INITIALIZE();
 
-    if (!rootidentity || index < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!rootidentity, "No rootidentity to get did.", NULL);
+    CHECK_ARG(index < 0, "Invalid index.", NULL);
 
     store = rootidentity->metadata.base.store;
     if (!store) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "No store attached with root identity.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with rootidentity.");
         return NULL;
     }
 
     derivedkey = get_derive(rootidentity, index, store, NULL, &_derivedkey);
-    if (!derivedkey)
+    if (!derivedkey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Derive private key failed.");
         return NULL;
+    }
 
     did = DID_New(HDKey_GetAddress(derivedkey));
     HDKey_Wipe(derivedkey);
@@ -556,21 +533,18 @@ DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index)
     DIDERROR_FINALIZE();
 }
 
-int RootIdentity_SetAsDefault(RootIdentity *identity)
+int RootIdentity_SetAsDefault(RootIdentity *rootidentity)
 {
     DIDERROR_INITIALIZE();
 
-    if (!identity) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+    CHECK_ARG(!rootidentity, "No rootidentity to get did.", -1);
+
+    if (!rootidentity->metadata.base.store) {
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with rootidentity.");
         return -1;
     }
 
-    if (!identity->metadata.base.store) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "No attache store to root identity.");
-        return -1;
-    }
-
-    return DIDStore_SetDefaultRootIdentity(identity->metadata.base.store, identity->id);
+    return DIDStore_SetDefaultRootIdentity(rootidentity->metadata.base.store, rootidentity->id);
 
     DIDERROR_FINALIZE();
 }
@@ -594,10 +568,7 @@ bool RootIdentity_Synchronize(RootIdentity *rootidentity, DIDDocument_ConflictHa
 
     DIDERROR_INITIALIZE();
 
-    if (!rootidentity) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
+    CHECK_ARG(!rootidentity, "No rootidentity to synchronize.", false);
 
     if (!handle)
         handle = diddocument_conflict_merge;
@@ -638,10 +609,8 @@ bool RootIdentity_SynchronizeByIndex(RootIdentity *rootidentity, int index,
 
     DIDERROR_INITIALIZE();
 
-    if (!rootidentity || index < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
+    CHECK_ARG(!rootidentity, "No rootidentity to synchronize.", false);
+    CHECK_ARG(index < 0, "Invalid index.", false);
 
     if (!handle)
         handle = diddocument_conflict_merge;
@@ -652,8 +621,7 @@ bool RootIdentity_SynchronizeByIndex(RootIdentity *rootidentity, int index,
 
     chaincopy = DID_Resolve(did, &status, true);
     if (!chaincopy) {
-        if (status == DIDStatus_NotFound)
-            DIDError_Set(DIDERR_NOT_EXISTS, "Synchronize DID does not exist.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Synchronize DID %s %s.", DIDSTR(did), DIDSTATUS_MSG(status));
         goto errorExit;
     }
 
@@ -710,7 +678,7 @@ ssize_t RootIdentity_LazyCreatePrivateKey(DIDURL *key, DIDStore *store, const ch
 
     doc = DIDStore_LoadDID(store, &key->did);
     if (!doc) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "No owner's document of key.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "No owner's document.");
         return -1;
     }
 

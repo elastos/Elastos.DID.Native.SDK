@@ -421,12 +421,11 @@ static const char* presentation_tojson_forsign(Presentation *pre, bool compact, 
 {
     JsonGenerator g, *gen;
 
-    if (!pre)
-        return NULL;
+    assert(pre);
 
     gen = DIDJG_Initialize(&g);
     if (!gen) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator for presentation initialize failed.");
         return NULL;
     }
 
@@ -464,7 +463,13 @@ static int add_credentialarray_to_presentation(Presentation *pre, int count, Cre
         }
 
         for (i = 0; i < count && creds[i]; i++) {
-            if (Credential_Verify(creds[i]) == -1 || Credential_IsExpired(creds[i])) {
+            if (Credential_Verify(creds[i]) == -1) {
+                DIDError_Set(DIDERR_VERIFY_ERROR, "Verify credential(%s) failed.", DIDURLSTR(&creds[i]->id));
+                free(credentials);
+                return -1;
+            }
+            if (Credential_IsExpired(creds[i])) {
+                DIDError_Set(DIDERR_EXPIRED, "Credential(%s) is expired.", DIDURLSTR(&creds[i]->id));
                 free(credentials);
                 return -1;
             }
@@ -499,15 +504,19 @@ static int seal_presentation(Presentation *pre, DIDDocument *doc, DIDURL *signke
     if (!data)
         return -1;
 
+    if (!DIDDocument_IsAuthenticationKey(doc, signkey)) {
+        free((void*)data);
+        DIDError_Set(DIDERR_INVALID_KEY, "The sign key isn't an authentication key.");
+        return -1;
+    }
+
     if (!DIDDocument_IsCustomizedDID(doc)) {
         signerdoc = doc;
     } else {
         signerdoc = DIDDocument_GetControllerDocument(doc, &signkey->did);
-        if (!signerdoc) {
-            free((void*)data);
-            DIDError_Set(DIDERR_INVALID_KEY, "The sign key is not ");
-            return -1;
-        }
+        if (!signerdoc)
+            signerdoc = doc;
+
         DIDMetadata_SetStore(&signerdoc->metadata, DIDMetadata_GetStore(&doc->metadata));
     }
 
@@ -516,8 +525,10 @@ static int seal_presentation(Presentation *pre, DIDDocument *doc, DIDURL *signke
             (unsigned char*)realm, strlen(realm),
             (unsigned char*)nonce, strlen(nonce));
     free((void*)data);
-    if (rc < 0)
+    if (rc < 0) {
+        DIDError_Set(DIDERR_SIGN_ERROR, "Sign presentation failed.");
         return -1;
+    }
 
     strcpy(pre->proof.type, ProofType);
     DIDURL_Copy(&pre->proof.verificationMethod, signkey);
@@ -552,14 +563,14 @@ static Presentation *create_presentation(DIDURL *id, DID *holder,
 
     doc = DIDStore_LoadDID(store, holder);
     if (!doc) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Can not load DID.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "No valid holder document in store.");
         return NULL;
     }
 
     if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(doc);
         if (!signkey) {
-            DIDError_Set(DIDERR_INVALID_ARGS, "Please specify the sign key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Please specify sign key.");
             goto errorExit;
         }
     } else {
@@ -570,7 +581,7 @@ static Presentation *create_presentation(DIDURL *id, DID *holder,
     }
 
     if (!DIDStore_ContainsPrivateKey(store, &signkey->did, signkey)) {
-        DIDError_Set(DIDERR_INVALID_KEY, "No private key.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "No privatekey of signkey.");
         goto errorExit;
     }
 
@@ -661,11 +672,12 @@ Presentation *Presentation_CreateByCredentials(DIDURL *id, DID *holder,
 {
     DIDERROR_INITIALIZE();
 
-    if (!id || !holder || !nonce || !*nonce || !realm || !*realm || count < 0 ||
-            !store || !storepass || !*storepass ) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!id, "No presentation id.", NULL);
+    CHECK_ARG(!holder, "No holder argument for presentation.", NULL);
+    CHECK_ARG(!nonce || !*nonce, "No nonce string.", NULL);
+    CHECK_ARG(!realm || !*realm, "No realm string.", NULL);
+    CHECK_ARG(!store, "No store argument.", NULL);
+    CHECK_PASSWORD(storepass, NULL);
 
     return create_presentation(id, holder, types, size, nonce, realm, creds, count,
             signkey, store, storepass);
@@ -719,10 +731,7 @@ Presentation *Presentation_FromJson(const char *json)
 
     DIDERROR_INITIALIZE();
 
-    if (!json) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!json, "No json string.", NULL);
 
     root = json_loads(json, JSON_COMPACT, &error);
     if (!root) {
@@ -746,10 +755,7 @@ DIDURL *Presentation_GetId(Presentation *pre)
 {
     DIDERROR_INITIALIZE();
 
-    if (!pre) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!pre, "No persentation argument.", NULL);
 
     if (*pre->id.did.idstring && *pre->id.fragment)
         return &pre->id;
@@ -763,10 +769,7 @@ DID *Presentation_GetHolder(Presentation *pre)
 {
     DIDERROR_INITIALIZE();
 
-    if (!pre) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!pre, "No persentation argument.", NULL);
 
     if (*pre->holder.idstring)
         return &pre->holder;
@@ -780,10 +783,7 @@ ssize_t Presentation_GetCredentialCount(Presentation *pre)
 {
     DIDERROR_INITIALIZE();
 
-    if (!pre) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!pre, "No persentation argument.", -1);
 
     return pre->credentials.size;
 
@@ -796,19 +796,14 @@ ssize_t Presentation_GetCredentials(Presentation *pre, Credential **creds, size_
 
     DIDERROR_INITIALIZE();
 
-    if (!pre || !creds || size < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!pre, "No persentation argument.", -1);
+    CHECK_ARG(!creds || size < 0, "Invalid buffer to get credentials.", -1);
 
     actual_size = pre->credentials.size;
     if (actual_size == 0)
         return 0;
 
-    if (actual_size > size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
-        return -1;
-    }
+    CHECK_ARG(actual_size > size, "The size of buffer is small.", -1);
 
     memcpy(creds, pre->credentials.credentials, sizeof(Credential*) * actual_size);
     return (ssize_t)actual_size;
@@ -823,10 +818,9 @@ Credential *Presentation_GetCredential(Presentation *pre, DIDURL *credid)
     Credential *cred;
     size_t i;
 
-    if (!pre || !credid) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!pre, "No persentation argument.", NULL);
+    CHECK_ARG(!credid, "No credential id.", NULL);
+
     if (pre->credentials.size <= 0) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "No credentials in presentation.");
         return NULL;
@@ -838,6 +832,7 @@ Credential *Presentation_GetCredential(Presentation *pre, DIDURL *credid)
             return cred;
     }
 
+    DIDError_Set(DIDERR_NOT_EXISTS, "No credential(%s) in presentation.", DIDURLSTR(credid));
     return NULL;
 
     DIDERROR_FINALIZE();
@@ -847,11 +842,7 @@ ssize_t Presentation_GetTypeCount(Presentation *pre)
 {
     DIDERROR_INITIALIZE();
 
-    if (!pre) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
+    CHECK_ARG(!pre, "No persentation argument.", -1);
     return pre->type.size;
 
     DIDERROR_FINALIZE();
@@ -863,16 +854,11 @@ ssize_t Presentation_GetTypes(Presentation *pre, const char **types, size_t size
 
     DIDERROR_INITIALIZE();
 
-    if (!pre || !types || size == 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!pre, "No persentation argument.", -1);
+    CHECK_ARG(!types || size == 0, "Invalid buffer for types.", -1);
 
     actual_size = pre->type.size;
-    if (actual_size > size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
-        return -1;
-    }
+    CHECK_ARG(actual_size > size, "The buffer is small.", -1);
 
     memcpy((void*)types, pre->type.types, sizeof(char*) * actual_size);
     return (ssize_t)actual_size;
@@ -884,11 +870,7 @@ time_t Presentation_GetCreatedTime(Presentation *pre)
 {
     DIDERROR_INITIALIZE();
 
-    if (!pre) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return 0;
-    }
-
+    CHECK_ARG(!pre, "No persentation argument.", 0);
     return pre->created;
 
     DIDERROR_FINALIZE();
@@ -898,11 +880,7 @@ DIDURL *Presentation_GetVerificationMethod(Presentation *pre)
 {
     DIDERROR_INITIALIZE();
 
-    if (!pre) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!pre, "No persentation argument.", NULL);
     return &pre->proof.verificationMethod;
 
     DIDERROR_FINALIZE();
@@ -912,11 +890,7 @@ const char *Presentation_GetNonce(Presentation *pre)
 {
     DIDERROR_INITIALIZE();
 
-    if (!pre) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!pre, "No persentation argument.", NULL);
     return pre->proof.nonce;
 
     DIDERROR_FINALIZE();
@@ -926,11 +900,7 @@ const char *Presentation_GetRealm(Presentation *pre)
 {
     DIDERROR_INITIALIZE();
 
-    if (!pre) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!pre, "No persentation argument.", NULL);
     return pre->proof.realm;
 
     DIDERROR_FINALIZE();
@@ -946,8 +916,8 @@ static bool check_presentation(Presentation *pre, bool validtype)
 
     doc = DID_Resolve(Presentation_GetHolder(pre), &status, false);
     if (!doc) {
-        if (status == DIDStatus_NotFound)
-            DIDError_Set(DIDERR_NOT_EXISTS, "Presentation holder is not a published did.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Presentation holder %s %s.",
+                DIDSTR(Presentation_GetHolder(pre)), DIDSTATUS_MSG(status));
         return false;
     }
 
@@ -956,7 +926,7 @@ static bool check_presentation(Presentation *pre, bool validtype)
             goto errorExit;
     } else {
         if (!DIDDocument_IsGenuine(doc)) {
-            DIDError_Set(DIDERR_NOT_GENUINE, "Signer is not genuine.");
+            DIDError_Set(DIDERR_NOT_GENUINE, "Signer isn't genuine.");
             goto errorExit;
         }
     }
@@ -986,7 +956,7 @@ static bool check_presentation(Presentation *pre, bool validtype)
                 goto errorExit;
         } else {
             if (!Credential_IsGenuine(cred)) {
-                DIDError_Set(DIDERR_NOT_GENUINE, "Credential is not genuine.");
+                DIDError_Set(DIDERR_NOT_GENUINE, "Credential isn't genuine.");
                 goto errorExit;
             }
         }
@@ -1001,6 +971,8 @@ static bool check_presentation(Presentation *pre, bool validtype)
             pre->proof.realm, strlen(pre->proof.realm),
             pre->proof.nonce, strlen(pre->proof.nonce));
     free((void*)data);
+    if (rc < 0)
+        DIDError_Set(DIDERR_VERIFY_ERROR, "Verify persentation failed.");
 
 errorExit:
     DIDDocument_Destroy(doc);
@@ -1011,11 +983,7 @@ bool Presentation_IsGenuine(Presentation *pre)
 {
     DIDERROR_INITIALIZE();
 
-    if (!pre) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
-
+    CHECK_ARG(!pre, "No persentation argument.", false);
     return check_presentation(pre, false);
 
     DIDERROR_FINALIZE();
@@ -1025,11 +993,7 @@ bool Presentation_IsValid(Presentation *pre)
 {
     DIDERROR_INITIALIZE();
 
-    if (!pre) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
-
+    CHECK_ARG(!pre, "No persentation argument.", false);
     return check_presentation(pre, true);
 
     DIDERROR_FINALIZE();

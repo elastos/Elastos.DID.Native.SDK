@@ -132,13 +132,7 @@ DIDStore *IdentityMetadata_GetStore(IdentityMetadata *metadata)
 
 bool IdentityMetadata_AttachedStore(IdentityMetadata *metadata)
 {
-    bool attached;
-
     assert(metadata);
 
-    attached = Metadata_AttachedStore(&metadata->base);
-    if (!attached)
-        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with identity metadata.");
-
-    return attached;
+    return Metadata_AttachedStore(&metadata->base);
 }

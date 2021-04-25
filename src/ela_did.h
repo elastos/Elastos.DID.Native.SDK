@@ -1337,11 +1337,11 @@ DID_API void RootIdentity_Destroy(RootIdentity *rootidentity);
  * Set default rootidentity.
  *
  * @param
- *      identity             [in] A handle to RootIdentity.
+ *      rootidentity             [in] A handle to RootIdentity.
  * @return
  *      0 on success, -1 if an error occurred.
  */
-DID_API int RootIdentity_SetAsDefault(RootIdentity *identity);
+DID_API int RootIdentity_SetAsDefault(RootIdentity *rootidentity);
 
 /**
  * \~English

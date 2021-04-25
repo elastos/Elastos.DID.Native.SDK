@@ -53,11 +53,7 @@ DID *DIDBiography_GetOwner(DIDBiography *biography)
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!biography, "No biography to get owner.", NULL);
     return &biography->did;
 
     DIDERROR_FINALIZE();
@@ -67,11 +63,7 @@ int DIDBiography_GetStatus(DIDBiography *biography)
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
+    CHECK_ARG(!biography, "No biography to get status.", -1);
     return biography->status;
 
     DIDERROR_FINALIZE();
@@ -81,11 +73,7 @@ ssize_t DIDBiography_GetTransactionCount(DIDBiography *biography)
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
+    CHECK_ARG(!biography, "No biography to get transaction count.", -1);
     return biography->txs.size;
 
     DIDERROR_FINALIZE();
@@ -97,20 +85,11 @@ DIDDocument *DIDBiography_GetDocumentByIndex(DIDBiography *biography, int index)
 
     DIDERROR_INITIALIZE();
 
-    if (!biography) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (!biography->txs.txs) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "No transaction in biography.");
-        return NULL;
-    }
-
-    if ((size_t)index >= biography->txs.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in biography.");
-        return NULL;
-    }
+    CHECK_ARG(!biography, "No biography to get document.", NULL);
+    CHECK_ARG(index < 0, "Invalid index.", NULL);
+    CHECK_ARG(!biography->txs.txs, "No transaction in biography.", NULL);
+    CHECK_ARG((size_t)index >= biography->txs.size, "Index is larger than transaction \
+            count in biography.", NULL);
 
     doc = (DIDDocument*)calloc(1, sizeof(DIDDocument));
     if (!doc) {
@@ -132,15 +111,10 @@ const char *DIDBiography_GetTransactionIdByIndex(DIDBiography *biography, int in
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (!biography->txs.txs || (size_t)index >= biography->txs.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in biography.");
-        return NULL;
-    }
+    CHECK_ARG(!biography, "No biography to get transaction id.", NULL);
+    CHECK_ARG(index < 0, "Invalid index.", NULL);
+    CHECK_ARG(!biography->txs.txs || (size_t)index >= biography->txs.size,
+            "Index is larger than transaction count in biography.", NULL);
 
     return biography->txs.txs[index].txid;
 
@@ -151,15 +125,10 @@ time_t DIDBiography_GetPublishedByIndex(DIDBiography *biography, int index)
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return 0;
-    }
-
-    if (!biography->txs.txs || (size_t)index >= biography->txs.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in biography.");
-        return 0;
-    }
+    CHECK_ARG(!biography, "No biography to get transaction id.", 0);
+    CHECK_ARG(index < 0, "Invalid index.", 0);
+    CHECK_ARG(!biography->txs.txs || (size_t)index >= biography->txs.size,
+            "Index is larger than transaction count in biography.", 0);
 
     return biography->txs.txs[index].timestamp;
 
@@ -170,15 +139,10 @@ const char *DIDBiography_GetOperationByIndex(DIDBiography *biography, int index)
 {
     DIDERROR_INITIALIZE();
 
-    if (!biography) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (!biography->txs.txs || (size_t)index >= biography->txs.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than transaction count in biography.");
-        return NULL;
-    }
+    CHECK_ARG(!biography, "No biography to get transaction id.", NULL);
+    CHECK_ARG(index < 0, "Invalid index.", NULL);
+    CHECK_ARG(!biography->txs.txs || (size_t)index >= biography->txs.size,
+            "Index is larger than transaction count in biography.", NULL);
 
     return biography->txs.txs[index].request.header.op;
 

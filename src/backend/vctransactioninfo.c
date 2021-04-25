@@ -117,12 +117,12 @@ const char *CredentialTransaction_ToJson(CredentialTransaction *txinfo)
 
     gen = DIDJG_Initialize(&g);
     if (!gen) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator for credential transaction initialize failed.");
         return NULL;
     }
 
     if (CredentialTransaction_ToJson_Internal(gen, txinfo) < 0) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize ID transaction to json failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize credential transaction to json failed.");
         DIDJG_Destroy(gen);
         return NULL;
     }

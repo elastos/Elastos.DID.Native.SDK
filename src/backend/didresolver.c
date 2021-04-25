@@ -165,7 +165,7 @@ int DefaultResolve_Init(const char *url)
     CURLU *curl;
 
     if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+        DIDError_Set(DIDERR_NETWORK, "Initialize curl failed.");
         return -1;
     }
 
@@ -173,7 +173,7 @@ int DefaultResolve_Init(const char *url)
     rc = curl_url_set(curl, CURLUPART_URL, url, 0);
     curl_url_cleanup(curl);
     if(rc != 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid url.");
+        DIDError_Set(DIDERR_NETWORK, "Invalid url(%s).", url);
         return -1;
     }
 

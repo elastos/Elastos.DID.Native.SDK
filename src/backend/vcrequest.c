@@ -95,12 +95,12 @@ const char *CredentialRequest_ToJson(CredentialRequest *request)
 
     gen = DIDJG_Initialize(&g);
     if (!gen) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator for credential request initialize failed.");
         return NULL;
     }
 
     if (CredentialRequest_ToJson_Internal(gen, request) < 0) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize CredentialRequest to json failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize credential request to json failed.");
         DIDJG_Destroy(gen);
         return NULL;
     }
@@ -142,6 +142,7 @@ const char *CredentialRequest_Sign(CredentialRequest_Type type, DIDURL *credid,
             (unsigned char*)spec, strlen(spec), (unsigned char*)op, strlen(op),
             (unsigned char*)payload, strlen(payload));
     if (rc < 0) {
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Sign credential request failed.");
         free((void*)payload);
         return NULL;
     }
@@ -208,7 +209,7 @@ int CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
     if (!strcmp(op, operation[RequestType_Declare]) || !strcmp(op, operation[RequestType_Revoke])) {
         strcpy(request->header.op, op);
     } else {
-        DIDError_Set(DIDERR_UNKNOWN, "Unknown Credential operaton.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Unknown credential operation.");
         return -1;
     }
 
@@ -237,7 +238,7 @@ int CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
         vcJson = (char*)malloc(len);
         len = b64_url_decode((uint8_t *)vcJson, request->payload);
         if (len <= 0) {
-            DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode the payload failed");
+            DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode payload failed");
             free(vcJson);
             goto errorExit;
         }
@@ -246,7 +247,7 @@ int CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
         request->vc = Credential_FromJson(vcJson, NULL);
         free(vcJson);
         if (!request->vc) {
-            DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Deserialize transaction payload from json failed.");
+            DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Deserialize payload from json failed.");
             goto errorExit;
         }
 
@@ -317,8 +318,8 @@ bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credentia
     signkey = &request->proof.verificationMethod;
     ownerdoc = DID_Resolve(&request->id.did, &status, false);
     if (!ownerdoc) {
-        if (status == DIDStatus_NotFound)
-            DIDError_Set(DIDERR_NOT_EXISTS, "Credential request's signer does not exist.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Credential request's signer %s %s.",
+                DIDSTR(&request->id.did), DIDSTATUS_MSG(status));
         return false;
     }
 
@@ -328,12 +329,12 @@ bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credentia
     if (!strcmp("declare", request->header.op)) {
         vc = request->vc;
         if (!vc) {
-            DIDError_Set(DIDERR_MALFORMED_IDCHAINTRANSACTION, "Miss credential in the transaction.");
+            DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Miss credential from request.");
             goto errorExit;
         }
 
         if (!DIDDocument_IsAuthenticationKey(ownerdoc, signkey)) {
-            DIDError_Set(DIDERR_MALFORMED_IDCHAINTRANSACTION, "The signer is not the controller of customized did.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Sign key isn't an authenication key of owner.");
             goto errorExit;
         }
     } else {
@@ -344,25 +345,26 @@ bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credentia
         if (vc) {
             issuerdoc = DID_Resolve(&vc->issuer, &status, false);
             if (!issuerdoc) {
-               DIDError_Set(DIDERR_MALFORMED_IDCHAINTRANSACTION, "Issuer of credential does not exist.");
+               DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Issuer of credential %s %s.",
+                    DIDSTR(&vc->issuer), DIDSTATUS_MSG(status));
                goto errorExit;
             }
         }
 
         if (!DIDDocument_IsAuthenticationKey(ownerdoc, signkey) &&
-                (issuerdoc && !DIDDocument_IsAuthenticationKey(issuerdoc, signkey)))
+                (issuerdoc && !DIDDocument_IsAuthenticationKey(issuerdoc, signkey))) {
+            DIDError_Set(DIDERR_INVALID_KEY, "Sign key isn't an authenication key.");
             goto errorExit;
+        }
     }
 
-    if (vc && !Credential_IsValid(vc)) {
-        DIDError_Set(DIDERR_MALFORMED_IDCHAINTRANSACTION, "Credential in request is invalid.");
+    if (vc && !Credential_IsValid(vc))
         goto errorExit;
-    }
 
     signerdoc = DID_Resolve(&signkey->did, &status, false);
     if (!signerdoc) {
-        if (status == DIDStatus_NotFound)
-            DIDError_Set(DIDERR_NOT_EXISTS, "Credential request's signer does not exist.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Credential request's signer %s %s.",
+                DIDSTR(&signkey->did), DIDSTATUS_MSG(status));
         goto errorExit;
     }
 
@@ -374,6 +376,8 @@ bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credentia
             request->header.spec, strlen(request->header.spec),
             request->header.op, strlen(request->header.op),
             request->payload, strlen(request->payload));
+    if (rc < 0)
+        DIDError_Set(DIDERR_VERIFY_ERROR, "Verify credential request failed.");
 
 errorExit:
     DIDDocument_Destroy(signerdoc);

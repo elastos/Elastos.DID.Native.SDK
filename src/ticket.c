@@ -254,8 +254,10 @@ int TransferTicket_Seal(TransferTicket *ticket, DIDDocument *controllerdoc,
     }
 
     signkey = DIDDocument_GetDefaultPublicKey(controllerdoc);
-    if (!signkey)
+    if (!signkey) {
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "No default key of controllerdoc.");
         return -1;
+    }
 
     data = ticket_tojson_forsign(ticket, true);
     if (!data)
@@ -464,8 +466,7 @@ static TransferTicket *TransferTicket_FromJson_Internal(json_t *root)
 
     ticket->doc = DID_Resolve(&ticket->did, &status, false);
     if (!ticket->doc) {
-        if (status == DIDStatus_NotFound)
-            DIDError_Set(DIDERR_NOT_EXISTS, "The ticket's owner does not already exist.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "The ticket's owner .");
         goto errorExit;
     }
 
@@ -484,14 +485,11 @@ TransferTicket *TransferTicket_FromJson(const char *json)
 
     DIDERROR_INITIALIZE();
 
-    if (!json) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!json, "No json string to ticket.", NULL);
 
     root = json_loads(json, JSON_COMPACT, &error);
     if (!root) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Deserialize ticket failed, error: %s.", error.text);
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Deserialize ticket failed, error: %s.", error.text);
         return NULL;
     }
 
@@ -506,10 +504,7 @@ bool TransferTicket_IsValid(TransferTicket *ticket)
 {
     DIDERROR_INITIALIZE();
 
-    if (!ticket) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
+    CHECK_ARG(!ticket, "No ticket argument.", false);
 
     if (!ticket->doc) {
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "No owner's document.");
@@ -538,10 +533,7 @@ bool TransferTicket_IsQualified(TransferTicket *ticket)
 {
     DIDERROR_INITIALIZE();
 
-    if (!ticket) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
+    CHECK_ARG(!ticket, "No ticket argument.", false);
 
     assert((ticket->proofs.size == 0 && !ticket->proofs.proofs) ||
             (ticket->proofs.size > 0 && ticket->proofs.proofs));
@@ -563,13 +555,12 @@ bool TransferTicket_IsGenuine(TransferTicket *ticket)
 
     DIDERROR_INITIALIZE();
 
-    if (!ticket) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+    CHECK_ARG(!ticket, "No ticket argument.", false);
+
+    if (!DIDDocument_IsGenuine(ticket->doc)) {
+        DIDError_Set(DIDERR_NOT_GENUINE, "Owner of ticket isn't genuine.");
         return false;
     }
-
-    if (!DIDDocument_IsGenuine(ticket->doc))
-        return false;
 
     if (!TransferTicket_IsQualified(ticket)) {
         DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Ticket is not qualified.");
@@ -592,7 +583,7 @@ bool TransferTicket_IsGenuine(TransferTicket *ticket)
         doc = DIDDocument_GetControllerDocument(ticket->doc, &proof->verificationMethod.did);
         if (!doc) {
             DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET,
-                    "The signer is not controller of ticket's owner.");
+                    "The signer isn't controller of ticket's owner.");
             goto errorExit;
         }
 
@@ -603,7 +594,7 @@ bool TransferTicket_IsGenuine(TransferTicket *ticket)
 
         if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(doc), &proof->verificationMethod)) {
             DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET,
-                    "The sign key is not controller's default key.");
+                    "The sign key isn't controller's default key.");
             goto errorExit;
         }
 
@@ -612,14 +603,14 @@ bool TransferTicket_IsGenuine(TransferTicket *ticket)
             goto errorExit;
         }
 
-        if (!DIDDocument_IsValid(doc)) {
-            DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "The signer is invalid.");
+        if (!DIDDocument_IsValid(doc))
             goto errorExit;
-        }
 
         if (DIDDocument_Verify(doc, &proof->verificationMethod, proof->signatureValue,
-                1, data, strlen(data)) < 0)
+                1, data, strlen(data)) < 0) {
+            DIDError_Set(DIDERR_VERIFY_ERROR, "Verify ticket failed.");
             goto errorExit;
+        }
 
         checksigners[i] = &proof->verificationMethod.did;
     }
@@ -639,11 +630,7 @@ ssize_t TransferTicket_GetProofCount(TransferTicket *ticket)
 {
     DIDERROR_INITIALIZE();
 
-    if (!ticket) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
+    CHECK_ARG(!ticket, "No ticket argument.", -1);
     return ticket->proofs.size;
 
     DIDERROR_FINALIZE();
@@ -653,15 +640,9 @@ const char *TransferTicket_GetProofType(TransferTicket *ticket, int index)
 {
     DIDERROR_INITIALIZE();
 
-    if (!ticket || index <= 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (index >= ticket->proofs.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than the count of proofs.");
-        return NULL;
-    }
+    CHECK_ARG(!ticket, "No ticket argument.", NULL);
+    CHECK_ARG(index < 0, "Invalid index.", NULL);
+    CHECK_ARG(index >= ticket->proofs.size, "Index is larger than the count of proofs.", NULL);
 
     return ticket->proofs.proofs[index].type;
 
@@ -672,15 +653,9 @@ DIDURL *TransferTicket_GetSignKey(TransferTicket *ticket, int index)
 {
     DIDERROR_INITIALIZE();
 
-    if (!ticket || index < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (index >= ticket->proofs.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than the count of proofs.");
-        return NULL;
-    }
+    CHECK_ARG(!ticket, "No ticket argument.", NULL);
+    CHECK_ARG(index < 0, "Invalid index.", NULL);
+    CHECK_ARG(index >= ticket->proofs.size, "Index is larger than the count of proofs.", NULL);
 
     return &ticket->proofs.proofs[index].verificationMethod;
 
@@ -691,15 +666,9 @@ time_t TransferTicket_GetProofCreatedTime(TransferTicket *ticket, int index)
 {
     DIDERROR_INITIALIZE();
 
-    if (!ticket || index <= 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return 0;
-    }
-
-    if (index >= ticket->proofs.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than the count of proofs.");
-        return 0;
-    }
+    CHECK_ARG(!ticket, "No ticket argument.", 0);
+    CHECK_ARG(index < 0, "Invalid index.", 0);
+    CHECK_ARG(index >= ticket->proofs.size, "Index is larger than the count of proofs.", 0);
 
     return ticket->proofs.proofs[index].created;
 
@@ -710,15 +679,9 @@ const char *TransferTicket_GetProofSignature(TransferTicket *ticket, int index)
 {
     DIDERROR_INITIALIZE();
 
-    if (!ticket || index <= 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (index >= ticket->proofs.size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Index is larger than the count of proofs.");
-        return NULL;
-    }
+    CHECK_ARG(!ticket, "No ticket argument.", NULL);
+    CHECK_ARG(index < 0, "Invalid index.", NULL);
+    CHECK_ARG(index >= ticket->proofs.size, "Index is larger than the count of proofs.", NULL);
 
     return ticket->proofs.proofs[index].signatureValue;
 

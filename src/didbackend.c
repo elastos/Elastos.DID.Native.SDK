@@ -69,15 +69,9 @@ int DIDBackend_InitializeDefault(CreateIdTransaction_Callback *createtransaction
 {
     DIDERROR_INITIALIZE();
 
-    if (!url || !*url || !cachedir || !*cachedir) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
-    if (strlen(url) >= URL_LEN) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "URL is too long.");
-        return -1;
-    }
+    CHECK_ARG(!url || !*url, "No url string.", -1);
+    CHECK_ARG(!cachedir || !*cachedir, "No cache directory.", -1);
+    CHECK_ARG(strlen(url) >= URL_LEN, "Url is too long.", -1);
 
     if (DefaultResolve_Init(url) < 0)
         return -1;
@@ -87,8 +81,10 @@ int DIDBackend_InitializeDefault(CreateIdTransaction_Callback *createtransaction
 
     gResolve = DefaultResolve_Resolve;
 
-    if (ResolverCache_SetCacheDir(cachedir) < 0)
+    if (ResolverCache_SetCacheDir(cachedir) < 0) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid cache directory.");
         return -1;
+    }
 
     return 0;
 
@@ -100,18 +96,17 @@ int DIDBackend_Initialize(CreateIdTransaction_Callback *createtransaction,
 {
     DIDERROR_INITIALIZE();
 
-    if (!cachedir || !*cachedir) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!cachedir || !*cachedir, "No cache directory.", -1);
 
     if (createtransaction)
        gCreateIdTransaction = createtransaction;
     if (resolve)
        gResolve = resolve;
 
-    if (ResolverCache_SetCacheDir(cachedir) < 0)
+    if (ResolverCache_SetCacheDir(cachedir) < 0){
+        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid cache directory.");
         return -1;
+    }
 
     return 0;
 
@@ -145,7 +140,7 @@ bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *st
     success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
     if (!success)
-        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "create Id transaction(create) failed.");
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Create Id transaction(create) failed.");
 
     return success;
 }
@@ -177,7 +172,7 @@ bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *st
     success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
     if (!success)
-        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "create Id transaction(update) failed.");
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Create Id transaction(update) failed.");
 
     return success;
 }
@@ -211,7 +206,7 @@ bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
     success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
     if (!success)
-        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "create Id transaction(create) failed.");
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Create Id transaction(transfer) failed.");
 
     return success;
 }
@@ -246,7 +241,7 @@ bool DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
     success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
     if (!success)
-        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "create Id transaction(deactivated) failed.");
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Create Id transaction(deactivated) failed.");
 
     return success;
 }
@@ -395,8 +390,10 @@ static ssize_t listvcs_from_backend(DID *did, DIDURL **buffer, size_t size, int 
         return rc;
 
     get_txid(txid);
-    if (sprintf(request, DID_RESOLVEVC_REQUEST, didstring, skip, limit, txid) == -1)
+    if (sprintf(request, DID_RESOLVEVC_REQUEST, didstring, skip, limit, txid) == -1) {
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_REQUEST, "Get resolve request to list credentials failed.");
         return rc;
+    }
 
     data = gResolve(request);
     if (!data) {
@@ -442,11 +439,15 @@ static CredentialBiography *resolvevc_from_backend(DIDURL *id, DID *issuer)
     get_txid(txid);
     if (issuer) {
         didstring = DID_ToString(issuer, _didstring, sizeof(_didstring));
-        if (!didstring || sprintf(request, VC_RESOLVE_WITH_ISSUER_REQUEST, idstring, didstring, txid) == -1)
+        if (!didstring || sprintf(request, VC_RESOLVE_WITH_ISSUER_REQUEST, idstring, didstring, txid) == -1) {
+            DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Get resolve request to resolve credentials failed.");
             return NULL;
+        }
     } else {
-        if (sprintf(request, VC_RESOLVE_REQUEST, idstring, txid) == -1)
+        if (sprintf(request, VC_RESOLVE_REQUEST, idstring, txid) == -1) {
+            DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Get resolve request to resolve credentials failed.");
             return NULL;
+        }
     }
 
     data = gResolve(request);
@@ -532,7 +533,7 @@ DIDDocument *DIDBackend_ResolveDID(DID *did, int *status, bool force)
 
     if (!gResolve) {
         *status = DIDStatus_Error;
-        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Resolver not initialized.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "No Resolver.");
         return NULL;
     }
 
@@ -620,7 +621,7 @@ DIDBiography *DIDBackend_ResolveDIDBiography(DID *did)
     assert(did);
 
     if (!gResolve) {
-        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Resolver not initialized.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "No Resolver.");
         return NULL;
     }
 
@@ -648,7 +649,7 @@ ssize_t DIDBackend_ListCredentials(DID *did, DIDURL **buffer, size_t size,
     assert(skip >= 0 && limit >= 0);
 
     if (!gResolve) {
-        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Resolver not initialized.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "No Resolver.");
         return -1;
     }
 
@@ -668,13 +669,13 @@ bool DIDBackend_DeclareCredential(Credential *vc, DIDURL *signkey,
     assert(storepass && *storepass);
 
     if (!gCreateIdTransaction) {
-        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Not method to create transaction.\
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "No method to create transaction.\
                 Please set method by initialize backend.");
         return false;
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
-        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         return false;
     }
 
@@ -685,7 +686,7 @@ bool DIDBackend_DeclareCredential(Credential *vc, DIDURL *signkey,
     success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
     if (!success)
-        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "create Id transaction(deactivated) failed.");
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Create Id transaction(declare) failed.");
 
     return success;
 }
@@ -719,7 +720,7 @@ bool DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey, DIDDocument *d
     success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
     if (!success)
-        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "create Id transaction(deactivated) failed.");
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "create Id transaction(revoke) failed.");
 
     return success;
 }
@@ -735,7 +736,7 @@ Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force)
     assert(id);
 
     if (!gResolve) {
-        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Resolver not initialized.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "No resolver.");
         return NULL;
     }
 
@@ -831,7 +832,7 @@ bool DIDBackend_ResolveRevocation(DIDURL *id, DID *issuer)
     assert(issuer);
 
     if (!gResolve) {
-        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Resolver not initialized.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "No Resolver.");
         return false;
     }
 
@@ -851,7 +852,7 @@ CredentialBiography *DIDBackend_ResolveCredentialBiography(DIDURL *id, DID *issu
     assert(id);
 
     if (!gResolve) {
-        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Resolver not initialized.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "No resolver.");
         return NULL;
     }
 
