@@ -245,11 +245,7 @@ bool Credential_IsSelfProclaimed(Credential *cred)
 {
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
-
+    CHECK_ARG(!cred, "No credential to check.", false);
     return DID_Equals(&cred->subject.id, &cred->issuer);
 
     DIDERROR_FINALIZE();
@@ -269,11 +265,7 @@ DID *Credential_GetOwner(Credential *cred)
 {
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!cred, "No credential to get owner.", NULL);
     return &cred->subject.id;
 
     DIDERROR_FINALIZE();
@@ -283,11 +275,7 @@ ssize_t Credential_GetTypeCount(Credential *cred)
 {
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
+    CHECK_ARG(!cred, "No credential to get type count.", -1);
     return cred->type.size;
 
     DIDERROR_FINALIZE();
@@ -299,16 +287,11 @@ ssize_t Credential_GetTypes(Credential *cred, const char **types, size_t size)
 
     size_t actual_size;
 
-    if (!cred || !types || size == 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!cred, "No credential to get types.", -1);
+    CHECK_ARG(!types || size == 0, "No buffer to types.", -1);
 
     actual_size = cred->type.size;
-    if (actual_size > size) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
-        return -1;
-    }
+    CHECK_ARG(actual_size > size, "The buffer is too small.", -1);
 
     memcpy((void*)types, cred->type.types, sizeof(char*) * actual_size);
     return (ssize_t)actual_size;
@@ -320,11 +303,7 @@ DID *Credential_GetIssuer(Credential *cred)
 {
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!cred, "No credential to get issuer.", NULL);
     return &cred->issuer;
 
     DIDERROR_FINALIZE();
@@ -334,11 +313,7 @@ time_t Credential_GetIssuanceDate(Credential *cred)
 {
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
-
+    CHECK_ARG(!cred, "No credential to get issuance date.", 0);
     return cred->issuanceDate;
 
     DIDERROR_FINALIZE();
@@ -364,8 +339,11 @@ time_t Credential_GetExpirationDate_Internal(Credential *cred, DIDDocument *docu
         return expire;
 
     doc = DID_Resolve(&cred->issuer, &status, false);
-    if (!doc)
+    if (!doc) {
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Issuer of credential %s %s.",
+                DIDSTR(&cred->issuer), DIDSTATUS_MSG(status));
         return 0;
+    }
 
     _expire = DIDDocument_GetExpires(doc);
     DIDDocument_Destroy(doc);
@@ -381,14 +359,14 @@ time_t Credential_GetExpirationDate(Credential *cred)
     int status;
     time_t t;
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return 0;
-    }
+    CHECK_ARG(!cred, "No credential to get expires date.", 0);
 
     doc = DID_Resolve(&cred->id.did, &status, false);
-    if (!doc)
+    if (!doc) {
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Owner of credential %s %s.",
+                DIDSTR(&cred->id.did), DIDSTATUS_MSG(status));
         return 0;
+    }
 
     t = Credential_GetExpirationDate_Internal(cred, doc);
     DIDDocument_Destroy(doc);
@@ -399,10 +377,8 @@ ssize_t Credential_GetPropertyCount(Credential *cred)
 {
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!cred, "No credential to get property count.", -1);
+
     if (!cred->subject.properties) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "No subjects in credential.");
         return -1;
@@ -419,10 +395,8 @@ const char *Credential_GetProperties(Credential *cred)
 
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!cred, "No credential to get properties.", NULL);
+
     if (!cred->subject.properties) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "No subjects in credential.");
         return NULL;
@@ -443,10 +417,8 @@ const char *Credential_GetProperty(Credential *cred, const char *name)
 
     DIDERROR_INITIALIZE();
 
-    if (!cred || !name || !*name) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!cred, "No credential to get property.", NULL);
+    CHECK_ARG(!name || !*name, "No name argument.", NULL);
 
     if (!cred->subject.properties) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "No subjects in credential.");
@@ -468,11 +440,7 @@ time_t Credential_GetProofCreatedTime(Credential *cred)
 {
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return 0;
-    }
-
+    CHECK_ARG(!cred, "No credential to get property.", 0);
     return cred->proof.created;
 
     DIDERROR_FINALIZE();
@@ -482,11 +450,7 @@ DIDURL *Credential_GetProofMethod(Credential *cred)
 {
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!cred, "No credential to get property.", 0);
     return &cred->proof.verificationMethod;
 
     DIDERROR_FINALIZE();
@@ -496,11 +460,7 @@ const char *Credential_GetProofType(Credential *cred)
 {
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!cred, "No credential to get property.", NULL);
     return cred->proof.type;
 
     DIDERROR_FINALIZE();
@@ -510,11 +470,7 @@ const char *Credential_GetProofSignture(Credential *cred)
 {
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!cred, "No credential to get signature.", NULL);
     return cred->proof.signatureValue;
 
     DIDERROR_FINALIZE();
@@ -796,10 +752,7 @@ const char *Credential_ToString(Credential *cred, bool normalized)
 
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!cred, "No credential to be string.", NULL);
 
     data = Credential_ToJson_ForSign(cred, !normalized, false);
     if (!data)
@@ -808,7 +761,7 @@ const char *Credential_ToString(Credential *cred, bool normalized)
     json = json_loads(data, JSON_COMPACT, &error);
     free((void*)data);
     if (!json){
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Get credential json failed: %s", error.text);
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Deserialize credential failed, error: %s.", error.text);
         return NULL;
     }
 
@@ -835,7 +788,6 @@ Credential *Credential_FromJson(const char *json, DID *did)
 
     cred = Parse_Credential(root, did);
     json_decref(root);
-
     return cred;
 
     DIDERROR_FINALIZE();
@@ -843,11 +795,7 @@ Credential *Credential_FromJson(const char *json, DID *did)
 
 DIDURL *Credential_GetVerificationMethod(Credential *cred)
 {
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!cred, "No credential to get verification method.", NULL);
     return &cred->proof.verificationMethod;
 }
 
@@ -855,28 +803,29 @@ int Credential_Verify(Credential *cred)
 {
     DIDDocument *doc;
     const char *data;
-    int rc, status;
+    int rc = -1, status;
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!cred, "No credential to verify.", -1);
 
     doc = DID_Resolve(&cred->issuer, &status, false);
-    if (!doc)
-        return -1;
-
-    data = Credential_ToJson_ForSign(cred, false, true);
-    if (!data) {
-        DIDDocument_Destroy(doc);
+    if (!doc) {
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Issuer of credential %s %s.",
+                DIDSTR(&cred->issuer), DIDSTATUS_MSG(status));
         return -1;
     }
+
+    data = Credential_ToJson_ForSign(cred, false, true);
+    if (!data)
+        goto errorExit;
 
     rc = DIDDocument_Verify(doc, &cred->proof.verificationMethod,
             cred->proof.signatureValue, 1, data, strlen(data));
     free((void *)data);
-    DIDDocument_Destroy(doc);
+    if (rc < 0)
+        DIDError_Set(DIDERR_VERIFY_ERROR, "Verify credential failed.");
 
+errorExit:
+    DIDDocument_Destroy(doc);
     return rc;
 }
 
@@ -904,10 +853,8 @@ bool Credential_IsExpired(Credential *cred)
 
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
+    if (!cred)
         return true;
-    }
 
     expires = Credential_GetExpirationDate(cred);
     now = time(NULL);
@@ -929,17 +876,20 @@ bool Credential_IsGenuine_Internal(Credential *cred, DIDDocument *document)
 
     assert(cred);
 
-    if (!document) {
+    issuerdoc = document;
+    if (!issuerdoc) {
         issuerdoc = DID_Resolve(&cred->issuer, &status, false);
-    } else {
-        issuerdoc = document;
+        if (!issuerdoc) {
+            DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Issuer of credential %s %s.",
+                    DIDSTR(&cred->issuer), DIDSTATUS_MSG(status));
+            return false;
+        }
     }
 
-    if (!issuerdoc)
-        return false;
-
-    if (!DIDDocument_IsAuthenticationKey(issuerdoc, &cred->proof.verificationMethod))
+    if (!DIDDocument_IsAuthenticationKey(issuerdoc, &cred->proof.verificationMethod)) {
+        DIDError_Set(DIDERR_INVALID_KEY, "Verification key isn't an authentication key.");
         goto errorExit;
+    }
 
     if (strcmp(cred->proof.type, ProofType)) {
         DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Unknow credential proof type.");
@@ -953,8 +903,11 @@ bool Credential_IsGenuine_Internal(Credential *cred, DIDDocument *document)
     rc = DIDDocument_Verify(issuerdoc, &cred->proof.verificationMethod,
             cred->proof.signatureValue, 1, data, strlen(data));
     free((void *)data);
+    if (rc < 0)
+        DIDError_Set(DIDERR_VERIFY_ERROR, "Verify credential failed.");
 
     genuine = (rc == -1 ? false : true);
+
 errorExit:
     if (issuerdoc != document)
         DIDDocument_Destroy(issuerdoc);
@@ -965,11 +918,7 @@ bool Credential_IsGenuine(Credential *cred)
 {
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
-
+    CHECK_ARG(!cred, "No credential to check genuine.", false);
     return Credential_IsGenuine_Internal(cred, NULL);
 
     DIDERROR_FINALIZE();
@@ -985,14 +934,16 @@ bool Credential_IsValid_Internal(Credential *cred, DIDDocument *document)
     assert(document);
 
     if (!DID_Equals(&cred->id.did, &cred->subject.id)) {
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Credential's id mismatch with Credential subject's owner.");
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Credential id mismatch with Credential subject's owner.");
         return false;
     }
 
     if (!Credential_IsSelfProclaimed(cred)) {
         issuerdoc = DID_Resolve(&cred->issuer, &status, false);
-        if (!issuerdoc)
+        if (!issuerdoc) {
+            DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Issuer %s %s.", DIDSTR(&cred->issuer), DIDSTATUS_MSG(status));
             return false;
+        }
 
         valid = DIDDocument_IsValid(issuerdoc);
         if (!valid) {
@@ -1017,14 +968,14 @@ bool Credential_IsValid(Credential *cred)
 
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
+    CHECK_ARG(!cred, "No credential to check validity.", false);
 
     doc = DID_Resolve(&cred->subject.id, &status, false);
-    if (!doc)
+    if (!doc) {
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Owner of credential %s %s.",
+                DIDSTR(&cred->subject.id), DIDSTATUS_MSG(status));
         return false;
+    }
 
     if (!DIDDocument_IsValid(doc)) {
         DIDDocument_Destroy(doc);
@@ -1042,11 +993,7 @@ CredentialMetadata *Credential_GetMetadata(Credential *cred)
 {
     DIDERROR_INITIALIZE();
 
-    if (!cred) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!cred, "No credential to get metadata.", NULL);
     return &cred->metadata;
 
     DIDERROR_FINALIZE();
@@ -1096,13 +1043,11 @@ bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *sto
 
     DIDERROR_INITIALIZE();
 
-    if (!credential || !storepass || !*storepass) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
+    CHECK_ARG(!credential, "No credential to be declared.", false);
+    CHECK_PASSWORD(storepass, false);
 
     if (!CredentialMetadata_AttachedStore(&credential->metadata)) {
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Not attached with Credential.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with credential.");
         return false;
     }
 
@@ -1115,7 +1060,7 @@ bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *sto
     }
 
     if (Credential_WasDeclared(&credential->id)) {
-        DIDError_Set(DIDERR_ALREADY_EXISTS, "The credential already exist.");
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "The credential was already declared.");
         return false;
     }
 
@@ -1124,8 +1069,8 @@ bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *sto
     if (!doc) {
         doc = DID_Resolve(&credential->subject.id, &status, false);
         if (!doc) {
-            if (status == DIDStatus_NotFound)
-                DIDError_Set(DIDERR_NOT_EXISTS, "The owner of Credential doesn't already exist.");
+            DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "The owner of Credential %s %s.",
+                    DIDSTR(&credential->subject.id), DIDSTATUS_MSG(status));
             return false;
         }
         DIDMetadata_SetStore(&doc->metadata, store);
@@ -1134,12 +1079,12 @@ bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *sto
     if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(doc);
         if (!signkey) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Please give the specificed sign key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Please specify sign key.");
             goto errorExit;
         }
     } else {
         if(!DIDDocument_IsAuthenticationKey(doc, signkey)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Please give the authentication key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Sign key isn't an authentication key.");
             goto errorExit;
         }
     }
@@ -1162,13 +1107,11 @@ bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *stor
 
     DIDERROR_INITIALIZE();
 
-    if (!credential || !storepass || !*storepass) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
+    CHECK_ARG(!credential, "No credential to be revoked.", false);
+    CHECK_PASSWORD(storepass, false);
 
     if (!CredentialMetadata_AttachedStore(&credential->metadata)) {
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Not attached with Credential.");
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with credential.");
         return false;
     }
 
@@ -1190,8 +1133,8 @@ bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *stor
     if (!ownerdoc) {
         ownerdoc = DID_Resolve(&credential->id.did, &status, false);
         if (!ownerdoc) {
-            if (status == DIDStatus_NotFound)
-                DIDError_Set(DIDERR_NOT_EXISTS, "The owner of Credential doesn't already exist.");
+            DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "The owner of credential %s %s.",
+                    DIDSTR(&credential->id.did), DIDSTATUS_MSG(status));
             return false;
         }
         DIDMetadata_SetStore(&ownerdoc->metadata, store);
@@ -1200,26 +1143,28 @@ bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *stor
     if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(ownerdoc);
         if (!signkey) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Please give the specificed sign key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Please specify sign key.");
             goto errorExit;
         }
     } else {
         issuerdoc = DID_Resolve(&credential->issuer, &status, false);
         if (!issuerdoc) {
-            DIDError_Set(DIDERR_NOT_EXISTS, "The issuer of Credential doesn't already exist.");
+            DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "The issuer of Credential %s %s.",
+                    DIDSTR(&credential->issuer), DIDSTATUS_MSG(status));
             goto errorExit;
         }
 
         if(!DIDDocument_IsAuthenticationKey(ownerdoc, signkey) &&
                 !DIDDocument_IsAuthenticationKey(issuerdoc, signkey)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Please give the authentication key to sign.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Please specify an authentication key to sign.");
             goto errorExit;
         }
     }
 
     signerdoc = DID_Resolve(&credential->proof.verificationMethod.did, &status, false);
     if (!signerdoc) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "The signer of Credential doesn't already exist.");
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "The signer of Credential %s %s.",
+                DIDSTR(&credential->proof.verificationMethod.did), DIDSTATUS_MSG(status));
         goto errorExit;
     }
     DIDMetadata_SetStore(&signerdoc->metadata, store);
@@ -1245,10 +1190,9 @@ bool Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
 
     DIDERROR_INITIALIZE();
 
-    if (!id || !document || !storepass || !*storepass) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
+    CHECK_ARG(!id, "No credential id to be revoked.", false);
+    CHECK_ARG(!document, "No document argument.", false);
+    CHECK_PASSWORD(storepass, false);
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
@@ -1261,25 +1205,27 @@ bool Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
         brevoked = Credential_IsRevoked(local_vc);
         Credential_Destroy(local_vc);
         if (brevoked) {
-            DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "Credential is already revoked.");
+            DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "Credential is revoked.");
             return false;
         }
     }
 
     if (Credential_ResolveRevocation(id, &document->did)) {
-        DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "Credential is already revoked.");
+        DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "Credential is revoked.");
         return false;
     }
 
     if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(document);
         if (!signkey) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Please give the specificed sign key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Please specify sign key.");
             return false;
         }
     } else {
-        if (!DIDDocument_IsAuthenticationKey(document, signkey))
+        if (!DIDDocument_IsAuthenticationKey(document, signkey)) {
+            DIDError_Set(DIDERR_INVALID_KEY, "Please specify an authentication key.");
             return false;
+        }
     }
 
     return DIDBackend_RevokeCredential(id, signkey, document, storepass);
@@ -1291,11 +1237,7 @@ Credential *Credential_Resolve(DIDURL *id, int *status, bool force)
 {
     DIDERROR_INITIALIZE();
 
-    if (!id) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
-
+    CHECK_ARG(!id, "No credential id to resolve.", NULL);
     return DIDBackend_ResolveCredential(id, status, force);
 
     DIDERROR_FINALIZE();
@@ -1305,11 +1247,7 @@ bool Credential_ResolveRevocation(DIDURL *id, DID *issuer)
 {
     DIDERROR_INITIALIZE();
 
-    if (!id) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
-
+    CHECK_ARG(!id, "No credential id to get revoked status.", false);
     return DIDBackend_ResolveRevocation(id, issuer);
 
     DIDERROR_FINALIZE();
@@ -1317,13 +1255,10 @@ bool Credential_ResolveRevocation(DIDURL *id, DID *issuer)
 
 CredentialBiography *Credential_ResolveBiography(DIDURL *id, DID *issuer)
 {
-    if (!id) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!id, "No credential id to resolve biography.", NULL);
     return DIDBackend_ResolveCredentialBiography(id, issuer);
 }
+
 bool Credential_WasDeclared(DIDURL *id)
 {
     Credential *credential;
@@ -1331,10 +1266,7 @@ bool Credential_WasDeclared(DIDURL *id)
 
     DIDERROR_INITIALIZE();
 
-    if (!id) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
+    CHECK_ARG(!id, "No credential id to check declared status.", false);
 
     credential = Credential_Resolve(id, &status, true);
     if (!credential)
@@ -1350,10 +1282,7 @@ bool Credential_IsRevoked(Credential *credential)
 {
     DIDERROR_INITIALIZE();
 
-    if (!credential) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
+    CHECK_ARG(!credential, "No credential to check revoked status.", false);
 
     if (CredentialMetadata_GetRevoke(&credential->metadata))
         return true;
@@ -1368,10 +1297,10 @@ ssize_t Credential_List(DID *did, DIDURL **buffer, size_t size, int skip, int li
 {
     DIDERROR_INITIALIZE();
 
-    if (!did || !buffer || size == 0 || skip < 0 || limit < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!did, "No did to list credentials.", -1);
+    CHECK_ARG(!buffer || size == 0, "Invalid buffer to list credentials.", -1);
+    CHECK_ARG(skip < 0, "Invalid 'skip'.", -1);
+    CHECK_ARG(limit < 0, "Invalid 'limit'.", -1);
 
     if (limit > size) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Buffer to put credentials is smaller than 'limit' number.");

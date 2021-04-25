@@ -189,13 +189,7 @@ DIDStore *StoreMetadata_GetStore(StoreMetadata *metadata)
 
 bool StoreMetadata_AttachedStore(StoreMetadata *metadata)
 {
-    bool attached;
-
     assert(metadata);
 
-    attached = Metadata_AttachedStore(&metadata->base);
-    if (!attached)
-        DIDError_Set(DIDERR_METADATA_ERROR, "No attached did store.");
-
-    return attached;
+    return Metadata_AttachedStore(&metadata->base);
 }

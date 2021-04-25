@@ -115,7 +115,7 @@ int DID_Init(DID *did, const char *idstring)
     assert(idstring && *idstring);
 
     if (strlen(idstring) >= sizeof(did->idstring)) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Id string is too long.");
+        DIDError_Set(DIDERR_MALFORMED_DIDURL, "Id string is too long.");
         return -1;
     }
 
@@ -130,10 +130,7 @@ DID *DID_FromString(const char *idstring)
 
     DIDERROR_INITIALIZE();
 
-    if (!idstring || !*idstring) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!idstring || !*idstring, "No idstring argument.", NULL);
 
     did = (DID *)calloc(1, sizeof(DID));
     if (!did) {
@@ -157,15 +154,10 @@ DID *DID_New(const char *method_specific_string)
 
     DIDERROR_INITIALIZE();
 
-    if (!method_specific_string || !*method_specific_string) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (strlen(method_specific_string) >= MAX_ID_SPECIFIC_STRING) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Method specific string is too long.");
-        return NULL;
-    }
+    CHECK_ARG(!method_specific_string || !*method_specific_string,
+            "Invalid method specific string argument.", NULL);
+    CHECK_ARG(strlen(method_specific_string) >= MAX_ID_SPECIFIC_STRING,
+            "Method specific string is too long.", NULL);
 
     did = (DID *)calloc(1, sizeof(DID));
     if (!did) {
@@ -183,11 +175,7 @@ const char *DID_GetMethod(DID *did)
 {
     DIDERROR_INITIALIZE();
 
-    if (!did) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!did, "No did argument.", NULL);
     return did_method;
 
     DIDERROR_FINALIZE();
@@ -197,11 +185,7 @@ const char *DID_GetMethodSpecificId(DID *did)
 {
     DIDERROR_INITIALIZE();
 
-    if (!did) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!did, "No did argument.", NULL);
     return (const char *)did->idstring;
 
     DIDERROR_FINALIZE();
@@ -211,15 +195,10 @@ char *DID_ToString(DID *did, char *idstring, size_t len)
 {
     DIDERROR_INITIALIZE();
 
-    if (!did || !idstring) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (strlen(did->idstring) + strlen(elastos_did_prefix) >= len) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Buffer gived is too small.");
-        return NULL;
-    }
+    CHECK_ARG(!did, "No did argument.", NULL);
+    CHECK_ARG(!idstring, "No idstring argument.", NULL);
+    CHECK_ARG(strlen(did->idstring) + strlen(elastos_did_prefix) >= len,
+            "Buffer gived is too small.", NULL);
 
     strcpy(idstring, elastos_did_prefix);
     strcat(idstring, did->idstring);
@@ -242,10 +221,8 @@ bool DID_Equals(DID *did1, DID *did2)
 {
     DIDERROR_INITIALIZE();
 
-    if (!did1 || !did2) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
+    CHECK_ARG(!did1, "No did1 argument.", false);
+    CHECK_ARG(!did2, "No did2 argument.", false);
 
     return strcmp(did1->idstring, did2->idstring) == 0;
 
@@ -256,10 +233,8 @@ int DID_Compare(DID *did1, DID *did2)
 {
     DIDERROR_INITIALIZE();
 
-    if (!did1 || !did2) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!did1, "No did1 argument.", false);
+    CHECK_ARG(!did2, "No did2 argument.", false);
 
     return strcmp(did1->idstring, did2->idstring);
 
@@ -282,11 +257,7 @@ DIDBiography *DID_ResolveBiography(DID *did)
 {
     DIDERROR_INITIALIZE();
 
-    if (!did) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!did, "No did to resolve biography.", NULL);
     return DIDBackend_ResolveDIDBiography(did);
 
     DIDERROR_FINALIZE();
@@ -296,11 +267,7 @@ DIDDocument *DID_Resolve(DID *did, int *status, bool force)
 {
     DIDERROR_INITIALIZE();
 
-    if (!did) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!did, "No did to resolve.", NULL);
     return DIDBackend_ResolveDID(did, status, force);
 
     DIDERROR_FINALIZE();
@@ -310,10 +277,7 @@ DIDMetadata *DID_GetMetadata(DID *did)
 {
     DIDERROR_INITIALIZE();
 
-    if (!did) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!did, "No did to get metadata.", NULL);
     return &did->metadata;
 
     DIDERROR_FINALIZE();
@@ -331,7 +295,7 @@ int DIDURL_Init(DIDURL *id, DID *did, const char *fragment)
     assert(fragment && *fragment);
 
     if (strlen(fragment) >= sizeof(id->fragment)) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The fragment is too long.");
+        DIDError_Set(DIDERR_MALFORMED_DIDURL, "The fragment is too long.");
         return -1;
     }
 
@@ -363,10 +327,7 @@ DIDURL *DIDURL_FromString(const char *idstring, DID *ref)
 
     DIDERROR_INITIALIZE();
 
-    if (!idstring || !*idstring) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!idstring || !*idstring, "Invalid idstring.", NULL);
 
     id = (DIDURL *)calloc(1, sizeof(DIDURL));
     if (!id) {
@@ -390,21 +351,12 @@ DIDURL *DIDURL_New(const char *method_specific_string, const char *fragment)
 
     DIDERROR_INITIALIZE();
 
-    if (!method_specific_string || !*method_specific_string ||
-        !fragment || !*fragment)  {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (strlen(method_specific_string) >= MAX_ID_SPECIFIC_STRING) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Method specific string is too long.");
-        return NULL;
-    }
-
-    if (strlen(fragment) >= MAX_FRAGMENT) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The fragment is too long.");
-        return NULL;
-    }
+    CHECK_ARG(!method_specific_string || !*method_specific_string,
+            "Invalid method specific string argument.", NULL);
+    CHECK_ARG(!fragment || !*fragment, "Invalid fragment string.", NULL);
+    CHECK_ARG(strlen(method_specific_string) >= MAX_ID_SPECIFIC_STRING,
+            "method specific string is too long.", NULL);
+    CHECK_ARG(strlen(fragment) >= MAX_FRAGMENT, "The fragment is too long.", NULL);
 
     id = (DIDURL *)calloc(1, sizeof(DIDURL));
     if (!id) {
@@ -426,15 +378,9 @@ DIDURL *DIDURL_NewByDid(DID *did, const char *fragment)
 
     DIDERROR_INITIALIZE();
 
-    if (!did || !fragment || !*fragment) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
-    if (strlen(fragment) >= MAX_FRAGMENT) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The fragment is too long.");
-        return NULL;
-    }
+    CHECK_ARG(!did, "No did argument.", NULL);
+    CHECK_ARG(!fragment || !*fragment, "Invalid fragment string.", NULL);
+    CHECK_ARG(strlen(fragment) >= MAX_FRAGMENT, "The fragment is too long.", NULL);
 
     id = (DIDURL*)calloc(1, sizeof(DIDURL));
     if (!id) {
@@ -457,11 +403,7 @@ DID *DIDURL_GetDid(DIDURL *id)
 {
     DIDERROR_INITIALIZE();
 
-    if (!id) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!id, "No didurl argument.", NULL);
     return &(id->did);
 
     DIDERROR_FINALIZE();
@@ -471,11 +413,7 @@ const char *DIDURL_GetFragment(DIDURL *id)
 {
     DIDERROR_INITIALIZE();
 
-    if (!id) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
-
+    CHECK_ARG(!id, "No didurl argument.", NULL);
     return (const char*)id->fragment;
 
     DIDERROR_FINALIZE();
@@ -488,30 +426,28 @@ char *DIDURL_ToString(DIDURL *id, char *idstring, size_t len, bool compact)
 
     DIDERROR_INITIALIZE();
 
-    if (!id || !idstring) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!id, "No didurl argument.", NULL);
+    CHECK_ARG(!idstring, "No buffer argument.", NULL);
 
     expect_len += strlen(id->fragment) + 1;         /* #xxxx */
     expect_len += compact ? 0 : strlen(elastos_did_prefix) + strlen(id->did.idstring);
 
     if (expect_len >= len) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Buffer gived is too small.");
+        DIDError_Set(DIDERR_INVALID_ARGS, "Buffer is too small, please give buffer which has %d length.", expect_len);
         return NULL;
     }
 
     if (compact) {
         size = snprintf(idstring, len, "#%s", id->fragment);
         if (size < 0 || size > (int)len) {
-            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Buffer gived is too small.");
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Buffer is too small.");
             return NULL;
         }
     } else {
         size = snprintf(idstring, len, "%s%s#%s", elastos_did_prefix,
             id->did.idstring, id->fragment);
         if (size < 0 || size > (int)len) {
-            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Buffer gived is too small.");
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Buffer is too small.");
             return NULL;
         }
     }
@@ -525,10 +461,8 @@ bool DIDURL_Equals(DIDURL *id1, DIDURL *id2)
 {
     DIDERROR_INITIALIZE();
 
-    if (!id1 || !id2) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return false;
-    }
+    CHECK_ARG(!id1, "No id1 argument.", false);
+    CHECK_ARG(!id2, "No id2 argument.", false);
 
     return (strcmp(id1->did.idstring, id2->did.idstring) == 0 &&
             strcmp(id1->fragment, id2->fragment) == 0);
@@ -543,10 +477,8 @@ int DIDURL_Compare(DIDURL *id1, DIDURL *id2)
 
     DIDERROR_INITIALIZE();
 
-    if (!id1 || !id2) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return -1;
-    }
+    CHECK_ARG(!id1, "No id1 argument.", -1);
+    CHECK_ARG(!id2, "No id2 argument.", -1);
 
     idstring1 = DIDURL_ToString(id1, _idstring1, ELA_MAX_DIDURL_LEN, false);
     idstring2 = DIDURL_ToString(id2, _idstring2, ELA_MAX_DIDURL_LEN, false);
@@ -560,10 +492,8 @@ int DIDURL_Compare(DIDURL *id1, DIDURL *id2)
 
 DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src)
 {
-    if (!dest || !src ) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!dest, "No destination id argument.", NULL);
+    CHECK_ARG(!src, "No source id argument.", NULL);
 
     strcpy(dest->did.idstring, src->did.idstring);
     strcpy(dest->fragment, src->fragment);
@@ -588,10 +518,7 @@ CredentialMetadata *DIDURL_GetMetadata(DIDURL *id)
 {
     DIDERROR_INITIALIZE();
 
-    if (!id) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!id, "No destination id argument.", NULL);
     return &id->metadata;
 
     DIDERROR_FINALIZE();

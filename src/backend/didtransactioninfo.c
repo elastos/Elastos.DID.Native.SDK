@@ -114,12 +114,12 @@ const char *DIDTransaction_ToJson(DIDTransaction *txinfo)
 
     gen = DIDJG_Initialize(&g);
     if (!gen) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator initialize failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Json generator for id transaction initialize failed.");
         return NULL;
     }
 
     if (DIDTransaction_ToJson_Internal(gen, txinfo) < 0) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize ID transaction to json failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize id transaction to json failed.");
         DIDJG_Destroy(gen);
         return NULL;
     }

@@ -138,10 +138,8 @@ static int Metadata_Set(Metadata *metadata, const char* key, json_t *value)
 
     if (!metadata->data) {
         metadata->data = json_object();
-        if (!metadata->data) {
-            DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
+        if (!metadata->data)
             return -1;
-        }
     }
 
     json_object_del(metadata->data, key);
@@ -153,41 +151,51 @@ int Metadata_SetExtra(Metadata *metadata, const char* key, const char *value)
 {
     char *uskey;
     json_t *json;
-    int rc;
+    int rc = -1;
 
     assert(metadata);
     assert(key);
 
     json = value ? json_string(value) : json_null();
     if (!json)
-        return -1;
+        goto errorExit;
 
     uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
     if (!uskey)
-        return -1;
+        goto errorExit;
 
     if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        return -1;
+        goto errorExit;
 
     rc = Metadata_Set(metadata, uskey, json);
     json_decref(json);
+
+errorExit:
+    if (rc < 0)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
+
     return rc;
 }
 
 int Metadata_SetDefaultExtra(Metadata *metadata, const char* key, const char *value)
 {
     json_t *json;
-    int rc;
+    int rc = -1;
 
     assert(metadata);
     assert(key);
 
     json = value ? json_string(value) : json_null();
     if (!json)
-        return -1;
+        goto errorExit;
 
     rc = Metadata_Set(metadata, key, json);
     json_decref(json);
+
+errorExit:
+    if (rc < 0)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
+
     return rc;
 }
 
@@ -195,41 +203,51 @@ int Metadata_SetExtraWithBoolean(Metadata *metadata, const char *key, bool value
 {
     char *uskey;
     json_t *json;
-    int rc;
+    int rc = -1;
 
     assert(metadata);
     assert(key);
 
     json = json_boolean(value);
     if (!json)
-        return -1;
+        goto errorExit;
 
     uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
     if (!uskey)
-        return -1;
+        goto errorExit;
 
     if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        return -1;
+        goto errorExit;
 
     rc = Metadata_Set(metadata, uskey, json);
     json_decref(json);
+
+errorExit:
+    if (rc < 0)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
+
     return rc;
 }
 
 int Metadata_SetDefaultExtraWithBoolean(Metadata *metadata, const char *key, bool value)
 {
     json_t *json;
-    int rc;
+    int rc = -1;
 
     assert(metadata);
     assert(key);
 
     json = json_boolean(value);
     if (!json)
-        return -1;
+        goto errorExit;
 
     rc = Metadata_Set(metadata, key, json);
     json_decref(json);
+
+errorExit:
+    if (rc < 0)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
+
     return rc;
 }
 
@@ -237,41 +255,51 @@ int Metadata_SetExtraWithDouble(Metadata *metadata, const char *key, double valu
 {
     char *uskey;
     json_t *json;
-    int rc;
+    int rc = -1;
 
     assert(metadata);
     assert(key);
 
     json = json_real(value);
     if (!json)
-        return -1;
+        goto errorExit;
 
     uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
     if (!uskey)
-        return -1;
+        goto errorExit;
 
     if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        return -1;
+        goto errorExit;
 
     rc = Metadata_Set(metadata, uskey, json);
     json_decref(json);
+
+errorExit:
+    if (rc < 0)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
+
     return rc;
 }
 
 int Metadata_SetDefaultExtraWithDouble(Metadata *metadata, const char *key, double value)
 {
     json_t *json;
-    int rc;
+    int rc = -1;
 
     assert(metadata);
     assert(key);
 
     json = json_real(value);
     if (!json)
-        return -1;
+        goto errorExit;
 
     rc = Metadata_Set(metadata, key, json);
     json_decref(json);
+
+errorExit:
+    if (rc < 0)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
+
     return rc;
 }
 
@@ -279,41 +307,51 @@ int Metadata_SetExtraWithInteger(Metadata *metadata, const char *key, int value)
 {
     char *uskey;
     json_t *json;
-    int rc;
+    int rc = -1;
 
     assert(metadata);
     assert(key);
 
     json = json_integer(value);
     if (!json)
-        return -1;
+        goto errorExit;
 
     uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
     if (!uskey)
-        return -1;
+        goto errorExit;
 
     if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        return -1;
+        goto errorExit;
 
     rc = Metadata_Set(metadata, uskey, json);
     json_decref(json);
+
+errorExit:
+    if (rc < 0)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
+
     return rc;
 }
 
 int Metadata_SetDefaultExtraWithInteger(Metadata *metadata, const char *key, int value)
 {
     json_t *json;
-    int rc;
+    int rc = -1;
 
     assert(metadata);
     assert(key);
 
     json = json_integer(value);
     if (!json)
-        return -1;
+        goto errorExit;
 
     rc = Metadata_Set(metadata, key, json);
     json_decref(json);
+
+errorExit:
+    if (rc < 0)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
+
     return rc;
 }
 
@@ -324,16 +362,12 @@ static json_t *Metadata_Get(Metadata *metadata, const char *key)
     assert(metadata);
     assert(key);
 
-    if (!metadata->data) {
-        DIDError_Set(DIDERR_METADATA_ERROR, "No content in metadata.");
+    if (!metadata->data)
         return NULL;
-    }
 
     json = json_object_get(metadata->data, key);
-    if (!json) {
-        DIDError_Set(DIDERR_METADATA_ERROR, "No '%s' elem in metadata.", key);
+    if (!json)
         return NULL;
-    }
 
     return json;
 }
@@ -342,46 +376,58 @@ const char *Metadata_GetExtra(Metadata *metadata, const char *key)
 {
     char *uskey;
     json_t *json;
+    const char *value = NULL;
 
     assert(metadata);
     assert(key);
 
     uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
     if (!uskey)
-        return NULL;
+        goto errorExit;
 
     if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        return NULL;
+        goto errorExit;
 
     json = Metadata_Get(metadata, uskey);
     if (!json)
-        return NULL;
+        goto errorExit;
 
-    if (!json_is_string(json)) {
-        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not string type.", key);
-        return NULL;
-    }
+    if (!json_is_string(json))
+        goto errorExit;
 
-    return json_string_value(json);
+    value = json_string_value(json);
+
+errorExit:
+    if (!value)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
+
+    return value;
 }
 
 const char *Metadata_GetDefaultExtra(Metadata *metadata, const char *key)
 {
     json_t *json;
+    const char *value = NULL;
 
     assert(metadata);
     assert(key);
 
     json = Metadata_Get(metadata, key);
     if (!json)
-        return NULL;
+        goto errorExit;
 
     if (!json_is_string(json)) {
         DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not string type.", key);
-        return NULL;
+        goto errorExit;
     }
 
-    return json_string_value(json);
+    value = json_string_value(json);
+
+errorExit:
+    if (!value)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
+
+    return value;
 }
 
 bool Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key)
@@ -394,21 +440,25 @@ bool Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key)
 
     uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
     if (!uskey)
-        return false;
+        goto errorExit;
 
     if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        return false;
+        goto errorExit;
 
     json = Metadata_Get(metadata, uskey);
     if (!json)
-        return false;
+        goto errorExit;
 
     if (!json_is_boolean(json)) {
         DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not boolean type.", key);
-        return false;
+        goto errorExit;
     }
 
     return json_is_true(json);
+
+errorExit:
+    DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
+    return NULL;
 }
 
 bool Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key)
@@ -420,106 +470,130 @@ bool Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key)
 
     json = Metadata_Get(metadata, key);
     if (!json)
-        return false;
+        goto errorExit;
 
     if (!json_is_boolean(json)) {
         DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not boolean type.", key);
-        return false;
+        goto errorExit;
     }
 
     return json_is_true(json);
+
+errorExit:
+    DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
+    return NULL;
 }
 
 double Metadata_GetExtraAsDouble(Metadata *metadata, const char *key)
 {
     char *uskey;
     json_t *json;
+    double value = 0;
 
     assert(metadata);
     assert(key);
 
     uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
     if (!uskey)
-        return 0;
+        goto errorExit;
 
     if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        return 0;
+        goto errorExit;
 
     json = Metadata_Get(metadata, uskey);
     if (!json)
-        return 0;
+        goto errorExit;
 
-    if (!json_is_real(json)) {
-        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not double type.", key);
-        return 0;
-    }
+    if (!json_is_real(json))
+        goto errorExit;
 
-    return json_real_value(json);
+    value = json_real_value(json);
+
+errorExit:
+    if (value == 0)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
+
+    return value;
 }
 
 double Metadata_GetDefaultExtraAsDouble(Metadata *metadata, const char *key)
 {
     json_t *json;
+    double value = 0;
 
     assert(metadata);
     assert(key);
 
     json = Metadata_Get(metadata, key);
     if (!json)
-        return 0;
+        goto errorExit;
 
-    if (!json_is_real(json)) {
-        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not double type.", key);
-        return 0;
-    }
+    if (!json_is_real(json))
+        goto errorExit;
 
-    return json_real_value(json);
+    value = json_real_value(json);
+
+errorExit:
+    if (value == 0)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
+
+    return value;
 }
 
 int Metadata_GetExtraAsInteger(Metadata *metadata, const char *key)
 {
     char *uskey;
     json_t *json;
+    int value = -1;
 
     assert(metadata);
     assert(key);
 
     uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
     if (!uskey)
-        return 0;
+        goto errorExit;
 
     if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        return 0;
+        goto errorExit;
 
     json = Metadata_Get(metadata, uskey);
     if (!json)
-        return 0;
+        goto errorExit;
 
-    if (!json_is_integer(json)) {
-        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not double type.", key);
-        return 0;
-    }
+    if (!json_is_integer(json))
+        goto errorExit;
 
-    return json_integer_value(json);
+    value = json_integer_value(json);
+
+errorExit:
+    if (value == -1)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
+
+    return value;
 }
 
 int Metadata_GetDefaultExtraAsInteger(Metadata *metadata, const char *key)
 {
     json_t *json;
+    int value = -1;
 
     assert(metadata);
     assert(key);
 
     json = Metadata_Get(metadata, key);
     if (!json)
-        return 0;
+        goto errorExit;
 
-    if (!json_is_integer(json)) {
-        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not double type.", key);
-        return 0;
-    }
+    if (!json_is_integer(json))
+        goto errorExit;
 
-    return json_integer_value(json);
+    value = json_integer_value(json);
+
+errorExit:
+    if (value == -1)
+        DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
+
+    return value;
 }
 
 int Metadata_Merge(Metadata *tometadata, Metadata *frommetadata)
@@ -538,20 +612,23 @@ int Metadata_Merge(Metadata *tometadata, Metadata *frommetadata)
                 json_object_del(tometadata->data, key);
         } else {
             item = json_deep_copy(json);
-            if (!item) {
-                DIDError_Set(DIDERR_METADATA_ERROR, "Copy '%s' to metadata failed.", key);
-                return -1;
-            }
+            if (!item)
+                goto errorExit;
+
             rc = Metadata_Set(tometadata, key, item);
             json_decref(item);
             if (rc < 0) {
                 DIDError_Set(DIDERR_METADATA_ERROR, "Add '%s' to metadata failed.", key);
-                return -1;
+                goto errorExit;
             }
         }
     }
 
     return 0;
+
+errorExit:
+    DIDError_Set(DIDERR_METADATA_ERROR, "Merge metadata failed");
+    return -1;
 }
 
 int Metadata_Upgrade(Metadata *newmetadata, Metadata *oldmetadata)
@@ -575,17 +652,21 @@ int Metadata_Upgrade(Metadata *newmetadata, Metadata *oldmetadata)
         } else {
             uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
             if (!uskey)
-                return -1;
+                goto errorExit;
 
             if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-                return -1;
+                goto errorExit;
         }
 
         if (Metadata_Set(newmetadata, uskey, json) < 0)
-            return -1;
+            goto errorExit;
     }
 
     return 0;
+
+errorExit:
+    DIDError_Set(DIDERR_METADATA_ERROR, "Upgrade metadata failed");
+    return -1;
 }
 
 int Metadata_Copy(Metadata *dest, Metadata *src)
