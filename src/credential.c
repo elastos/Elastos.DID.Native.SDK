@@ -66,7 +66,7 @@ static void free_types(Credential *credential)
     }
     free(credential->type.types);
 }
-//checked
+
 static int parse_types(Credential *credential, json_t *json)
 {
     size_t i, size, index = 0;
@@ -713,7 +713,7 @@ int CredentialArray_ToJson(JsonGenerator *gen, Credential **creds, size_t size,
 
     return 0;
 }
-//checked
+
 const char* Credential_ToJson_ForSign(Credential *cred, bool compact, bool forsign)
 {
     JsonGenerator g, *gen;
@@ -769,7 +769,7 @@ const char *Credential_ToString(Credential *cred, bool normalized)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 Credential *Credential_FromJson(const char *json, DID *did)
 {
     json_t *root;

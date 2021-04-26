@@ -110,7 +110,7 @@ static int ticket_tojson_internal(JsonGenerator *gen, TransferTicket *ticket,
     CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
-//checked
+
 static const char *ticket_tojson_forsign(TransferTicket *ticket, bool forsign)
 {
     JsonGenerator g, *gen;
@@ -131,7 +131,7 @@ static const char *ticket_tojson_forsign(TransferTicket *ticket, bool forsign)
 
     return DIDJG_Finish(gen);
 }
-//checked
+
 TransferTicket *TransferTicket_Construct(DID *owner, DID *to)
 {
     TransferTicket *ticket = NULL;
@@ -186,7 +186,7 @@ errorExit:
     TransferTicket_Destroy(ticket);
     return NULL;
 }
-//checked
+
 static int ticket_addproof(TransferTicket *ticket, char *signature, DIDURL *signkey, time_t created)
 {
     int i;
@@ -220,7 +220,7 @@ static int ticket_addproof(TransferTicket *ticket, char *signature, DIDURL *sign
     ticket->proofs.size++;
     return 0;
 }
-//checked
+
 int TransferTicket_Seal(TransferTicket *ticket, DIDDocument *controllerdoc,
         const char *storepass)
 {

@@ -112,7 +112,7 @@ int DIDBackend_Initialize(CreateIdTransaction_Callback *createtransaction,
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
 {
     const char *reqstring;
@@ -144,7 +144,7 @@ bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *st
 
     return success;
 }
-//checked
+
 bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
 {
     const char *reqstring;
@@ -176,7 +176,7 @@ bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *st
 
     return success;
 }
-//checked
+
 bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
         DIDURL *signkey, const char *storepass)
 {
@@ -210,7 +210,7 @@ bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
 
     return success;
 }
-//checked
+
 //signkey provides sk, creater is real key in proof. If did is deactivated by ownerself, signkey and
 //creater is same.
 bool DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
@@ -245,7 +245,7 @@ bool DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
 
     return success;
 }
-//checked
+
 static json_t *get_resolve_result(json_t *json)
 {
     json_t *item, *field;
@@ -272,7 +272,7 @@ static json_t *get_resolve_result(json_t *json)
 
     return item;
 }
-//checked
+
 static int resolvedid_from_backend(ResolveResult *result, DID *did, bool all)
 {
     const char *data = NULL, *forAll;

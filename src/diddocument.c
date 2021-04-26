@@ -1152,7 +1152,7 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
 
     return 0;
 }
-//checked
+
 static const char *diddocument_tojson_forsign(DIDDocument *document, bool compact, bool forsign)
 {
     JsonGenerator g, *gen;
@@ -3845,7 +3845,7 @@ ssize_t DIDDocument_GetDigest(DIDDocument *document, uint8_t *digest, size_t siz
 
     return rc;
 }
-//checked
+
 int DIDDocument_Sign(DIDDocument *document, DIDURL *keyid, const char *storepass,
         char *sig, int count, ...)
 {
@@ -3872,7 +3872,7 @@ int DIDDocument_Sign(DIDDocument *document, DIDURL *keyid, const char *storepass
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
         const char *storepass, char *sig, uint8_t *digest, size_t size)
 {
@@ -3928,7 +3928,7 @@ int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDDocument_Verify(DIDDocument *document, DIDURL *keyid, char *sig,
         int count, ...)
 {
@@ -3954,7 +3954,7 @@ int DIDDocument_Verify(DIDDocument *document, DIDURL *keyid, char *sig,
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
         char *sig, uint8_t *digest, size_t size)
 {
@@ -4052,7 +4052,7 @@ const char *DIDDocument_Merge(DIDDocument **documents, size_t size)
 
     return DIDDocument_ToJson(merged_document, true);
 }
-//checked
+
 #ifndef DISABLE_JWT
 JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document)
 {

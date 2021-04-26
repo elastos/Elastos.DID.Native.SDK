@@ -149,7 +149,7 @@ typedef struct DefaultRootIdentity_Helper {
     char id[MAX_ID_LEN];
     int count;
 } DefaultRootIdentity_Helper;
-//checked
+
 int DIDStore_StoreDIDMetadata(DIDStore *store, DIDMetadata *metadata, DID *did)
 {
     char path[PATH_MAX];
@@ -184,7 +184,7 @@ int DIDStore_StoreDIDMetadata(DIDStore *store, DIDMetadata *metadata, DID *did)
 
     return rc;
 }
-//checked
+
 static int DIDStore_LoadDIDMetadata(DIDStore *store, DIDMetadata *metadata, DID *did)
 {
     const char *data;
@@ -238,7 +238,7 @@ static int DIDStore_LoadDIDMetadata(DIDStore *store, DIDMetadata *metadata, DID 
 
     return 0;
 }
-//checked
+
 int DIDStore_StoreCredMetadata(DIDStore *store, CredentialMetadata *metadata, DIDURL *id)
 {
     char path[PATH_MAX], filename[128];
@@ -292,7 +292,7 @@ errorExit:
     DIDError_Set(DIDERR_IO_ERROR, "Store credential metadata failed.");
     return -1;
 }
-//checked
+
 static int DIDStore_LoadCredMetadata(DIDStore *store, CredentialMetadata *metadata, DIDURL *id)
 {
     const char *data;
@@ -339,7 +339,7 @@ static int DIDStore_LoadCredMetadata(DIDStore *store, CredentialMetadata *metada
 
     return 0;
 }
-//checked
+
 static int store_identitymetadata(DIDStore *store, const char *id, IdentityMetadata *metadata)
 {
     char path[PATH_MAX];
@@ -385,7 +385,7 @@ errorExit:
     DIDError_Set(DIDERR_IO_ERROR, "Store rootidentity metadata failed.");
     return -1;
 }
-//checked
+
 static int load_identitymetadata(DIDStore *store, const char *id, IdentityMetadata *metadata)
 {
     const char *data;
@@ -422,7 +422,7 @@ static int load_identitymetadata(DIDStore *store, const char *id, IdentityMetada
     free((void*)data);
     return rc;
 }
-//checked
+
 static int calc_fingerprint(char *fingerprint, size_t size, const char *storepass)
 {
     unsigned char *cipher;
@@ -454,7 +454,7 @@ static int calc_fingerprint(char *fingerprint, size_t size, const char *storepas
 
     return 0;
 }
-//checked
+
 static int store_storemetadata(DIDStore *store, const char *datadir, StoreMetadata *metadata)
 {
     char path[PATH_MAX];
@@ -487,7 +487,7 @@ static int store_storemetadata(DIDStore *store, const char *datadir, StoreMetada
     StoreMetadata_SetStore(metadata, store);
     return 0;
 }
-//checked
+
 static int load_storemetadata(DIDStore *store, StoreMetadata *metadata)
 {
     char path[PATH_MAX];
@@ -525,7 +525,7 @@ static int load_storemetadata(DIDStore *store, StoreMetadata *metadata)
     StoreMetadata_SetStore(metadata, store);
     return 0;
 }
-//checked
+
 static int create_store(DIDStore *store)
 {
     char path[PATH_MAX];
@@ -550,7 +550,7 @@ static int create_store(DIDStore *store)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-overflow="
 #endif
-//checked
+
 static int post_changepassword(DIDStore *store)
 {
     char post_file[PATH_MAX], buffer[DOC_BUFFER_LEN];
@@ -580,7 +580,7 @@ static int post_changepassword(DIDStore *store)
 
     return 0;
 }
-//checked
+
 static int post_upgrade(DIDStore *store)
 {
     char post_file[PATH_MAX], path[PATH_MAX * 2];
@@ -641,7 +641,7 @@ static int post_upgrade(DIDStore *store)
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
-//checked
+
 static bool check_old_store(DIDStore *store)
 {
     int fd;
@@ -686,7 +686,7 @@ errorExit:
     close(fd);
     return check;
 }
-//checked
+
 static const char* upgradeMetadataV2(const char *path)
 {
     const char *data = NULL;
@@ -723,7 +723,7 @@ errorExit:
 
     return data;
 }
-//checked
+
 int dids_upgrade(const char *dst, const char *src);
 
 static int dids_upgrade_helper(const char *path, void *context)
@@ -765,7 +765,7 @@ static int dids_upgrade_helper(const char *path, void *context)
 
     return dids_upgrade(dstpath, srcpath);
 }
-//checked
+
 int dids_upgrade(const char *dst, const char *src)
 {
     Dir_Copy_Helper dh;
@@ -824,7 +824,7 @@ int dids_upgrade(const char *dst, const char *src)
 
     return rc;
 }
-//checked
+
 static const char *get_rootfile(DIDStore *store, const char *filename)
 {
     char path[PATH_MAX];
@@ -851,7 +851,7 @@ static const char *get_rootfile(DIDStore *store, const char *filename)
 
     return data;
 }
-//checked
+
 static int store_pubkey_file(DIDStore *store, const char *datadir, const char *id, const char *keybase58)
 {
     char path[PATH_MAX];
@@ -875,7 +875,7 @@ static int store_pubkey_file(DIDStore *store, const char *datadir, const char *i
     }
     return 0;
 }
-//checked
+
 static int store_prvkey_file(DIDStore *store, const char *datadir, const char *id, const char *rootPrivateKey)
 {
     char path[PATH_MAX];
@@ -900,7 +900,7 @@ static int store_prvkey_file(DIDStore *store, const char *datadir, const char *i
 
     return 0;
 }
-//checked
+
 static int store_mnemonic_file(DIDStore *store, const char *datadir, const char *id, const char *base64)
 {
     char path[PATH_MAX];
@@ -925,7 +925,7 @@ static int store_mnemonic_file(DIDStore *store, const char *datadir, const char 
 
     return 0;
 }
-//checked
+
 static int store_index_string(DIDStore *store, const char *datadir, const char *id, const char *index)
 {
     char path[PATH_MAX];
@@ -949,7 +949,7 @@ static int store_index_string(DIDStore *store, const char *datadir, const char *
     }
     return 0;
 }
-//checked
+
 static const char *load_index_string(DIDStore *store, const char *id)
 {
     char path[PATH_MAX];
@@ -970,7 +970,7 @@ static const char *load_index_string(DIDStore *store, const char *id)
     return string;
 
 }
-//checked
+
 static int upgradeFromV2(DIDStore *store)
 {
     char path[PATH_MAX], v2path[PATH_MAX * 2], id[MAX_ID_LEN] = {0};
@@ -1120,13 +1120,13 @@ errorExit:
         delete_file(path);
     return -1;
 }
-//checked
+
 static void post_operations(DIDStore *store)
 {
     post_upgrade(store);
     post_changepassword(store);
 }
-//checked
+
 static int check_store(DIDStore *store)
 {
     char path[PATH_MAX], metapath[PATH_MAX];
@@ -1173,7 +1173,7 @@ static int check_store(DIDStore *store)
 
     return 0;
 }
-//checked
+
 static bool check_password(DIDStore *store, const char *storepass)
 {
     char fingerprint[64] = {0};
@@ -1198,7 +1198,7 @@ static bool check_password(DIDStore *store, const char *storepass)
 
     return true;
 }
-//checked
+
 static ssize_t didstore_encrypt_to_base64(DIDStore *store, const char *storepass,
         char *base64, const uint8_t *input, size_t len)
 {
@@ -1222,7 +1222,7 @@ static ssize_t didstore_encrypt_to_base64(DIDStore *store, const char *storepass
 
     return length;
 }
-//checked
+
 static ssize_t didstore_decrypt_from_base64(DIDStore *store, const char *storepass,
        uint8_t *plain, const char *base64)
 {
@@ -1246,7 +1246,7 @@ static ssize_t didstore_decrypt_from_base64(DIDStore *store, const char *storepa
 
     return length;
 }
-//checked
+
 static const char *load_prvkey_file(DIDStore *store, const char *id)
 {
     const char *string;
@@ -1268,7 +1268,7 @@ static const char *load_prvkey_file(DIDStore *store, const char *id)
 
     return string;
 }
-//checked
+
 static int store_extendedprvkey(DIDStore *store, const char *storepass,
         const char *id, uint8_t *extendedkey, size_t size)
 {
@@ -1286,7 +1286,7 @@ static int store_extendedprvkey(DIDStore *store, const char *storepass,
 
     return store_prvkey_file(store, NULL, id, base64);
 }
-//checked
+
 ssize_t DIDStore_LoadRootIdentityPrvkey(DIDStore *store, const char *storepass,
         const char *id, uint8_t *extendedkey, size_t size)
 {
@@ -1309,7 +1309,7 @@ ssize_t DIDStore_LoadRootIdentityPrvkey(DIDStore *store, const char *storepass,
 
     return len;
 }
-//checked
+
 static const char *load_pubkey_file(DIDStore *store, const char *id)
 {
     const char *string;
@@ -1331,7 +1331,7 @@ static const char *load_pubkey_file(DIDStore *store, const char *id)
 
     return string;
 }
-//checked
+
 static int store_extendedpubkey(DIDStore *store, const char *id, uint8_t *extendedkey, size_t size)
 {
     char publickeybase58[EXTENDEDKEY_BASE58_BYTES];
@@ -1347,7 +1347,7 @@ static int store_extendedpubkey(DIDStore *store, const char *id, uint8_t *extend
 
     return store_pubkey_file(store, NULL, id, publickeybase58);
 }
-//checked
+
 static ssize_t load_extendedpubkey(DIDStore *store, const char *id, uint8_t *extendedkey, size_t size)
 {
     const char *string;
@@ -1368,7 +1368,7 @@ static ssize_t load_extendedpubkey(DIDStore *store, const char *id, uint8_t *ext
 
     return len;
 }
-//checked
+
 static int store_mnemonic(DIDStore *store, const char *storepass, const char *id,
         const uint8_t *mnemonic, size_t size)
 {
@@ -1387,7 +1387,7 @@ static int store_mnemonic(DIDStore *store, const char *storepass, const char *id
 
     return store_mnemonic_file(store, NULL, id, base64);
 }
-//checked
+
 static ssize_t load_mnemonic(DIDStore *store, const char *storepass, const char *id,
         char *mnemonic, size_t size)
 {
@@ -1422,7 +1422,7 @@ static ssize_t load_mnemonic(DIDStore *store, const char *storepass, const char 
 
     return len;
 }
-//checked
+
 static int list_did_helper(const char *path, void *context)
 {
     DID_List_Helper *dh = (DID_List_Helper*)context;
@@ -1492,7 +1492,7 @@ static int list_rootidentity_helper(const char *path, void *context)
     RootIdentity_Destroy(rootidentity);
     return rc;
 }
-//checked
+
 static bool has_type(DID *did, const char *path, const char *type)
 {
     const char *data;
@@ -1527,7 +1527,7 @@ static bool has_type(DID *did, const char *path, const char *type)
     Credential_Destroy(credential);
     return false;
 }
-//checked
+
 static int select_credential_helper(const char *path, void *context)
 {
     Cred_List_Helper *ch = (Cred_List_Helper*)context;
@@ -1573,7 +1573,7 @@ static int select_credential_helper(const char *path, void *context)
     Credential_Destroy(credential);
     return 0;
 }
-//checked
+
 static int list_credential_helper(const char *path, void *context)
 {
     Cred_List_Helper *ch = (Cred_List_Helper*)context;
@@ -1602,7 +1602,7 @@ static int list_credential_helper(const char *path, void *context)
     CredentialMetadata_Free(&id.metadata);
     return rc;
 }
-//checked
+
 static int store_credential(DIDStore *store, Credential *credential)
 {
     const char *data;
@@ -1652,7 +1652,7 @@ static int store_credential(DIDStore *store, Credential *credential)
 }
 
 /////////////////////////////////////////////////////////////////////////
-//checked
+
 DIDStore* DIDStore_Open(const char *root)
 {
     char path[PATH_MAX];
@@ -1689,7 +1689,7 @@ errorExit:
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 void DIDStore_Close(DIDStore *store)
 {
     DIDERROR_INITIALIZE();
@@ -1701,7 +1701,7 @@ void DIDStore_Close(DIDStore *store)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDStore_StoreDID(DIDStore *store, DIDDocument *document)
 {
     char path[PATH_MAX];
@@ -1769,7 +1769,7 @@ errorExit:
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 const char *load_didfile(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];
@@ -1804,7 +1804,7 @@ const char *load_didfile(DIDStore *store, DID *did)
 
     return data;
 }
-//checked
+
 DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did)
 {
     DIDDocument *document;
@@ -1838,7 +1838,7 @@ DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 bool DIDStore_ContainsDID(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];
@@ -1870,7 +1870,7 @@ bool DIDStore_ContainsDID(DIDStore *store, DID *did)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 bool DIDStore_DeleteDID(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];
@@ -1895,7 +1895,7 @@ bool DIDStore_DeleteDID(DIDStore *store, DID *did)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDStore_ListDIDs(DIDStore *store, ELA_DID_FILTER filter,
         DIDStore_DIDsCallback *callback, void *context)
 {
@@ -1936,7 +1936,7 @@ int DIDStore_ListDIDs(DIDStore *store, ELA_DID_FILTER filter,
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDStore_StoreCredential(DIDStore *store, Credential *credential)
 {
     CredentialMetadata metadata;
@@ -1970,7 +1970,7 @@ int DIDStore_StoreCredential(DIDStore *store, Credential *credential)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
 {
     const char *data;
@@ -2024,7 +2024,7 @@ Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 bool DIDStore_ContainsCredentials(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];
@@ -2061,7 +2061,7 @@ bool DIDStore_ContainsCredentials(DIDStore *store, DID *did)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 bool DIDStore_ContainsCredential(DIDStore *store, DID *did, DIDURL *id)
 {
     char path[PATH_MAX], filename[128];
@@ -2092,7 +2092,7 @@ bool DIDStore_ContainsCredential(DIDStore *store, DID *did, DIDURL *id)
 
     return true;
 }
-//checked
+
 bool DIDStore_DeleteCredential(DIDStore *store, DID *did, DIDURL *id)
 {
     char path[PATH_MAX], filename[128];
@@ -2124,7 +2124,7 @@ bool DIDStore_DeleteCredential(DIDStore *store, DID *did, DIDURL *id)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDStore_ListCredentials(DIDStore *store, DID *did,
         DIDStore_CredentialsCallback *callback, void *context)
 {
@@ -2169,7 +2169,7 @@ int DIDStore_ListCredentials(DIDStore *store, DID *did,
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *id,
         const char *type, DIDStore_CredentialsCallback *callback, void *context)
 {
@@ -2241,7 +2241,7 @@ int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *id,
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 bool DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];
@@ -2265,7 +2265,7 @@ bool DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 bool DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
 {
     char path[PATH_MAX], filename[128];
@@ -2300,7 +2300,7 @@ bool DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDStore_StorePrivateKey_Internal(DIDStore *store, DIDURL *id, const char *prvkey)
 {
     char path[PATH_MAX], filename[128];
@@ -2323,7 +2323,7 @@ int DIDStore_StorePrivateKey_Internal(DIDStore *store, DIDURL *id, const char *p
     delete_file(path);
     return -1;
 }
-//checked
+
 int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass, DIDURL *id,
         const uint8_t *privatekey, size_t size)
 {
@@ -2345,7 +2345,7 @@ int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass, DIDURL *id,
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 void DIDStore_DeletePrivateKey(DIDStore *store, DIDURL *id)
 {
     char path[PATH_MAX], filename[128];
@@ -2365,7 +2365,7 @@ void DIDStore_DeletePrivateKey(DIDStore *store, DIDURL *id)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDStore_StoreDefaultPrivateKey(DIDStore *store, const char *storepass,
         const char *idstring, uint8_t *privatekey, size_t size)
 {
@@ -2384,7 +2384,7 @@ int DIDStore_StoreDefaultPrivateKey(DIDStore *store, const char *storepass,
 
     return 0;
 }
-//checked
+
 bool DIDStore_ContainsRootIdentity(DIDStore *store, const char *id)
 {
     char path[PATH_MAX];
@@ -2403,7 +2403,7 @@ bool DIDStore_ContainsRootIdentity(DIDStore *store, const char *id)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 bool DIDStore_ContainsRootIdentities(DIDStore *store)
 {
     char path[PATH_MAX];
@@ -2421,7 +2421,7 @@ bool DIDStore_ContainsRootIdentities(DIDStore *store)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDStore_StoreRootIdentityWithElem(DIDStore *store, const char *storepass, const char *id,
         const char *mnemonic, uint8_t *rootPrivatekey, size_t rootsize,
         uint8_t *preDerivedPublicKey, size_t keysize, int index)
@@ -2447,7 +2447,7 @@ int DIDStore_StoreRootIdentityWithElem(DIDStore *store, const char *storepass, c
 
     return 0;
 }
-//checked
+
 int DIDStore_StoreRootIdentity(DIDStore *store, const char *storepass, RootIdentity *rootidentity)
 {
     CHECK_ARG(!store, "No store to store rootidentity.", -1);
@@ -2469,7 +2469,7 @@ int DIDStore_StoreRootIdentity(DIDStore *store, const char *storepass, RootIdent
 
     return 0;
 }
-//checked
+
 RootIdentity *DIDStore_LoadRootIdentity(DIDStore *store, const char *id)
 {
     RootIdentity *rootidentity = NULL;
@@ -2503,7 +2503,7 @@ errorExit:
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 bool DIDStore_DeleteRootIdentity(DIDStore *store, const char *id)
 {
     char path[PATH_MAX];
@@ -2532,7 +2532,7 @@ bool DIDStore_DeleteRootIdentity(DIDStore *store, const char *id)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 ssize_t DIDStore_ListRootIdentities(DIDStore *store,
         DIDStore_RootIdentitiesCallback *callback, void *context)
 {
@@ -2574,7 +2574,7 @@ ssize_t DIDStore_ListRootIdentities(DIDStore *store,
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id)
 {
     assert(store);
@@ -2594,7 +2594,7 @@ int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id)
 
     return 0;
 }
-//checked
+
 static int get_identity(RootIdentity *identity, void *context)
 {
     DefaultRootIdentity_Helper *helper = (DefaultRootIdentity_Helper*)context;
@@ -2608,7 +2608,7 @@ static int get_identity(RootIdentity *identity, void *context)
     helper->count++;
     return 0;
 }
-//checked
+
 const char *DIDStore_GetDefaultRootIdentity(DIDStore *store)
 {
     DefaultRootIdentity_Helper helper;
@@ -2643,7 +2643,7 @@ const char *DIDStore_GetDefaultRootIdentity(DIDStore *store)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDStore_ExportRootIdentityMnemonic(DIDStore *store, const char *storepass,
         const char *id, char *mnemonic, size_t size)
 {
@@ -2688,7 +2688,7 @@ bool DIDStore_ContainsRootIdentityMnemonic(DIDStore *store, const char *id)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 int DIDStore_LoadIndex(DIDStore *store, const char *id)
 {
     const char *string;
@@ -2707,7 +2707,7 @@ int DIDStore_LoadIndex(DIDStore *store, const char *id)
     free((void*)string);
     return index;
 }
-//checked
+
 int DIDStore_StoreIndex(DIDStore *store, const char *id, int index)
 {
     char string[32];
@@ -2723,7 +2723,7 @@ int DIDStore_StoreIndex(DIDStore *store, const char *id, int index)
     }
     return store_index_string(store, NULL, id, string);
 }
-//checked
+
 ssize_t DIDStore_LoadPrivateKey(DIDStore *store, const char *storepass,
         DID *did, DIDURL *key, uint8_t *privatekey, size_t size)
 {
@@ -2757,7 +2757,7 @@ ssize_t DIDStore_LoadPrivateKey(DIDStore *store, const char *storepass,
     memcpy(privatekey, HDKey_GetPrivateKey(identity), PRIVATEKEY_BYTES);
     return PRIVATEKEY_BYTES;
 }
-//checked
+
 ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, uint8_t *extendedkey, size_t size)
 {
@@ -2793,7 +2793,7 @@ ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass,
 
     return len;
 }
-//checked
+
 int DIDStore_Sign(DIDStore *store, const char *storepass, DID *did,
         DIDURL *key, char *sig, uint8_t *digest, size_t size)
 {
@@ -2882,7 +2882,7 @@ static int dir_copy_helper(const char *path, void *context)
 
     return dir_copy(dstpath, srcpath, dh->newpassword, dh->oldpassword);
 }
-//checked
+
 static int dir_copy(const char *dst, const char *src, const char *newpw, const char *oldpw)
 {
     int rc;
@@ -2959,7 +2959,7 @@ static int dir_copy(const char *dst, const char *src, const char *newpw, const c
 
     return rc;
 }
-//checked
+
 static int change_password(DIDStore *store, const char *newpw, const char *oldpw)
 {
     char data_dir[PATH_MAX] = {0}, data_journal_dir[PATH_MAX] = {0};
@@ -3001,7 +3001,7 @@ static int change_password(DIDStore *store, const char *newpw, const char *oldpw
 
     return store_file(path, "");
 }
-//checked
+
 int DIDStore_ChangePassword(DIDStore *store, const char *newpw, const char *oldpw)
 {
     char fingerprint[64] = {0};
@@ -3097,7 +3097,7 @@ errorExit:
 
     return rc;
 }
-//checked
+
 static int export_type(JsonGenerator *gen, Sha256_Digest *digest)
 {
     assert(gen);
@@ -3110,7 +3110,7 @@ static int export_type(JsonGenerator *gen, Sha256_Digest *digest)
 
     return 0;
 }
-//checked
+
 static int export_id(JsonGenerator *gen, DID *did, Sha256_Digest *digest)
 {
     char idstring[ELA_MAX_DID_LEN];
@@ -3189,7 +3189,7 @@ static int export_document(JsonGenerator *gen, DIDDocument *doc, Sha256_Digest *
 
     return rc;
 }
-//checked
+
 static int export_creds(JsonGenerator *gen, DIDStore *store, DID *did, Sha256_Digest *digest)
 {
     Cred_Export_Helper ch;
@@ -3214,7 +3214,7 @@ static int export_creds(JsonGenerator *gen, DIDStore *store, DID *did, Sha256_Di
 
     return 0;
 }
-//checked
+
 static int export_privatekey(JsonGenerator *gen, DIDStore *store, const char *storepass,
         const char *password, DIDDocument *doc, Sha256_Digest *digest)
 {
@@ -3282,7 +3282,7 @@ static int export_privatekey(JsonGenerator *gen, DIDStore *store, const char *st
 
     return 0;
 }
-//checked
+
 static int export_init(JsonGenerator *gen, const char *password, Sha256_Digest *digest)
 {
     assert(gen);
@@ -3297,7 +3297,7 @@ static int export_init(JsonGenerator *gen, const char *password, Sha256_Digest *
 
     return 0;
 }
-//checked
+
 static int export_final(JsonGenerator *gen, Sha256_Digest *digest)
 {
     char base64[512];
@@ -3322,7 +3322,7 @@ static int export_final(JsonGenerator *gen, Sha256_Digest *digest)
 
     return 0;
 }
-//checked
+
 static int exportdid_internal(JsonGenerator *gen, DIDStore *store, const char * storepass,
         DID *did, const char *password)
 {
@@ -3359,7 +3359,7 @@ errorExit:
 
     return rc;
 }
-//checked
+
 static int check_file(const char *file)
 {
     char *path;
@@ -3433,7 +3433,7 @@ int DIDStore_ExportDID(DIDStore *store, const char *storepass, DID *did,
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 static int import_type(json_t *json, Sha256_Digest *digest)
 {
     json_t *item;
@@ -4020,7 +4020,7 @@ static int export_mnemonic(JsonGenerator *gen, DIDStore *store, const char *stor
 
     return 0;
 }
-//checked
+
 static int export_prvkey(JsonGenerator *gen, DIDStore *store, const char *storepass,
         const char *id, const char *password, Sha256_Digest *digest)
 {
@@ -4053,7 +4053,7 @@ static int export_prvkey(JsonGenerator *gen, DIDStore *store, const char *storep
 
     return 0;
 }
-//checked
+
 static int export_pubkey(JsonGenerator *gen, DIDStore *store, const char *id, Sha256_Digest *digest)
 {
     const char *pubKey = NULL;
@@ -4106,7 +4106,7 @@ errorExit:
     free((void*)index);
     return rc;
 }
-//checked
+
 static int export_defaultId(JsonGenerator *gen, DIDStore *store, const char *id, Sha256_Digest *digest)
 {
     const char *defaultid;
@@ -4133,7 +4133,7 @@ static int export_defaultId(JsonGenerator *gen, DIDStore *store, const char *id,
 
     return 0;
 }
-//checked
+
 int DIDStore_ExportRootIdentity(DIDStore *store, const char *storepass,
         const char *id, const char *file, const char *password)
 {
@@ -4194,7 +4194,7 @@ errorExit:
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 static int import_rootidentity_id(json_t *json, DIDStore *store, char *id, size_t size)
 {
     json_t *item;
@@ -4229,7 +4229,7 @@ static int import_rootidentity_id(json_t *json, DIDStore *store, char *id, size_
     CHECK(store_pubkey_file(store, NULL, id, json_string_value(item)));
     return 0;
 }
-//checked
+
 static int import_pubkey(DIDStore *store, const char *id, Sha256_Digest *digest)
 {
     const char *string;
@@ -4251,7 +4251,7 @@ errorExit:
     free((void*)string);
     return rc;
 }
-//checked
+
 static int import_prvkey(json_t *json, DIDStore *store, const char *storepass,
         const char *id, Sha256_Digest *digest, const char *password)
 {
@@ -4288,7 +4288,7 @@ static int import_prvkey(json_t *json, DIDStore *store, const char *storepass,
             DIDERR_CRYPTO_ERROR, "Sha256 'privatekey' failed.");
     return 0;
 }
-//checked
+
 static int import_mnemonic(json_t *json, DIDStore *store, const char *storepass,
        const char *id, Sha256_Digest *digest, const char *password)
 {
@@ -4324,7 +4324,7 @@ static int import_mnemonic(json_t *json, DIDStore *store, const char *storepass,
             DIDERR_CRYPTO_ERROR, "Sha256 'mnemonic' failed.");
     return 0;
 }
-//checked
+
 static int import_index(json_t *json, DIDStore *store, const char *id, Sha256_Digest *digest)
 {
     json_t *item;
@@ -4348,7 +4348,7 @@ static int import_index(json_t *json, DIDStore *store, const char *id, Sha256_Di
             DIDERR_CRYPTO_ERROR, "Sha256 'index' failed.");
     return 0;
 }
-//checked
+
 static int import_defaultId(json_t *json, DIDStore *store, const char *id,
         bool *isDefault, Sha256_Digest *digest)
 {
@@ -4376,7 +4376,7 @@ static int import_defaultId(json_t *json, DIDStore *store, const char *id,
             DIDERR_CRYPTO_ERROR, "Sha256 'default' failed.");
     return 0;
 }
-//checked
+
 int DIDStore_ImportRootIdentity(DIDStore *store, const char *storepass,
         const char *file, const char *password)
 {
@@ -4476,7 +4476,7 @@ static zip_t *create_zip(const char *file)
 
     return zip;
 }
-//checked
+
 static int did_to_zip(DID *did, void *context)
 {
     DID_Export *export = (DID_Export*)context;
@@ -4505,7 +4505,7 @@ static int did_to_zip(DID *did, void *context)
 
     return 0;
 }
-//checked
+
 static int exportdid_to_zip(DIDStore *store, const char *storepass, zip_t *zip,
         const char *password, const char *tmpdir)
 {

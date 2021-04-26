@@ -89,7 +89,7 @@ int DIDRequest_ToJson_Internal(JsonGenerator *gen, DIDRequest *req)
     CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
-//checked
+
 static const char *DIDRequest_ToJson(DIDRequest *req)
 {
     JsonGenerator g, *gen;
@@ -110,7 +110,7 @@ static const char *DIDRequest_ToJson(DIDRequest *req)
 
     return DIDJG_Finish(gen);
 }
-//checked
+
 //document is for signkey. If DID is deactivated by authorizor, document is authorizor's document.
 const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
         DIDURL *signkey, DIDURL *creater, TransferTicket *ticket, const char *storepass)
