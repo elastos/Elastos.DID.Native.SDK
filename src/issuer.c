@@ -121,7 +121,7 @@ DIDURL *Issuer_GetSignKey(Issuer *issuer)
 
     DIDERROR_FINALIZE();
 }
-//checked
+
 Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
         DIDURL *credid, const char **types, size_t typesize, json_t *json,
         time_t expires, const char *storepass)
