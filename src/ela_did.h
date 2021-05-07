@@ -28,6 +28,7 @@
 #include <stdarg.h>
 #include <sys/types.h>
 #include <stdint.h>
+#include <time.h>
 
 #if defined(__APPLE__)
 #pragma GCC diagnostic push

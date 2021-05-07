@@ -106,7 +106,7 @@ set(INCLUDE
     BEFORE
     utility
     backend
-    adapter
+    #adapter
     ${JWT_INCLUDE}
     meta
     .

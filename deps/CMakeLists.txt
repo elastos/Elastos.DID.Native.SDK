@@ -29,11 +29,6 @@ if(NOT HDKEY_ONLY)
     endif()
 endif()
 
-if (ENABLE_SPVADAPTER)
-    add_submodule(libspvsdk
-        DEPENDS platform-specific)
-endif()
-
 if(WIN32)
     add_submodule(pthreads-w32
         DEPENDS platform-specific)
