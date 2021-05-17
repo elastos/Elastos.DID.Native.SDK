@@ -334,7 +334,7 @@ bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credentia
         }
 
         if (!DIDDocument_IsAuthenticationKey(ownerdoc, signkey)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Sign key isn't an authenication key of owner.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Signkey isn't an authenication key of owner.");
             goto errorExit;
         }
     } else {
@@ -353,7 +353,7 @@ bool CredentialRequest_IsValid(CredentialRequest *request, Credential *credentia
 
         if (!DIDDocument_IsAuthenticationKey(ownerdoc, signkey) &&
                 (issuerdoc && !DIDDocument_IsAuthenticationKey(issuerdoc, signkey))) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Sign key isn't an authenication key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Signkey isn't an authenication key.");
             goto errorExit;
         }
     }

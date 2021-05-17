@@ -357,17 +357,17 @@ static int parser_proof(DIDRequest *request, json_t *json)
 
     item = json_object_get(json, "verificationMethod");
     if (!item) {
-        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Missing signing key.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Missing signkey.");
         return -1;
     }
     if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid sign key.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid signkey.");
         return -1;
     }
 
     if (DIDURL_Parse(&request->proof.verificationMethod,
             json_string_value(item), &request->did) < 0) {
-        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid sign key.");
+        DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid signkey.");
         return -1;
     }
 
@@ -460,7 +460,7 @@ bool DIDRequest_IsValid(DIDRequest *request, DIDDocument *document)
         signerdoc = document;
         if (!DIDDocument_IsAuthenticationKey(signerdoc, signkey) &&
                 !DIDDocument_IsAuthorizationKey(signerdoc, signkey)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Sign key to deactivate did isn't \
+            DIDError_Set(DIDERR_INVALID_KEY, "Signkey to deactivate did isn't \
                     an authentication key or an athorization key.");
             return false;
         }
@@ -469,7 +469,7 @@ bool DIDRequest_IsValid(DIDRequest *request, DIDDocument *document)
             return false;
         signerdoc = request->doc;
         if (!DIDDocument_IsAuthenticationKey(signerdoc, signkey)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Sign key isn't an authentication key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Signkey isn't an authentication key.");
             return false;
         }
     }

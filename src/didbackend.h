@@ -30,29 +30,29 @@
 extern "C" {
 #endif
 
-bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *storepass);
+int DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *storepass);
 
-bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *storepass);
+int DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *storepass);
 
-bool DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
+int DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
         DIDURL *creater, const char *storepass);
 
-bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
+int DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
         DIDURL *signkey, const char *storepass);
 
 DIDBiography *DIDBackend_ResolveDIDBiography(DID *did);
 
-bool DIDBackend_DeclareCredential(Credential *vc, DIDURL *signkey,
+int DIDBackend_DeclareCredential(Credential *vc, DIDURL *signkey,
         DIDDocument *document, const char *storepass);
 
 DIDDocument *DIDBackend_ResolveDID(DID *did, int *status, bool force);
 
-bool DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey,
+int DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey,
         DIDDocument *document,  const char *storepass);
 
 Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force);
 
-bool DIDBackend_ResolveRevocation(DIDURL *id, DID *issuer);
+int DIDBackend_ResolveRevocation(DIDURL *id, DID *issuer);
 
 CredentialBiography *DIDBackend_ResolveCredentialBiography(DIDURL *id, DID *issuer);
 

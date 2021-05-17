@@ -380,7 +380,7 @@ JWSParser *JWSParser_Create(DIDDocument *document)
     if (document) {
         parser->doc = (DIDDocument*)calloc(1, sizeof(DIDDocument));
         if (!parser->doc) {
-            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for did document failed.");
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for document failed.");
             goto errorExit;
         }
 

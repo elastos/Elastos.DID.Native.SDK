@@ -710,7 +710,7 @@ static void test_idchain_publishdid_without_prevsignature_and_signature(void)
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool success;
     DID did;
-    int i = 0, rc, status;
+    int i = 0, status;
 
     mnemonic = Mnemonic_Generate(language);
 
@@ -739,13 +739,9 @@ static void test_idchain_publishdid_without_prevsignature_and_signature(void)
     txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDMetadata_SetSignature(metadata, "");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDMetadata_SetPrevSignature(metadata, "");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
-
-    rc = DIDStore_StoreDID(store, resolvedoc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDMetadata_SetSignature(metadata, ""));
+    CU_ASSERT_NOT_EQUAL(-1, DIDMetadata_SetPrevSignature(metadata, ""));
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, resolvedoc));
 
     printf("\n   txid: %s\n-- resolve result: successfully!\n-- publish begin(update), waiting...\n", txid);
     DIDDocument_Destroy(resolvedoc);
@@ -763,8 +759,7 @@ static void test_idchain_publishdid_without_prevsignature_and_signature(void)
     CU_ASSERT_PTR_NOT_NULL(keybase);
     DIDURL *keyid = DIDURL_NewByDid(&did, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid);
-    rc = DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase));
     DIDURL_Destroy(keyid);
 
     doc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -773,11 +768,8 @@ static void test_idchain_publishdid_without_prevsignature_and_signature(void)
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
     DIDDocumentBuilder_Destroy(builder);
 
-    rc = DIDStore_StoreDID(store, doc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
-
-    success = DIDDocument_PublishDID(doc, NULL, false, storepass);
-    CU_ASSERT_FALSE(success);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, doc));
+    CU_ASSERT_NOT_EQUAL(1, DIDDocument_PublishDID(doc, NULL, false, storepass));
     CU_ASSERT_STRING_EQUAL("Missing signatures information, DID SDK dosen't know how to handle it, use force mode to ignore checks.",
            DIDError_GetLastErrorMessage());
     DIDDocument_Destroy(doc);
@@ -792,7 +784,7 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool success;
     DID did;
-    int i = 0, rc, status;
+    int i = 0, status;
 
     mnemonic = Mnemonic_Generate(language);
 
@@ -821,12 +813,9 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
     txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDMetadata_SetSignature(metadata, "");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDMetadata_SetPrevSignature(metadata, "");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDStore_StoreDID(store, resolvedoc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDMetadata_SetSignature(metadata, ""));
+    CU_ASSERT_NOT_EQUAL(-1, DIDMetadata_SetPrevSignature(metadata, ""));
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, resolvedoc));
 
     printf("\n   txid: %s\n-- resolve result: successfully!\n-- publish begin(update), waiting...\n", txid);
     DIDDocument_Destroy(resolvedoc);
@@ -844,8 +833,7 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
     CU_ASSERT_PTR_NOT_NULL(keybase);
     DIDURL *keyid = DIDURL_NewByDid(&did, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid);
-    rc = DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase));
     DIDURL_Destroy(keyid);
 
     doc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -854,8 +842,7 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
     DIDDocumentBuilder_Destroy(builder);
 
-    rc = DIDStore_StoreDID(store, doc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, doc));
 
     metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
@@ -876,8 +863,7 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
     txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDStore_StoreDID(store, resolvedoc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, resolvedoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(resolvedoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(resolvedoc));
 
@@ -1185,8 +1171,7 @@ static void test_updatedid_with_diff_prevsignature_and_signature(void)
     CU_ASSERT_PTR_NOT_NULL(keybase);
     DIDURL *keyid = DIDURL_NewByDid(&did, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid);
-    rc = DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase));
     DIDURL_Destroy(keyid);
 
     doc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -1195,11 +1180,8 @@ static void test_updatedid_with_diff_prevsignature_and_signature(void)
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
     DIDDocumentBuilder_Destroy(builder);
 
-    rc = DIDStore_StoreDID(store, doc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
-
-    success = DIDDocument_PublishDID(doc, NULL, false, storepass);
-    CU_ASSERT_FALSE(success);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, doc));
+    CU_ASSERT_NOT_EQUAL(1, DIDDocument_PublishDID(doc, NULL, false, storepass));
     CU_ASSERT_STRING_EQUAL("Current copy not based on the lastest on-chain copy.",
             DIDError_GetLastErrorMessage());
     DIDDocument_Destroy(doc);
@@ -1214,7 +1196,7 @@ static void test_force_updatedid_with_wrongsignature(void)
     const char *mnemonic, *txid, *keybase, *alias = "littlefish";
     bool success;
     DID did;
-    int i = 0, rc, status;
+    int i = 0, status;
 
     mnemonic = Mnemonic_Generate(language);
 
@@ -1243,10 +1225,8 @@ static void test_force_updatedid_with_wrongsignature(void)
     txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDMetadata_SetSignature(metadata, "12345678");
-    CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDStore_StoreDID(store, resolvedoc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDMetadata_SetSignature(metadata, "12345678"));
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, resolvedoc));
 
     printf("\n  txid: %s\n-- resolve result: successfully!\n-- publish begin(update), waiting...\n", txid);
     DIDDocument_Destroy(resolvedoc);
@@ -1264,8 +1244,7 @@ static void test_force_updatedid_with_wrongsignature(void)
     CU_ASSERT_PTR_NOT_NULL(keybase);
     DIDURL *keyid = DIDURL_NewByDid(&did, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid);
-    rc = DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase));
     DIDURL_Destroy(keyid);
 
     doc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -1274,8 +1253,7 @@ static void test_force_updatedid_with_wrongsignature(void)
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
     DIDDocumentBuilder_Destroy(builder);
 
-    rc = DIDStore_StoreDID(store, doc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, doc));
 
     metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
@@ -1296,8 +1274,7 @@ static void test_force_updatedid_with_wrongsignature(void)
     txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDStore_StoreDID(store, resolvedoc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, resolvedoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(resolvedoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(resolvedoc));
 
@@ -1314,7 +1291,7 @@ static void test_idchain_publishdid_with_credential(void)
     Credential *cred;
     bool success;
     DID did;
-    int i = 0, rc, status;
+    int i = 0, status;
 
     mnemonic = Mnemonic_Generate(language);
 
@@ -1342,8 +1319,7 @@ static void test_idchain_publishdid_with_credential(void)
     txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDStore_StoreDID(store, resolvedoc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, resolvedoc));
 
     printf("\n   txid: %s\n-- resolve result: successfully!\n-- publish begin(update), waiting...\n", txid);
     DIDDocument_Destroy(resolvedoc);
@@ -1365,15 +1341,13 @@ static void test_idchain_publishdid_with_credential(void)
     props[0].key = "name";
     props[0].value = "John";
 
-    rc = DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid, types, 2, props, 1, 0, NULL, storepass);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid, types, 2, props, 1, 0, NULL, storepass));
 
     doc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     DIDDocumentBuilder_Destroy(builder);
 
-    rc = DIDStore_StoreDID(store, doc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, doc));
 
     cred = DIDDocument_GetCredential(doc, credid);
     CU_ASSERT_PTR_NOT_NULL(cred);
@@ -1519,8 +1493,7 @@ static void test_idchain_deactivedid_after_update(void)
     CU_ASSERT_PTR_NOT_NULL(keybase);
     DIDURL *keyid = DIDURL_NewByDid(&did, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid);
-    rc = DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase));
     DIDURL_Destroy(keyid);
 
     doc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -1529,8 +1502,7 @@ static void test_idchain_deactivedid_after_update(void)
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(doc));
     DIDDocumentBuilder_Destroy(builder);
 
-    rc = DIDStore_StoreDID(store, doc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, doc));
 
     metadata = DIDDocument_GetMetadata(doc);
     CU_ASSERT_PTR_NOT_NULL(metadata);
@@ -1552,8 +1524,7 @@ static void test_idchain_deactivedid_after_update(void)
     txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDStore_StoreDID(store, resolvedoc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, resolvedoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(resolvedoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(resolvedoc));
     printf("\n-- resolve result: successfully!\n-- deactive did begin, waiting...\n");
@@ -1581,7 +1552,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     DID controller, did;
     PublicKey *pks[1];
     bool success;
-    int i = 0, rc, status;
+    int i = 0, status;
 
     mnemonic = Mnemonic_Generate(language);
     rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
@@ -1623,8 +1594,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     DIDURL *keyid = DIDURL_NewByDid(&did, "recovery");
     CU_ASSERT_PTR_NOT_NULL(keyid);
 
-    rc = DIDDocumentBuilder_AuthorizeDid(builder, keyid, &controller, NULL);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AuthorizeDid(builder, keyid, &controller, NULL));
     DIDURL_Destroy(keyid);
 
     targetdoc = DIDDocumentBuilder_Seal(builder, storepass);
@@ -1632,12 +1602,10 @@ static void test_idchain_deactivedid_with_authorization1(void)
     DIDDocumentBuilder_Destroy(builder);
     CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(targetdoc));
 
-    size_t size = DIDDocument_GetAuthorizationKeys(targetdoc, pks, sizeof(pks));
-    CU_ASSERT_EQUAL(1, size);
+    CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationKeys(targetdoc, pks, sizeof(pks)));
     CU_ASSERT_TRUE(DID_Equals(&did, &pks[0]->id.did));
 
-    rc = DIDStore_StoreDID(store, targetdoc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, targetdoc));
 
     printf("-- publish target did begin(create), waiting....\n");
     success = DIDDocument_PublishDID(targetdoc, NULL, false, storepass);
@@ -1654,8 +1622,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     txid = DIDMetadata_GetTxid(metadata);
     CU_ASSERT_PTR_NOT_NULL(txid);
 
-    rc = DIDStore_StoreDID(store, resolvedoc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, resolvedoc));
     DIDDocument_Destroy(resolvedoc);
     printf("\n-- resolve authorization result: successfully!\n");
 
@@ -1685,7 +1652,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     DID controller, did;
     PublicKey *pks[1];
     bool equal, success;
-    int i = 0, rc, status;
+    int i = 0, status;
 
     mnemonic = Mnemonic_Generate(language);
     rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
@@ -1708,12 +1675,10 @@ static void test_idchain_deactivedid_with_authorization2(void)
     DIDURL *signkey = DIDURL_NewByDid(&controller, "key-2");
     CU_ASSERT_PTR_NOT_NULL(signkey);
 
-    rc = DIDStore_StorePrivateKey(store, storepass, signkey,
-            HDKey_GetPrivateKey(dkey), PRIVATEKEY_BYTES);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, signkey,
+            HDKey_GetPrivateKey(dkey), PRIVATEKEY_BYTES));
 
-    rc = DIDDocumentBuilder_AddAuthenticationKey(builder, signkey, keybase);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, signkey, keybase));
 
     authorizordoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(authorizordoc);
@@ -1722,8 +1687,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     CU_ASSERT_EQUAL(2, DIDDocument_GetPublicKeyCount(authorizordoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetAuthenticationCount(authorizordoc));
 
-    rc = DIDStore_StoreDID(store, authorizordoc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, authorizordoc));
 
     printf("\n------------------------------------------------------------\n-- publish authorization did begin(create), waiting....\n");
     success = DIDDocument_PublishDID(authorizordoc, NULL, false, storepass);
@@ -1754,8 +1718,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     DIDURL *keyid = DIDURL_NewByDid(&did, "recovery");
     CU_ASSERT_PTR_NOT_NULL(keyid);
 
-    rc = DIDDocumentBuilder_AddAuthorizationKey(builder, keyid, &controller, keybase);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthorizationKey(builder, keyid, &controller, keybase));
 
     targetdoc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(targetdoc);
@@ -1767,8 +1730,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     equal = DID_Equals(&did, &pks[0]->id.did);
     CU_ASSERT_TRUE(equal);
 
-    rc = DIDStore_StoreDID(store, targetdoc);
-    CU_ASSERT_NOT_EQUAL(rc, -1);
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, targetdoc));
 
     printf("-- publish target did begin(create), waiting....\n");
     success = DIDDocument_PublishDID(targetdoc, NULL, false, storepass);

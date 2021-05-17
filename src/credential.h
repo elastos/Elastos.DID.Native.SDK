@@ -66,7 +66,7 @@ struct Credential {
 int CredentialArray_ToJson(JsonGenerator *gen, Credential **creds, size_t size,
         DID *did, bool compact);
 
-Credential *Parse_Credential(json_t *json, DID *did);
+Credential *Credential_From_Internal(json_t *json, DID *did);
 
 ssize_t Parse_Credentials(DID *did, Credential **creds, size_t size, json_t *json);
 
@@ -83,13 +83,13 @@ Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
         DIDURL *credid, const char **types, size_t typesize, json_t *json,
         time_t expires, const char *storepass);
 
-bool Credential_IsGenuine_Internal(Credential *cred, DIDDocument *document);
+int Credential_IsGenuine_Internal(Credential *cred, DIDDocument *document);
 
-bool Credential_IsExpired_Internal(Credential *cred, DIDDocument *document);
+int Credential_IsExpired_Internal(Credential *cred, DIDDocument *document);
 
 time_t Credential_GetExpirationDate_Internal(Credential *cred, DIDDocument *document);
 
-bool Credential_IsValid_Internal(Credential *cred, DIDDocument *document);
+int Credential_IsValid_Internal(Credential *cred, DIDDocument *document);
 
 #ifdef __cplusplus
 }

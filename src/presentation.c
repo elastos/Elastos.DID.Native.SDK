@@ -40,36 +40,47 @@
 static const char *PresentationType = "VerifiablePresentation";
 extern const char *ProofType;
 
-static int proof_toJson(JsonGenerator *gen, Presentation *pre, int compact)
+static const char *ID = "id";
+static const char *TYPE = "type";
+static const char *HOLDER = "holder";
+static const char *VERIFIABLE_CREDENTIAL = "verifiableCredential";
+static const char *CREATED = "created";
+static const char *PROOF = "proof";
+static const char *NONCE = "nonce";
+static const char *REALM = "realm";
+static const char *VERIFICATION_METHOD = "verificationMethod";
+static const char *SIGNATURE = "signature";
+
+static int proof_toJson(JsonGenerator *gen, Presentation *presentation, int compact)
 {
     char id[ELA_MAX_DIDURL_LEN];
 
     assert(gen);
     assert(gen->buffer);
-    assert(pre);
+    assert(presentation);
 
     CHECK(DIDJG_WriteStartObject(gen));
     if (!compact)
-        CHECK(DIDJG_WriteStringField(gen, "type", pre->proof.type));
-    CHECK(DIDJG_WriteStringField(gen, "verificationMethod",
-        DIDURL_ToString(&pre->proof.verificationMethod, id, sizeof(id), compact)));
-    CHECK(DIDJG_WriteStringField(gen, "realm", pre->proof.realm));
-    CHECK(DIDJG_WriteStringField(gen, "nonce", pre->proof.nonce));
-    CHECK(DIDJG_WriteStringField(gen, "signature", pre->proof.signatureValue));
+        CHECK(DIDJG_WriteStringField(gen, TYPE, presentation->proof.type));
+    CHECK(DIDJG_WriteStringField(gen, VERIFICATION_METHOD,
+        DIDURL_ToString(&presentation->proof.verificationMethod, id, sizeof(id), compact)));
+    CHECK(DIDJG_WriteStringField(gen, REALM, presentation->proof.realm));
+    CHECK(DIDJG_WriteStringField(gen, NONCE, presentation->proof.nonce));
+    CHECK(DIDJG_WriteStringField(gen, SIGNATURE, presentation->proof.signatureValue));
     CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
 
-static int types_toJson(JsonGenerator *gen, Presentation *pre)
+static int types_toJson(JsonGenerator *gen, Presentation *presentation)
 {
     char **types;
     size_t i, size;
 
     assert(gen);
-    assert(pre);
+    assert(presentation);
 
-    size = pre->type.size;
-    types = pre->type.types;
+    size = presentation->type.size;
+    types = presentation->type.types;
 
     if (size != 1)
         CHECK(DIDJG_WriteStartArray(gen));
@@ -83,47 +94,47 @@ static int types_toJson(JsonGenerator *gen, Presentation *pre)
     return 0;
 }
 
-static int presentation_tojson_internal(JsonGenerator *gen, Presentation *pre,
+static int presentation_tojson_internal(JsonGenerator *gen, Presentation *presentation,
         bool compact, bool forsign)
 {
     char _timestring[DOC_BUFFER_LEN], idstring[ELA_MAX_DIDURL_LEN], *id;
 
     assert(gen);
     assert(gen->buffer);
-    assert(pre);
+    assert(presentation);
 
     CHECK(DIDJG_WriteStartObject(gen));
-    if (*pre->id.did.idstring) {
-        id = DIDURL_ToString(&pre->id, idstring, sizeof(idstring), false);
-        CHECK(DIDJG_WriteStringField(gen, "id", id));
+    if (*presentation->id.did.idstring) {
+        id = DIDURL_ToString(&presentation->id, idstring, sizeof(idstring), false);
+        CHECK(DIDJG_WriteStringField(gen, ID, id));
     }
-    if (pre->type.size > 1) {
-        CHECK(DIDJG_WriteFieldName(gen, "type"));
-        CHECK(types_toJson(gen, pre));
+    if (presentation->type.size > 1) {
+        CHECK(DIDJG_WriteFieldName(gen, TYPE));
+        CHECK(types_toJson(gen, presentation));
     } else {
-        CHECK(DIDJG_WriteStringField(gen, "type", PresentationType));
+        CHECK(DIDJG_WriteStringField(gen, TYPE, PresentationType));
     }
 
-    if (*pre->holder.idstring)
-        CHECK(DIDJG_WriteStringField(gen, "holder",
-                DID_ToString(&pre->holder, idstring, sizeof(idstring))));
+    if (*presentation->holder.idstring)
+        CHECK(DIDJG_WriteStringField(gen, HOLDER,
+                DID_ToString(&presentation->holder, idstring, sizeof(idstring))));
 
-    CHECK(DIDJG_WriteStringField(gen, "created",
-            get_time_string(_timestring, sizeof(_timestring), &pre->created)));
+    CHECK(DIDJG_WriteStringField(gen, CREATED,
+            get_time_string(_timestring, sizeof(_timestring), &presentation->created)));
 
-    CHECK(DIDJG_WriteFieldName(gen, "verifiableCredential"));
-    CredentialArray_ToJson(gen, pre->credentials.credentials,
-            pre->credentials.size, Presentation_GetHolder(pre), compact);
+    CHECK(DIDJG_WriteFieldName(gen, VERIFIABLE_CREDENTIAL));
+    CredentialArray_ToJson(gen, presentation->credentials.credentials,
+            presentation->credentials.size, Presentation_GetHolder(presentation), compact);
     if (!forsign) {
-        CHECK(DIDJG_WriteFieldName(gen, "proof"));
-        CHECK(proof_toJson(gen, pre, compact));
+        CHECK(DIDJG_WriteFieldName(gen, PROOF));
+        CHECK(proof_toJson(gen, presentation, compact));
     }
     CHECK(DIDJG_WriteEndObject(gen));
 
     return 0;
 }
 
-static int parse_credentials_inpre(Presentation *pre, json_t *json, DID *holder)
+static int parse_credentials_inpre(Presentation *presentation, json_t *json, DID *holder)
 {
     size_t size = 0;
     Credential **credentials = NULL;
@@ -131,7 +142,7 @@ static int parse_credentials_inpre(Presentation *pre, json_t *json, DID *holder)
     bool equals = true;
     int i;
 
-    assert(pre);
+    assert(presentation);
     assert(json);
     assert(holder);
 
@@ -172,19 +183,19 @@ static int parse_credentials_inpre(Presentation *pre, json_t *json, DID *holder)
         return -1;
     }
 
-    pre->credentials.credentials = credentials;
-    pre->credentials.size = size;
+    presentation->credentials.credentials = credentials;
+    presentation->credentials.size = size;
 
     return 0;
 }
 
-static int parse_types(Presentation *pre, json_t *json)
+static int parse_types(Presentation *presentation, json_t *json)
 {
     size_t i, size = 1, index = 0;
     json_t *item;
     char **types, *typestr;
 
-    assert(pre);
+    assert(presentation);
     assert(json);
 
     if (json_is_array(json))
@@ -219,45 +230,45 @@ static int parse_types(Presentation *pre, json_t *json)
         return -1;
     }
 
-    pre->type.types = types;
-    pre->type.size = index;
+    presentation->type.types = types;
+    presentation->type.size = index;
     return 0;
 }
 
-static int parse_proof(Presentation *pre, json_t *json)
+static int parse_proof(Presentation *presentation, json_t *json)
 {
     json_t *item;
     DIDURL *keyid, *signkey;
 
-    assert(pre);
+    assert(presentation);
     assert(json);
 
-    strcpy(pre->proof.type, ProofType);
+    strcpy(presentation->proof.type, ProofType);
 
-    item = json_object_get(json, "verificationMethod");
+    item = json_object_get(json, VERIFICATION_METHOD);
     if (!item) {
-        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing sign key for presentation.");
+        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing signkey for presentation.");
         return -1;
     }
     if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid sign key for presentation.");
+        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid signkey for presentation.");
         return -1;
     }
 
     keyid = DIDURL_FromString(json_string_value(item), NULL);
     if (!keyid) {
-        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid sign key for presentation.");
+        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid signkey for presentation.");
         return -1;
     }
 
-    signkey = DIDURL_Copy(&pre->proof.verificationMethod, keyid);
+    signkey = DIDURL_Copy(&presentation->proof.verificationMethod, keyid);
     DIDURL_Destroy(keyid);
     if (!signkey) {
-        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Copy sign key failed.");
+        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Copy signkey failed.");
         return -1;
     }
 
-    item = json_object_get(json, "nonce");
+    item = json_object_get(json, NONCE);
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing nonce.");
         return -1;
@@ -266,9 +277,9 @@ static int parse_proof(Presentation *pre, json_t *json)
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid nonce.");
         return -1;
     }
-    strcpy(pre->proof.nonce, json_string_value(item));
+    strcpy(presentation->proof.nonce, json_string_value(item));
 
-    item = json_object_get(json, "realm");
+    item = json_object_get(json, REALM);
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing realm.");
         return -1;
@@ -277,9 +288,9 @@ static int parse_proof(Presentation *pre, json_t *json)
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid realm.");
         return -1;
     }
-    strcpy(pre->proof.realm, json_string_value(item));
+    strcpy(presentation->proof.realm, json_string_value(item));
 
-    item = json_object_get(json, "signature");
+    item = json_object_get(json, SIGNATURE);
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing signature.");
         return -1;
@@ -288,7 +299,7 @@ static int parse_proof(Presentation *pre, json_t *json)
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid signature.");
         return -1;
     }
-    strcpy(pre->proof.signatureValue, json_string_value(item));
+    strcpy(presentation->proof.signatureValue, json_string_value(item));
 
     return 0;
 }
@@ -296,31 +307,31 @@ static int parse_proof(Presentation *pre, json_t *json)
 static Presentation *parse_presentation(json_t *json)
 {
     json_t *item;
-    Presentation *pre = NULL;
+    Presentation *presentation = NULL;
     DIDURL *id;
 
     assert(json);
 
-    pre = (Presentation*)calloc(1, sizeof(Presentation));
-    if (!pre) {
+    presentation = (Presentation*)calloc(1, sizeof(Presentation));
+    if (!presentation) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for presentation failed.");
         return NULL;
     }
 
-    item = json_object_get(json, "id");
+    item = json_object_get(json, ID);
     if (item) {
         if (!json_is_string(item)) {
             DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid id.");
             goto errorExit;
         }
 
-        if (DIDURL_Parse(&pre->id, json_string_value(item), NULL) < 0) {
+        if (DIDURL_Parse(&presentation->id, json_string_value(item), NULL) < 0) {
             DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid id.");
             goto errorExit;
         }
     }
 
-    item = json_object_get(json, "type");
+    item = json_object_get(json, TYPE);
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing type.");
         goto errorExit;
@@ -331,20 +342,20 @@ static Presentation *parse_presentation(json_t *json)
         goto errorExit;
     }
 
-    if (parse_types(pre, item) < 0)
+    if (parse_types(presentation, item) < 0)
         goto errorExit;
 
-    item = json_object_get(json, "created");
+    item = json_object_get(json, CREATED);
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing time created presentation.");
         goto errorExit;
     }
-    if (!json_is_string(item) || parse_time(&pre->created, json_string_value(item)) == -1) {
+    if (!json_is_string(item) || parse_time(&presentation->created, json_string_value(item)) == -1) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid time created presentation.");
         goto errorExit;
     }
 
-    item = json_object_get(json, "proof");
+    item = json_object_get(json, PROOF);
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing presentation proof.");
         goto errorExit;
@@ -353,23 +364,23 @@ static Presentation *parse_presentation(json_t *json)
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid presentation proof.");
         goto errorExit;
     }
-    if (parse_proof(pre, item) == -1)
+    if (parse_proof(presentation, item) == -1)
         goto errorExit;
 
-    item = json_object_get(json, "holder");
+    item = json_object_get(json, HOLDER);
     if (item) {
         if (!json_is_string(item)) {
             DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid holder.");
             goto errorExit;
         }
 
-        if (DID_Parse(&pre->holder, json_string_value(item)) < 0) {
+        if (DID_Parse(&presentation->holder, json_string_value(item)) < 0) {
             DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid holder.");
             goto errorExit;
         }
     }
 
-    item = json_object_get(json, "verifiableCredential");
+    item = json_object_get(json, VERIFIABLE_CREDENTIAL);
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing Credentials.");
         goto errorExit;
@@ -379,21 +390,21 @@ static Presentation *parse_presentation(json_t *json)
         goto errorExit;
     }
 
-    if (parse_credentials_inpre(pre, item, Presentation_GetHolder(pre)) == -1) {
+    if (parse_credentials_inpre(presentation, item, Presentation_GetHolder(presentation)) == -1) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid credential error[%d]: %s", DIDERRCODE, DIDERRMSG);
         goto errorExit;
     }
 
-    id = Presentation_GetId(pre);
-    if ( id && !DID_Equals(Presentation_GetHolder(pre), &id->did)) {
+    id = Presentation_GetId(presentation);
+    if ( id && !DID_Equals(Presentation_GetHolder(presentation), &id->did)) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "The holder mismatch with the id of persentation.");
         goto errorExit;
     }
 
-    return pre;
+    return presentation;
 
 errorExit:
-    Presentation_Destroy(pre);
+    Presentation_Destroy(presentation);
     return NULL;
 }
 
@@ -417,11 +428,11 @@ static int add_credential(Credential **creds, int index, Credential *cred)
     return 0;
 }
 
-static const char* presentation_tojson_forsign(Presentation *pre, bool compact, bool forsign)
+static const char* presentation_tojson_forsign(Presentation *presentation, bool compact, bool forsign)
 {
     JsonGenerator g, *gen;
 
-    assert(pre);
+    assert(presentation);
 
     gen = DIDJG_Initialize(&g);
     if (!gen) {
@@ -429,7 +440,7 @@ static const char* presentation_tojson_forsign(Presentation *pre, bool compact, 
         return NULL;
     }
 
-    if (presentation_tojson_internal(gen, pre, compact, forsign) < 0) {
+    if (presentation_tojson_internal(gen, presentation, compact, forsign) < 0) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize presentation to json failed.");
         DIDJG_Destroy(gen);
         return NULL;
@@ -438,19 +449,19 @@ static const char* presentation_tojson_forsign(Presentation *pre, bool compact, 
     return DIDJG_Finish(gen);
 }
 
-static int add_credentialarray_to_presentation(Presentation *pre, int count, Credential **creds)
+static int add_credentialarray_to_presentation(Presentation *presentation, int count, Credential **creds)
 {
     Credential **credentials = NULL, *cred;
     int i;
 
-    assert(pre);
+    assert(presentation);
     assert(count >= 0);
     assert(creds);
 
     if (count > 0) {
         for (i = 0; i < count; i++) {
             cred = creds[i];
-            if (!DID_Equals(&cred->subject.id, &pre->holder)) {
+            if (!DID_Equals(&cred->subject.id, &presentation->holder)) {
                 DIDError_Set(DIDERR_ILLEGALUSAGE, "Credentials does not owned to holder.");
                 return -1;
             }
@@ -478,12 +489,12 @@ static int add_credentialarray_to_presentation(Presentation *pre, int count, Cre
         }
     }
 
-    pre->credentials.credentials = credentials;
-    pre->credentials.size = count;
+    presentation->credentials.credentials = credentials;
+    presentation->credentials.size = count;
     return 0;
 }
 
-static int seal_presentation(Presentation *pre, DIDDocument *doc, DIDURL *signkey,
+static int seal_presentation(Presentation *presentation, DIDDocument *doc, DIDURL *signkey,
         const char *storepass, const char *nonce, const char *realm)
 {
     DIDDocument *signerdoc;
@@ -491,22 +502,22 @@ static int seal_presentation(Presentation *pre, DIDDocument *doc, DIDURL *signke
     char signature[SIGNATURE_BYTES * 2 + 16];
     int rc;
 
-    assert(pre);
+    assert(presentation);
     assert(doc);
     assert(signkey);
     assert(storepass && *storepass);
     assert(nonce && *nonce);
     assert(realm && *realm);
 
-    time(&pre->created);
+    time(&presentation->created);
 
-    data = presentation_tojson_forsign(pre, false, true);
+    data = presentation_tojson_forsign(presentation, false, true);
     if (!data)
         return -1;
 
     if (!DIDDocument_IsAuthenticationKey(doc, signkey)) {
         free((void*)data);
-        DIDError_Set(DIDERR_INVALID_KEY, "The sign key isn't an authentication key.");
+        DIDError_Set(DIDERR_INVALID_KEY, "Signkey isn't an authentication key.");
         return -1;
     }
 
@@ -530,11 +541,11 @@ static int seal_presentation(Presentation *pre, DIDDocument *doc, DIDURL *signke
         return -1;
     }
 
-    strcpy(pre->proof.type, ProofType);
-    DIDURL_Copy(&pre->proof.verificationMethod, signkey);
-    strcpy(pre->proof.nonce, nonce);
-    strcpy(pre->proof.realm, realm);
-    strcpy(pre->proof.signatureValue, signature);
+    strcpy(presentation->proof.type, ProofType);
+    DIDURL_Copy(&presentation->proof.verificationMethod, signkey);
+    strcpy(presentation->proof.nonce, nonce);
+    strcpy(presentation->proof.realm, realm);
+    strcpy(presentation->proof.signatureValue, signature);
 
     return 0;
 }
@@ -545,7 +556,7 @@ static Presentation *create_presentation(DIDURL *id, DID *holder,
         Credential **creds, size_t count, DIDURL *signkey, DIDStore *store,
         const char *storepass)
 {
-    Presentation *pre = NULL;
+    Presentation *presentation = NULL;
     DIDDocument *doc = NULL;
     int rc, i;
 
@@ -570,12 +581,12 @@ static Presentation *create_presentation(DIDURL *id, DID *holder,
     if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(doc);
         if (!signkey) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Please specify sign key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Please specify signkey.");
             goto errorExit;
         }
     } else {
         if (!DIDDocument_IsAuthenticationKey(doc, signkey)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Invalid sign key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Invalid signkey.");
             goto errorExit;
         }
     }
@@ -585,45 +596,45 @@ static Presentation *create_presentation(DIDURL *id, DID *holder,
         goto errorExit;
     }
 
-    pre = (Presentation*)calloc(1, sizeof(Presentation));
-    if (!pre) {
+    presentation = (Presentation*)calloc(1, sizeof(Presentation));
+    if (!presentation) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for presentation failed.");
         goto errorExit;
     }
 
-    DIDURL_Copy(&pre->id, id);
-    DID_Copy(&pre->holder, holder);
+    DIDURL_Copy(&presentation->id, id);
+    DID_Copy(&presentation->holder, holder);
 
     if (!types)
         size = 1;
 
-    pre->type.types = (char **)calloc(size, sizeof(char *));
-    if (!pre->type.types) {
+    presentation->type.types = (char **)calloc(size, sizeof(char *));
+    if (!presentation->type.types) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for types failed.");
         goto errorExit;
     }
 
     if (!types) {
-        pre->type.types[0] = strdup(PresentationType);
+        presentation->type.types[0] = strdup(PresentationType);
     } else {
         for (i = 0; i < size; i++)
-            pre->type.types[i] = strdup(types[i]);
+            presentation->type.types[i] = strdup(types[i]);
     }
-    pre->type.size = size;
+    presentation->type.size = size;
 
-    if (creds && add_credentialarray_to_presentation(pre, count, creds) < 0)
+    if (creds && add_credentialarray_to_presentation(presentation, count, creds) < 0)
         goto errorExit;
 
-    rc = seal_presentation(pre, doc, signkey, storepass, nonce, realm);
+    rc = seal_presentation(presentation, doc, signkey, storepass, nonce, realm);
     if (rc < 0)
         goto errorExit;
 
     DIDDocument_Destroy(doc);
-    return pre;
+    return presentation;
 
 errorExit:
     DIDDocument_Destroy(doc);
-    Presentation_Destroy(pre);
+    Presentation_Destroy(presentation);
     return NULL;
 }
 
@@ -637,11 +648,13 @@ Presentation *Presentation_Create(DIDURL *id, DID *holder,
 
     DIDERROR_INITIALIZE();
 
-    if (!id || !holder || !nonce || !*nonce || !realm || !*realm || !store ||
-            !storepass || !*storepass || count < 0) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
-        return NULL;
-    }
+    CHECK_ARG(!id, "No presentation id.", NULL);
+    CHECK_ARG(!holder, "No holder argument for presentation.", NULL);
+    CHECK_ARG(!nonce || !*nonce, "No nonce string.", NULL);
+    CHECK_ARG(!realm || !*realm, "No realm string.", NULL);
+    CHECK_ARG(!store, "No store argument.", NULL);
+    CHECK_PASSWORD(storepass, NULL);
+    CHECK_ARG(count < 0, "Invalid count.", NULL);
 
     if (count == 0) {
         creds = NULL;
@@ -685,40 +698,40 @@ Presentation *Presentation_CreateByCredentials(DIDURL *id, DID *holder,
     DIDERROR_FINALIZE();
 }
 
-void Presentation_Destroy(Presentation *pre)
+void Presentation_Destroy(Presentation *presentation)
 {
     size_t i;
 
     DIDERROR_INITIALIZE();
 
-    if (!pre)
+    if (!presentation)
         return;
 
-    if (pre->type.size > 0) {
-        for (i = 0; i < pre->type.size; i++)
-            free((void*)pre->type.types[i]);
-        free((void*)pre->type.types);
+    if (presentation->type.size > 0) {
+        for (i = 0; i < presentation->type.size; i++)
+            free((void*)presentation->type.types[i]);
+        free((void*)presentation->type.types);
     }
 
-    if (pre->credentials.credentials) {
-        for (i = 0; i < pre->credentials.size; i++) {
-            Credential *cred = pre->credentials.credentials[i];
+    if (presentation->credentials.credentials) {
+        for (i = 0; i < presentation->credentials.size; i++) {
+            Credential *cred = presentation->credentials.credentials[i];
             if (cred)
                 Credential_Destroy(cred);
         }
 
-        free(pre->credentials.credentials);
+        free(presentation->credentials.credentials);
     }
-    free(pre);
+    free(presentation);
 
     DIDERROR_FINALIZE();
 }
 
-const char* Presentation_ToJson(Presentation *pre, bool normalized)
+const char* Presentation_ToJson(Presentation *presentation, bool normalized)
 {
     DIDERROR_INITIALIZE();
 
-    return presentation_tojson_forsign(pre, !normalized, false);
+    return presentation_tojson_forsign(presentation, !normalized, false);
 
     DIDERROR_FINALIZE();
 }
@@ -727,7 +740,7 @@ Presentation *Presentation_FromJson(const char *json)
 {
     json_t *root;
     json_error_t error;
-    Presentation *pre;
+    Presentation *presentation;
 
     DIDERROR_INITIALIZE();
 
@@ -739,97 +752,96 @@ Presentation *Presentation_FromJson(const char *json)
         return NULL;
     }
 
-    pre = parse_presentation(root);
-    if (!pre) {
+    presentation = parse_presentation(root);
+    if (!presentation) {
         json_decref(root);
         return NULL;
     }
 
     json_decref(root);
-    return pre;
+    return presentation;
 
     DIDERROR_FINALIZE();
 }
 
-DIDURL *Presentation_GetId(Presentation *pre)
+DIDURL *Presentation_GetId(Presentation *presentation)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!pre, "No persentation argument.", NULL);
+    CHECK_ARG(!presentation, "No persentation argument.", NULL);
 
-    if (*pre->id.did.idstring && *pre->id.fragment)
-        return &pre->id;
+    if (*presentation->id.did.idstring && *presentation->id.fragment)
+        return &presentation->id;
 
     return NULL;
 
     DIDERROR_FINALIZE();
 }
 
-DID *Presentation_GetHolder(Presentation *pre)
+DID *Presentation_GetHolder(Presentation *presentation)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!pre, "No persentation argument.", NULL);
+    CHECK_ARG(!presentation, "No persentation argument.", NULL);
 
-    if (*pre->holder.idstring)
-        return &pre->holder;
+    if (*presentation->holder.idstring)
+        return &presentation->holder;
 
-    return &pre->proof.verificationMethod.did;
+    return &presentation->proof.verificationMethod.did;
 
     DIDERROR_FINALIZE();
 }
 
-ssize_t Presentation_GetCredentialCount(Presentation *pre)
+ssize_t Presentation_GetCredentialCount(Presentation *presentation)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!pre, "No persentation argument.", -1);
-
-    return pre->credentials.size;
+    CHECK_ARG(!presentation, "No persentation argument.", -1);
+    return presentation->credentials.size;
 
     DIDERROR_FINALIZE();
 }
 
-ssize_t Presentation_GetCredentials(Presentation *pre, Credential **creds, size_t size)
+ssize_t Presentation_GetCredentials(Presentation *presentation, Credential **creds, size_t size)
 {
     size_t actual_size;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!pre, "No persentation argument.", -1);
+    CHECK_ARG(!presentation, "No persentation argument.", -1);
     CHECK_ARG(!creds || size < 0, "Invalid buffer to get credentials.", -1);
 
-    actual_size = pre->credentials.size;
+    actual_size = presentation->credentials.size;
     if (actual_size == 0)
         return 0;
 
-    CHECK_ARG(actual_size > size, "The size of buffer is small.", -1);
+    CHECK_ARG(actual_size > size, "The buffer is too small.", -1);
 
-    memcpy(creds, pre->credentials.credentials, sizeof(Credential*) * actual_size);
+    memcpy(creds, presentation->credentials.credentials, sizeof(Credential*) * actual_size);
     return (ssize_t)actual_size;
 
     DIDERROR_FINALIZE();
 }
 
-Credential *Presentation_GetCredential(Presentation *pre, DIDURL *credid)
+Credential *Presentation_GetCredential(Presentation *presentation, DIDURL *credid)
 {
-    DIDERROR_INITIALIZE();
-
-    Credential *cred;
+    Credential *credential;
     size_t i;
 
-    CHECK_ARG(!pre, "No persentation argument.", NULL);
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!presentation, "No persentation argument.", NULL);
     CHECK_ARG(!credid, "No credential id.", NULL);
 
-    if (pre->credentials.size <= 0) {
+    if (presentation->credentials.size <= 0) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "No credentials in presentation.");
         return NULL;
     }
 
-    for (i = 0; i < pre->credentials.size; i++) {
-        cred = pre->credentials.credentials[i];
-        if (DIDURL_Equals(Credential_GetId(cred), credid))
-            return cred;
+    for (i = 0; i < presentation->credentials.size; i++) {
+        credential = presentation->credentials.credentials[i];
+        if (DIDURL_Equals(Credential_GetId(credential), credid))
+            return credential;
     }
 
     DIDError_Set(DIDERR_NOT_EXISTS, "No credential(%s) in presentation.", DIDURLSTR(credid));
@@ -838,163 +850,171 @@ Credential *Presentation_GetCredential(Presentation *pre, DIDURL *credid)
     DIDERROR_FINALIZE();
 }
 
-ssize_t Presentation_GetTypeCount(Presentation *pre)
+ssize_t Presentation_GetTypeCount(Presentation *presentation)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!pre, "No persentation argument.", -1);
-    return pre->type.size;
+    CHECK_ARG(!presentation, "No persentation argument.", -1);
+    return presentation->type.size;
 
     DIDERROR_FINALIZE();
 }
 
-ssize_t Presentation_GetTypes(Presentation *pre, const char **types, size_t size)
+ssize_t Presentation_GetTypes(Presentation *presentation, const char **types, size_t size)
 {
     size_t actual_size;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!pre, "No persentation argument.", -1);
+    CHECK_ARG(!presentation, "No persentation argument.", -1);
     CHECK_ARG(!types || size == 0, "Invalid buffer for types.", -1);
 
-    actual_size = pre->type.size;
-    CHECK_ARG(actual_size > size, "The buffer is small.", -1);
+    actual_size = presentation->type.size;
+    CHECK_ARG(actual_size > size, "The buffer is too small.", -1);
 
-    memcpy((void*)types, pre->type.types, sizeof(char*) * actual_size);
+    memcpy((void*)types, presentation->type.types, sizeof(char*) * actual_size);
     return (ssize_t)actual_size;
 
     DIDERROR_FINALIZE();
 }
 
-time_t Presentation_GetCreatedTime(Presentation *pre)
+time_t Presentation_GetCreatedTime(Presentation *presentation)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!pre, "No persentation argument.", 0);
-    return pre->created;
+    CHECK_ARG(!presentation, "No persentation argument.", 0);
+    return presentation->created;
 
     DIDERROR_FINALIZE();
 }
 
-DIDURL *Presentation_GetVerificationMethod(Presentation *pre)
+DIDURL *Presentation_GetVerificationMethod(Presentation *presentation)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!pre, "No persentation argument.", NULL);
-    return &pre->proof.verificationMethod;
+    CHECK_ARG(!presentation, "No persentation argument.", NULL);
+    return &presentation->proof.verificationMethod;
 
     DIDERROR_FINALIZE();
 }
 
-const char *Presentation_GetNonce(Presentation *pre)
+const char *Presentation_GetNonce(Presentation *presentation)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!pre, "No persentation argument.", NULL);
-    return pre->proof.nonce;
+    CHECK_ARG(!presentation, "No persentation argument.", NULL);
+    return presentation->proof.nonce;
 
     DIDERROR_FINALIZE();
 }
 
-const char *Presentation_GetRealm(Presentation *pre)
+const char *Presentation_GetRealm(Presentation *presentation)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!pre, "No persentation argument.", NULL);
-    return pre->proof.realm;
+    CHECK_ARG(!presentation, "No persentation argument.", NULL);
+    return presentation->proof.realm;
 
     DIDERROR_FINALIZE();
 }
 
-static bool check_presentation(Presentation *pre, bool validtype)
+static int check_presentation(Presentation *presentation, bool validtype)
 {
     DIDDocument *doc = NULL;
-    int rc = -1, status, i;
+    int rc = 0, status, i, check;
     const char *data;
 
-    assert(pre);
+    assert(presentation);
 
-    doc = DID_Resolve(Presentation_GetHolder(pre), &status, false);
+    doc = DID_Resolve(Presentation_GetHolder(presentation), &status, false);
     if (!doc) {
         DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Presentation holder %s %s.",
-                DIDSTR(Presentation_GetHolder(pre)), DIDSTATUS_MSG(status));
-        return false;
+                DIDSTR(Presentation_GetHolder(presentation)), DIDSTATUS_MSG(status));
+        return -1;
     }
 
     if (validtype) {
-        if (!DIDDocument_IsValid(doc))
+        rc = DIDDocument_IsValid(doc);
+        if (rc != 1)
             goto errorExit;
     } else {
-        if (!DIDDocument_IsGenuine(doc)) {
+        rc = DIDDocument_IsGenuine(doc);
+        if (rc != 1) {
             DIDError_Set(DIDERR_NOT_GENUINE, "Signer isn't genuine.");
             goto errorExit;
         }
     }
 
-    if (!DIDDocument_IsAuthenticationKey(doc, &pre->proof.verificationMethod)) {
+    if (!DIDDocument_IsAuthenticationKey(doc, &presentation->proof.verificationMethod)) {
         DIDError_Set(DIDERR_INVALID_KEY, "Invalid authentication key.");
         goto errorExit;
     }
 
-    if (pre->credentials.size > 0 && !pre->credentials.credentials) {
+    if (presentation->credentials.size > 0 && !presentation->credentials.credentials) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing credentials.");
         goto errorExit;
     }
 
-    for (i = 0; i < pre->credentials.size; i++) {
-        Credential *cred = pre->credentials.credentials[i];
+    for (i = 0; i < presentation->credentials.size; i++) {
+        Credential *cred = presentation->credentials.credentials[i];
         if (!cred) {
             DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing credential.");
             goto errorExit;
         }
-        if (!DID_Equals(&cred->subject.id, Presentation_GetHolder(pre))) {
-            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Credential is not match with signer.");
+        if (!DID_Equals(&cred->subject.id, Presentation_GetHolder(presentation))) {
+            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Credential %s doesn't match with signer.", DIDURLSTR(&cred->id));
             goto errorExit;
         }
         if (validtype) {
-            if (!Credential_IsValid(cred))
+            rc = Credential_IsValid(cred);
+            if (rc != 1)
                 goto errorExit;
         } else {
-            if (!Credential_IsGenuine(cred)) {
-                DIDError_Set(DIDERR_NOT_GENUINE, "Credential isn't genuine.");
+            rc = Credential_IsGenuine(cred);
+            if (rc != 1) {
+                DIDError_Set(DIDERR_NOT_GENUINE, "Credential %s isn't genuine.", DIDURLSTR(&cred->id));
                 goto errorExit;
             }
         }
     }
 
-    data = presentation_tojson_forsign(pre, false, true);
+    data = presentation_tojson_forsign(presentation, false, true);
     if (!data)
         goto errorExit;
 
-    rc = DIDDocument_Verify(doc, &pre->proof.verificationMethod,
-            pre->proof.signatureValue, 3, (unsigned char*)data, strlen(data),
-            pre->proof.realm, strlen(pre->proof.realm),
-            pre->proof.nonce, strlen(pre->proof.nonce));
+    check = DIDDocument_Verify(doc, &presentation->proof.verificationMethod,
+            presentation->proof.signatureValue, 3, (unsigned char*)data, strlen(data),
+            presentation->proof.realm, strlen(presentation->proof.realm),
+            presentation->proof.nonce, strlen(presentation->proof.nonce));
     free((void*)data);
-    if (rc < 0)
+    if (check < 0) {
         DIDError_Set(DIDERR_VERIFY_ERROR, "Verify persentation failed.");
+        goto errorExit;
+    }
+
+    rc = 1;
 
 errorExit:
     DIDDocument_Destroy(doc);
-    return rc == 0;
+    return rc;
 }
 
-bool Presentation_IsGenuine(Presentation *pre)
+int Presentation_IsGenuine(Presentation *presentation)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!pre, "No persentation argument.", false);
-    return check_presentation(pre, false);
+    CHECK_ARG(!presentation, "No persentation argument.", -1);
+    return check_presentation(presentation, false);
 
     DIDERROR_FINALIZE();
 }
 
-bool Presentation_IsValid(Presentation *pre)
+int Presentation_IsValid(Presentation *presentation)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!pre, "No persentation argument.", false);
-    return check_presentation(pre, true);
+    CHECK_ARG(!presentation, "No persentation argument.", -1);
+    return check_presentation(presentation, true);
 
     DIDERROR_FINALIZE();
 }

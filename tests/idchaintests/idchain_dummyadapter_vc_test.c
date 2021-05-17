@@ -87,7 +87,7 @@ static void test_idchain_declarevc(void)
 
             CU_ASSERT_TRUE(Credential_Declare(vc, signkey1, storepass));
             CU_ASSERT_TRUE(Credential_WasDeclared(&vc->id));
-            CU_ASSERT_FALSE(Credential_IsRevoked(vc));
+            CU_ASSERT_NOT_EQUAL(1, Credential_IsRevoked(vc));
 
             resolve_vc1 = Credential_Resolve(&vc->id, &status, true);
             CU_ASSERT_PTR_NOT_NULL(resolve_vc1);
@@ -104,25 +104,25 @@ static void test_idchain_declarevc(void)
 
             CU_ASSERT_NOT_EQUAL(0, CredentialMetadata_GetPublished(&resolve_vc1->metadata));
             CU_ASSERT_PTR_NOT_NULL(CredentialMetadata_GetTxid(&resolve_vc1->metadata));
-            CU_ASSERT_FALSE(Credential_IsRevoked(resolve_vc1));
+            CU_ASSERT_NOT_EQUAL(1, Credential_IsRevoked(resolve_vc1));
             CU_ASSERT_TRUE(Credential_WasDeclared(&resolve_vc1->id));
 
             //declare again, fail.
-            CU_ASSERT_FALSE(Credential_Declare(vc, signkey1, storepass));
+            CU_ASSERT_NOT_EQUAL(1, Credential_Declare(vc, signkey1, storepass));
             CU_ASSERT_STRING_EQUAL("Credential was already declared.", DIDError_GetLastErrorMessage());
 
             //revoke by random DID at first, success.
-            CU_ASSERT_FALSE(Credential_RevokeById(&vc->id, repealerdoc, signkey3, storepass));
-            CU_ASSERT_FALSE(Credential_IsRevoked(vc));
+            CU_ASSERT_NOT_EQUAL(1, Credential_RevokeById(&vc->id, repealerdoc, signkey3, storepass));
+            CU_ASSERT_NOT_EQUAL(1, Credential_IsRevoked(vc));
             //revoke by owner again, success.
             CU_ASSERT_TRUE(Credential_RevokeById(&vc->id, doc, signkey1, storepass));
             CU_ASSERT_TRUE(Credential_IsRevoked(vc));
             //revoke by issuer again, fail.
-            CU_ASSERT_FALSE(Credential_RevokeById(&vc->id, issuerdoc, signkey2, storepass));
+            CU_ASSERT_NOT_EQUAL(1, Credential_RevokeById(&vc->id, issuerdoc, signkey2, storepass));
             CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
 
             //try to declare again, fail.
-            CU_ASSERT_FALSE(Credential_Declare(resolve_vc1, signkey1, storepass));
+            CU_ASSERT_NOT_EQUAL(1, Credential_Declare(resolve_vc1, signkey1, storepass));
             CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
 
             resolve_vc2 = Credential_Resolve(&vc->id, &status, true);
@@ -218,42 +218,32 @@ static void test_idchain_revokevc(void)
             CU_ASSERT_PTR_NOT_NULL(vc);
 
             if (strcmp("passport", param->param) && strcmp("services", param->param)) {
-                CU_ASSERT_FALSE(Credential_Revoke(vc, NULL, storepass));
-                CU_ASSERT_STRING_EQUAL("Please specify the sign key for non-selfproclaimed credential.", DIDError_GetLastErrorMessage());
+                CU_ASSERT_NOT_EQUAL(1, Credential_Revoke(vc, NULL, storepass));
+                CU_ASSERT_STRING_EQUAL("Please specify the signkey for non-selfproclaimed credential.", DIDError_GetLastErrorMessage());
             }
 
             if (!strcmp("services", param->param) || !strcmp("passport", param->param))
                 signkey2 = signkey1;
 
             //revoke random did
-            CU_ASSERT_FALSE(Credential_Revoke(vc, signkey3, storepass));
-            CU_ASSERT_FALSE(Credential_IsRevoked(vc));
+            CU_ASSERT_NOT_EQUAL(1, Credential_Revoke(vc, signkey3, storepass));
+            CU_ASSERT_NOT_EQUAL(1, Credential_IsRevoked(vc));
 
             CU_ASSERT_TRUE(Credential_Revoke(vc, signkey2, storepass));
             CU_ASSERT_TRUE(Credential_IsRevoked(vc));
 
             resolvevc = Credential_Resolve(&vc->id, &status, true);
             CU_ASSERT_PTR_NULL(resolvevc);
-
-            if (strcmp("passport", param->param) && strcmp("services", param->param)) {
-                CU_ASSERT_EQUAL(status, CredentialStatus_NotFound);
-            } else {
-                CU_ASSERT_EQUAL(status, CredentialStatus_Revoked);
-            }
+            CU_ASSERT_EQUAL(status, CredentialStatus_Revoked);
             CU_ASSERT_TRUE(Credential_ResolveRevocation(&vc->id, &issuerdoc->did));
 
-            CU_ASSERT_FALSE(Credential_Declare(vc, signkey1, storepass));
+            CU_ASSERT_NOT_EQUAL(1, Credential_Declare(vc, signkey1, storepass));
             CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
 
-            CU_ASSERT_PTR_NULL(Credential_Resolve(&vc->id, &status, true));
-            if (strcmp("passport", param->param) && strcmp("services", param->param)) {
-                CU_ASSERT_EQUAL(status, CredentialStatus_NotFound);
-            } else {
-                CU_ASSERT_EQUAL(status, CredentialStatus_Revoked);
-            }
+            CU_ASSERT_EQUAL(status, CredentialStatus_Revoked);
             CU_ASSERT_TRUE(Credential_ResolveRevocation(&vc->id, &issuerdoc->did));
             CU_ASSERT_TRUE(Credential_IsRevoked(vc));
-            CU_ASSERT_FALSE(Credential_WasDeclared(&vc->id));
+            CU_ASSERT_NOT_EQUAL(1, Credential_WasDeclared(&vc->id));
         }
     }
 }
@@ -354,11 +344,11 @@ static void test_idchain_listvc(void)
     CU_ASSERT_TRUE(Credential_Declare(vc, NULL, storepass));
     Credential_Destroy(vc);
     CU_ASSERT_TRUE(Credential_WasDeclared(credid2));
-    CU_ASSERT_FALSE(Credential_ResolveRevocation(credid2, &issuerid));
+    CU_ASSERT_NOT_EQUAL(1, Credential_ResolveRevocation(credid2, &issuerid));
 
     //revoke credid1
     CU_ASSERT_TRUE(Credential_RevokeById(credid1, document, NULL, storepass));
-    CU_ASSERT_FALSE(Credential_WasDeclared(credid1));
+    CU_ASSERT_NOT_EQUAL(1, Credential_WasDeclared(credid1));
     CU_ASSERT_TRUE(Credential_ResolveRevocation(credid1, &issuerid));
 
     //resolve did
@@ -391,7 +381,7 @@ static void test_idchain_listvc(void)
     CU_ASSERT_STRING_EQUAL(provalue, "132780456");
     free((void*)provalue);
 
-    CU_ASSERT_FALSE(Credential_WasDeclared(credid1));
+    CU_ASSERT_NOT_EQUAL(1, Credential_WasDeclared(credid1));
     CU_ASSERT_TRUE(Credential_IsRevoked(vc));
 
     //resolve credid1(revoked)
@@ -407,7 +397,7 @@ static void test_idchain_listvc(void)
     resolvevc = Credential_Resolve(credid2, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvevc);
     CU_ASSERT_TRUE(Credential_WasDeclared(credid2));
-    CU_ASSERT_FALSE(Credential_IsRevoked(vc));
+    CU_ASSERT_NOT_EQUAL(1, Credential_IsRevoked(vc));
 
     CU_ASSERT_TRUE(DIDURL_Equals(Credential_GetId(resolvevc), credid2));
     CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(resolvevc), &did));

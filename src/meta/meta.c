@@ -430,7 +430,7 @@ errorExit:
     return value;
 }
 
-bool Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key)
+int Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key)
 {
     char *uskey;
     json_t *json;
@@ -454,14 +454,14 @@ bool Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key)
         goto errorExit;
     }
 
-    return json_is_true(json);
+    return (int)json_is_true(json);
 
 errorExit:
     DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
-    return NULL;
+    return -1;
 }
 
-bool Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key)
+int Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key)
 {
     json_t *json;
 
@@ -470,18 +470,14 @@ bool Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key)
 
     json = Metadata_Get(metadata, key);
     if (!json)
-        goto errorExit;
+        return 0;
 
     if (!json_is_boolean(json)) {
         DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not boolean type.", key);
-        goto errorExit;
+        return -1;
     }
 
-    return json_is_true(json);
-
-errorExit:
-    DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
-    return NULL;
+    return (int)json_is_true(json);
 }
 
 double Metadata_GetExtraAsDouble(Metadata *metadata, const char *key)

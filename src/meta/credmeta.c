@@ -123,9 +123,9 @@ int CredentialMetadata_SetRevoke(CredentialMetadata *metadata, bool revoke)
     return 0;
 }
 
-bool CredentialMetadata_GetRevoke(CredentialMetadata *metadata)
+int CredentialMetadata_GetRevoke(CredentialMetadata *metadata)
 {
-    CHECK_ARG(!metadata, "No credential metadata argument.", false);
+    CHECK_ARG(!metadata, "No credential metadata argument.", -1);
 
     return Metadata_GetDefaultExtraAsBoolean(&metadata->base, REVOKED);
 }
@@ -175,12 +175,15 @@ int CredentialMetadata_SetTxid(CredentialMetadata *metadata, const char *txid)
 
 const char *CredentialMetadata_GetTxid(CredentialMetadata *metadata)
 {
-    assert(metadata);
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!metadata, "No credential metadata argument.", NULL);
 
     return Metadata_GetDefaultExtra(&metadata->base, TXID);
+
+    DIDERROR_FINALIZE();
 }
 
-//****** DID_API
 int CredentialMetadata_SetAlias(CredentialMetadata *metadata, const char *alias)
 {
     DIDERROR_INITIALIZE();

@@ -79,13 +79,13 @@ static void test_vc_local_verify(void)
     Issuer_Destroy(issuer);
     DIDURL_Destroy(credid);
 
-    CU_ASSERT_FALSE(Credential_IsValid(vc));
+    CU_ASSERT_NOT_EQUAL(1, Credential_IsValid(vc));
 
     DIDBackend_SetLocalResolveHandle(local_doc);
     CU_ASSERT_TRUE(Credential_IsValid(vc));
 
     DIDBackend_SetLocalResolveHandle(NULL);
-    CU_ASSERT_FALSE(Credential_IsValid(vc));
+    CU_ASSERT_NOT_EQUAL(1, Credential_IsValid(vc));
 
     DIDDocument_Destroy(doc);
     Credential_Destroy(vc);

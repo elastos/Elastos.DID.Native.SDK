@@ -1839,34 +1839,32 @@ DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did)
     DIDERROR_FINALIZE();
 }
 
-bool DIDStore_ContainsDID(DIDStore *store, DID *did)
+int DIDStore_ContainsDID(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];
     int rc;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!store, "No didstore to check did existence.", false);
-    CHECK_ARG(!did, "No did argument to be checked existence.", false);
+    CHECK_ARG(!store, "No didstore to check did existence.", -1);
+    CHECK_ARG(!did, "No did argument to be checked existence.", -1);
 
-    if (get_dir(path, 0, 4, store->root, DATA_DIR, IDS_DIR, did->idstring) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "No did [%s] directory in store.", DIDSTR(did));
-        return false;
-    }
+    if (get_dir(path, 0, 4, store->root, DATA_DIR, IDS_DIR, did->idstring) == -1)
+        return 0;
 
     rc = test_path(path);
     if (rc < 0) {
         DIDError_Set(DIDERR_IO_ERROR, "Invalid did [%s] directory in store.", DIDSTR(did));
-        return false;
+        return -1;
     }
 
     if (rc == S_IFREG || is_empty(path)) {
         DIDError_Set(DIDERR_IO_ERROR, "Invalid did [%s] directory in store.", DIDSTR(did));
         delete_file(path);
-        return false;
+        return -1;
     }
 
-    return true;
+    return 1;
 
     DIDERROR_FINALIZE();
 }
@@ -1980,9 +1978,9 @@ Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!store, "No didstore to load credential", NULL);
+    CHECK_ARG(!store, "No didstore to load credential.", NULL);
     CHECK_ARG(!did, "No owner of credential.", NULL);
-    CHECK_ARG(!id, "No credential argument to be loaded.", NULL);
+    CHECK_ARG(!id, "No credential to be loaded.", NULL);
 
     sprintf(filename, "#%s", id->fragment);
     if (get_file(path, 0, 7, store->root, DATA_DIR, IDS_DIR, did->idstring,
@@ -2025,72 +2023,63 @@ Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
     DIDERROR_FINALIZE();
 }
 
-bool DIDStore_ContainsCredentials(DIDStore *store, DID *did)
+int DIDStore_ContainsCredentials(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];
     int rc;
-    bool empty;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!store, "No didstore to check credentials' existence.", false);
-    CHECK_ARG(!did, "No owner of credentials to be checked.", false);
+    CHECK_ARG(!store, "No didstore to check credentials' existence.", -1);
+    CHECK_ARG(!did, "No owner of credentials to be checked.", -1);
 
-    if (get_dir(path, 0, 5, store->root, DATA_DIR, IDS_DIR, did->idstring, CREDENTIALS_DIR) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "The credential directory of did(%s) doesn't not exist.", DIDSTR(did));
-        return -1;
-    }
+    if (get_dir(path, 0, 5, store->root, DATA_DIR, IDS_DIR, did->idstring, CREDENTIALS_DIR) == -1)
+        return 0;
 
     rc = test_path(path);
     if (rc < 0) {
         DIDError_Set(DIDERR_IO_ERROR, "The credential directory of did(%s) error.", DIDSTR(did));
-        return false;
+        return -1;
     }
 
     if (rc == S_IFREG) {
         DIDError_Set(DIDERR_IO_ERROR, "The credential directory of did(%s) should be directory.", DIDSTR(did));
         delete_file(path);
-        return false;
+        return -1;
     }
 
-    empty = is_empty(path);
-    if (empty)
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "The credential directory of did(%s) is empty.", DIDSTR(did));
-
-    return !empty;
+    return !is_empty(path);
 
     DIDERROR_FINALIZE();
 }
 
-bool DIDStore_ContainsCredential(DIDStore *store, DID *did, DIDURL *id)
+int DIDStore_ContainsCredential(DIDStore *store, DID *did, DIDURL *id)
 {
     char path[PATH_MAX], filename[128];
     int rc;
 
-    CHECK_ARG(!store, "No didstore to check credential's existence.", false);
-    CHECK_ARG(!did, "No owner of credential.", false);
-    CHECK_ARG(!id, "No id of credential to be checked existence.", false);
+    CHECK_ARG(!store, "No didstore to check credential's existence.", -1);
+    CHECK_ARG(!did, "No owner of credential.", -1);
+    CHECK_ARG(!id, "No id of credential to be checked existence.", -1);
 
     sprintf(filename, "#%s", id->fragment);
     if (get_dir(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
-            CREDENTIALS_DIR, filename) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Credential[%s] doesn't exist in didstore.", DIDURLSTR(id));
-        return false;
-    }
+            CREDENTIALS_DIR, filename) == -1)
+        return 0;
 
     rc = test_path(path);
     if (rc < 0) {
         DIDError_Set(DIDERR_IO_ERROR, "Credential[%s] directory error.", DIDURLSTR(id));
-        return false;
+        return -1;
     }
 
     if (rc == S_IFREG) {
         DIDError_Set(DIDERR_IO_ERROR, "Credential[%s] directory should be directory.", DIDURLSTR(id));
         delete_file(path);
-        return false;
+        return -1;
     }
 
-    return true;
+    return 1;
 }
 
 bool DIDStore_DeleteCredential(DIDStore *store, DID *did, DIDURL *id)
@@ -2242,61 +2231,52 @@ int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *id,
     DIDERROR_FINALIZE();
 }
 
-bool DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did)
+int DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];
-    bool empty;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!store, "No didstore to check privatekeys' existence.", false);
-    CHECK_ARG(!did, "No owner of privatekeys.", false);
+    CHECK_ARG(!store, "No didstore to check privatekeys' existence.", -1);
+    CHECK_ARG(!did, "No owner of privatekeys.", -1);
 
-    if (get_dir(path, 0, 5, store->root, DATA_DIR, IDS_DIR, did->idstring, PRIVATEKEYS_DIR) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "The did(%s) directory stored privatekeys doesn't exist.", DIDSTR(did));
-        return false;
-    }
+    if (get_dir(path, 0, 5, store->root, DATA_DIR, IDS_DIR, did->idstring, PRIVATEKEYS_DIR) == -1)
+        return 0;
 
-    empty = is_empty(path);
-    if (empty)
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "The did(%s) directory stored privatekeys is empty.", DIDSTR(did));
-
-    return !empty;
+    return !is_empty(path);
 
     DIDERROR_FINALIZE();
 }
 
-bool DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
+int DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
 {
     char path[PATH_MAX], filename[128];
     int rc;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!store, "No didstore to check privatekey's existence.", false);
-    CHECK_ARG(!did, "No owner of privatekey.", false);
-    CHECK_ARG(!id, "No privatekey id.", false);
+    CHECK_ARG(!store, "No didstore to check privatekey's existence.", -1);
+    CHECK_ARG(!did, "No owner of privatekey.", -1);
+    CHECK_ARG(!id, "No privatekey id.", -1);
 
     sprintf(filename, "#%s", id->fragment);
     if (get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
-            PRIVATEKEYS_DIR, filename) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "The privatekey(%s) file doesn't exist.", DIDURLSTR(id));
-        return false;
-    }
+            PRIVATEKEYS_DIR, filename) == -1)
+        return 0;
 
     rc = test_path(path);
     if (rc < 0) {
         DIDError_Set(DIDERR_IO_ERROR, "Privatekey(%s) file error.", DIDURLSTR(id));
-        return false;
+        return 0;
     }
 
     if (rc == S_IFDIR) {
         DIDError_Set(DIDERR_IO_ERROR, "Privatekey(%s) file should be file.", DIDURLSTR(id));
         delete_file(path);
-        return false;
+        return -1;
     }
 
-    return true;
+    return 1;
 
     DIDERROR_FINALIZE();
 }
@@ -2385,37 +2365,30 @@ int DIDStore_StoreDefaultPrivateKey(DIDStore *store, const char *storepass,
     return 0;
 }
 
-bool DIDStore_ContainsRootIdentity(DIDStore *store, const char *id)
+int DIDStore_ContainsRootIdentity(DIDStore *store, const char *id)
 {
     char path[PATH_MAX];
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!store, "No didstore to check rootidentity.", false);
-    CHECK_ARG(!id, "No rootidentity id argument.", false);
+    CHECK_ARG(!store, "No didstore to check rootidentity.", -1);
+    CHECK_ARG(!id, "No rootidentity id argument.", -1);
 
-    if (get_dir(path, 0, 4, store->root, DATA_DIR, ROOTS_DIR, id) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Rootidentity(%s) directory doesn't exist.", id);
-        return false;
-    }
-
-    return true;
+    return get_dir(path, 0, 4, store->root, DATA_DIR, ROOTS_DIR, id) == -1 ? 0 : 1;
 
     DIDERROR_FINALIZE();
 }
 
-bool DIDStore_ContainsRootIdentities(DIDStore *store)
+int DIDStore_ContainsRootIdentities(DIDStore *store)
 {
     char path[PATH_MAX];
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!store, "No didstore to check rootidentities.", false);
+    CHECK_ARG(!store, "No didstore to check rootidentities.", -1);
 
-    if (get_dir(path, 0, 3, store->root, DATA_DIR, ROOTS_DIR) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "'roots' directory doesn't exist.");
-        return false;
-    }
+    if (get_dir(path, 0, 3, store->root, DATA_DIR, ROOTS_DIR) == -1)
+        return 0;
 
     return !is_empty(path);
 
@@ -2580,7 +2553,7 @@ int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id)
     assert(store);
 
     if (id && !DIDStore_ContainsRootIdentity(store, id)) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "No rootidentity(%s).", id);
+        DIDError_Set(DIDERR_NOT_EXISTS, "No rootidentity (%s).", id);
         return -1;
     }
 
@@ -2659,7 +2632,7 @@ int DIDStore_ExportRootIdentityMnemonic(DIDStore *store, const char *storepass,
     DIDERROR_FINALIZE();
 }
 
-bool DIDStore_ContainsRootIdentityMnemonic(DIDStore *store, const char *id)
+int DIDStore_ContainsRootIdentityMnemonic(DIDStore *store, const char *id)
 {
     char path[PATH_MAX];
     struct stat st;
@@ -2667,24 +2640,22 @@ bool DIDStore_ContainsRootIdentityMnemonic(DIDStore *store, const char *id)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!store, "No store to check mnemonic.", -1);
-    CHECK_ARG(!id, "No rootidentity id.", false);
+    CHECK_ARG(!id || !*id, "Invalid rootidentity id.", -1);
 
-    if (get_file(path, 0, 5, store->root, DATA_DIR, ROOTS_DIR, id, MNEMONIC_FILE) == -1) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Mnemonic file of rootidentity(%s) doesn't exist.", id);
-        return -1;
-    }
+    if (get_file(path, 0, 5, store->root, DATA_DIR, ROOTS_DIR, id, MNEMONIC_FILE) == -1)
+        return 0;
 
     if (stat(path, &st) < 0) {
         DIDError_Set(DIDERR_IO_ERROR, "Mnemonic file of rootidentity(%s) error.", id);
-        return false;
+        return -1;
     }
 
     if (st.st_size <= 0) {
         DIDError_Set(DIDERR_IO_ERROR, "No mnemonic content of rootidentity(%s).", id);
-        return false;
+        return -1;
     }
 
-    return true;
+    return 1;
 
     DIDERROR_FINALIZE();
 }
@@ -3548,7 +3519,7 @@ static DIDDocument *import_document(json_t *json, DID *did, Sha256_Digest *diges
         return NULL;
 
     if (!DID_Equals(&doc->did, did) || !DIDDocument_IsGenuine(doc)) {
-        DIDError_Set(DIDERR_NOT_GENUINE, "Invalid DID document in the export data.");
+        DIDError_Set(DIDERR_NOT_GENUINE, "Invalid document in the export data.");
         goto errorExit;
     }
 
@@ -3653,7 +3624,7 @@ static ssize_t import_creds(json_t *json, DID *did, Credential **creds, size_t s
             goto errorExit;
         }
 
-        Credential *cred = Parse_Credential(child_field, did);
+        Credential *cred = Credential_From_Internal(child_field, did);
         if (!cred)
             goto errorExit;
 
