@@ -43,7 +43,7 @@ Issuer *Issuer_Create(DID *did, DIDURL *signkey, DIDStore *store)
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!did, "No did to become issuer.", NULL);
+    CHECK_ARG(!did, "No did to create issuer.", NULL);
     CHECK_ARG(!store, "No store argument.", NULL);
 
     doc = DIDStore_LoadDID(store, did);
@@ -61,14 +61,14 @@ Issuer *Issuer_Create(DID *did, DIDURL *signkey, DIDStore *store)
         }
     } else {
         if (!DIDDocument_IsAuthenticationKey(doc, signkey)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "The issuer's sign key isn't an authentication key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "The issuer's signkey isn't an authentication key.");
             DIDDocument_Destroy(doc);
             return NULL;
         }
     }
 
     if (!DIDStore_ContainsPrivateKey(store, DIDURL_GetDid(signkey), signkey)) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "Missing private key paired with sign key of issuer.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "Missing private key paired with signkey of issuer.");
         DIDDocument_Destroy(doc);
         return NULL;
     }

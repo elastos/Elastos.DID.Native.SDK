@@ -97,7 +97,6 @@ static void test_vp_getelem_ctmid(void)
     ssize_t size;
     Credential *creds[4], **cred;
     const char *types[1] = {0};
-    DID *holder;
     int i;
 
     CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 2));

@@ -113,7 +113,7 @@ int DIDBackend_Initialize(CreateIdTransaction_Callback *createtransaction,
     DIDERROR_FINALIZE();
 }
 
-bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
+int DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
 {
     const char *reqstring;
     bool success;
@@ -123,19 +123,19 @@ bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *st
     assert(storepass && *storepass);
 
     if (!gCreateIdTransaction) {
-        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Not method to create transaction.\
-                Please set method by initialize backend.");
-        return false;
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "No method to create transaction.\
+                Please use 'DIDBackend_InitializeDefault' or 'DIDBackend_Initialize' to initialize backend.");
+        return -1;
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
-        return false;
+        return -1;
     }
 
     reqstring = DIDRequest_Sign(RequestType_Create, document, signkey, NULL, NULL, storepass);
     if (!reqstring)
-        return false;
+        return -1;
 
     success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
@@ -145,7 +145,7 @@ bool DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *st
     return success;
 }
 
-bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
+int DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
 {
     const char *reqstring;
     bool success;
@@ -155,19 +155,19 @@ bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *st
     assert(storepass && *storepass);
 
     if (!gCreateIdTransaction) {
-        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Not method to create transaction.\
-                Please set method by initialize backend.");
-        return false;
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "No method to create transaction.\
+                Please use 'DIDBackend_InitializeDefault' or 'DIDBackend_Initialize' to initialize backend.");
+        return -1;
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
-        return false;
+        return -1;
     }
 
     reqstring = DIDRequest_Sign(RequestType_Update, document, signkey, NULL, NULL, storepass);
     if (!reqstring)
-        return false;
+        return -1;
 
     success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
@@ -177,7 +177,7 @@ bool DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *st
     return success;
 }
 
-bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
+int DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
         DIDURL *signkey, const char *storepass)
 {
     const char *reqstring;
@@ -189,19 +189,19 @@ bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
     assert(storepass && *storepass);
 
     if (!gCreateIdTransaction) {
-        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Not method to create transaction.\
-                Please set method by initialize backend.");
-        return false;
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "No method to create transaction.\
+                Please use 'DIDBackend_InitializeDefault' or 'DIDBackend_Initialize' to initialize backend.");
+        return -1;
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
-        return false;
+        return -1;
     }
 
     reqstring = DIDRequest_Sign(RequestType_Transfer, document, signkey, NULL, ticket, storepass);
     if (!reqstring)
-        return false;
+        return -1;
 
     success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
@@ -213,7 +213,7 @@ bool DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
 
 //signkey provides sk, creater is real key in proof. If did is deactivated by ownerself, signkey and
 //creater is same.
-bool DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
+int DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
         DIDURL *creater, const char *storepass)
 {
     const char *reqstring;
@@ -224,19 +224,19 @@ bool DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
     assert(storepass && *storepass);
 
     if (!gCreateIdTransaction) {
-        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Not method to create transaction.\
-                Please set method by initialize backend.");
-        return false;
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "No method to create transaction.\
+                Please use 'DIDBackend_InitializeDefault' or 'DIDBackend_Initialize' to initialize backend.");
+        return -1;
     }
 
     if (!DIDMetadata_AttachedStore(&signerdoc->metadata)) {
         DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
-        return false;
+        return -1;
     }
 
     reqstring = DIDRequest_Sign(RequestType_Deactivate, signerdoc, signkey, creater, NULL, storepass);
     if (!reqstring)
-        return false;
+        return -1;
 
     success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
@@ -297,7 +297,7 @@ static int resolvedid_from_backend(ResolveResult *result, DID *did, bool all)
 
     data = gResolve(request);
     if (!data) {
-        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESPONSE, "No resolve data %s from chain failed.", did->idstring);
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESPONSE, "No resolve data %s from chain failed.", DIDSTR(did));
         return rc;
     }
 
@@ -524,7 +524,7 @@ DIDDocument *DIDBackend_ResolveDID(DID *did, int *status, bool force)
 
     assert(did);
 
-    //If user give did document to verify, sdk use it first.
+    //If user give document to verify, sdk use it first.
     if (gLocalResolveHandle) {
         doc = gLocalResolveHandle(did);
         if (doc)
@@ -656,8 +656,7 @@ ssize_t DIDBackend_ListCredentials(DID *did, DIDURL **buffer, size_t size,
     return listvcs_from_backend(did, buffer, size, skip, limit);
 }
 
-//*****Credential
-bool DIDBackend_DeclareCredential(Credential *vc, DIDURL *signkey,
+int DIDBackend_DeclareCredential(Credential *vc, DIDURL *signkey,
         DIDDocument *document, const char *storepass)
 {
     const char *reqstring;
@@ -670,18 +669,18 @@ bool DIDBackend_DeclareCredential(Credential *vc, DIDURL *signkey,
 
     if (!gCreateIdTransaction) {
         DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "No method to create transaction.\
-                Please set method by initialize backend.");
-        return false;
+                Please use 'DIDBackend_InitializeDefault' or 'DIDBackend_Initialize' to initialize backend.");
+        return -1;
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
-        return false;
+        return -1;
     }
 
     reqstring = CredentialRequest_Sign(RequestType_Declare, NULL, vc, signkey, document, storepass);
     if (!reqstring)
-        return false;
+        return -1;
 
     success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
@@ -691,7 +690,7 @@ bool DIDBackend_DeclareCredential(Credential *vc, DIDURL *signkey,
     return success;
 }
 
-bool DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey, DIDDocument *document,
+int DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey, DIDDocument *document,
         const char *storepass)
 {
     const char *reqstring;
@@ -703,19 +702,19 @@ bool DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey, DIDDocument *d
     assert(storepass && *storepass);
 
     if (!gCreateIdTransaction) {
-        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Not method to create transaction.\
-                Please set method by initialize backend.");
-        return false;
+        DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "No method to create transaction.\
+                Please use 'DIDBackend_InitializeDefault' or 'DIDBackend_Initialize' to initialize backend.");
+        return -1;
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
-        return false;
+        return -1;
     }
 
     reqstring = CredentialRequest_Sign(RequestType_Revoke, credid, NULL, signkey, document, storepass);
     if (!reqstring)
-        return false;
+        return -1;
 
     success = gCreateIdTransaction(reqstring, "");
     free((void*)reqstring);
@@ -822,25 +821,24 @@ errorExit:
     return NULL;
 }
 
-bool DIDBackend_ResolveRevocation(DIDURL *id, DID *issuer)
+int DIDBackend_ResolveRevocation(DIDURL *id, DID *issuer)
 {
     CredentialBiography *biography;
-
-    bool exist;
+    int exist;
 
     assert(id);
     assert(issuer);
 
     if (!gResolve) {
         DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "No Resolver.");
-        return false;
+        return -1;
     }
 
     biography = resolvevc_from_backend(id, issuer);
     if (!biography)
-        return false;
+        return -1;
 
-    exist = (CredentialBiography_GetStatus(biography) == CredentialStatus_Revoked) ? true : false;
+    exist = (CredentialBiography_GetStatus(biography) == CredentialStatus_Revoked) ? 1 : 0;
     CredentialBiography_Destroy(biography);
     return exist;
 }

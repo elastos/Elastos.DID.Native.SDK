@@ -165,7 +165,7 @@ static void test_didstore_rootidentity(void)
 
     CU_ASSERT_TRUE(DIDStore_ContainsRootIdentityMnemonic(store, rootidentity1->id));
     CU_ASSERT_TRUE(DIDStore_ContainsRootIdentityMnemonic(store, rootidentity2->id));
-    CU_ASSERT_FALSE(DIDStore_ContainsRootIdentityMnemonic(store, rootidentity3->id));
+    CU_ASSERT_NOT_EQUAL(1, DIDStore_ContainsRootIdentityMnemonic(store, rootidentity3->id));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_ExportRootIdentityMnemonic(store, storepass,
             rootidentity1->id, mnemonic, sizeof(mnemonic)));

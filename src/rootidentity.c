@@ -96,15 +96,13 @@ static int store_rootidentity(RootIdentity *rootidentity, DIDStore *store,
     assert(storepass && *storepass);
 
     if (DIDStore_ContainsRootIdentity(store, rootidentity->id) && !overwrite) {
-        DIDError_Set(DIDERR_ALREADY_EXISTS, "Already has private identity.");
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "Already has rootidentity.");
         return -1;
     }
 
     IdentityMetadata_SetStore(&rootidentity->metadata, store);
-    if (DIDStore_StoreRootIdentity(store, storepass, rootidentity) < 0) {
-        DIDError_Set(DIDERR_ALREADY_EXISTS, "Already has private identity.");
+    if (DIDStore_StoreRootIdentity(store, storepass, rootidentity) < 0)
         return -1;
-    }
 
     return 0;
 }
@@ -537,7 +535,7 @@ int RootIdentity_SetAsDefault(RootIdentity *rootidentity)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!rootidentity, "No rootidentity to get did.", -1);
+    CHECK_ARG(!rootidentity, "No rootidentity to set default did.", -1);
 
     if (!rootidentity->metadata.base.store) {
         DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with rootidentity.");

@@ -57,3 +57,23 @@ bool Mnemonic_IsValid(const char *mnemonic, const char *language)
 
     DIDERROR_FINALIZE();
 }
+
+const char *Mnemonic_GetLanguage(const char *mnemonic)
+{
+    int i;
+    const char *languages[] = { "english", "french", "spanish", "japanese",
+            "chinese_simplified", "chinese_traditional", "czech", "italian", "korean" };
+
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!mnemonic || !*mnemonic, "Invalid mnemonic string.", NULL);
+
+    for (i = 0; i < 9; i++) {
+        if (HDKey_MnemonicIsValid(mnemonic, languages[i]))
+            return strdup(languages[i]);
+    }
+
+    return NULL;
+
+    DIDERROR_FINALIZE();
+}

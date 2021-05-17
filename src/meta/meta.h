@@ -58,7 +58,7 @@ int Metadata_SetExtraWithDouble(Metadata *metadata, const char *key, double valu
 int Metadata_SetExtraWithInteger(Metadata *metadata, const char *key, int value);
 
 const char *Metadata_GetExtra(Metadata *metadata, const char *key);
-bool Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key);
+int Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key);
 double Metadata_GetExtraAsDouble(Metadata *metadata, const char *key);
 int Metadata_GetExtraAsInteger(Metadata *metadata, const char *key);
 
@@ -68,7 +68,7 @@ int Metadata_SetDefaultExtraWithDouble(Metadata *metadata, const char *key, doub
 int Metadata_SetDefaultExtraWithInteger(Metadata *metadata, const char *key, int value);
 
 const char *Metadata_GetDefaultExtra(Metadata *metadata, const char *key);
-bool Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key);
+int Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key);
 double Metadata_GetDefaultExtraAsDouble(Metadata *metadata, const char *key);
 int Metadata_GetDefaultExtraAsInteger(Metadata *metadata, const char *key);
 

@@ -51,6 +51,23 @@
 
 const char *ProofType = "ECDSAsecp256r1";
 
+static const char *ID = "id";
+static const char *PUBLICKEY = "publicKey";
+static const char *TYPE = "type";
+static const char *CONTROLLER = "controller";
+static const char *MULTI_SIGNATURE = "multisig";
+static const char *PUBLICKEY_BASE58 = "publicKeyBase58";
+static const char *AUTHENTICATION = "authentication";
+static const char *AUTHORIZATION = "authorization";
+static const char *SERVICE = "service";
+static const char *VERIFIABLE_CREDENTIAL = "verifiableCredential";
+static const char *SERVICE_ENDPOINT = "serviceEndpoint";
+static const char *EXPIRES = "expires";
+static const char *PROOF = "proof";
+static const char *CREATOR = "creator";
+static const char *CREATED = "created";
+static const char *SIGNATURE_VALUE = "signatureValue";
+
 typedef enum KeyType {
     KeyType_PublicKey,
     KeyType_Authentication,
@@ -74,8 +91,7 @@ static void Service_Destroy(Service *service)
     free(service);
 }
 
-static
-int PublicKey_ToJson(JsonGenerator *gen, PublicKey *pk, int compact)
+static int PublicKey_ToJson(JsonGenerator *gen, PublicKey *pk, int compact)
 {
     char id[ELA_MAX_DIDURL_LEN];
 
@@ -84,18 +100,18 @@ int PublicKey_ToJson(JsonGenerator *gen, PublicKey *pk, int compact)
     assert(pk);
 
     CHECK(DIDJG_WriteStartObject(gen));
-    CHECK(DIDJG_WriteStringField(gen, "id",
+    CHECK(DIDJG_WriteStringField(gen, ID,
         DIDURL_ToString(&pk->id, id, sizeof(id), compact)));
     if (!compact) {
-        CHECK(DIDJG_WriteStringField(gen, "type", pk->type));
-        CHECK(DIDJG_WriteStringField(gen, "controller",
+        CHECK(DIDJG_WriteStringField(gen, TYPE, pk->type));
+        CHECK(DIDJG_WriteStringField(gen, CONTROLLER,
                 DID_ToString(&pk->controller, id, sizeof(id))));
     } else {
         if (!DID_Equals(&pk->id.did, &pk->controller))
-            CHECK(DIDJG_WriteStringField(gen, "controller",
+            CHECK(DIDJG_WriteStringField(gen, CONTROLLER,
                    DID_ToString(&pk->controller, id, sizeof(id))));
     }
-    CHECK(DIDJG_WriteStringField(gen, "publicKeyBase58", pk->publicKeyBase58));
+    CHECK(DIDJG_WriteStringField(gen, PUBLICKEY_BASE58, pk->publicKeyBase58));
     CHECK(DIDJG_WriteEndObject(gen));
 
     return 0;
@@ -206,10 +222,10 @@ static int Service_ToJson(JsonGenerator *gen, Service *service, int compact)
     assert(service);
 
     CHECK(DIDJG_WriteStartObject(gen));
-    CHECK(DIDJG_WriteStringField(gen, "id",
+    CHECK(DIDJG_WriteStringField(gen, ID,
         DIDURL_ToString(&service->id, id, sizeof(id), compact)));
-    CHECK(DIDJG_WriteStringField(gen, "type", service->type));
-    CHECK(DIDJG_WriteStringField(gen, "serviceEndpoint", service->endpoint));
+    CHECK(DIDJG_WriteStringField(gen, TYPE, service->type));
+    CHECK(DIDJG_WriteStringField(gen, SERVICE_ENDPOINT, service->endpoint));
 
     if (service->properties)
         CHECK(JsonHelper_ToJson(gen, service->properties, true));
@@ -219,8 +235,7 @@ static int Service_ToJson(JsonGenerator *gen, Service *service, int compact)
     return 0;
 }
 
-static
-int ServiceArray_ToJson(JsonGenerator *gen, Service **services, size_t size,
+static int ServiceArray_ToJson(JsonGenerator *gen, Service **services, size_t size,
         int compact)
 {
     size_t i;
@@ -250,15 +265,15 @@ static int Proof_ToJson(JsonGenerator *gen, DocumentProof *proof, DIDDocument *d
 
     CHECK(DIDJG_WriteStartObject(gen));
     if (!compact)
-        CHECK(DIDJG_WriteStringField(gen, "type", proof->type));
-    CHECK(DIDJG_WriteStringField(gen, "created",
+        CHECK(DIDJG_WriteStringField(gen, TYPE, proof->type));
+    CHECK(DIDJG_WriteStringField(gen, CREATED,
             get_time_string(_timestring, sizeof(_timestring), &proof->created)));
     if (!compact || !DID_Equals(&document->did, &proof->creater.did)) {
-        CHECK(DIDJG_WriteStringField(gen, "creator",
+        CHECK(DIDJG_WriteStringField(gen, CREATOR,
                 DIDURL_ToString(&proof->creater, id, sizeof(id), false)));
     }
 
-    CHECK(DIDJG_WriteStringField(gen, "signatureValue", proof->signatureValue));
+    CHECK(DIDJG_WriteStringField(gen, SIGNATURE_VALUE, proof->signatureValue));
     CHECK(DIDJG_WriteEndObject(gen));
     return 0;
 }
@@ -342,7 +357,7 @@ static int Parse_PublicKey(DID *did, json_t *json, PublicKey **publickey)
         return -1;
     }
 
-    field = json_object_get(json, "id");
+    field = json_object_get(json, ID);
     if (!field) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing public key id.");
         PublicKey_Destroy(pk);
@@ -360,7 +375,7 @@ static int Parse_PublicKey(DID *did, json_t *json, PublicKey **publickey)
     // set default value for 'type'
     strcpy(pk->type, ProofType);
 
-    field = json_object_get(json, "publicKeyBase58");
+    field = json_object_get(json, PUBLICKEY_BASE58);
     if (!field) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing publicKey base58.");
         PublicKey_Destroy(pk);
@@ -376,7 +391,7 @@ static int Parse_PublicKey(DID *did, json_t *json, PublicKey **publickey)
     strcpy(pk->publicKeyBase58, json_string_value(field));
 
     //'controller' may be default
-    field = json_object_get(json, "controller");
+    field = json_object_get(json, CONTROLLER);
     if (field) {
         if (!json_is_string(field) || DID_Parse(&pk->controller, json_string_value(field)) < 0) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid publicKey's controller.");
@@ -471,8 +486,8 @@ static int Parse_PublicKeys(DIDDocument *document, DID *did, json_t *json)
             continue;
 
         //check public key's format
-        id_field = json_object_get(pk_item, "id");
-        base_field = json_object_get(pk_item, "publicKeyBase58");
+        id_field = json_object_get(pk_item, ID);
+        base_field = json_object_get(pk_item, PUBLICKEY_BASE58);
         if (!id_field || !base_field)              //(required and can't default)
             continue;
 
@@ -516,7 +531,7 @@ static int Parse_Auth_PublicKeys(DIDDocument *document, json_t *json, KeyType ty
         if (!pk_item)
             continue;
 
-        id_field = json_object_get(pk_item, "id");
+        id_field = json_object_get(pk_item, ID);
         if (!id_field) {
             if (DIDURL_Parse(&id, json_string_value(pk_item), &document->did) < 0)
                 continue;
@@ -583,7 +598,7 @@ static int Parse_Services(DIDDocument *document, json_t *json)
         if (!service)
             continue;
 
-        field = json_object_get(item, "id");
+        field = json_object_get(item, ID);
         if (!field || !json_is_string(field)) {
             Service_Destroy(service);
             continue;
@@ -597,14 +612,14 @@ static int Parse_Services(DIDDocument *document, json_t *json)
         if (!*service->id.did.idstring)
             strcpy(service->id.did.idstring, document->did.idstring);
 
-        field = json_object_get(item, "type");
+        field = json_object_get(item, TYPE);
         if (!field || !json_is_string(field)) {
             Service_Destroy(service);
             continue;
         }
         strcpy(service->type, json_string_value(field));
 
-        field = json_object_get(item, "serviceEndpoint");
+        field = json_object_get(item, SERVICE_ENDPOINT);
         if (!field || !json_is_string(field)) {
             Service_Destroy(service);
             continue;
@@ -612,9 +627,9 @@ static int Parse_Services(DIDDocument *document, json_t *json)
         strcpy(service->endpoint, json_string_value(field));
 
         //for property
-        json_object_del(item, "id");
-        json_object_del(item, "type");
-        json_object_del(item, "serviceEndpoint");
+        json_object_del(item, ID);
+        json_object_del(item, TYPE);
+        json_object_del(item, SERVICE_ENDPOINT);
         if (json_object_size(item) > 0)
             service->properties = json_deep_copy(item);
 
@@ -665,7 +680,7 @@ static int Parse_Proofs(DIDDocument *document, json_t *json)
 
         proof = &document->proofs.proofs[document->proofs.size];
 
-        field = json_object_get(item, "type");
+        field = json_object_get(item, TYPE);
         if (field) {
             if ((json_is_string(field) && strlen(json_string_value(field)) + 1 > MAX_TYPE_LEN) ||
                     !json_is_string(field)) {
@@ -677,7 +692,7 @@ static int Parse_Proofs(DIDDocument *document, json_t *json)
         else
             strcpy(proof->type, ProofType);
 
-        field = json_object_get(item, "created");
+        field = json_object_get(item, CREATED);
         if (!field) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing create document time.");
             return -1;
@@ -688,7 +703,7 @@ static int Parse_Proofs(DIDDocument *document, json_t *json)
             return -1;
         }
 
-        field = json_object_get(item, "creator");
+        field = json_object_get(item, CREATOR);
         if (field) {
             if (!json_is_string(field) ||
                     DIDURL_Parse(&proof->creater, json_string_value(field), &document->did) == -1) {
@@ -703,7 +718,7 @@ static int Parse_Proofs(DIDDocument *document, json_t *json)
             return -1;
         }
 
-        field = json_object_get(item, "signatureValue");
+        field = json_object_get(item, SIGNATURE_VALUE);
         if (!field) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing signature.");
             return -1;
@@ -839,19 +854,20 @@ static size_t get_self_authorization_count(DIDDocument *document)
     return size;
 }
 
-bool DIDDocument_IsCustomizedDID(DIDDocument *document)
+int DIDDocument_IsCustomizedDID(DIDDocument *document)
 {
     DIDURL *signkey;
-
-    assert(document);
+    int rc = 1;
 
     DIDERROR_INITIALIZE();
 
+    CHECK_ARG(!document, "No document to check be customized did or not.", -1);
+
     signkey = DIDDocument_GetDefaultPublicKey(document);
     if (signkey && DID_Equals(&signkey->did, &document->did))
-        return false;
+        rc = 0;
 
-    return true;
+    return rc;
 
     DIDERROR_FINALIZE();
 }
@@ -928,7 +944,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
         return NULL;
     }
 
-    item = json_object_get(root, "id");
+    item = json_object_get(root, ID);
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing document subject.");
         goto errorExit;
@@ -940,7 +956,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
     }
 
     //parse constroller
-    item = json_object_get(root, "controller");
+    item = json_object_get(root, CONTROLLER);
     if (item) {
         if (!json_is_string(item) && !json_is_array(item)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid controller.");
@@ -951,7 +967,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
     }
 
     //parser multisig
-    item = json_object_get(root, "multisig");
+    item = json_object_get(root, MULTI_SIGNATURE);
     if (!item && doc->controllers.size > 1) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing multisig.");
         goto errorExit;
@@ -975,7 +991,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
     }
 
     //parse publickey
-    item = json_object_get(root, "publicKey");
+    item = json_object_get(root, PUBLICKEY);
     if (!doc->controllers.size && !item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing publicKey.");
         goto errorExit;
@@ -988,7 +1004,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
         goto errorExit;
 
     //parse authentication
-    item = json_object_get(root, "authentication");
+    item = json_object_get(root, AUTHENTICATION);
     if (!doc->controllers.size && !item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing authentication key.");
         goto errorExit;
@@ -1001,7 +1017,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
         goto errorExit;
 
     //parse authorization
-    item = json_object_get(root, "authorization");
+    item = json_object_get(root, AUTHORIZATION);
     if (item) {
         if (!json_is_array(item)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid authorization key.");
@@ -1012,7 +1028,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
     }
 
     //parse expires
-    item = json_object_get(root, "expires");
+    item = json_object_get(root, EXPIRES);
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing expires time.");
         goto errorExit;
@@ -1024,7 +1040,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
     }
 
     //parse credential
-    item = json_object_get(root, "verifiableCredential");
+    item = json_object_get(root, VERIFIABLE_CREDENTIAL);
     if (item) {
         if (!json_is_array(item)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid credentials.");
@@ -1035,7 +1051,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
     }
 
     //parse services
-    item = json_object_get(root, "service");
+    item = json_object_get(root, SERVICE);
     if (item) {
         if (!json_is_array(item)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid services.");
@@ -1045,7 +1061,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
             goto errorExit;
     }
 
-    item = json_object_get(root, "proof");
+    item = json_object_get(root, PROOF);
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing document proof.");
         goto errorExit;
@@ -1102,50 +1118,50 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
     assert(doc);
 
     CHECK(DIDJG_WriteStartObject(gen));
-    CHECK(DIDJG_WriteStringField(gen, "id",
+    CHECK(DIDJG_WriteStringField(gen, ID,
             DID_ToString(&doc->did, id, sizeof(id))));
     if (doc->controllers.size > 0) {
-        CHECK(DIDJG_WriteFieldName(gen, "controller"));
+        CHECK(DIDJG_WriteFieldName(gen, CONTROLLER));
         CHECK(ControllerArray_ToJson(gen, doc->controllers.docs, doc->controllers.size));
     }
     if (doc->controllers.size > 1)
-        CHECK(DIDJG_WriteStringField(gen, "multisig",
+        CHECK(DIDJG_WriteStringField(gen, MULTI_SIGNATURE,
                 format_multisig(multisig, sizeof(multisig), doc->multisig, doc->controllers.size)));
 
     if (doc->publickeys.size > 0) {
-        CHECK(DIDJG_WriteFieldName(gen, "publicKey"));
+        CHECK(DIDJG_WriteFieldName(gen, PUBLICKEY));
         CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
                 compact, KeyType_PublicKey));
 
         if (DIDDocument_GetSelfAuthenticationKeyCount(doc) > 0) {
-            CHECK(DIDJG_WriteFieldName(gen, "authentication"));
+            CHECK(DIDJG_WriteFieldName(gen, AUTHENTICATION));
             CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks, doc->publickeys.size,
                     compact, KeyType_Authentication));
         }
 
         if (get_self_authorization_count(doc) > 0) {
-            CHECK(DIDJG_WriteFieldName(gen, "authorization"));
+            CHECK(DIDJG_WriteFieldName(gen, AUTHORIZATION));
             CHECK(PublicKeyArray_ToJson(gen, doc->publickeys.pks,
                     doc->publickeys.size, compact, KeyType_Authorization));
         }
     }
 
     if (doc->credentials.size > 0) {
-        CHECK(DIDJG_WriteFieldName(gen, "verifiableCredential"));
+        CHECK(DIDJG_WriteFieldName(gen, VERIFIABLE_CREDENTIAL));
         CHECK(CredentialArray_ToJson(gen, doc->credentials.credentials,
                 doc->credentials.size, &doc->did, compact));
     }
 
     if (doc->services.size > 0) {
-        CHECK(DIDJG_WriteFieldName(gen, "service"));
+        CHECK(DIDJG_WriteFieldName(gen, SERVICE));
         CHECK(ServiceArray_ToJson(gen, doc->services.services,
                 doc->services.size, compact));
     }
 
-    CHECK(DIDJG_WriteStringField(gen, "expires",
+    CHECK(DIDJG_WriteStringField(gen, EXPIRES,
             get_time_string(_timestring, sizeof(_timestring), &doc->expires)));
     if (!forsign) {
-        CHECK(DIDJG_WriteFieldName(gen, "proof"));
+        CHECK(DIDJG_WriteFieldName(gen, PROOF));
         CHECK(ProofArray_ToJson(gen, doc, compact));
     }
     CHECK(DIDJG_WriteEndObject(gen));
@@ -1166,7 +1182,7 @@ static const char *diddocument_tojson_forsign(DIDDocument *document, bool compac
     }
 
     if (DIDDocument_ToJson_Internal(gen, document, compact, forsign) < 0) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize DID document to json failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Serialize document to json failed.");
         DIDJG_Destroy(gen);
         return NULL;
     }
@@ -1277,7 +1293,7 @@ const char *DIDDocument_GetProofType(DIDDocument *document, int index)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!document, "No document to get proof type.", NULL);
-    CHECK_ARG(index >= document->proofs.size, "Index is larger than the count of proofs.", NULL);
+    CHECK_ARG(index >= document->proofs.size, "Index is larger than count of proofs.", NULL);
     return document->proofs.proofs[index].type;
 
     DIDERROR_FINALIZE();
@@ -1288,7 +1304,7 @@ DIDURL *DIDDocument_GetProofCreater(DIDDocument *document, int index)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!document, "No document to get creater of proof.", NULL);
-    CHECK_ARG(index >= document->proofs.size, "Index is larger than the count of proofs.", NULL);
+    CHECK_ARG(index >= document->proofs.size, "Index is larger than count of proofs.", NULL);
     return &document->proofs.proofs[index].creater;
 
     DIDERROR_FINALIZE();
@@ -1299,7 +1315,7 @@ time_t DIDDocument_GetProofCreatedTime(DIDDocument *document, int index)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!document, "No document to get create time of proof.", 0);
-    CHECK_ARG(index >= document->proofs.size, "Index is larger than the count of proofs.", 0);
+    CHECK_ARG(index >= document->proofs.size, "Index is larger than count of proofs.", 0);
     return document->proofs.proofs[index].created;
 
     DIDERROR_FINALIZE();
@@ -1310,58 +1326,55 @@ const char *DIDDocument_GetProofSignature(DIDDocument *document, int index)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!document, "No document to get signature.", NULL);
-    CHECK_ARG(index >= document->proofs.size, "Index is larger than the count of proofs.", NULL);
+    CHECK_ARG(index >= document->proofs.size, "Index is larger than count of proofs.", NULL);
     return document->proofs.proofs[index].signatureValue;
 
     DIDERROR_FINALIZE();
 }
 
-bool DIDDocument_IsDeactivated(DIDDocument *document)
+int DIDDocument_IsDeactivated(DIDDocument *document)
 {
-    bool deactived;
-
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!document, "No document to check be deactivated or not.", true);
-
-    deactived = DIDMetadata_GetDeactivated(&document->metadata);
-    return deactived;
+    CHECK_ARG(!document, "No document to check be deactivated or not.", -1);
+    return DIDMetadata_GetDeactivated(&document->metadata);
 
     DIDERROR_FINALIZE();
 }
 
-static bool DIDDocument_IsGenuine_Internal(DIDDocument *document, bool qualified)
+static int DIDDocument_IsGenuine_Internal(DIDDocument *document, bool qualified)
 {
     DIDDocument *proof_doc;
     DocumentProof *proof;
     DID **checksigners;
     const char *data;
-    bool isGenuine = false;
+    int genuine = 0, i, rc;
     size_t size;
-    int i;
 
     assert(document);
 
     if (qualified && !DIDDocument_IsQualified(document)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "The signers are less than multisig number.");
-        return false;
+        return 0;
     }
 
     if (document->controllers.size > 0) {
         for(i = 0; i < document->controllers.size; i++) {
-            if (!DIDDocument_IsGenuine(document->controllers.docs[i]))
-                return false;
+            rc = DIDDocument_IsGenuine(document->controllers.docs[i]);
+            if (rc != 1)
+                return rc;
         }
     }
 
     data = diddocument_tojson_forsign(document, false, true);
     if (!data)
-        return false;
+        return -1;
 
     size = document->proofs.size;
     checksigners = (DID**)alloca(size * sizeof(DID*));
     if (!checksigners) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for signers failed.");
+        genuine = -1;
         goto errorExit;
     }
 
@@ -1373,7 +1386,7 @@ static bool DIDDocument_IsGenuine_Internal(DIDDocument *document, bool qualified
         } else {
             proof_doc = DIDDocument_GetControllerDocument(document, &proof->creater.did);
             if (!proof_doc) {
-                DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "The signer is not the controller.");
+                DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "The signer isn't a controller.");
                 goto errorExit;
             }
         }
@@ -1390,7 +1403,7 @@ static bool DIDDocument_IsGenuine_Internal(DIDDocument *document, bool qualified
 
         if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(proof_doc), &proof->creater)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT,
-                    "The sign key is not controller's default key.");
+                    "Signkey is not controller's default key.");
             goto errorExit;
         }
 
@@ -1403,78 +1416,82 @@ static bool DIDDocument_IsGenuine_Internal(DIDDocument *document, bool qualified
         checksigners[i] = &proof->creater.did;
     }
 
-    isGenuine = true;
+    genuine = 1;
 
 errorExit:
     free((void*)data);
-    return isGenuine;
+    return genuine;
 }
 
-bool DIDDocument_IsGenuine(DIDDocument *document)
+int DIDDocument_IsGenuine(DIDDocument *document)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!document, "No document to check geninue.", false);
+    CHECK_ARG(!document, "No document to check geninue.", -1);
     return DIDDocument_IsGenuine_Internal(document, true);
 
     DIDERROR_FINALIZE();
 }
 
-bool DIDDocument_IsExpired(DIDDocument *document)
+int DIDDocument_IsExpired(DIDDocument *document)
 {
     time_t curtime;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!document, "No document to check expired status.", false);
+    CHECK_ARG(!document, "No document to check expired status.", -1);
 
     curtime = time(NULL);
     if (curtime > document->expires)
-        return true;
+        return 1;
 
-    return false;
+    return 0;
 
     DIDERROR_FINALIZE();
 }
 
-bool DIDDocument_IsQualified(DIDDocument *document)
+int DIDDocument_IsQualified(DIDDocument *document)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!document, "No document to check be qualified or not.", false);
-    return document->proofs.size == (document->controllers.size > 1 ? document->multisig : 1) ? true : false;
+    CHECK_ARG(!document, "No document to check be qualified or not.", -1);
+    return document->proofs.size == (document->controllers.size > 1 ? document->multisig : 1) ? 1 : 0;
 
     DIDERROR_FINALIZE();
 }
 
-bool DIDDocument_IsValid_Internal(DIDDocument *document, bool isqualified)
+int DIDDocument_IsValid_Internal(DIDDocument *document, bool isqualified)
 {
+    int rc;
     assert(document);
 
     if (!controllers_check(document))
-        return false;
+        return 0;
 
-    if (DIDDocument_IsExpired(document)) {
-        DIDError_Set(DIDERR_EXPIRED, "Did %s is expired.", DIDSTR(&document->did));
-        return false;
+    rc = DIDDocument_IsExpired(document);
+    if (rc != 0) {
+        if (rc == 1)
+            DIDError_Set(DIDERR_EXPIRED, "Did %s is expired.", DIDSTR(&document->did));
+        return rc;
     }
 
-    if (DIDDocument_IsDeactivated(document)) {
-        DIDError_Set(DIDERR_DID_DEACTIVATED, "Did %s is deactivated.", DIDSTR(&document->did));
-        return false;
+    rc = DIDDocument_IsDeactivated(document);
+    if (rc != 0) {
+        if (rc == 1)
+            DIDError_Set(DIDERR_DID_DEACTIVATED, "Did %s is deactivated.", DIDSTR(&document->did));
+        return rc;
     }
 
-    if (!DIDDocument_IsGenuine_Internal(document, isqualified)) {
+    rc = DIDDocument_IsGenuine_Internal(document, isqualified);
+    if (rc != 1)
         DIDError_Set(DIDERR_NOT_GENUINE, "Did %s isn't geninue.", DIDSTR(&document->did));
-        return false;
-    }
 
-    return true;
+    return rc;
 }
 
-bool DIDDocument_IsValid(DIDDocument *document)
+int DIDDocument_IsValid(DIDDocument *document)
 {
-    CHECK_ARG(!document, "No document argument to check valid.",false);
+    CHECK_ARG(!document, "No document argument to check valid.",-1);
     return DIDDocument_IsValid_Internal(document, true);
 }
 
@@ -1756,6 +1773,7 @@ DIDDocument *DIDDocument_GetControllerDocument(DIDDocument *document, DID *contr
 
     for(i = 0; i < size; i++) {
         doc = document->controllers.docs[i];
+        assert(doc);
         if (DID_Equals(&doc->did, controller))
             return doc;
     }
@@ -1777,7 +1795,7 @@ static int diddocument_addproof(DIDDocument *document, char *signature, DIDURL *
     for (i = 0; i < size; i++) {
         p = &document->proofs.proofs[i];
         if (DID_Equals(&p->creater.did, &signkey->did)) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "The signkey already exist.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Signkey already exist.");
             return -1;
         }
     }
@@ -1817,7 +1835,11 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
             (doc->controllers.size == 0 && !doc->controllers.docs));
 
     //check controller document and multisig
-    if (!DIDDocument_IsCustomizedDID(doc)) {
+    rc = DIDDocument_IsCustomizedDID(doc);
+    if (rc == -1)
+        return NULL;
+
+    if (!rc) {
         if (controllerdoc) {
             DIDError_Set(DIDERR_ILLEGALUSAGE, "Don't specify the controller to seal normal DID.");
             return NULL;
@@ -1830,7 +1852,7 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
         }
         if (!controllerdoc) {
             if (doc->controllers.size > 1) {
-                DIDError_Set(DIDERR_NOT_EXISTS, "Please specify the controller to seal multi-controller DID Document.");
+                DIDError_Set(DIDERR_NOT_EXISTS, "Please specify the controller to seal multi-controller document.");
                 return NULL;
             } else {
                 controllerdoc = doc->controllers.docs[0];
@@ -1859,7 +1881,7 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
         }
     }
 
-    //get sign key
+    //get signkey
     key = DIDDocument_GetDefaultPublicKey(signdoc);
     if (!key) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Signer has no default key.");
@@ -1869,14 +1891,14 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
     //check credential
     for (i = 0; i < doc->credentials.size; i++) {
         cred = doc->credentials.credentials[i];
-        if (!Credential_IsValid_Internal(cred, doc)) {
+        if (Credential_IsValid_Internal(cred, doc) != 1) {
             DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Credential %s is invalid.", DIDURLSTR(&cred->id));
             return NULL;
         }
     }
 
     //check and get document data
-    if (!DIDDocument_IsValid_Internal(doc, false)) {
+    if (DIDDocument_IsValid_Internal(doc, false) != 1) {
         DIDError_Set(DIDERRCODE, "Document to seal is invalid, error: %s.", DIDERRMSG);
         return NULL;
     }
@@ -1967,13 +1989,15 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
 
     //check keyid is existed in pk array
     document = builder->document;
-    if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
+    assert(document);
+    if (!DID_Equals(&document->did, &keyid->did)) {
         DIDError_Set(DIDERR_INVALID_KEY, "The key id does not owned by this DID.");
         return -1;
     }
 
     for (i = 0; i < document->publickeys.size; i++) {
         pk = document->publickeys.pks[i];
+        assert(pk);
         if (DIDURL_Equals(&pk->id, keyid) ||
                !strcmp(pk->publicKeyBase58, key)) {
             DIDError_Set(DIDERR_ALREADY_EXISTS, "Publickey id %s already exist", DIDURLSTR(keyid));
@@ -1982,7 +2006,7 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
     }
 
     if (!controller)
-        controller = DIDDocument_GetSubject(document);
+        controller = &document->did;
 
     pk = create_publickey(keyid, controller, key, KeyType_PublicKey);
     if (!pk)
@@ -2002,7 +2026,6 @@ int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
 int DIDDocumentBuilder_RemovePublicKey(DIDDocumentBuilder *builder, DIDURL *keyid, bool force)
 {
     DIDDocument* document;
-    DIDURL *key;
 
     DIDERROR_INITIALIZE();
 
@@ -2010,6 +2033,7 @@ int DIDDocumentBuilder_RemovePublicKey(DIDDocumentBuilder *builder, DIDURL *keyi
     CHECK_ARG(!keyid, "No key id to remove, please specify one.", -1);
 
     document = builder->document;
+    assert(document);
     if (!force && (DIDDocument_IsAuthenticationKey(document, keyid) ||
             DIDDocument_IsAuthorizationKey(document, keyid))) {
         DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't remove authenticated or authoritied key!!!!");
@@ -2051,7 +2075,8 @@ int DIDDocumentBuilder_AddAuthenticationKey(DIDDocumentBuilder *builder,
     }
 
     document = builder->document;
-    if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
+    assert(document);
+    if (!DID_Equals(&document->did, &keyid->did)) {
         DIDError_Set(DIDERR_INVALID_KEY, "The key id does not owned by this DID.");
         return -1;
     }
@@ -2078,7 +2103,7 @@ int DIDDocumentBuilder_AddAuthenticationKey(DIDDocumentBuilder *builder,
         return -1;
     }
 
-    controller = DIDDocument_GetSubject(document);
+    controller = &document->did;
     pk = create_publickey(keyid, controller, key, KeyType_Authentication);
     if (!pk)
         return -1;
@@ -2106,13 +2131,14 @@ int DIDDocumentBuilder_RemoveAuthenticationKey(DIDDocumentBuilder *builder, DIDU
     CHECK_ARG(!keyid, "No key id to remove, please specify one.", -1);
 
     document = builder->document;
+    assert(document);
     key = DIDDocument_GetDefaultPublicKey(document);
     if (key && DIDURL_Equals(key, keyid)) {
         DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't remove default key!!!!");
         return -1;
     }
 
-    if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
+    if (!DID_Equals(&document->did, &keyid->did)) {
         DIDError_Set(DIDERR_INVALID_KEY, "Can't remove other DID's authentication key!!!!");
         return -1;
     }
@@ -2130,36 +2156,36 @@ int DIDDocumentBuilder_RemoveAuthenticationKey(DIDDocumentBuilder *builder, DIDU
     DIDERROR_FINALIZE();
 }
 
-bool DIDDocument_IsAuthenticationKey(DIDDocument *document, DIDURL *keyid)
+int DIDDocument_IsAuthenticationKey(DIDDocument *document, DIDURL *keyid)
 {
     PublicKey *pk;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!document, "No document argument.", false);
-    CHECK_ARG(!keyid, "No key id, please specify one.", false);
+    CHECK_ARG(!document, "No document argument.", -1);
+    CHECK_ARG(!keyid, "No key id, please specify one.", -1);
 
     pk = DIDDocument_GetPublicKey(document, keyid);
     if (!pk)
-        return false;
+        return 0;
 
     return pk->authenticationKey;
 
     DIDERROR_FINALIZE();
 }
 
-bool DIDDocument_IsAuthorizationKey(DIDDocument *document, DIDURL *keyid)
+int DIDDocument_IsAuthorizationKey(DIDDocument *document, DIDURL *keyid)
 {
     PublicKey *pk;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!document, "No document argument.", false);
-    CHECK_ARG(!keyid, "No key id, please specify one.", false);
+    CHECK_ARG(!document, "No document argument.", -1);
+    CHECK_ARG(!keyid, "No key id, please specify one.", -1);
 
     pk = DIDDocument_GetPublicKey(document, keyid);
     if (!pk)
-        return false;
+        return 0;
 
     return pk->authorizationKey;
 
@@ -2179,17 +2205,18 @@ int DIDDocumentBuilder_AddAuthorizationKey(DIDDocumentBuilder *builder, DIDURL *
     CHECK_ARG(!keyid, "No key id to add, please specify one.", -1);
 
     document = builder->document;
+    assert(document);
     if (DIDDocument_IsCustomizedDID(document)) {
         DIDError_Set(DIDERR_ILLEGALUSAGE, "The customized did doesn't support authorization key.");
         return -1;
     }
 
-    if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
+    if (!DID_Equals(&document->did, &keyid->did)) {
         DIDError_Set(DIDERR_INVALID_KEY, "The key id does not owned by this DID.");
         return -1;
     }
 
-    if (controller && DID_Equals(controller, DIDDocument_GetSubject(document))) {
+    if (controller && DID_Equals(controller, &document->did)) {
         DIDError_Set(DIDERR_ILLEGALUSAGE, "Own key can't used to be an authorization key.");
         return -1;
     }
@@ -2253,12 +2280,13 @@ int DIDDocumentBuilder_AuthorizeDid(DIDDocumentBuilder *builder, DIDURL *keyid,
     CHECK_ARG(!controller, "No controller argument.", -1);
 
     document = builder->document;
-    if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
+    assert(document);
+    if (!DID_Equals(&document->did, &keyid->did)) {
         DIDError_Set(DIDERR_INVALID_KEY, "The key id does not owned by this DID.");
         return -1;
     }
 
-    if (DID_Equals(controller, DIDDocument_GetSubject(document))) {
+    if (DID_Equals(controller, &document->did)) {
         DIDError_Set(DIDERR_UNSUPPORTED, "Key can't be used for authorizating.");
         return -1;
     }
@@ -2301,13 +2329,14 @@ int DIDDocumentBuilder_RemoveAuthorizationKey(DIDDocumentBuilder *builder, DIDUR
     CHECK_ARG(!keyid, "No key id to remove, please specify one.", -1);
 
     document = builder->document;
+    assert(document);
     key = DIDDocument_GetDefaultPublicKey(document);
     if (key && DIDURL_Equals(key, keyid)) {
         DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't remove default key!!!!");
         return -1;
     }
 
-    if (!DID_Equals(&document->did, DIDURL_GetDid(keyid))) {
+    if (!DID_Equals(&document->did, &keyid->did)) {
         DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't remove other DID's authentication key!!!!");
         return -1;
     }
@@ -2379,12 +2408,12 @@ int DIDDocumentBuilder_AddController(DIDDocumentBuilder *builder, DID *controlle
 
     document = builder->document;
     //check the normal DID or customized DID
-    if (!DIDDocument_IsCustomizedDID(document)) {
+    if(DIDDocument_IsCustomizedDID(document) != 1) {
         DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't add controller into normal DID.");
         return -1;
     }
 
-    if (DID_Equals(DIDDocument_GetSubject(document), controller)) {
+    if (DID_Equals(&document->did, controller)) {
         DIDError_Set(DIDERR_ILLEGALUSAGE, "Document does not controlled by itself.");
         return -1;
     }
@@ -2426,7 +2455,7 @@ int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *contro
 
     document = builder->document;
     if (!DIDDocument_IsCustomizedDID(document)) {
-        DIDError_Set(DIDERR_ILLEGALUSAGE, "DID is no controller.");
+        DIDError_Set(DIDERR_ILLEGALUSAGE, "Customized did isn't specified to be controller, please check it.");
         return -1;
     }
 
@@ -2439,6 +2468,7 @@ int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *contro
     size = DIDDocument_GetControllerCount(document);
     for (i = 0; i < size; i++) {
         controller_doc = document->controllers.docs[i];
+        assert(controller_doc);
         if (!DID_Equals(controller, &controller_doc->did))
             continue;
 
@@ -2450,8 +2480,8 @@ int DIDDocumentBuilder_RemoveController(DIDDocumentBuilder *builder, DID *contro
         //check if credential is signed by controller.
         for (j = 0; j < document->credentials.size; j++) {
             cred = document->credentials.credentials[j];
-            if (Credential_IsSelfProclaimed(cred) &&
-                    DID_Equals(controller, &cred->proof.verificationMethod.did)) {
+            assert(cred);
+            if(Credential_IsSelfProclaimed(cred) && DID_Equals(controller, &cred->proof.verificationMethod.did)) {
                 DIDError_Set(DIDERR_ILLEGALUSAGE,
                         "There are self-proclaimed credentials signed by controller, please remove or renew these credentials at first.");
                 return -1;
@@ -2482,7 +2512,6 @@ int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder, Credential *cr
     DIDDocument *document;
     Credential *temp_cred;
     Credential *cred;
-    DIDURL *credid;
     size_t i;
 
     DIDERROR_INITIALIZE();
@@ -2491,14 +2520,15 @@ int DIDDocumentBuilder_AddCredential(DIDDocumentBuilder *builder, Credential *cr
     CHECK_ARG(!credential, "No credential argument.", -1);
 
     document = builder->document;
-    credid = Credential_GetId(credential);
-    if (!DID_Equals(DIDDocument_GetSubject(document), DIDURL_GetDid(credid))) {
+    assert(document);
+    if (!DID_Equals(&document->did, &credential->id.did)) {
         DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't add Credential not owned by did self.");
         return -1;
     }
 
     for (i = 0; i < document->credentials.size; i++) {
         temp_cred = document->credentials.credentials[i];
+        assert(temp_cred);
         if (DIDURL_Equals(&temp_cred->id, &credential->id)) {
             DIDError_Set(DIDERR_ALREADY_EXISTS, "Credential already exist.");
             return -1;
@@ -2542,6 +2572,7 @@ int DIDDocumentBuilder_AddSelfProclaimedCredential(DIDDocumentBuilder *builder,
     CHECK_PASSWORD(storepass, -1);
 
     document = builder->document;
+    assert(document);
     if (!DID_Equals(&document->did, &credid->did)) {
         DIDError_Set(DIDERR_ILLEGALUSAGE, "The credential id mismatch with the document.");
         return -1;
@@ -2549,6 +2580,7 @@ int DIDDocumentBuilder_AddSelfProclaimedCredential(DIDDocumentBuilder *builder,
 
     for (i = 0; i < document->credentials.size; i++) {
         cred = document->credentials.credentials[i];
+        assert(cred);
         if (DIDURL_Equals(&cred->id, credid)) {
             DIDError_Set(DIDERR_ALREADY_EXISTS, "Credential already exist.");
             return -1;
@@ -2566,7 +2598,7 @@ int DIDDocumentBuilder_AddSelfProclaimedCredential(DIDDocumentBuilder *builder,
             return -1;
     } else {
         if (!DIDDocument_IsAuthenticationKey(document, signkey)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "The sign key is not an authentication key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Signkey is not an authentication key.");
             return -1;
         }
     }
@@ -2581,9 +2613,9 @@ int DIDDocumentBuilder_AddSelfProclaimedCredential(DIDDocumentBuilder *builder,
     }
 
     if (expires <= 0)
-        expires = DIDDocument_GetExpires(document);
+        expires = document->expires;
 
-    cred = Issuer_CreateCredential(issuer, DIDDocument_GetSubject(document), credid,
+    cred = Issuer_CreateCredential(issuer, &document->did, credid,
         types, typesize, properties, propsize, expires, storepass);
     Issuer_Destroy(issuer);
     if (!cred)
@@ -2612,10 +2644,11 @@ int DIDDocumentBuilder_RenewSelfProclaimedCredential(DIDDocumentBuilder *builder
 
     CHECK_ARG(!builder || !builder->document, "Invalid document builder argument.", -1);
     CHECK_ARG(!controller, "No controller argument.", -1);
-    CHECK_ARG(!signkey, "No key argument to sign.", -1);
+    CHECK_ARG(!signkey, "No signkey argument to sign.", -1);
     CHECK_PASSWORD(storepass, -1);
 
     document = builder->document;
+    assert(document);
     if (!DIDDocument_IsCustomizedDID(document)) {
         DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't renew self-proclaimed Credential owned by normal DID.");
         return -1;
@@ -2666,6 +2699,7 @@ int DIDDocumentBuilder_RemoveSelfProclaimedCredential(DIDDocumentBuilder *builde
     CHECK_ARG(!controller, "No controller argument.", -1);
 
     document = builder->document;
+    assert(document);
     if (!DIDDocument_IsCustomizedDID(document)) {
         DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't remove self-proclaimed Credential owned by normal DID.");
         return -1;
@@ -2710,6 +2744,7 @@ int DIDDocumentBuilder_RemoveCredential(DIDDocumentBuilder *builder, DIDURL *cre
     CHECK_ARG(!credid, "No credential id argument.", -1);
 
     document = builder->document;
+    assert(document);
     size = DIDDocument_GetCredentialCount(document);
     for (i = 0; i < size; i++ ) {
         cred = document->credentials.credentials[i];
@@ -2883,9 +2918,11 @@ int DIDDocumentBuilder_RemoveService(DIDDocumentBuilder *builder, DIDURL *servic
     CHECK_ARG(!serviceid, "No service id argument.", -1);
 
     document = builder->document;
+    assert(document);
     size = DIDDocument_GetServiceCount(document);
     for (i = 0; i < size; i++) {
         service = document->services.services[i];
+        assert(service);
         if (!DIDURL_Equals(&service->id, serviceid))
             continue;
 
@@ -2923,6 +2960,7 @@ int DIDDocumentBuilder_RemoveProof(DIDDocumentBuilder *builder, DID *controller)
     CHECK_ARG(!builder || !builder->document, "Invalid document builder argument.", -1);
 
     document = builder->document;
+    assert(document);
     size = document->proofs.size;
 
     if (DIDDocument_IsCustomizedDID(document)) {
@@ -2939,9 +2977,7 @@ int DIDDocumentBuilder_RemoveProof(DIDDocumentBuilder *builder, DID *controller)
             DIDError_Set(DIDERR_NOT_EXISTS, "No proof signed by this DID.");
             return -1;
         }
-    }
-
-    if (!DIDDocument_IsCustomizedDID(document)) {
+    } else {
         if (controller) {
             DIDError_Set(DIDERR_INVALID_CONTROLLER, "Can't remove the specified controller for normal did.");
             return -1;
@@ -3012,6 +3048,7 @@ int DIDDocumentBuilder_SetMultisig(DIDDocumentBuilder *builder, int multisig)
     CHECK_ARG(multisig <= 0, "Invalid multisig.", -1);
 
     document = builder->document;
+    assert(document);
     if (!DIDDocument_IsCustomizedDID(document)) {
         DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't set multisig for normal DID.");
         return -1;
@@ -3069,6 +3106,7 @@ ssize_t DIDDocument_GetControllerCount(DIDDocument *document)
 
 ssize_t DIDDocument_GetControllers(DIDDocument *document, DID **controllers, size_t size)
 {
+    DIDDocument *doc;
     int i;
 
     DIDERROR_INITIALIZE();
@@ -3077,21 +3115,24 @@ ssize_t DIDDocument_GetControllers(DIDDocument *document, DID **controllers, siz
     CHECK_ARG(!controllers || size == 0, "No buffer for controllers argument.", -1);
     CHECK_ARG(size == 0 || size < document->controllers.size, "Wrong size of buffer for controllers argument.", -1);
 
-    for (i = 0; i < document->controllers.size; i++)
-        controllers[i] = DIDDocument_GetSubject(document->controllers.docs[i]);
+    for (i = 0; i < document->controllers.size; i++) {
+        doc = document->controllers.docs[i];
+        assert(doc);
+        controllers[i] = &doc->did;
+    }
 
     return document->controllers.size;
 
     DIDERROR_FINALIZE();
 }
 
-bool DIDDocument_ContainsController(DIDDocument *document, DID *controller)
+int DIDDocument_ContainsController(DIDDocument *document, DID *controller)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!document, "No document argument to check controller.", false);
-    CHECK_ARG(!controller, "No controller argument to check.", false);
-    return !DIDDocument_GetControllerDocument(document, controller) ? false : true;
+    CHECK_ARG(!document, "No document argument to check controller.", -1);
+    CHECK_ARG(!controller, "No controller argument to check.", -1);
+    return !DIDDocument_GetControllerDocument(document, controller) ? 0 : 1;
 
     DIDERROR_FINALIZE();
 }
@@ -3099,8 +3140,8 @@ bool DIDDocument_ContainsController(DIDDocument *document, DID *controller)
 ssize_t DIDDocument_GetPublicKeyCount(DIDDocument *document)
 {
     size_t count;
-    int i;
     DIDDocument *doc;
+    int i;
 
     DIDERROR_INITIALIZE();
 
@@ -3139,11 +3180,6 @@ PublicKey *DIDDocument_GetPublicKey(DIDDocument *document, DIDURL *keyid)
     if (DID_Equals(&document->did, &keyid->did)) {
         doc = document;
     } else {
-        //todo: check
-        if (document->controllers.size < 0 || !document->controllers.docs) {
-            DIDError_Set(DIDERR_NOT_EXISTS, "Document has no controllers.");
-            return NULL;
-        }
         doc = DIDDocument_GetControllerDocument(document, &keyid->did);
         if (!doc) {
             DIDError_Set(DIDERR_NOT_EXISTS, "The owner of this key is not the controller of document.");
@@ -3153,6 +3189,7 @@ PublicKey *DIDDocument_GetPublicKey(DIDDocument *document, DIDURL *keyid)
 
     for (i = 0; i < doc->publickeys.size && doc->publickeys.pks; i++) {
         pk = doc->publickeys.pks[i];
+        assert(pk);
         if (DIDURL_Equals(keyid, &pk->id))
             return pk;
     }
@@ -3241,6 +3278,7 @@ ssize_t DIDDocument_SelectPublicKeys(DIDDocument *document, const char *type,
     if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
+            assert(doc);
             total_size = DIDDocument_SelectPublicKeys(doc, type, keyid, pks + actual_size, size - actual_size);
             if (total_size > 0)
                 actual_size += total_size;
@@ -3276,6 +3314,7 @@ DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
 
     for (i = 0; i < doc->publickeys.size; i++) {
         pk = doc->publickeys.pks[i];
+        assert(pk);
         if (DID_Equals(&pk->controller, &doc->did) == 0)
             continue;
 
@@ -3306,6 +3345,7 @@ ssize_t DIDDocument_GetAuthenticationCount(DIDDocument *document)
     if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
+            assert(doc);
             pk_size = DIDDocument_GetSelfAuthenticationKeyCount(doc);
             if (pk_size > 0)
                 size += pk_size;
@@ -3346,6 +3386,7 @@ ssize_t DIDDocument_GetAuthenticationKeys(DIDDocument *document, PublicKey **pks
     if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
+            assert(doc);
             pk_size = DIDDocument_GetAuthenticationKeys(doc, pks + actual_size,
                     (size - actual_size));
             if (pk_size > 0)
@@ -3426,6 +3467,7 @@ ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
     if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
+            assert(doc);
             pk_size = DIDDocument_SelectAuthenticationKeys(doc, type, keyid,
                     pks + actual_size, size - actual_size);
             if (pk_size > 0)
@@ -3453,6 +3495,7 @@ ssize_t DIDDocument_GetAuthorizationCount(DIDDocument *document)
     if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
+            assert(doc);
             pk_size = get_self_authorization_count(doc);
             if (pk_size > 0)
                 size += pk_size;
@@ -3476,14 +3519,14 @@ ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
     CHECK_ARG(!pks || size == 0, "Invalid buffer for authorization keys.", -1);
 
     if (size < DIDDocument_GetAuthorizationCount(document)) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer is small.");
+        DIDError_Set(DIDERR_INVALID_ARGS, "The buffer is too small.");
         return -1;
     }
 
     for (i = 0; i < document->publickeys.size && document->publickeys.pks; i++) {
         if (document->publickeys.pks[i]->authorizationKey) {
             if (actual_size >= size) {
-                DIDError_Set(DIDERR_INVALID_ARGS, "The size of buffer for authorization keys is small.");
+                DIDError_Set(DIDERR_INVALID_ARGS, "The buffer for authorization keys is too small.");
                 return -1;
             }
             pks[actual_size++] = document->publickeys.pks[i];
@@ -3493,6 +3536,7 @@ ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
     if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
+            assert(doc);
             pk_size = DIDDocument_GetAuthorizationKeys(doc, pks + actual_size,
                     size - actual_size);
             if (pk_size > 0)
@@ -3519,7 +3563,7 @@ PublicKey *DIDDocument_GetAuthorizationKey(DIDDocument *document, DIDURL *keyid)
         return NULL;
 
     if (!pk->authorizationKey) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "This is not authorization key.");
+        DIDError_Set(DIDERR_NOT_EXISTS, "This isn't authorization key.");
         return NULL;
     }
 
@@ -3566,6 +3610,7 @@ ssize_t DIDDocument_SelectAuthorizationKeys(DIDDocument *document,
     if (document->controllers.size > 0) {
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
+            assert(doc);
             pk_size = DIDDocument_SelectAuthorizationKeys(doc, type, keyid,
                     pks + actual_size, size - actual_size);
             if (pk_size > 0)
@@ -3634,6 +3679,7 @@ Credential *DIDDocument_GetCredential(DIDDocument *document, DIDURL *credid)
 
     for (i = 0; i < size; i++) {
         credential = document->credentials.credentials[i];
+        assert(credential);
         if (DIDURL_Equals(credid, &credential->id))
             return credential;
     }
@@ -3672,6 +3718,7 @@ ssize_t DIDDocument_SelectCredentials(DIDDocument *document, const char *type,
 
     for (i = 0; i < total_size; i++) {
         Credential *cred = document->credentials.credentials[i];
+        assert(cred);
         flag = false;
 
         if (credid && !DIDURL_Equals(credid, &cred->id))
@@ -3759,6 +3806,7 @@ Service *DIDDocument_GetService(DIDDocument *document, DIDURL *serviceid)
 
     for (i = 0; i < size; i++) {
         service = document->services.services[i];
+        assert(service);
         if (DIDURL_Equals(serviceid, &service->id))
             return service;
     }
@@ -3796,6 +3844,7 @@ ssize_t DIDDocument_SelectServices(DIDDocument *document,
 
     for (i = 0; i < total_size; i++) {
         Service *service = document->services.services[i];
+        assert(service);
 
         if (serviceid && !DIDURL_Equals(serviceid, &service->id))
             continue;
@@ -3898,26 +3947,21 @@ int DIDDocument_SignDigest(DIDDocument *document, DIDURL *keyid,
     //confirm the signer
     pk = DIDDocument_GetPublicKey(document, keyid);
     if (!pk || !PublicKey_IsAuthenticationKey(pk)) {
-        DIDError_Set(DIDERR_INVALID_KEY, "Signkey to sign is not an authentication key.");
+        DIDError_Set(DIDERR_INVALID_KEY, "Signkey isn't authentication key.");
         return -1;
     }
 
     if (DID_Equals(&document->did, &pk->controller)) {
        signer = &document->did;
     } else {
-        //todo: check it!
-        if (document->controllers.size <= 0 || !document->controllers.docs) {
-            DIDError_Set(DIDERR_MALFORMED_DID, "There are no controller in document.");
-            return -1;
-        }
         doc = DIDDocument_GetControllerDocument(document, &keyid->did);
         if (!doc) {
-            DIDError_Set(DIDERR_INVALID_KEY, "The sign key does not owned to document.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Signkey doesn't own to document.");
             return -1;
         }
 
         if (!DID_Equals(&doc->did, &pk->controller)) {
-            DIDError_Set(DIDERR_INVALID_CONTROLLER, "Invalid sign key.");
+            DIDError_Set(DIDERR_INVALID_CONTROLLER, "Invalid signkey.");
             return -1;
         }
         signer = &doc->did;
@@ -3977,7 +4021,7 @@ int DIDDocument_VerifyDigest(DIDDocument *document, DIDURL *keyid,
 
     publickey = DIDDocument_GetPublicKey(document, keyid);
     if (!publickey) {
-        DIDError_Set(DIDERR_INVALID_KEY, "No this sign key.");
+        DIDError_Set(DIDERR_INVALID_KEY, "No signkey.");
         return -1;
     }
 
@@ -4056,18 +4100,13 @@ const char *DIDDocument_Merge(DIDDocument **documents, size_t size)
 #ifndef DISABLE_JWT
 JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document)
 {
-    DID *did;
     JWTBuilder *builder;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!document, "No document argument to get jwtbuilder.", NULL);
+    CHECK_ARG(!document, "No document argument to get JwtBuilder.", NULL);
 
-    did = DIDDocument_GetSubject(document);
-    if (!did)
-        return NULL;
-
-    builder = JWTBuilder_Create(did);
+    builder = JWTBuilder_Create(&document->did);
     if (!builder)
         return NULL;
 
@@ -4243,7 +4282,7 @@ const char *DIDDocument_MergeDIDDocuments(int count, ...)
 
     documents = (DIDDocument**)alloca(count * sizeof(DIDDocument*));
     if (!documents) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for DID Documents array failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for documents failed.");
         return NULL;
     }
 
@@ -4257,23 +4296,24 @@ const char *DIDDocument_MergeDIDDocuments(int count, ...)
         if (!document)
             continue;
 
-        if (!DIDDocument_IsValid_Internal(document, false)) {
+        if (DIDDocument_IsValid_Internal(document, false) != 1) {
             DIDDocument_Destroy(document);
             continue;
         }
 
         if (DIDDocument_GetDigest(document, digest1, sizeof(digest1)) < 0) {
             DIDDocument_Destroy(document);
-            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Get digest from did document failed.");
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Get digest from document failed.");
             continue;
         }
 
-        if (actual_count == 0)
+        if (actual_count == 0) {
             memcpy(digest, digest1, sizeof(digest));
-
-        if (actual_count > 0 && memcmp(digest, digest1, sizeof(digest))) {
-            DIDDocument_Destroy(document);
-            continue;
+        } else {
+            if (memcmp(digest, digest1, sizeof(digest))) {
+                DIDDocument_Destroy(document);
+                continue;
+            }
         }
 
         if (DIDDocument_IsQualified(document)) {
@@ -4326,7 +4366,7 @@ TransferTicket *DIDDocument_CreateTransferTicket(DIDDocument *controllerdoc, DID
 int DIDDocument_SignTransferTicket(DIDDocument *controllerdoc,
         TransferTicket *ticket, const char *storepass)
 {
-    CHECK_ARG(!controllerdoc, "No controller doc argument.", -1);
+    CHECK_ARG(!controllerdoc, "No controller's document argument.", -1);
     CHECK_ARG(!ticket, "No ticket argument.", -1);
     CHECK_PASSWORD(storepass, -1);
 
@@ -4368,75 +4408,80 @@ static bool controllers_equals(DIDDocument *_doc1, DIDDocument *_doc2)
     return true;
 }
 
-bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
+int DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
         const char *storepass)
 {
     const char *last_txid, *local_signature, *local_prevsignature, *resolve_signature = NULL;
     DIDDocument *resolve_doc = NULL;
     DIDStore *store;
-    bool success = false;
-    int rc = -1, status;
+    int rc = -1, status, check;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!document, "No document argument to be published.", false);
-    CHECK_PASSWORD(storepass, false);
+    CHECK_ARG(!document, "No document argument to be published.", -1);
+    CHECK_PASSWORD(storepass, -1);
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
-        return false;
+        return -1;
     }
 
     store = document->metadata.base.store;
     if (DIDDocument_IsCustomizedDID(document) && document->controllers.size > 1 && !signkey) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Multi-controller customized DID must have sign key to publish.");
-        return false;
+        DIDError_Set(DIDERR_INVALID_ARGS, "Multi-controller customized DID must have signkey to publish.");
+        return -1;
     }
 
     if (!DIDDocument_IsQualified(document)) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Document is not qualified.");
-        return false;
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Document isn't qualified.");
+        return -1;
     }
 
-    if (!DIDDocument_IsGenuine(document)) {
-        DIDError_Set(DIDERR_NOT_GENUINE, "Document is not genuine.");
-        return false;
+    check = DIDDocument_IsGenuine(document);
+    if (check != 1) {
+        if (check == 0)
+            DIDError_Set(DIDERR_NOT_GENUINE, "Document isn't genuine.");
+        return -1;
     }
 
-    if (DIDDocument_IsDeactivated(document)) {
-        DIDError_Set(DIDERR_DID_DEACTIVATED, "Did is already deactivated.");
-        return false;
+    check = DIDDocument_IsDeactivated(document);
+    if (check != 0) {
+        if (check == 1)
+            DIDError_Set(DIDERR_DID_DEACTIVATED, "Did is already deactivated.");
+        return -1;
     }
 
     if (!force && DIDDocument_IsExpired(document)) {
         DIDError_Set(DIDERR_EXPIRED, "Did is already expired, use force mode to publish anyway.");
-        return false;
+        return -1;
     }
 
     if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(document);
         if (!signkey) {
-            DIDError_Set(DIDERR_NOT_EXISTS, "No sign key to publish did.");
-            return false;
+            DIDError_Set(DIDERR_NOT_EXISTS, "No signkey to publish did.");
+            return -1;
         }
     } else {
         if (!DIDDocument_IsAuthenticationKey(document, signkey)) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Sign key isn't an authentication key.");
-            return false;
+            DIDError_Set(DIDERR_INVALID_KEY, "Signkey isn't an authentication key.");
+            return -1;
         }
     }
 
     resolve_doc = DID_Resolve(&document->did, &status, true);
     if (!resolve_doc) {
         if (status == DIDStatus_NotFound)
-            success = DIDBackend_CreateDID(document, signkey, storepass);
+            rc = DIDBackend_CreateDID(document, signkey, storepass);
         else {
             DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Document %s %s", &document->did, DIDSTATUS_MSG(status));
-            return false;
+            return -1;
         }
     } else {
-        if (DIDDocument_IsDeactivated(resolve_doc)) {
-            DIDError_Set(DIDERR_EXPIRED, "Did is already deactivated.");
+        check = DIDDocument_IsDeactivated(resolve_doc);
+        if (check != 0) {
+            if (check == 1)
+                DIDError_Set(DIDERR_EXPIRED, "Did is already deactivated.");
             goto errorExit;
         }
 
@@ -4483,10 +4528,10 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
         }
 
         DIDMetadata_SetTxid(&document->metadata, last_txid);
-        success = DIDBackend_UpdateDID(document, signkey, storepass);
+        rc = DIDBackend_UpdateDID(document, signkey, storepass);
     }
 
-    if (!success)
+    if (rc != 1)
         goto errorExit;
 
     ResolveCache_InvalidateDID(&document->did);
@@ -4495,34 +4540,32 @@ bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
     if (resolve_signature)
         DIDMetadata_SetPrevSignature(&document->metadata, resolve_signature);
 
-    success = true;
-
 errorExit:
     DIDDocument_Destroy(resolve_doc);
-    return success;
+    return rc;
 
     DIDERROR_FINALIZE();
 }
 
-bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
+int DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
         DIDURL *signkey, const char *storepass)
 {
     DIDDocument *resolve_doc = NULL;
     DocumentProof *proof;
     DIDStore *store;
-    bool equal = false, success = false;
-    int rc = -1, i, status;
+    bool equal = false;
+    int rc = -1, i, status, check;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!document, "No document to be tranfered.", false);
-    CHECK_ARG(!ticket, "No ticket argument.", false);
-    CHECK_ARG(!signkey, "No signkey argument.", false);
-    CHECK_PASSWORD(storepass, false);
+    CHECK_ARG(!document, "No document to be tranfered.", -1);
+    CHECK_ARG(!ticket, "No ticket argument.", -1);
+    CHECK_ARG(!signkey, "No signkey argument.", -1);
+    CHECK_PASSWORD(storepass, -1);
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
-        return false;
+        return -1;
     }
 
     store = document->metadata.base.store;
@@ -4532,7 +4575,7 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
             DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't transfer DID which isn't published.");
         else
             DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Can't transfer DID which isn't published.");
-        return false;
+        return -1;
     }
 
     if (!DIDDocument_IsCustomizedDID(resolve_doc)) {
@@ -4545,8 +4588,12 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
         goto errorExit;
     }
 
-    if (!TransferTicket_IsValid(ticket))
-       goto errorExit;
+    check = TransferTicket_IsValid(ticket);
+    if (check != 1) {
+        if (check == 0)
+            DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Ticket isn't valid.");
+        goto errorExit;
+    }
 
     if (strcmp(ticket->txid, DIDMetadata_GetTxid(&resolve_doc->metadata))) {
         DIDError_Set(DIDERR_NOT_UPTODATE, "Transaction id of ticket mismatches with the chain one.");
@@ -4563,17 +4610,20 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
     }
 
     if (!equal) {
-        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "The DID to receive ticket is not the document's signer.");
+        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "DID to receive ticket isn't document's signer.");
         goto errorExit;
     }
 
-    if (!DIDDocument_IsAuthenticationKey(document, signkey)) {
-        DIDError_Set(DIDERR_INVALID_KEY, "Sign key isn't an authentication key.");
+    check = DIDDocument_IsAuthenticationKey(document, signkey);
+    if (check != 1) {
+        if (check == 0)
+            DIDError_Set(DIDERR_INVALID_KEY, "Signkey isn't authentication key.");
         goto errorExit;
     }
 
     DIDMetadata_SetTxid(&document->metadata, DIDMetadata_GetTxid(&resolve_doc->metadata));
-    if (!DIDBackend_TransferDID(document, ticket, signkey, storepass))
+    rc = DIDBackend_TransferDID(document, ticket, signkey, storepass);
+    if (rc != 1)
         goto errorExit;
 
     ResolveCache_InvalidateDID(&document->did);
@@ -4582,92 +4632,88 @@ bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
     if (*resolve_doc->proofs.proofs[0].signatureValue)
         DIDMetadata_SetPrevSignature(&document->metadata, resolve_doc->proofs.proofs[0].signatureValue);
 
-    success = true;
-
 errorExit:
     DIDDocument_Destroy(resolve_doc);
-    return success;
+    return rc;
 
     DIDERROR_FINALIZE();
 }
 
-bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
+int DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
 {
     DIDDocument *resolve_doc, *controllerdoc;
-    DIDStore *store;
     bool localcopy = false;
     int rc = 0, status;
-    bool success;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!document, "No document to deactivated.", false);
-    CHECK_PASSWORD(storepass, false);
+    CHECK_ARG(!document, "No document to deactivated.", -1);
+    CHECK_PASSWORD(storepass, -1);
 
     resolve_doc = DID_Resolve(&document->did, &status, true);
     if (!resolve_doc) {
         if (status == DIDStatus_NotFound)
-            DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't deactivate did not be pulished.");
+            DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't deactivate did that isn't be pulished.");
         else
             DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Resolve target did failed.");
 
-        return false;
+        return -1;
     }
     DIDDocument_Destroy(resolve_doc);
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
         DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
-        return false;
+        return -1;
     }
 
     if (!signkey) {
         signkey = DIDDocument_GetDefaultPublicKey(document);
         if (!signkey) {
             DIDError_Set(DIDERR_NOT_EXISTS, "No default key to sign.");
-            return false;
+            return -1;
         }
     } else {
         if (DIDDocument_IsCustomizedDID(document)) {
             controllerdoc = DIDDocument_GetControllerDocument(document, &signkey->did);
             if (!controllerdoc) {
-                DIDError_Set(DIDERR_INVALID_KEY, "Sign key isn't owned to controller of DID.");
-                return false;
+                DIDError_Set(DIDERR_INVALID_KEY, "Signkey isn't owned to controller of DID.");
+                return -1;
             }
         } else {
             controllerdoc = document;
         }
 
         if (!DIDURL_Equals(signkey, DIDDocument_GetDefaultPublicKey(controllerdoc))) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Sign key is not the default key.");
-            return false;
+            DIDError_Set(DIDERR_INVALID_KEY, "Signkey isn‘t default key.");
+            return -1;
         }
     }
 
-    success = DIDBackend_DeactivateDID(document, signkey, NULL, storepass);
-    if (success)
+    rc = DIDBackend_DeactivateDID(document, signkey, NULL, storepass);
+    if (rc == 1)
         ResolveCache_InvalidateDID(&document->did);
 
-    return success;
+    return rc;
 
     DIDERROR_FINALIZE();
 }
 
-bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
+int DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
         DIDURL *signkey, const char *storepass)
 {
     DIDDocument *targetdoc = NULL;
     DIDStore *store;
     PublicKey **candidatepks;
     PublicKey *candidatepk, *pk;
-    bool success = false, exist = false;
+    bool exist = false;
     size_t size;
-    int i, j, status;
+    int i, j, status, rc = -1;
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!document, "No authorizor's document to deactivate did.", false);
-    CHECK_ARG(!target, "No target did.", false);
-    CHECK_PASSWORD(storepass, false);
+    CHECK_ARG(!document, "No authorizor's document to deactivate did.", -1);
+    CHECK_ARG(!target, "No target did.", -1);
+    CHECK_PASSWORD(storepass, -1);
 
     targetdoc = DID_Resolve(target, &status, true);
     if (!targetdoc) {
@@ -4676,7 +4722,7 @@ bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
         else
             DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Resolve target did failed.");
 
-        return false;
+        return -1;
     }
 
     if (!DIDMetadata_AttachedStore(&document->metadata)) {
@@ -4697,7 +4743,7 @@ bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
         }
         candidatepks[0] = DIDDocument_GetAuthenticationKey(document, signkey);
         if (!candidatepks[0]) {
-            DIDError_Set(DIDERR_INVALID_KEY, "Sign key is not authentication key.");
+            DIDError_Set(DIDERR_INVALID_KEY, "Signkey is not authentication key.");
             goto errorExit;
         }
         size = 1;
@@ -4723,13 +4769,13 @@ bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
         goto errorExit;
     }
 
-    success = DIDBackend_DeactivateDID(document, &candidatepk->id, &pk->id, storepass);
-    if (success)
+    rc = DIDBackend_DeactivateDID(document, &candidatepk->id, &pk->id, storepass);
+    if (rc == 1)
         ResolveCache_InvalidateDID(&document->did);
 
 errorExit:
     DIDDocument_Destroy(targetdoc);
-    return success;
+    return rc;
 
     DIDERROR_FINALIZE();
 }
@@ -4887,7 +4933,7 @@ DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *controllerdoc,
     //check the DID
     doc = DIDStore_LoadDID(store, &did);
     if (doc) {
-        DIDError_Set(DIDERR_ALREADY_EXISTS, "Customized did already exist.");
+        DIDError_Set(DIDERR_ALREADY_EXISTS, "Customized did already exists.");
         DIDDocument_Destroy(doc);
         return NULL;
     }
@@ -4895,7 +4941,7 @@ DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *controllerdoc,
     if (!force) {
         doc = DID_Resolve(&did, &status, true);
         if (doc) {
-            DIDError_Set(DIDERR_ALREADY_EXISTS, "Customized did already exist.");
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Customized did already exists.");
             DIDDocument_Destroy(doc);
             return NULL;
         }
@@ -4969,21 +5015,21 @@ const char *PublicKey_GetType(PublicKey *publickey)
     DIDERROR_FINALIZE();
 }
 
-bool PublicKey_IsAuthenticationKey(PublicKey *publickey)
+int PublicKey_IsAuthenticationKey(PublicKey *publickey)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!publickey, "No publickey argument.", false);
+    CHECK_ARG(!publickey, "No publickey argument.", -1);
     return publickey->authenticationKey;
 
     DIDERROR_FINALIZE();
 }
 
-bool PublicKey_IsAuthorizationKey(PublicKey *publickey)
+int PublicKey_IsAuthorizationKey(PublicKey *publickey)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!publickey, "No publickey argument.", false);
+    CHECK_ARG(!publickey, "No publickey argument.", -1);
     return publickey->authorizationKey;
 
     DIDERROR_FINALIZE();
@@ -5044,7 +5090,7 @@ const char *Service_GetProperties(Service *service)
 
     data = json_dumps(service->properties, JSON_COMPACT);
     if (!data)
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Serialize properties to json failed.");
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Serialize properties to json failed.");
 
     return data;
 

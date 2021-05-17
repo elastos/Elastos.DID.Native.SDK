@@ -167,7 +167,7 @@ typedef enum
     CredentialStatus_Revoked = 2,
     /**
      * \~English
-     * Credential is not on the chain.
+     * Credential isn't on the chain.
      */
     CredentialStatus_NotFound = 3,
     /**
@@ -202,7 +202,7 @@ typedef struct Property {
  * a centralized registration authority.
  * It includes method specific string. (elastos:id:ixxxxxxxxxx).
  */
-typedef struct DID                     DID;
+typedef struct DID                      DID;
 /**
  * \~English
  * DID URL defines by the did-url rule, refers to a URL that begins with a DID
@@ -254,7 +254,7 @@ typedef struct Service                  Service;
 typedef struct Presentation             Presentation;
 /**
  * \~English
- * A DID resolves to a DID Document. This is the concrete serialization of
+ * A DID resolves to document. This is the concrete serialization of
  * the data model, according to a particular syntax.
  * DIDDocument is a set of data that describes the subject of a DID,
  * including public key, authentication(optional), authorization(optional),
@@ -292,7 +292,7 @@ typedef struct CredentialBiography      CredentialBiography;
  * Transfer ticket.
  *
  * When customized DID owner(s) transfer the DID ownership to the others,
- * they need create and sign a transfer ticket, it the DID document is mulisig
+ * they need create and sign a transfer ticket, if the DID document is mulisig
  * document, the ticket should also multi-signed according the DID document.
  *
  * The new owner(s) can use this ticket create a transfer transaction, get
@@ -302,7 +302,7 @@ typedef struct TransferTicket          TransferTicket;
 /**
  * \~English
  * A issuer is the did to issue credential. Issuer includes issuer's did and
- * issuer's sign key.
+ * issuer's signkey.
  */
 typedef struct Issuer                   Issuer;
 /**
@@ -402,64 +402,6 @@ typedef bool CreateIdTransaction_Callback(const char *payload, const char *memo)
 typedef const char* Resolve_Callback(const char *request);
 
 /******************************************************************************
- * Log configuration.
- *****************************************************************************/
-/**
- * \~English
- * DID log level to control or filter log output.
- */
-typedef enum DIDLogLevel {
-    /**
-     * \~English
-     * Log level None
-     * Indicate disable log output.
-     */
-    DIDLogLevel_None = 0,
-    /**
-     * \~English
-     * Log level fatal.
-     * Indicate output log with level 'Fatal' only.
-     */
-    DIDLogLevel_Fatal = 1,
-    /**
-     * \~English
-     * Log level error.
-     * Indicate output log above 'Error' level.
-     */
-    DIDLogLevel_Error = 2,
-    /**
-     * \~English
-     * Log level warning.
-     * Indicate output log above 'Warning' level.
-     */
-    DIDLogLevel_Warning = 3,
-    /**
-     * \~English
-     * Log level info.
-     * Indicate output log above 'Info' level.
-     */
-    DIDLogLevel_Info = 4,
-    /**
-     * \~English
-     * Log level debug.
-     * Indicate output log above 'Debug' level.
-     */
-    DIDLogLevel_Debug = 5,
-    /**
-     * \~English
-     * Log level trace.
-     * Indicate output log above 'Trace' level.
-     */
-    DIDLogLevel_Trace = 6,
-    /**
-     * \~English
-     * Log level verbose.
-     * Indicate output log above 'Verbose' level.
-     */
-    DIDLogLevel_Verbose = 7
-} DIDLogLevel;
-
-/******************************************************************************
  * DID
  *****************************************************************************/
 /**
@@ -486,8 +428,7 @@ DID_API DID *DID_FromString(const char *idstring);
  *                                     globally unique by itself.
  * @return
  *      If no error occurs, return the pointer of DID.
- *      Otherwise, return NULL, and a specific error code can be
- *      retrieved by calling ela_get_error().
+ *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
 DID_API DID *DID_New(const char *method_specific_string);
@@ -500,8 +441,7 @@ DID_API DID *DID_New(const char *method_specific_string);
  *      did                 [in] A handle to DID.
  * @return
  *      If no error occurs, return method string.
- *      Otherwise, return NULL, and a specific error code can be
- *      retrieved by calling ela_get_error().
+ *      Otherwise, return NULL.
  */
 DID_API const char *DID_GetMethod(DID *did);
 
@@ -513,8 +453,7 @@ DID_API const char *DID_GetMethod(DID *did);
  *      did                  [in] A handle to DID.
  * @return
  *      If no error occurs, return string.
- *      Otherwise, return NULL, and a specific error code can be
- *      retrieved by calling ela_get_error().
+ *      Otherwise, return NULL.
  */
 DID_API const char *DID_GetMethodSpecificId(DID *did);
 
@@ -543,9 +482,11 @@ DID_API char *DID_ToString(DID *did, char *idstring, size_t len);
  * @param
  *      did2                  [in] The other DID to be compared.
  * @return
- *      true if two DID are same, or false if not.
+ *      return value = -1, if error occurs;
+ *      return value = 0, two dids are not same;
+ *      return value = 1, two dids are same.
  */
-DID_API bool DID_Equals(DID *did1, DID *did2);
+DID_API int DID_Equals(DID *did1, DID *did2);
 
 /**
  * \~English
@@ -556,8 +497,9 @@ DID_API bool DID_Equals(DID *did1, DID *did2);
  * @param
  *      did2                   [in] The other DID to be compared.
  * @return
- *      return value < 0, it indicates did1 is less than did2.
- *      return value = 0, it indicates did1 is equal to did2.
+ *      return value = -1, if error occurs;
+ *      return value < 0(exclude -1), it indicates did1 is less than did2;
+ *      return value = 0, it indicates did1 is equal to did2;
  *      return value > 0, it indicates did1 is greater than did2.
  */
 DID_API int DID_Compare(DID *did1, DID *did2);
@@ -635,10 +577,11 @@ DID_API const char *DIDMetadata_GetAlias(DIDMetadata *metadata);
  * @param
  *      metadata                        [in] The handle of DIDMetadata.
  * @return
- *      If no error occurs, return status.
- *      Otherwise, return false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, did isn't deacativated;
+ *      return value = 1, did is deacativated.
  */
-DID_API bool DIDMetadata_GetDeactivated(DIDMetadata *metadata);
+DID_API int DIDMetadata_GetDeactivated(DIDMetadata *metadata);
 
 /**
  * \~English
@@ -732,9 +675,11 @@ DID_API const char *DIDMetadata_GetExtra(DIDMetadata *metadata, const char *key)
  * @param
  *      key                            [in] The key string.
  * @return
- *      'boolean' elem value.
+ *      return value = -1, if error occurs;
+ *      return value = 0, it equals to 'false';
+ *      return value = 1, it equals to 'true'.
  */
-DID_API bool DIDMetadata_GetExtraAsBoolean(DIDMetadata *metadata, const char *key);
+DID_API int DIDMetadata_GetExtraAsBoolean(DIDMetadata *metadata, const char *key);
 
 /**
  * \~English
@@ -853,9 +798,11 @@ DID_API char *DIDURL_ToString(DIDURL *id, char *idstring, size_t len, bool compa
  * @param
  *      id2                  [in] The other DID URL to be compared.
  * @return
- *      true if two DID URL are same, or false if not.
+ *      return value = -1, if error occurs;
+ *      return value = 0, two ids aren't same;
+ *      return value = 1, two ids are same.
  */
-DID_API bool DIDURL_Equals(DIDURL *id1, DIDURL *id2);
+DID_API int DIDURL_Equals(DIDURL *id1, DIDURL *id2);
 
 /**
  * \~English
@@ -866,8 +813,9 @@ DID_API bool DIDURL_Equals(DIDURL *id1, DIDURL *id2);
  * @param
  *      id2                   [in] The other DID URL to be compared.
  * @return
- *      return value < 0, it indicates id1 is less than id2.
- *      return value = 0, it indicates id1 is equal to id2.
+ *      return value = -1, if error occurs;
+ *      return value < 0(exclude -1), it indicates id1 is less than id2;
+ *      return value = 0, it indicates id1 is equal to id2;
  *      return value > 0, it indicates id1 is greater than id2.
  */
 DID_API int DIDURL_Compare(DIDURL *id1, DIDURL *id2);
@@ -982,9 +930,11 @@ DID_API time_t CredentialMetadata_GetPublished(CredentialMetadata *metadata);
  * @param
  *      metadata                     [in] The handle of CredentialMetadata.
  * @return
- *      If credential is revoked, return true. Otherwise, return false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, credential isn't revoked;
+ *      return value = 1, credential is revoked.
  */
-DID_API bool CredentialMetadata_GetRevoke(CredentialMetadata *metadata);
+DID_API int CredentialMetadata_GetRevoke(CredentialMetadata *metadata);
 
 /**
  * \~English
@@ -1129,7 +1079,7 @@ DID_API time_t DIDBiography_GetPublishedByIndex(DIDBiography *biography, int ind
  *      index                         [in] The index of transaction.
  * @return
  *       If no error occurs, return operation string.
- *       Otherwise, return -1.
+ *       Otherwise, return NULL.
  */
 DID_API const char *DIDBiography_GetOperationByIndex(DIDBiography *biography, int index);
 /**
@@ -1278,7 +1228,7 @@ DID_API void CredentialBiography_Destroy(CredentialBiography *biography);
  * @param
  *      mnemonic          [in] Mnemonic for generate key.
  * @param
- *      passphrase        [in] The pass word to generate private identity.
+ *      passphrase        [in] The password to generate private identity.
  * @param
  *      language          [in] The language for DID.
  *                        support language string: "chinese_simplified",
@@ -1292,7 +1242,7 @@ DID_API void CredentialBiography_Destroy(CredentialBiography *biography);
  *                        If force is false, then will choose to remain the old
  *                        private key if the private identity exists, and return error code.
  * @param
- *      store             [in] THe handle to DIDStore.
+ *      store             [in] The handle to DIDStore.
  * @param
  *      storepass         [in] The password for DIDStore.
  * @return
@@ -1352,7 +1302,6 @@ DID_API int RootIdentity_SetAsDefault(RootIdentity *rootidentity);
  *      rootidentity               [in] A handle to RootIdentity.
  * @return
  *      the id string, otherwise, return NULL.
- *      Notice that user need to free the returned value that it's memory.
  */
 DID_API const char *RootIdentity_GetId(RootIdentity *rootidentity);
 
@@ -1552,9 +1501,11 @@ DID_API void DIDDocument_Destroy(DIDDocument *document);
  * @param
  *      document             [in] A handle to DID Document.
  * @return
- *      true if document owned to customized DID, otherwise false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, did isn't customized one;
+ *      return value = 1, did is customized one.
 */
-DID_API bool DIDDocument_IsCustomizedDID(DIDDocument *document);
+DID_API int DIDDocument_IsCustomizedDID(DIDDocument *document);
 /**
  * \~English
  * Check that document is deactivated or not.
@@ -1562,9 +1513,11 @@ DID_API bool DIDDocument_IsCustomizedDID(DIDDocument *document);
  * @param
  *      document             [in] A handle to DID Document.
  * @return
- *      true if document is deactivated, otherwise false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, did isn't deactivated;
+ *      return value = 1, did is deactivated.
 */
-DID_API bool DIDDocument_IsDeactivated(DIDDocument *document);
+DID_API int DIDDocument_IsDeactivated(DIDDocument *document);
 
 /**
  * \~English
@@ -1573,9 +1526,11 @@ DID_API bool DIDDocument_IsDeactivated(DIDDocument *document);
  * @param
  *      document             [in] A handle to DID Document.
  * @return
- *      true if document is genuine, otherwise false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, did isn't genuine;
+ *      return value = 1, did is genuine.
 */
-DID_API bool DIDDocument_IsGenuine(DIDDocument *document);
+DID_API int DIDDocument_IsGenuine(DIDDocument *document);
 
 /**
  * \~English
@@ -1584,9 +1539,11 @@ DID_API bool DIDDocument_IsGenuine(DIDDocument *document);
  * @param
  *      document             [in] A handle to DID Document.
  * @return
- *      true if document is expired, otherwise false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, did isn't expired;
+ *      return value = 1, did is expired.
 */
-DID_API bool DIDDocument_IsExpired(DIDDocument *document);
+DID_API int DIDDocument_IsExpired(DIDDocument *document);
 
 /**
  * \~English
@@ -1595,9 +1552,11 @@ DID_API bool DIDDocument_IsExpired(DIDDocument *document);
  * @param
  *      document             [in] A handle to DID Document.
  * @return
- *      true if document is valid, otherwise false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, diddocument isn't valid;
+ *      return value = 1, diddocument is valid;
 */
-DID_API bool DIDDocument_IsValid(DIDDocument *document);
+DID_API int DIDDocument_IsValid(DIDDocument *document);
 
 /**
  * \~English
@@ -1606,9 +1565,11 @@ DID_API bool DIDDocument_IsValid(DIDDocument *document);
  * @param
  *      document             [in] A handle to DID Document.
  * @return
- *      true if document is qualified, otherwise false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, did isn't qualified;
+ *      return value = 1, did is qualified.
 */
-DID_API bool DIDDocument_IsQualified(DIDDocument *document);
+DID_API int DIDDocument_IsQualified(DIDDocument *document);
 
 /**
  * \~English
@@ -2065,9 +2026,11 @@ DID_API ssize_t DIDDocument_GetControllers(DIDDocument *document,
  * @param
  *      controller           [in] The controller to be removed.
  * @return
- *      return true if DID has controller, otherwise return false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, document doesn't contain controller;
+ *      return value = 1, document contains controller.
  */
-DID_API bool DIDDocument_ContainsController(DIDDocument *document, DID *controller);
+DID_API int DIDDocument_ContainsController(DIDDocument *document, DID *controller);
 
 /**
  * \~English
@@ -2183,7 +2146,7 @@ DID_API ssize_t DIDDocument_GetAuthenticationKeys(DIDDocument *document,
  *      keyid                [in] An identifier of authentication key.
  * @return
  *       If no error occurs, return the handle to public key.
- *       Otherwise, return NULL
+ *       Otherwise, return NULL.
  */
 DID_API PublicKey *DIDDocument_GetAuthenticationKey(DIDDocument *document, DIDURL *keyid);
 
@@ -2216,9 +2179,12 @@ DID_API ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document, cons
  * @param
  *      keyid                [in] An identifier of authentication key.
  * @return
- *      true if has authentication key, or false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, signkey isn't authentication key;
+ *      return value = 1, signkey is authentication key.
+
  */
-DID_API bool DIDDocument_IsAuthenticationKey(DIDDocument *document, DIDURL *keyid);
+DID_API int DIDDocument_IsAuthenticationKey(DIDDocument *document, DIDURL *keyid);
 
 /**
  * \~English
@@ -2229,9 +2195,11 @@ DID_API bool DIDDocument_IsAuthenticationKey(DIDDocument *document, DIDURL *keyi
  * @param
  *      keyid                [in] An identifier of authorization key.
  * @return
- *      true if has authorization key, or false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, signkey isn't authorization key;
+ *      return value = 1, signkey is authorization key.
  */
-DID_API bool DIDDocument_IsAuthorizationKey(DIDDocument *document, DIDURL *keyid);
+DID_API int DIDDocument_IsAuthorizationKey(DIDDocument *document, DIDURL *keyid);
 
 /**
  * \~English
@@ -2441,7 +2409,7 @@ DID_API time_t DIDDocument_GetExpires(DIDDocument *document);
  *      customizeddid              [in] The nickname of DID.
  *                                     'customizeddid' supports NULL.
  * @param
- *      controllers               [in] The controllers for customized DID.
+ *      controllers               [out] The controllers for customized DID.
  * @param
  *      size                      [in] The count of controllers.
  * @param
@@ -2754,7 +2722,7 @@ DID_API TransferTicket *DIDDocument_CreateTransferTicket(DIDDocument *controller
  * @param
  *      storepass               [in] The password for DIDStore.
  * @return
- *      document string if no error occurred and user should be free the returned value.
+ *      0 on success, -1 if an error occurred.
  */
 DID_API int DIDDocument_SignTransferTicket(DIDDocument *controllerdoc,
         TransferTicket *ticket, const char *storepass);
@@ -2772,9 +2740,11 @@ DID_API int DIDDocument_SignTransferTicket(DIDDocument *controllerdoc,
  * @param
  *      storepass                [in] The password for DIDStore.
  * @return
- *      true on success, false if an error occurred. Caller should free the returned value.
+ *      return value = -1, if error occurs;
+ *      return value = 0, publish did failed;
+ *      return value = 1, publish did successfully.
  */
-DID_API bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
+DID_API int DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool force,
         const char *storepass);
 
 /**
@@ -2790,9 +2760,11 @@ DID_API bool DIDDocument_PublishDID(DIDDocument *document, DIDURL *signkey, bool
  * @param
  *      storepass                [in] The password for DIDStore.
  * @return
- *      true on success, false if an error occurred. Caller should free the returned value.
+ *      return value = -1, if error occurs;
+ *      return value = 0, transfer did failed;
+ *      return value = 1, transfer did successfully.
  */
-DID_API bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
+DID_API int DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
         DIDURL *signkey, const char *storepass);
 
 /**
@@ -2806,9 +2778,11 @@ DID_API bool DIDDocument_TransferDID(DIDDocument *document, TransferTicket *tick
  * @param
  *      storepass                [in] Password for DIDStore.
  * @return
- *      true on success, false if an error occurred. Caller should free the returned value.
+ *      return value = -1, if error occurs;
+ *      return value = 0, deactivate did failed;
+ *      return value = 1, deactivate did successfully.
  */
-DID_API bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey,
+DID_API int DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey,
         const char *storepass);
 
 /**
@@ -2824,9 +2798,11 @@ DID_API bool DIDDocument_DeactivateDID(DIDDocument *document, DIDURL *signkey,
  * @param
  *      storepass                [in] Password for DIDStore.
  * @return
- *      true on success, false if an error occurred. Caller should free the returned value.
+ *      return value = -1, if error occurs;
+ *      return value = 0, deactivate did failed;
+ *      return value = 1, deactivate did successfully.
  */
-DID_API bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
+DID_API int DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *target,
         DIDURL *signkey, const char *storepass);
 
 /**
@@ -2839,7 +2815,6 @@ DID_API bool DIDDocument_DeactivateDIDByAuthorizor(DIDDocument *document, DID *t
  *      If no error occurs, return the identifier of public key.
  *      Otherwise, return NULL.
  */
-
 DID_API DIDURL *PublicKey_GetId(PublicKey *publickey);
 
 /**
@@ -2885,10 +2860,11 @@ DID_API const char *PublicKey_GetType(PublicKey *publickey);
  * @param
  *      publickey             [in] A handle to public key.
  * @return
- *      If publickey is authentication key, return true.
- *      Otherwise, return false.
+ *      return value = -1, no publickey;
+ *      return value = 0, key is authentication key;
+ *      return value = 1, key isn't authentication key.
  */
-DID_API bool PublicKey_IsAuthenticationKey(PublicKey *publickey);
+DID_API int PublicKey_IsAuthenticationKey(PublicKey *publickey);
 
 /**
  * \~English
@@ -2897,10 +2873,11 @@ DID_API bool PublicKey_IsAuthenticationKey(PublicKey *publickey);
  * @param
  *      publickey             [in] A handle to public key.
  * @return
- *      If publickey is authorization key, return true.
- *      Otherwise, return false.
+ *      return value = -1, no publickey;
+ *      return value = 0, key is authorization key;
+ *      return value = 1, key isn't authorization key.
  */
-DID_API bool PublicKey_IsAuthorizationKey(PublicKey *publickey);
+DID_API int PublicKey_IsAuthorizationKey(PublicKey *publickey);
 
 /**
  * \~English
@@ -2983,7 +2960,7 @@ DID_API const char *Service_GetProperty(Service *service, const char *name);
  * Get json non-formatted context from Credential.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential                  [in] A handle to Credential.
  * @param
  *      normalized           [in] Json context is normalized or not.
  *                           true represents normalized, false represents not.
@@ -2991,14 +2968,14 @@ DID_API const char *Service_GetProperty(Service *service, const char *name);
  *      If no error occurs, return json context. Otherwise, return NULL.
  *      Notice that user need to free the returned value that it's memory.
  */
-DID_API const char *Credential_ToJson(Credential *cred, bool normalized);
+DID_API const char *Credential_ToJson(Credential *credential , bool normalized);
 
 /**
  * \~English
  * Get json formatted context from Credential.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential           [in] A handle to Credential.
  * @param
  *      normalized           [in] Json context is normalized or not.
  *                           true represents normalized, false represents not.
@@ -3006,7 +2983,7 @@ DID_API const char *Credential_ToJson(Credential *cred, bool normalized);
  *      If no error occurs, return json context. Otherwise, return NULL.
  *      Notice that user need to free the returned value that it's memory.
  */
-DID_API const char *Credential_ToString(Credential *cred, bool normalized);
+DID_API const char *Credential_ToString(Credential *credential , bool normalized);
 
 /**
  * \~English
@@ -3015,7 +2992,7 @@ DID_API const char *Credential_ToString(Credential *cred, bool normalized);
  * @param
  *      json                 [in] Json context about credential.
  * @param
- *      owner                  [in] A handle to credential owner's DID.
+ *      owner                [in] A handle to credential owner's DID.
  * @return
  *      If no error occurs, return the handle to Credential.
  *      Otherwise, return NULL.
@@ -3028,63 +3005,64 @@ DID_API Credential *Credential_FromJson(const char *json, DID *owner);
  * Destroy Credential.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential            [in] A handle to Credential.
  */
-DID_API void Credential_Destroy(Credential *cred);
+DID_API void Credential_Destroy(Credential *credential);
 
 /**
  * \~English
  * Check Credential is self claimed or not.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential             [in] A handle to Credential.
  * @return
- *      true if Credential is self claimed.
- *      Otherwise, return false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, did isn't selfproclaimed;
+ *      return value = 1, did is selfproclaimed.
  */
-DID_API bool Credential_IsSelfProclaimed(Credential *cred);
+DID_API int Credential_IsSelfProclaimed(Credential *credential);
 
 /**
  * \~English
  * Get id property from Credential.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential             [in] A handle to Credential.
  * @return
  *      If no error occurs, return id property of credential.
  *      Otherwise, return NULL.
  */
-DID_API DIDURL *Credential_GetId(Credential *cred);
+DID_API DIDURL *Credential_GetId(Credential *credential);
 
 /**
  * \~English
  * Get who this credential is belong to.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential              [in] A handle to Credential.
  * @return
  *      If no error occurs, return owner DID.
  *      Otherwise, return NULL.
  */
-DID_API DID *Credential_GetOwner(Credential *cred);
+DID_API DID *Credential_GetOwner(Credential *credential);
 
 /**
  * \~English
  * Get count of Credential types.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential              [in] A handle to Credential.
  * @return
  *      size of Credential types on success, -1 if an error occurred.
  */
-DID_API ssize_t Credential_GetTypeCount(Credential *cred);
+DID_API ssize_t Credential_GetTypeCount(Credential *credential);
 
 /**
  * \~English
  * Get array of Credential types.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential           [in] A handle to Credential.
  * @param
  *      types                [out] The buffer that will receive credential types.
   * @param
@@ -3092,43 +3070,43 @@ DID_API ssize_t Credential_GetTypeCount(Credential *cred);
  * @return
  *      size of Credential types on success, -1 if an error occurred.
  */
-DID_API ssize_t Credential_GetTypes(Credential *cred, const char **types, size_t size);
+DID_API ssize_t Credential_GetTypes(Credential *credential, const char **types, size_t size);
 
 /**
  * \~English
  * Get DID issuer of Credential.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential           [in] A handle to Credential.
  * @return
  *      If no error occurs, return the handle to DID issuer.
  *      Otherwise, return NULL.
  */
-DID_API DID *Credential_GetIssuer(Credential *cred);
+DID_API DID *Credential_GetIssuer(Credential *credential);
 
 /**
  * \~English
  * Get date of issuing credential.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential            [in] A handle to Credential.
  * @return
  *      If no error occurs, return the date.
  *      Otherwise, return 0.
  */
-DID_API time_t Credential_GetIssuanceDate(Credential *cred);
+DID_API time_t Credential_GetIssuanceDate(Credential *credential);
 
 /**
  * \~English
  * Get the date of credential expired.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential             [in] A handle to Credential.
  * @return
  *      If no error occurs, return the time.
  *      Otherwise, return 0.
  */
-DID_API time_t Credential_GetExpirationDate(Credential *cred);
+DID_API time_t Credential_GetExpirationDate(Credential *credential);
 
 /**
  * \~English
@@ -3139,73 +3117,73 @@ DID_API time_t Credential_GetExpirationDate(Credential *cred);
  * of the credential. Each object must contain an id.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential             [in] A handle to Credential.
  * @return
  *      size of subject porperties on success, -1 if an error occurred.
  */
-DID_API ssize_t Credential_GetPropertyCount(Credential *cred);
+DID_API ssize_t Credential_GetPropertyCount(Credential *credential);
 
 /**
  * \~English
  * Get array of subject properties in Credential.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential              [in] A handle to Credential.
  * @return
  *      size of subject porperties on success, -1 if an error occurred.
  *      Notice that user need to free the returned value it's memory.
  */
-DID_API const char *Credential_GetProperties(Credential *cred);
+DID_API const char *Credential_GetProperties(Credential *credential);
 
 /**
  * \~English
  * Get specific subject property value in string with the given key of property.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential           [in] A handle to Credential.
  * @param
  *      name                 [in] The key of property.
  * @return
  *      If no error occurs, return property value string, otherwise return NULL.
  *      Notice that user need to free the returned value it's memory.
  */
-DID_API const char *Credential_GetProperty(Credential *cred, const char *name);
+DID_API const char *Credential_GetProperty(Credential *credential, const char *name);
 
 /**
  * \~English
  * Get created time of credential.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential            [in] A handle to Credential.
  * @return
  *      If no error occurs, return created time. otherwise, return 0.
  */
-DID_API time_t Credential_GetProofCreatedTime(Credential *cred);
+DID_API time_t Credential_GetProofCreatedTime(Credential *credential);
 /**
  * \~English
  * Get verification method identifier of Credential.
- * The verification Method property specifies the public key
+ * The verification method property specifies the public key
  * that can be used to verify the digital signature.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential              [in] A handle to Credential.
  * @return
  *      If no error occurs, return the handle to identifier of public key.
  *      Otherwise, return NULL.
  */
-DID_API DIDURL *Credential_GetProofMethod(Credential *cred);
+DID_API DIDURL *Credential_GetProofMethod(Credential *credential);
 
 /**
  * \~English
  * Get the type property of embedded proof.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential            [in] A handle to Credential.
  * @return
  *      If no error occurs, return type string.
  *      Otherwise, return NULL.
  */
-DID_API const char *Credential_GetProofType(Credential *cred);
+DID_API const char *Credential_GetProofType(Credential *credential);
 
 /**
  * \~English
@@ -3214,12 +3192,12 @@ DID_API const char *Credential_GetProofType(Credential *cred);
  * integrity of a linked data document.
  *
  * @param
- *      cred                 [in] A handle to Credential.
+ *      credential            [in] A handle to Credential.
  * @return
  *      If no error occurs, return signature string.
  *      Otherwise, return NULL.
  */
-DID_API const char *Credential_GetProofSignture(Credential *cred);
+DID_API const char *Credential_GetProofSignture(Credential *credential);
 
 /**
  * \~English
@@ -3227,11 +3205,13 @@ DID_API const char *Credential_GetProofSignture(Credential *cred);
  * Issuance always occurs before any other actions involving a credential.
  *
  * @param
- *      cred                      [in] The Credential handle.
+ *      credential             [in] The Credential handle.
  * @return
- *      flase if not expired, true if expired.
+ *      return value = -1, if error occurs;
+ *      return value = 0, credentil isn't expired;
+ *      return value = 1, credentil is expired.
  */
-DID_API bool Credential_IsExpired(Credential *cred);
+DID_API int Credential_IsExpired(Credential *credential);
 
 /**
  * \~English
@@ -3239,11 +3219,13 @@ DID_API bool Credential_IsExpired(Credential *cred);
  * Issuance always occurs before any other actions involving a credential.
  *
  * @param
- *      cred                      [in] The Credential handle.
+ *      credential              [in] The Credential handle.
  * @return
- *      flase if not genuine, true if genuine.
+ *      return value = -1, if error occurs;
+ *      return value = 0, credentil isn't genuine;
+ *      return value = 1, credentil is genuine.
  */
-DID_API bool Credential_IsGenuine(Credential *cred);
+DID_API int Credential_IsGenuine(Credential *credential);
 
 /**
  * \~English
@@ -3251,11 +3233,13 @@ DID_API bool Credential_IsGenuine(Credential *cred);
  * Issuance always occurs before any other actions involving a credential.
  *
  * @param
- *      cred                      [in] The Credential handle.
+ *      credential             [in] The Credential handle.
  * @return
- *      flase if not valid, true if valid.
+ *      return value = -1, if error occurs;
+ *      return value = 0, credentil isn't valid;
+ *      return value = 1, credentil is valid.
  */
-DID_API bool Credential_IsValid(Credential *cred);
+DID_API int Credential_IsValid(Credential *credential);
 
 /**
  * \~English
@@ -3268,10 +3252,11 @@ DID_API bool Credential_IsValid(Credential *cred);
  * @param
  *      storepass                [in] The password for DIDStore.
  * @return
- *      true on success, false if an error occurred(for example: the credential
- *      is valid or revoked on the chain). Caller should free the returned value.
+ *      return value = -1, if error occurs;
+ *      return value = 0, declare credential failed;
+ *      return value = 1, declare credential successfully.
  */
-DID_API bool Credential_Declare(Credential *credential, DIDURL *signkey, const char *storepass);
+DID_API int Credential_Declare(Credential *credential, DIDURL *signkey, const char *storepass);
 
 /**
  * \~English
@@ -3285,9 +3270,11 @@ DID_API bool Credential_Declare(Credential *credential, DIDURL *signkey, const c
  * @param
  *      storepass                [in] The password for DIDStore.
  * @return
- *      true on success, false if an error occurred. Caller should free the returned value.
+ *      return value = -1, if error occurs;
+ *      return value = 0, revoke credential failed;
+ *      return value = 1, revoke credential successfully.
  */
-DID_API bool Credential_Revoke(Credential *credential, DIDURL *signkey, const char *storepass);
+DID_API int Credential_Revoke(Credential *credential, DIDURL *signkey, const char *storepass);
 
 /**
  * \~English
@@ -3302,9 +3289,11 @@ DID_API bool Credential_Revoke(Credential *credential, DIDURL *signkey, const ch
  * @param
  *      storepass                [in] The password for DIDStore.
  * @return
- *      true on success, false if an error occurred. Caller should free the returned value.
+ *      return value = -1, if error occurs;
+ *      return value = 0, revoke credential failed;
+ *      return value = 1, revoke credential successfully.
  */
-DID_API bool Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
+DID_API int Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
         const char *storepass);
 
 /**
@@ -3336,9 +3325,11 @@ DID_API Credential *Credential_Resolve(DIDURL *id, int *status, bool force);
  * @param
  *      issuer                 [in] The DID to issue this credential.
  * @return
- *      If the credential is revoked by issuer or owner, return true. Otherwise, return false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, credential isn't revoked by issuer;
+ *      return value = 1, credential is revoked by issuer.
  */
-DID_API bool Credential_ResolveRevocation(DIDURL *id, DID *issuer);
+DID_API int Credential_ResolveRevocation(DIDURL *id, DID *issuer);
 
 /**
  * \~English
@@ -3362,10 +3353,11 @@ DID_API CredentialBiography *Credential_ResolveBiography(DIDURL *id, DID *issuer
  * @param
  *      id                     [in] The id of credential to resolve.
  * @return
- *      If the returned value is true, the credential was declared on the chain.
- *      Otherwise, the credential is not.
+ *      return value = -1, if error occurs;
+ *      return value = 0, credential isn't declared;
+ *      return value = 1, credential is declared.
  */
-DID_API bool Credential_WasDeclared(DIDURL *id);
+DID_API int Credential_WasDeclared(DIDURL *id);
 
 /**
  * \~English
@@ -3374,10 +3366,11 @@ DID_API bool Credential_WasDeclared(DIDURL *id);
  * @param
  *      credential             [in] The handle of credential.
  * @return
- *      If the returned value is true, the credential is revoked on the chain.
- *      Otherwise, the credential is not revoked.
+ *      return value = -1, if error occurs;
+ *      return value = 0, credential isn't revoked;
+ *      return value = 1, credential is revoked.
  */
-DID_API bool Credential_IsRevoked(Credential *credential);
+DID_API int Credential_IsRevoked(Credential *credential);
 
 /**
  * \~English
@@ -3408,12 +3401,12 @@ DID_API ssize_t Credential_List(DID *did, DIDURL **buffer, size_t size, int skip
  * Get credential alias.
  *
  * @param
- *      cred                  [in] The handle to Credential.
+ *      credential             [in] The handle to Credential.
  * @return
  *      If no error occurs, return alias string.
  *      Otherwise, return NULL.
  */
-DID_API CredentialMetadata *Credential_GetMetadata(Credential *cred);
+DID_API CredentialMetadata *Credential_GetMetadata(Credential *credential );
 
 /******************************************************************************
  * Issuer
@@ -3507,7 +3500,7 @@ DID_API Credential *Issuer_CreateCredentialByString(Issuer *issuer, DID *owner,
 
 /**
  * \~English
- * Get the DID of this issuer
+ * Get the DID of this issue.
  *
  * @param
  *      issuer                  [in] The handle to Issuer.
@@ -3519,7 +3512,7 @@ DID_API DID *Issuer_GetSigner(Issuer *issuer);
 
 /**
  * \~English
- * Get the DID of this issuer
+ * Get the DID of this issuer.
  *
  * @param
  *      issuer                  [in] The handle to Issuer.
@@ -3561,9 +3554,11 @@ DID_API void DIDStore_Close(DIDStore *store);
   * @param
  *      id                    [in] The specified root identity's id.
  * @return
- *      ture if it has identity, false if it has not.
+ *      return value = -1, if error occurs;
+ *      return value = 0, didstore doestn't contain rootidentiy;
+ *      return value = 1, didstore contains rootidentiy.
  */
-DID_API bool DIDStore_ContainsRootIdentity(DIDStore *store, const char *id);
+DID_API int DIDStore_ContainsRootIdentity(DIDStore *store, const char *id);
 
 /**
  * \~English
@@ -3572,9 +3567,11 @@ DID_API bool DIDStore_ContainsRootIdentity(DIDStore *store, const char *id);
  * @param
  *      store                 [in] The handle to DIDStore.
  * @return
- *      ture if it has identity, false if it has not.
+ *      return value = -1, if error occurs;
+ *      return value = 0, there isn't rootidentity in didstore;
+ *      return value = 1, there is rootidentity in didstore.
  */
-DID_API bool DIDStore_ContainsRootIdentities(DIDStore *store);
+DID_API int DIDStore_ContainsRootIdentities(DIDStore *store);
 
 /**
  * \~English
@@ -3611,9 +3608,11 @@ DID_API bool DIDStore_DeleteRootIdentity(DIDStore *store, const char *id);
  * @param
  *      id                    [in] The id string.
  * @return
- *      ture if there is mnemonic of Rootidentity, false if it has not.
+ *      return value = -1, if error occurs;
+ *      return value = 0, there isn't rootidentity's mnemonic in didstore;
+ *      return value = 1, there is rootidentity's mnemonic in didstore.
  */
-DID_API bool DIDStore_ContainsRootIdentityMnemonic(DIDStore *store, const char *id);
+DID_API int DIDStore_ContainsRootIdentityMnemonic(DIDStore *store, const char *id);
 
 /**
  * \~English
@@ -3702,9 +3701,11 @@ DID_API DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did);
  * @param
  *      did                     [in] The handle to DID.
  * @return
- *      true on success, false if an error occurred.
+ *      return value = -1, if error occurs;
+ *      return value = 0, did isn't in didstore;
+ *      return value = 1, did is in didstore.
  */
-DID_API bool DIDStore_ContainsDID(DIDStore *store, DID *did);
+DID_API int DIDStore_ContainsDID(DIDStore *store, DID *did);
 
 /**
  * \~English
@@ -3777,9 +3778,11 @@ DID_API Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *c
  * @param
  *      did                     [in] The handle to DID.
  * @return
- *      true on success, false if an error occurred.
+ *      return value = -1, if error occurs;
+ *      return value = 0, there isn't credential in didstore;
+ *      return value = 1, there is credential in didstore.
  */
-DID_API bool DIDStore_ContainsCredentials(DIDStore *store, DID *did);
+DID_API int DIDStore_ContainsCredentials(DIDStore *store, DID *did);
 
 /**
  * \~English
@@ -3792,9 +3795,11 @@ DID_API bool DIDStore_ContainsCredentials(DIDStore *store, DID *did);
  * @param
  *      credid                  [in] The identifier of credential.
  * @return
- *      true on success, false if an error occurred.
+ *      return value = -1, if error occurs;
+ *      return value = 0, credential isn't in didstore;
+ *      return value = 1, credential is in didstore.
  */
-DID_API bool DIDStore_ContainsCredential(DIDStore *store, DID *did, DIDURL *credid);
+DID_API int DIDStore_ContainsCredential(DIDStore *store, DID *did, DIDURL *credid);
 
 /**
  * \~English
@@ -3860,9 +3865,11 @@ DID_API int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *credid
  * @param
  *      did                     [in] The handle to DID.
  * @return
- *      true on success, false if an error occurred.
+ *      return value = -1, if error occurs;
+ *      return value = 0, there isn't private key in didstore;
+ *      return value = 1, did is deacativated.
  */
-DID_API bool DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did);
+DID_API int DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did);
 
 /**
  * \~English
@@ -3875,9 +3882,11 @@ DID_API bool DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did);
  * @param
  *      keyid                   [in] The identifier of public key.
  * @return
- *      true on success, false if an error occurred.
+ *      return value = -1, if error occurs;
+ *      return value = 0, there isn't private key in didstore;
+ *      return value = 1, there is private key in didstore.
  */
-DID_API bool DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *keyid);
+DID_API int DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *keyid);
 
 /**
  * \~English
@@ -4074,14 +4083,29 @@ DID_API void Mnemonic_Free(void *mnemonic);
  *      mnemonic               [in] mnemonic buffter.
  * @param
  *      language               [in] The language for DID.
- *                             0: English; 1: French; 2: Spanish;
- *                             3: Chinese_simplified;
- *                             4: Chinese_traditional;
- *                             5: Japanese.
+ *                             Support languages' string: "english", "french", "spanish",
+ *                             "chinese_simplified", "chinese_traditional",
+ *                             "japanese", "czech", "italian", "korean".
  * @return
  *      true, if mnemonic is valid. or else, return false.
  */
 DID_API bool Mnemonic_IsValid(const char *mnemonic, const char *language);
+
+/**
+ * \~English
+ * Get the language name from a mnemonic string and check mnemoic validity.
+ *
+ * @param
+ *      mnemonic               [in] mnemonic string
+ *                             Only Support mnenomic from languages as follow:
+ *                             "english", "french", "spanish",
+ *                             "chinese_simplified", "chinese_traditional",
+ *                             "japanese", "czech", "italian", "korean".
+ * @return
+ *      return language name string. Member release the returned value.
+ *      return NULL, if mnemonic isn't from specified languages or mnemonic isn't valid.
+ */
+DID_API const char *Mnemonic_GetLanguage(const char *mnemonic);
 
 /******************************************************************************
  * Presentation
@@ -4160,16 +4184,16 @@ DID_API Presentation *Presentation_CreateByCredentials(DIDURL *id, DID *holder,
  * Destroy Presentation.
  *
  * @param
- *      pre                      [in] The handle to Presentation.
+ *      presentation         [in] The handle to Presentation.
  */
-DID_API void Presentation_Destroy(Presentation *pre);
+DID_API void Presentation_Destroy(Presentation *presentation);
 
 /**
  * \~English
  * Get json context from Presentation.
  *
  * @param
- *      pre                  [in] A handle to Presentation.
+ *      presentation         [in] A handle to Presentation.
  * @param
  *      normalized           [in] Json context is normalized or not.
  *                           true represents normalized, false represents not normalized.
@@ -4177,7 +4201,7 @@ DID_API void Presentation_Destroy(Presentation *pre);
  *      If no error occurs, return json context. Otherwise, return NULL.
  *      Notice that user need to free the returned value that it's memory.
  */
-DID_API const char* Presentation_ToJson(Presentation *pre, bool normalized);
+DID_API const char* Presentation_ToJson(Presentation *presentation, bool normalized);
 
 /**
  * \~English
@@ -4197,42 +4221,42 @@ DID_API Presentation *Presentation_FromJson(const char *json);
  * Get id of Presentation.
  *
  * @param
- *      pre                 [in] The handle to Presentation.
+ *      presentation         [in] The handle to Presentation.
  * @return
  *      If no error occurs, return the id.
  *      Otherwise, return NULL.
  */
-DID_API DIDURL *Presentation_GetId(Presentation *pre);
+DID_API DIDURL *Presentation_GetId(Presentation *presentation);
 /**
  * \~English
  * Get the holder(owner) of Presentation.
  *
  * @param
- *      pre                   [in] The handle to Presentation.
+ *      presentation         [in] The handle to Presentation.
  * @return
  *      If no error occurs, return the handle to DID.
  *      Otherwise, return NULL.
  */
-DID_API DID *Presentation_GetHolder(Presentation *pre);
+DID_API DID *Presentation_GetHolder(Presentation *presentation);
 
 /**
  * \~English
  * Get Credential count in Presentation.
  *
  * @param
- *      pre                   [in] The handle to Presentation.
+ *      presentation          [in] The handle to Presentation.
  * @return
  *      If no error occurs, return the count of Credential.
  *      Otherwise, return -1.
  */
-DID_API ssize_t Presentation_GetCredentialCount(Presentation *pre);
+DID_API ssize_t Presentation_GetCredentialCount(Presentation *presentation);
 
 /**
  * \~English
  * Get Credential list for signing the Presentation.
  *
  * @param
- *      pre                   [in] The handle to Presentation.
+ *      presentation          [in] The handle to Presentation.
  * @param
  *      creds                 [out] The buffer that will receive the public keys.
   * @param
@@ -4241,7 +4265,7 @@ DID_API ssize_t Presentation_GetCredentialCount(Presentation *pre);
  *      If no error occurs, return the count of Credential.
  *      Otherwise, return -1.
  */
-DID_API ssize_t Presentation_GetCredentials(Presentation *pre,
+DID_API ssize_t Presentation_GetCredentials(Presentation *presentation,
         Credential **creds, size_t size);
 
 /**
@@ -4249,32 +4273,32 @@ DID_API ssize_t Presentation_GetCredentials(Presentation *pre,
  * Get Credential list for signing the Presentation.
  *
  * @param
- *      pre                   [in] The handle to Presentation.
+ *      presentation          [in] The handle to Presentation.
  * @param
  *      credid                [in] The Credential Id.
  * @return
  *      If no error occurs, return the handle to Credential.
  *      Otherwise, return NULL.
  */
-DID_API Credential *Presentation_GetCredential(Presentation *pre, DIDURL *credid);
+DID_API Credential *Presentation_GetCredential(Presentation *presentation, DIDURL *credid);
 
 /**
  * \~English
  * Get count of Presentation types.
  *
  * @param
- *      pre                 [in] A handle to Presentation.
+ *      presentation         [in] A handle to Presentation.
  * @return
  *      size of Presentation types on success, -1 if an error occurred.
  */
-DID_API ssize_t Presentation_GetTypeCount(Presentation *pre);
+DID_API ssize_t Presentation_GetTypeCount(Presentation *presentation);
 
 /**
  * \~English
  * Get array of Presentation types.
  *
  * @param
- *      pre                  [in] A handle to Presentation.
+ *      presentation         [in] A handle to Presentation.
  * @param
  *      types                [out] The buffer that will receive presentation types.
   * @param
@@ -4282,77 +4306,81 @@ DID_API ssize_t Presentation_GetTypeCount(Presentation *pre);
  * @return
  *      size of Presentation types on success, -1 if an error occurred.
  */
-DID_API ssize_t Presentation_GetTypes(Presentation *pre, const char **types, size_t size);
+DID_API ssize_t Presentation_GetTypes(Presentation *presentation, const char **types, size_t size);
 
 /**
  * \~English
  * Get time created Presentation.
  *
  * @param
- *      pre                   [in] The handle to Presentation.
+ *      presentation         [in] The handle to Presentation.
  * @return
  *      If no error occurs, return the time created Presentation.
  *      Otherwise, return 0.
  */
-DID_API time_t Presentation_GetCreatedTime(Presentation *pre);
+DID_API time_t Presentation_GetCreatedTime(Presentation *presentation);
 
 /**
  * \~English
  * Get key to sign Presentation.
  *
  * @param
- *      pre                   [in] The handle to Presentation.
+ *      presentation           [in] The handle to Presentation.
  * @return
- *      If no error occurs, return the handle to sign key.
+ *      If no error occurs, return the handle to signkey.
  *      Otherwise, return NULL.
  */
-DID_API DIDURL *Presentation_GetVerificationMethod(Presentation *pre);
+DID_API DIDURL *Presentation_GetVerificationMethod(Presentation *presentation);
 
 /**
  * \~English
  * Get Presentation nonce.
  *
  * @param
- *      pre                   [in] The handle to Presentation.
+ *      presentation            [in] The handle to Presentation.
  * @return
  *      If no error occurs, return the Presentaton nonce string.
  *      Otherwise, return NULL.
  */
-DID_API const char *Presentation_GetNonce(Presentation *pre);
+DID_API const char *Presentation_GetNonce(Presentation *presentation);
 
 /**
  * \~English
  * Get Presentation realm.
  *
  * @param
- *      pre                   [in] The handle to Presentation.
+ *      presentation             [in] The handle to Presentation.
  * @return
  *      If no error occurs, return the Presentaton realm string.
  *      Otherwise, return NULL.
  */
-DID_API const char *Presentation_GetRealm(Presentation *pre);
+DID_API const char *Presentation_GetRealm(Presentation *presentation);
 
 /**
  * \~English
  * Presentation is genuine or not.
  *
  * @param
- *      pre                      [in] The Presentation handle.
+ *      presentation              [in] The Presentation handle.
  * @return
- *      flase if not genuine, true if genuine.
+ *      return value = -1, if error occurs;
+ *      return value = 0, presentation isn't genuine;
+ *      return value = 1, presentation is genuine.
  */
-DID_API bool Presentation_IsGenuine(Presentation *pre);
+DID_API int Presentation_IsGenuine(Presentation *presentation);
 
 /**
  * \~English
  * Presentation is valid or not.
  *
  * @param
- *      pre              [in] The Presentation handle.
+ *      presentation              [in] The Presentation handle.
  * @return
- *      flase if not valid, true if valid.
+ *      return value = -1, if error occurs;
+ *      return value = 0, presentation isn't valid;
+ *      return value = 1, presentation is valid.
  */
-DID_API bool Presentation_IsValid(Presentation *pre);
+DID_API int Presentation_IsValid(Presentation *presentation);
 
 /******************************************************************************
  * TransferTicket
@@ -4398,9 +4426,11 @@ DID_API TransferTicket *TransferTicket_FromJson(const char *json);
  * @param
  *      ticket             [in] A handle to Transfer Ticket.
  * @return
- *      true if ticket is valid, otherwise false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, transfer ticket isn't valid;
+ *      return value = 1, transfer ticket is valid.
 */
-DID_API bool TransferTicket_IsValid(TransferTicket *ticket);
+DID_API int TransferTicket_IsValid(TransferTicket *ticket);
 
 /**
  * \~English
@@ -4409,9 +4439,11 @@ DID_API bool TransferTicket_IsValid(TransferTicket *ticket);
  * @param
  *      ticket             [in] A handle to TransferTicket.
  * @return
- *      true if ticket is valid, otherwise false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, ticket isn't qualified;
+ *      return value = 1, ticket is qualified.
 */
-DID_API bool TransferTicket_IsQualified(TransferTicket *ticket);
+DID_API int TransferTicket_IsQualified(TransferTicket *ticket);
 
 /**
  * \~English
@@ -4420,9 +4452,11 @@ DID_API bool TransferTicket_IsQualified(TransferTicket *ticket);
  * @param
  *      ticket              [in] A handle to TransferTicket.
  * @return
- *      true if ticket is genuine, otherwise false.
+ *      return value = -1, if error occurs;
+ *      return value = 0, ticket isn't genuine;
+ *      return value = 1, ticket is genuine.
 */
-DID_API bool TransferTicket_IsGenuine(TransferTicket *ticket);
+DID_API int TransferTicket_IsGenuine(TransferTicket *ticket);
 
 /**
  * \~English

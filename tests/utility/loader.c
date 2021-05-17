@@ -746,9 +746,11 @@ static DIDStore *setup_store(bool dummybackend, const char *root)
         if (DIDBackend_InitializeDefault(TestDIDAdapter_CreateIdTransaction, resolver, cachedir) < 0)
             return NULL;
     } else {
+#if !defined(_WIN32) && !defined(_WIN64)
         if (gDummyType == 2)
             SimulatedAdapter_Set(cachedir);
         else
+#endif
             DummyAdapter_Set(cachedir);
     }
 

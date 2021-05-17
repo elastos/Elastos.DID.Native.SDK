@@ -98,6 +98,7 @@ DIDDocument *DIDBiography_GetDocumentByIndex(DIDBiography *biography, int index)
     }
 
     if (DIDDocument_Copy(doc, biography->txs.txs[index].request.doc) < 0) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Copy document failed.");
         DIDDocument_Destroy(doc);
         return NULL;
     }

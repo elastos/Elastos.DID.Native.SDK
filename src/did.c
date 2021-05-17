@@ -196,9 +196,9 @@ char *DID_ToString(DID *did, char *idstring, size_t len)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!did, "No did argument.", NULL);
-    CHECK_ARG(!idstring, "No idstring argument.", NULL);
+    CHECK_ARG(!idstring, "No idstring buffer.", NULL);
     CHECK_ARG(strlen(did->idstring) + strlen(elastos_did_prefix) >= len,
-            "Buffer gived is too small.", NULL);
+            "Buffer is too small.", NULL);
 
     strcpy(idstring, elastos_did_prefix);
     strcat(idstring, did->idstring);
@@ -217,14 +217,14 @@ DID *DID_Copy(DID *dest, DID *src)
     return dest;
 }
 
-bool DID_Equals(DID *did1, DID *did2)
+int DID_Equals(DID *did1, DID *did2)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!did1, "No did1 argument.", false);
-    CHECK_ARG(!did2, "No did2 argument.", false);
+    CHECK_ARG(!did1, "No did1 argument.", -1);
+    CHECK_ARG(!did2, "No did2 argument.", -1);
 
-    return strcmp(did1->idstring, did2->idstring) == 0;
+    return strcmp(did1->idstring, did2->idstring) == 0 ? 1 : 0;
 
     DIDERROR_FINALIZE();
 }
@@ -233,8 +233,8 @@ int DID_Compare(DID *did1, DID *did2)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!did1, "No did1 argument.", false);
-    CHECK_ARG(!did2, "No did2 argument.", false);
+    CHECK_ARG(!did1, "No did1 argument.", -1);
+    CHECK_ARG(!did2, "No did2 argument.", -1);
 
     return strcmp(did1->idstring, did2->idstring);
 
@@ -268,6 +268,7 @@ DIDDocument *DID_Resolve(DID *did, int *status, bool force)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!did, "No did to resolve.", NULL);
+    CHECK_ARG(!status, "Please give argument to record status.", NULL);
     return DIDBackend_ResolveDID(did, status, force);
 
     DIDERROR_FINALIZE();
@@ -329,7 +330,7 @@ DIDURL *DIDURL_FromString(const char *idstring, DID *ref)
 
     CHECK_ARG(!idstring || !*idstring, "Invalid idstring.", NULL);
 
-    id = (DIDURL *)calloc(1, sizeof(DIDURL));
+    id = (DIDURL*)calloc(1, sizeof(DIDURL));
     if (!id) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for DIDURL failed.");
         return NULL;
@@ -457,12 +458,12 @@ char *DIDURL_ToString(DIDURL *id, char *idstring, size_t len, bool compact)
     DIDERROR_FINALIZE();
 }
 
-bool DIDURL_Equals(DIDURL *id1, DIDURL *id2)
+int DIDURL_Equals(DIDURL *id1, DIDURL *id2)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!id1, "No id1 argument.", false);
-    CHECK_ARG(!id2, "No id2 argument.", false);
+    CHECK_ARG(!id1, "No id1 argument.", -1);
+    CHECK_ARG(!id2, "No id2 argument.", -1);
 
     return (strcmp(id1->did.idstring, id2->did.idstring) == 0 &&
             strcmp(id1->fragment, id2->fragment) == 0);
@@ -492,8 +493,8 @@ int DIDURL_Compare(DIDURL *id1, DIDURL *id2)
 
 DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src)
 {
-    CHECK_ARG(!dest, "No destination id argument.", NULL);
-    CHECK_ARG(!src, "No source id argument.", NULL);
+    assert(dest);
+    assert(src);
 
     strcpy(dest->did.idstring, src->did.idstring);
     strcpy(dest->fragment, src->fragment);

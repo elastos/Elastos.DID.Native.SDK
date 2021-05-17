@@ -257,11 +257,11 @@ time_t DIDMetadata_GetPublished(DIDMetadata *metadata)
     DIDERROR_FINALIZE();
 }
 
-bool DIDMetadata_GetDeactivated(DIDMetadata *metadata)
+int DIDMetadata_GetDeactivated(DIDMetadata *metadata)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!metadata, "No did metadata argument.", false);
+    CHECK_ARG(!metadata, "No did metadata argument.", -1);
 
     return Metadata_GetDefaultExtraAsBoolean(&metadata->base, DEACTIVATED);
 
@@ -354,12 +354,12 @@ const char *DIDMetadata_GetExtra(DIDMetadata *metadata, const char *key)
     DIDERROR_FINALIZE();
 }
 
-bool DIDMetadata_GetExtraAsBoolean(DIDMetadata *metadata, const char *key)
+int DIDMetadata_GetExtraAsBoolean(DIDMetadata *metadata, const char *key)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!metadata, "No did metadata argument.", false);
-    CHECK_ARG(!key || !*key, "Invalid key argument.", false);
+    CHECK_ARG(!metadata, "No did metadata argument.", -1);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", -1);
 
     return Metadata_GetExtraAsBoolean(&metadata->base, key);
 

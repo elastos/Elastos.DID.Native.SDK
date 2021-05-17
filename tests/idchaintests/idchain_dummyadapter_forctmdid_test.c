@@ -183,7 +183,7 @@ static void test_publish_ctmdid_with_multicontroller(void)
     customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string,
             controllers, 3, 2, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
-    CU_ASSERT_FALSE(DIDDocument_IsValid(customized_doc));
+    CU_ASSERT_NOT_EQUAL(1, DIDDocument_IsValid(customized_doc));
     DID_Copy(&customizedid, &customized_doc->did);
 
     data = DIDDocument_ToJson(customized_doc, true);
@@ -262,8 +262,8 @@ static void test_publish_ctmdid_with_multicontroller(void)
     DIDDocumentBuilder_Destroy(builder);
 
     //must be sepcify the sign key
-    CU_ASSERT_FALSE(DIDDocument_PublishDID(customized_doc, NULL, true, storepass));
-    CU_ASSERT_STRING_EQUAL("Multi-controller customized DID must have sign key to publish.",
+    CU_ASSERT_NOT_EQUAL(1, DIDDocument_PublishDID(customized_doc, NULL, true, storepass));
+    CU_ASSERT_STRING_EQUAL("Multi-controller customized DID must have signkey to publish.",
             DIDError_GetLastErrorMessage());
     CU_ASSERT_TRUE(DIDDocument_PublishDID(customized_doc, signkey1, true, storepass));
     DIDDocument_Destroy(customized_doc);
@@ -412,7 +412,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddController(builder, &controller2));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_SetMultisig(builder, 1));
     CU_ASSERT_PTR_NULL(DIDDocumentBuilder_Seal(builder, storepass));
-    CU_ASSERT_STRING_EQUAL("Please specify the controller to seal multi-controller DID Document.",
+    CU_ASSERT_STRING_EQUAL("Please specify the controller to seal multi-controller document.",
            DIDError_GetLastErrorMessage());
     DIDDocumentBuilder_Destroy(builder);
 
@@ -581,7 +581,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     customized_doc = DIDDocument_NewCustomizedDID(controller2_doc, customized_string,
             controllers, 3, 2, false, storepass);
     CU_ASSERT_PTR_NOT_NULL(customized_doc);
-    CU_ASSERT_FALSE(DIDDocument_IsValid(customized_doc));
+    CU_ASSERT_NOT_EQUAL(1, DIDDocument_IsValid(customized_doc));
     DID_Copy(&customizedid, &customized_doc->did);
 
     builder = DIDDocument_Edit(customized_doc, controller2_doc);
@@ -707,7 +707,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customized_doc));
 
     //publish DID after changing controller, fail.
-    CU_ASSERT_FALSE(DIDDocument_PublishDID(customized_doc, signkey2, false, storepass));
+    CU_ASSERT_NOT_EQUAL(1, DIDDocument_PublishDID(customized_doc, signkey2, false, storepass));
 
     CU_ASSERT_STRING_EQUAL("Can't publish DID which is changed controller, please transfer it.",
             DIDError_GetLastErrorMessage());
@@ -724,10 +724,10 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     ticket = TransferTicket_FromJson(data);
     free((void*)data);
     CU_ASSERT_PTR_NOT_NULL(ticket);
-    CU_ASSERT_FALSE(TransferTicket_IsValid(ticket));
+    CU_ASSERT_NOT_EQUAL(1, TransferTicket_IsValid(ticket));
 
-    CU_ASSERT_FALSE(DIDDocument_TransferDID(customized_doc, ticket, signkey2, storepass));
-    CU_ASSERT_STRING_EQUAL("Ticket is not qualified.", DIDError_GetLastErrorMessage());
+    CU_ASSERT_NOT_EQUAL(1, DIDDocument_TransferDID(customized_doc, ticket, signkey2, storepass));
+    CU_ASSERT_STRING_EQUAL("Ticket isn't valid.", DIDError_GetLastErrorMessage());
     TransferTicket_Destroy(ticket);
 
     //controller1 is removed, fail.
@@ -746,8 +746,8 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_NOT_EQUAL(-1, DIDDocument_SignTransferTicket(controller3_doc, ticket, storepass));
     CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));
 
-    CU_ASSERT_FALSE(DIDDocument_TransferDID(customized_doc, ticket, signkey2, storepass));
-    CU_ASSERT_STRING_EQUAL("The DID to receive ticket is not the document's signer.",
+    CU_ASSERT_NOT_EQUAL(1, DIDDocument_TransferDID(customized_doc, ticket, signkey2, storepass));
+    CU_ASSERT_STRING_EQUAL("DID to receive ticket isn't document's signer.",
             DIDError_GetLastErrorMessage());
     TransferTicket_Destroy(ticket);
 
@@ -831,10 +831,10 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     ticket = TransferTicket_FromJson(data);
     free((void*)data);
     CU_ASSERT_PTR_NOT_NULL(ticket);
-    CU_ASSERT_FALSE(TransferTicket_IsValid(ticket));
+    CU_ASSERT_NOT_EQUAL(1, TransferTicket_IsValid(ticket));
 
-    CU_ASSERT_FALSE(DIDDocument_TransferDID(customized_doc, ticket, keyid2, storepass));
-    CU_ASSERT_STRING_EQUAL("Ticket is not qualified.", DIDError_GetLastErrorMessage());
+    CU_ASSERT_NOT_EQUAL(1, DIDDocument_TransferDID(customized_doc, ticket, keyid2, storepass));
+    CU_ASSERT_STRING_EQUAL("Ticket isn't valid.", DIDError_GetLastErrorMessage());
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocument_SignTransferTicket(controller3_doc, ticket, storepass));
     CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));

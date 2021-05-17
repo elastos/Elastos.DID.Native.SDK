@@ -304,9 +304,7 @@ static void test_idchain_deactivedid_after_create(void)
 {
     RootIdentity *rootidentity;
     DIDDocument *resolvedoc = NULL, *doc;
-    DIDMetadata *metadata;
-    const char *mnemonic, *txid;
-    char previous_txid[ELA_MAX_TXID_LEN];
+    const char *mnemonic;
     bool success;
     DID did;
     int i = 0, status;

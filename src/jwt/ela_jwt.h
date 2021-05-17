@@ -217,7 +217,7 @@ DID_API bool JWTBuilder_SetId(JWTBuilder *builder, const char *jti);
  * @param
  *      builder             [in] The handle to JWTBuilder.
  * @param
- *      keyid               [in] The sign key.
+ *      keyid               [in] The signkey.
  * @param
  *      storepass           [in] The password for DIDStore.
  * @return
@@ -331,7 +331,7 @@ DID_API const char *JWT_GetAlgorithm(JWT *jwt);
 
 /**
  * \~English
- * Get sign key.
+ * Get signkey.
  *
  * @param
  *      jwt             [in] The handle to JWT.

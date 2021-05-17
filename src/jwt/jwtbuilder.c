@@ -70,7 +70,7 @@ static int init_jwtbuilder(JWTBuilder *builder)
 
 JWTBuilder *JWTBuilder_Create(DID *issuer)
 {
-    CHECK_ARG(!issuer, "No issuer argument to create jwtbuilder.", NULL);
+    CHECK_ARG(!issuer, "No issuer to create jwtbuilder.", NULL);
 
     if (!DIDMetadata_AttachedStore(&issuer->metadata)) {
         DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with issuer.");
@@ -79,7 +79,7 @@ JWTBuilder *JWTBuilder_Create(DID *issuer)
 
     JWTBuilder *builder = (JWTBuilder*)calloc(1, sizeof(JWTBuilder));
     if (!builder) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Remalloc buffer for JWTBuilder failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for JWTBuilder failed.");
         return NULL;
     }
 
@@ -132,7 +132,7 @@ bool JWTBuilder_SetHeader(JWTBuilder *builder, const char *attr, const char *val
     }
 
     if (!strcmp(attr, CJOSE_HDR_ALG) || !strcmp(attr, CJOSE_HDR_KID)) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Cann't set algorithm or sign key!!!!");
+        DIDError_Set(DIDERR_INVALID_ARGS, "Cann't set algorithm or signkey!!!!");
         return false;
     }
 
@@ -327,7 +327,7 @@ int JWTBuilder_Sign(JWTBuilder *builder, DIDURL *keyid, const char *storepass)
 
     if (!cjose_header_set(builder->header, CJOSE_HDR_KID,
             DIDURL_ToString(keyid, idstring, sizeof(idstring), false), &err)) {
-        DIDError_Set(DIDERR_JWT, "Set jwt sign key failed.");
+        DIDError_Set(DIDERR_JWT, "Set jwt's signkey failed.");
         cjose_jwk_release(jwk);
         return -1;
     }
