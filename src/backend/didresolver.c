@@ -146,7 +146,7 @@ const char *DefaultResolve_Resolve(const char *resolve_request)
         return NULL;
     }
 
-    curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &httpcode);
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpcode);
     curl_easy_cleanup(curl);
     if (httpcode < 200 || httpcode > 250) {
         DIDError_Set(DIDERR_NETWORK, "Http error, code: %d", httpcode);
