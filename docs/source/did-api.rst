@@ -184,12 +184,6 @@ Resolve_Callback
 .. doxygentypedef:: Resolve_Callback
    :project: DIDAPI
 
-DIDLogLevel
-###########
-
-.. doxygenenum:: DIDLogLevel
-   :project: DIDAPI
-
 Functions
 ---------
 

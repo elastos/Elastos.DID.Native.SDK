@@ -244,6 +244,8 @@ static int ServiceArray_ToJson(JsonGenerator *gen, Service **services, size_t si
     assert(gen->buffer);
     assert(services);
 
+    qsort(services, size, sizeof(Service*), didurl_func);
+
     CHECK(DIDJG_WriteStartArray(gen));
     for ( i = 0; i < size; i++ )
         CHECK(Service_ToJson(gen, services[i], compact));
