@@ -3897,6 +3897,31 @@ ssize_t DIDDocument_GetDigest(DIDDocument *document, uint8_t *digest, size_t siz
     return rc;
 }
 
+int DIDDocument_HasPrivateKey(DIDDocument *document, DIDURL *keyid)
+ {
+    const char *rootidentity;
+    int rc;
+
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!document, "No document to check.", -1);
+    CHECK_ARG(!keyid, "No key to check.", -1);
+
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
+        return -1;
+    }
+
+    if (!DIDDocument_GetPublicKey(document, keyid)) {
+        DIDError_Set(DIDERR_INVALID_KEY, "Key doesn't own to document.");
+        return -1;
+    }
+
+    return DIDStore_ContainsPrivateKey(document->metadata.base.store, &keyid->did, keyid);
+
+    DIDERROR_FINALIZE();
+}
+
 int DIDDocument_Sign(DIDDocument *document, DIDURL *keyid, const char *storepass,
         char *sig, int count, ...)
 {

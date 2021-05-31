@@ -491,7 +491,7 @@ static int gen_priv_identity(struct AgentCtx *ctx)
     fgets(passphrase, sizeof(passphrase), stdin);
     clean(passphrase);
 
-    ctx->rootidentity = RootIdentity_Create(mnemonic, passphrase, ctx->lang, false, ctx->store, ctx->storepass);
+    ctx->rootidentity = RootIdentity_Create(mnemonic, passphrase, false, ctx->store, ctx->storepass);
     if (!ctx->rootidentity) {
         printf("Error: initialize private identity failed.\n");
         return -1;

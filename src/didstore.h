@@ -85,6 +85,8 @@ int DIDStore_StoreRootIdentityWithElem(DIDStore *store, const char *storepass, c
 
 int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id);
 
+int DIDStore_StoreLazyPrivateKey(DIDStore *store, DIDURL *keyid);
+
 #ifdef __cplusplus
 }
 #endif

@@ -41,7 +41,7 @@ static void test_didstore_newdid(void)
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
     const char *newmnemonic = Mnemonic_Generate(language);
-    rootidentity = RootIdentity_Create(newmnemonic, "", language, false, store, storepass);
+    rootidentity = RootIdentity_Create(newmnemonic, "", false, store, storepass);
     Mnemonic_Free((void*)newmnemonic);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
@@ -100,7 +100,7 @@ static void test_didstore_newdid_byindex(void)
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
     const char *mnemonic = Mnemonic_Generate(language);
-    rootidentity = RootIdentity_Create(mnemonic, "", language, false, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", false, store, storepass);
     Mnemonic_Free((void*)mnemonic);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
@@ -150,7 +150,7 @@ static void test_didstore_newdid_withouAlias(void)
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
     const char *newmnemonic = Mnemonic_Generate(language);
-    rootidentity = RootIdentity_Create(newmnemonic, "", language, false, store, storepass);
+    rootidentity = RootIdentity_Create(newmnemonic, "", false, store, storepass);
     Mnemonic_Free((void*)newmnemonic);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
@@ -230,8 +230,8 @@ static void test_didstore_privateIdentity_error(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    CU_ASSERT_PTR_NULL(RootIdentity_Create("", "", language, false, store, storepass));
-    CU_ASSERT_PTR_NULL(RootIdentity_Create(mnemonic, "", language, false, store, ""));
+    CU_ASSERT_PTR_NULL(RootIdentity_Create("", "", false, store, storepass));
+    CU_ASSERT_PTR_NULL(RootIdentity_Create(mnemonic, "", false, store, ""));
 
     CU_ASSERT_EQUAL(-1, DIDStore_ListRootIdentities(store, get_rootidentity, (void*)&count));
     CU_ASSERT_EQUAL(0, count);
@@ -268,7 +268,7 @@ static void test_didstore_privateidentity_compatibility(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    rootidentity = RootIdentity_Create(mnemonic, passphrase, language, false, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, passphrase, false, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     doc = RootIdentity_NewDID(rootidentity, storepass, "identity test1");

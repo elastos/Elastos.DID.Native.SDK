@@ -1210,7 +1210,7 @@ extern "Python" const char* MyResolve(const char *request);
  *      the handle to RootIdentity, otherwise, return NULL.
  */
 /* DID_API */ RootIdentity *RootIdentity_Create(const char *mnemonic, const char *passphrase,
-        const char *language, bool overwrite, DIDStore *store, const char *storepass);
+        bool overwrite, DIDStore *store, const char *storepass);
 
 /**
  * \~English
@@ -1234,6 +1234,32 @@ extern "Python" const char* MyResolve(const char *request);
  */
 /* DID_API */ RootIdentity *RootIdentity_CreateFromRootKey(const char *extendedprvkey,
         bool overwrite, DIDStore *store, const char *storepass);
+
+/**
+ * \~English
+ * Create root identity id string by mnemonic.
+ *
+ * @param
+ *      mnemonic          [in] Mnemonic for generate key.
+ * @param
+ *      passphrase        [in] The password to generate private identity.
+ * @return
+ *      the RootIdentity id string, otherwise, return NULL.
+ *      Notice that user need to free the returned value that it's memory.
+ */
+/* DID_API */ const char *RootIdentity_CreateId(const char *mnemonic, const char *passphrase);
+
+/**
+ * \~English
+ * Create root identity id string by extened private key.
+ *
+ * @param
+ *      extendedprvkey     [in] Extendedkey string.
+ * @return
+ *      the RootIdentity id string, otherwise, return NULL.
+ *      Notice that user need to free the returned value that it's memory.
+ */
+/* DID_API */ const char *RootIdentity_CreateIdFromRootKey(const char *extendedprvkey);
 
 /**
  * \~English

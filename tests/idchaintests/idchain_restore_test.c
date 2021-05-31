@@ -90,7 +90,7 @@ static void test_idchain_restore(void)
     cleanstore = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL_FATAL(cleanstore);
 
-    rootidentity = RootIdentity_Create(newmnemonic, "", language, true, cleanstore, storepass);
+    rootidentity = RootIdentity_Create(newmnemonic, "", true, cleanstore, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     printf("\nSynchronizing from IDChain...");
@@ -101,6 +101,13 @@ static void test_idchain_restore(void)
     CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&redids));
     CU_ASSERT_EQUAL(5, redids.index);
 
+    const char *types[] = {"BasicProfileCredential"};
+    Property props[2];
+    props[0].key = "name";
+    props[0].value = "John";
+    props[1].key = "gender";
+    props[1].value = "Male";
+
     for(i = 0; i < redids.index; i++) {
         DID *did = &redids.dids[i];
         CU_ASSERT_TRUE(contain_did(dids, did));
@@ -109,6 +116,25 @@ static void test_idchain_restore(void)
         CU_ASSERT_PTR_NOT_NULL(doc);
         CU_ASSERT_TRUE_FATAL(DID_Equals(did, DIDDocument_GetSubject(doc)));
 
+        time_t expires = DIDDocument_GetExpires(doc);
+
+        DIDURL *credid = DIDURL_NewByDid(did, "selfcredential");
+        CU_ASSERT_PTR_NOT_NULL(credid);
+
+        Issuer *issuer = Issuer_Create(did, NULL, cleanstore);
+        CU_ASSERT_PTR_NOT_NULL(issuer);
+
+        Credential *vc = Issuer_CreateCredential(issuer, did, credid, types, 1,
+            props, 2, expires, storepass);
+        Issuer_Destroy(issuer);
+        DIDURL_Destroy(credid);
+        CU_ASSERT_PTR_NOT_NULL(vc);
+
+        const char *provalue = Credential_GetProperty(vc, "name");
+        CU_ASSERT_STRING_EQUAL(provalue, "John");
+        free((void*)provalue);
+
+        Credential_Destroy(vc);
         DIDDocument_Destroy(doc);
     }
     RootIdentity_Destroy(rootidentity);
@@ -129,7 +155,7 @@ static void test_sync_with_localmodification1(void)
     cleanstore = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL_FATAL(cleanstore);
 
-    rootidentity = RootIdentity_Create(newmnemonic, "", language, true, cleanstore, storepass);
+    rootidentity = RootIdentity_Create(newmnemonic, "", true, cleanstore, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     printf("\nSynchronizing from IDChain...");
@@ -205,7 +231,7 @@ static void test_sync_with_localmodification2(void)
     cleanstore = DIDStore_Open(path);
     CU_ASSERT_PTR_NOT_NULL(cleanstore);
 
-    rootidentity = RootIdentity_Create(newmnemonic, "", language, true, cleanstore, storepass);
+    rootidentity = RootIdentity_Create(newmnemonic, "", true, cleanstore, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     printf("\nSynchronizing from IDChain...");
@@ -282,7 +308,7 @@ static int idchain_restore_test_suite_init(void)
         return -1;
     }
 
-    rootidentity = RootIdentity_Create(newmnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(newmnemonic, "", true, store, storepass);
     if (!rootidentity) {
         Mnemonic_Free((void*)newmnemonic);
         TestData_Free();

@@ -67,7 +67,7 @@ Issuer *Issuer_Create(DID *did, DIDURL *signkey, DIDStore *store)
         }
     }
 
-    if (!DIDStore_ContainsPrivateKey(store, DIDURL_GetDid(signkey), signkey)) {
+    if (DIDDocument_HasPrivateKey(doc, signkey)!= 1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Missing private key paired with signkey of issuer.");
         DIDDocument_Destroy(doc);
         return NULL;

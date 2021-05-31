@@ -1220,7 +1220,6 @@ DID_API void CredentialBiography_Destroy(CredentialBiography *biography);
 /******************************************************************************
  * RootIdentity
  *****************************************************************************/
-
 /**
  * \~English
  * Initial root identity by mnemonic.
@@ -1229,11 +1228,6 @@ DID_API void CredentialBiography_Destroy(CredentialBiography *biography);
  *      mnemonic          [in] Mnemonic for generate key.
  * @param
  *      passphrase        [in] The password to generate private identity.
- * @param
- *      language          [in] The language for DID.
- *                        support language string: "chinese_simplified",
- *                        "chinese_traditional", "czech", "english", "french",
- *                        "italian", "japanese", "korean", "spanish".
  * @param
  *      overwrite         [in] If private identity exist, remove or remain it.
  *                        If force is true, then will choose to create a new identity
@@ -1249,7 +1243,7 @@ DID_API void CredentialBiography_Destroy(CredentialBiography *biography);
  *      the handle to RootIdentity, otherwise, return NULL.
  */
 DID_API RootIdentity *RootIdentity_Create(const char *mnemonic, const char *passphrase,
-        const char *language, bool overwrite, DIDStore *store, const char *storepass);
+        bool overwrite, DIDStore *store, const char *storepass);
 
 /**
  * \~English
@@ -1273,6 +1267,32 @@ DID_API RootIdentity *RootIdentity_Create(const char *mnemonic, const char *pass
  */
 DID_API RootIdentity *RootIdentity_CreateFromRootKey(const char *extendedprvkey,
         bool overwrite, DIDStore *store, const char *storepass);
+
+/**
+ * \~English
+ * Create root identity id string by mnemonic.
+ *
+ * @param
+ *      mnemonic          [in] Mnemonic for generate key.
+ * @param
+ *      passphrase        [in] The password to generate private identity.
+ * @return
+ *      the RootIdentity id string, otherwise, return NULL.
+ *      Notice that user need to free the returned value that it's memory.
+ */
+DID_API const char *RootIdentity_CreateId(const char *mnemonic, const char *passphrase);
+
+/**
+ * \~English
+ * Create root identity id string by extened private key.
+ *
+ * @param
+ *      extendedprvkey     [in] Extendedkey string.
+ * @return
+ *      the RootIdentity id string, otherwise, return NULL.
+ *      Notice that user need to free the returned value that it's memory.
+ */
+DID_API const char *RootIdentity_CreateIdFromRootKey(const char *extendedprvkey);
 
 /**
  * \~English
@@ -2428,6 +2448,21 @@ DID_API time_t DIDDocument_GetExpires(DIDDocument *document);
 DID_API DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *document,
         const char *customizeddid, DID **controllers, size_t size, int multisig,
         bool force, const char *storepass);
+/**
+  * \~English
+  * Check if there is private key to sign.
+  *
+  * @param
+  *      document                 [in] The handle to DID Document.
+  *                               ps: document must be attach store.
+  * @param
+  *      keyid                    [in] Public key to sign.
+  * @return
+  *      return value = -1, if error occurs;
+  *      return value = 0, there isn't signkey;
+  *      return value = 1, there is signkey.
+  */
+ DID_API int DIDDocument_HasPrivateKey(DIDDocument *document, DIDURL *keyid);
 
 /**
  * \~English

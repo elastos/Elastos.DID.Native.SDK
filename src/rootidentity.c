@@ -34,15 +34,12 @@
 #include "rootidentity.h"
 #include "identitymeta.h"
 
-static RootIdentity *create_rootidentity(const char *mnemonic, HDKey *hdkey,
-        DIDStore *store, const char *storepass)
+static RootIdentity *create_rootidentity(const char *mnemonic, HDKey *hdkey)
 {
     RootIdentity *rootidentity = NULL;
     HDKey _derivedkey, *predeviedkey = NULL;
 
     assert(hdkey);
-    assert(store);
-    assert(storepass && *storepass);
 
     rootidentity = (RootIdentity*)calloc(1, sizeof(RootIdentity));
     if (!rootidentity) {
@@ -108,10 +105,11 @@ static int store_rootidentity(RootIdentity *rootidentity, DIDStore *store,
 }
 
 RootIdentity *RootIdentity_Create(const char *mnemonic, const char *passphrase,
-        const char *language, bool overwrite, DIDStore *store, const char *storepass)
+        bool overwrite, DIDStore *store, const char *storepass)
 {
     RootIdentity *rootidentity = NULL;
     HDKey _hdkey, *hdkey = NULL;
+    const char *language;
 
     DIDERROR_INITIALIZE();
 
@@ -123,13 +121,20 @@ RootIdentity *RootIdentity_Create(const char *mnemonic, const char *passphrase,
     if (!passphrase)
         passphrase = "";
 
+    language = Mnemonic_GetLanguage(mnemonic);
+    if (!language) {
+        DIDError_Set(DIDERR_MNEMONIC, "Mnemonic must be from specified languages.");
+        return NULL;
+    }
+
     hdkey = HDKey_FromMnemonic(mnemonic, passphrase, language, &_hdkey);
+    free((void*)language);
     if (!hdkey) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial private identity failed.");
         return NULL;
     }
 
-    rootidentity = create_rootidentity(mnemonic, hdkey, store, storepass);
+    rootidentity = create_rootidentity(mnemonic, hdkey);
     if (!rootidentity || store_rootidentity(rootidentity, store, storepass, overwrite) < 0)
         goto errorExit;
 
@@ -163,7 +168,7 @@ RootIdentity *RootIdentity_CreateFromRootKey(const char *extendedkey,
         return NULL;
     }
 
-    rootidentity = create_rootidentity(NULL, hdkey, store, storepass);
+    rootidentity = create_rootidentity(NULL, hdkey);
     if (!rootidentity || store_rootidentity(rootidentity, store, storepass, overwrite) < 0)
         goto errorExit;
 
@@ -175,6 +180,71 @@ errorExit:
     HDKey_Wipe(hdkey);
     RootIdentity_Destroy(rootidentity);
     return NULL;
+
+    DIDERROR_FINALIZE();
+}
+
+const char *RootIdentity_CreateId(const char *mnemonic, const char *passphrase)
+{
+    RootIdentity *rootidentity = NULL;
+    HDKey _hdkey, *hdkey = NULL;
+    const char *language, *id = NULL;
+
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!mnemonic || !*mnemonic, "No mnemonic string.", NULL);
+
+    if (!passphrase)
+        passphrase = "";
+
+    language = Mnemonic_GetLanguage(mnemonic);
+    if (!language) {
+        DIDError_Set(DIDERR_MNEMONIC, "Mnemonic must be from specified languages.");
+        return NULL;
+    }
+
+    hdkey = HDKey_FromMnemonic(mnemonic, passphrase, language, &_hdkey);
+    free((void*)language);
+    if (!hdkey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial private identity failed.");
+        return NULL;
+    }
+
+    rootidentity = create_rootidentity(mnemonic, hdkey);
+    HDKey_Wipe(hdkey);
+    if (rootidentity)
+        id = strdup(rootidentity->id);
+
+    RootIdentity_Destroy(rootidentity);
+    return id;
+
+    DIDERROR_FINALIZE();
+}
+
+const char *RootIdentity_CreateIdFromRootKey(const char *extendedkey)
+{
+    RootIdentity *rootidentity = NULL;
+    HDKey _hdkey, *hdkey = NULL;
+    const char *id = NULL;
+
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!extendedkey || !*extendedkey, "No extendedkey string.", NULL);
+
+    hdkey = HDKey_FromExtendedKeyBase58(extendedkey, strlen(extendedkey) + 1, &_hdkey);
+    if (!hdkey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial private identity failed.");
+        return NULL;
+    }
+
+    rootidentity = create_rootidentity(NULL, hdkey);
+    HDKey_Wipe(hdkey);
+
+    if (rootidentity)
+        id = strdup(rootidentity->id);
+
+    RootIdentity_Destroy(rootidentity);
+    return id;
 
     DIDERROR_FINALIZE();
 }
@@ -642,7 +712,8 @@ bool RootIdentity_SynchronizeByIndex(RootIdentity *rootidentity, int index,
     DIDMetadata_SetIndex(&finalcopy->metadata, index);
     DIDMetadata_SetDeactivated(&finalcopy->metadata, DIDMetadata_GetDeactivated(&chaincopy->metadata));
 
-    if (DIDStore_StoreDID(store, finalcopy) == 0)
+    if (DIDStore_StoreDID(store, finalcopy) == 0 &&
+            DIDStore_StoreLazyPrivateKey(store, DIDDocument_GetDefaultPublicKey(finalcopy)) == 0)
         success = true;
 
 errorExit:
