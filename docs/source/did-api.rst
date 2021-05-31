@@ -544,6 +544,18 @@ RootIdentity_CreateFromRootKey
 .. doxygenfunction:: RootIdentity_CreateFromRootKey
    :project: DIDAPI
 
+RootIdentity_CreateId
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: RootIdentity_CreateId
+   :project: DIDAPI
+
+RootIdentity_CreateIdFromRootKey
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: RootIdentity_CreateIdFromRootKey
+   :project: DIDAPI
+
 RootIdentity_Destroy
 ~~~~~~~~~~~~~~~~~~~~
 

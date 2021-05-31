@@ -54,7 +54,7 @@ static void test_didstore_fileexists(void)
     mnemonic = Mnemonic_Generate(language);
     CU_ASSERT_PTR_NOT_NULL(mnemonic);
 
-    rootidentity = RootIdentity_Create(mnemonic, "1234", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "1234", true, store, storepass);
     Mnemonic_Free((void*)mnemonic);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
@@ -107,7 +107,7 @@ static void test_didstore_listrootidentity(void)
         mnemonic = Mnemonic_Generate(language);
         CU_ASSERT_PTR_NOT_NULL(mnemonic);
 
-        rootidentity = RootIdentity_Create(mnemonic, "1234", language, true, store, storepass);
+        rootidentity = RootIdentity_Create(mnemonic, "1234", true, store, storepass);
         Mnemonic_Free((void*)mnemonic);
         CU_ASSERT_PTR_NOT_NULL(rootidentity);
         RootIdentity_Destroy(rootidentity);
@@ -140,11 +140,11 @@ static void test_didstore_rootidentity(void)
     mnemonic2 = Mnemonic_Generate(language);
     CU_ASSERT_PTR_NOT_NULL(mnemonic2);
 
-    rootidentity1 = RootIdentity_Create(mnemonic1, "1234", language, true, store, storepass);
+    rootidentity1 = RootIdentity_Create(mnemonic1, "1234", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity1);
     CU_ASSERT_TRUE(DIDStore_ContainsRootIdentities(store));
 
-    rootidentity2 = RootIdentity_Create(mnemonic2, "1234", language, true, store, storepass);
+    rootidentity2 = RootIdentity_Create(mnemonic2, "1234", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity2);
 
     rootidentity3 = RootIdentity_CreateFromRootKey(ExtendedkeyBase, true, store, storepass);

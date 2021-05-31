@@ -805,7 +805,7 @@ RootIdentity *TestData_InitIdentity(DIDStore *store)
     const char *mnemonic;
 
     mnemonic = Mnemonic_Generate(language);
-    compatibledata.rootidentity = RootIdentity_Create(mnemonic, passphrase, language, true, store, storepass);
+    compatibledata.rootidentity = RootIdentity_Create(mnemonic, passphrase, true, store, storepass);
     Mnemonic_Free((void*)mnemonic);
 
     return compatibledata.rootidentity;

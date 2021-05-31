@@ -32,7 +32,7 @@ static void test_vc_local_verify(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     const char *newmnemonic = Mnemonic_Generate(language);
-    rootidentity = RootIdentity_Create(mnemonic, "", language, false, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", false, store, storepass);
     Mnemonic_Free((void*)newmnemonic);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 

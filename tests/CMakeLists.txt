@@ -52,6 +52,7 @@ file(GLOB ISSUER-TESTS "issuertests/*.c")
 file(GLOB HDKEY-TESTS "hdkeytests/*.c")
 file(GLOB JWT-TESTS "jwttests/*.c")
 file(GLOB TICKET-TESTS "tickettests/*.c")
+file(GLOB ROOTIDENTITY-TESTS "rootidentitytests/*.c")
 
 if(WIN32)
     set(NODEJS "${CMAKE_CURRENT_BINARY_DIR}/../deps/nodejs/external/src/nodejs")
@@ -99,7 +100,8 @@ set(SRC
     ${ISSUER-TESTS}
     ${HDKEY-TESTS}
     ${JWT-TESTS}
-    ${TICKET-TESTS})
+    ${TICKET-TESTS}
+    ${ROOTIDENTITY-TESTS})
 
 set(STATIC_LIBS
     cjose

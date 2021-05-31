@@ -50,7 +50,7 @@ static void test_idchain_publishdid(void)
 
     mnemonic = Mnemonic_Generate(language);
 
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -236,7 +236,7 @@ static void test_idchain_publishdid_without_txid(void)
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -398,7 +398,7 @@ static void test_idchain_publishdid_without_signature(void)
     int i = 0, rc, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -556,7 +556,7 @@ static void test_idchain_publishdid_without_prevsignature(void)
 
     mnemonic = Mnemonic_Generate(language);
 
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -714,7 +714,7 @@ static void test_idchain_publishdid_without_prevsignature_and_signature(void)
 
     mnemonic = Mnemonic_Generate(language);
 
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -788,7 +788,7 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
 
     mnemonic = Mnemonic_Generate(language);
 
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -884,7 +884,7 @@ static void test_updatedid_with_diffprevsignature_only(void)
 
     mnemonic = Mnemonic_Generate(language);
 
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -975,7 +975,7 @@ static void test_updatedid_with_diffsignature_only(void)
 
     mnemonic = Mnemonic_Generate(language);
 
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -1122,7 +1122,7 @@ static void test_updatedid_with_diff_prevsignature_and_signature(void)
 
     mnemonic = Mnemonic_Generate(language);
 
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -1200,7 +1200,7 @@ static void test_force_updatedid_with_wrongsignature(void)
 
     mnemonic = Mnemonic_Generate(language);
 
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -1295,7 +1295,7 @@ static void test_idchain_publishdid_with_credential(void)
 
     mnemonic = Mnemonic_Generate(language);
 
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -1381,7 +1381,7 @@ static void test_idchain_deactivedid_after_create(void)
 
     mnemonic = Mnemonic_Generate(language);
 
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -1438,7 +1438,7 @@ static void test_idchain_deactivedid_after_update(void)
 
     mnemonic = Mnemonic_Generate(language);
 
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -1555,7 +1555,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     int i = 0, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
@@ -1655,7 +1655,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     int i = 0, status;
 
     mnemonic = Mnemonic_Generate(language);
-    rootidentity = RootIdentity_Create(mnemonic, "", language, true, store, storepass);
+    rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 

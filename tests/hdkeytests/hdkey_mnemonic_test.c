@@ -26,7 +26,7 @@ static void test_build_wordlist(void)
         CU_ASSERT_PTR_NOT_NULL(mnemonic);
         CU_ASSERT_TRUE(Mnemonic_IsValid(mnemonic, lang));
 
-        rootidentity = RootIdentity_Create(mnemonic, "", lang, true, store, storepass);
+        rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
         CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
         strcpy(wmnemonic, mnemonic);

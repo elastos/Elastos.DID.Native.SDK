@@ -309,7 +309,7 @@ static void didstore_openmultistore(void)
         mnemonic = Mnemonic_Generate(language);
         CU_ASSERT_PTR_NOT_NULL(stores[i]);
 
-        rootidentity = RootIdentity_Create(mnemonic, "", language, true, stores[i], storepass);
+        rootidentity = RootIdentity_Create(mnemonic, "", true, stores[i], storepass);
         Mnemonic_Free((void*)mnemonic);
         CU_ASSERT_PTR_NOT_NULL(rootidentity);
 

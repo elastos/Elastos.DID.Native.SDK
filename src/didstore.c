@@ -86,6 +86,8 @@ static const char *POST_PASSWORD = "postChangePassword";
 static const char *POST_UPGRADE = "postUpgrade";
 static const char *DID_EXPORT = "did.elastos.export/2.0";
 
+static const char *LAZY_PRIVATEKEY = "lazy-private-key";
+
 const char *renames[2] = {"credentials", "privatekeys"};
 
 extern const char *ProofType;
@@ -2251,6 +2253,7 @@ int DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did)
 int DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
 {
     char path[PATH_MAX], filename[128];
+    const char *data;
     int rc;
 
     DIDERROR_INITIALIZE();
@@ -2276,7 +2279,10 @@ int DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
         return -1;
     }
 
-    return 1;
+    data = load_file(path);
+    rc = !strcmp("", data) ? 0 : 1;
+    free((void*)data);
+    return rc;
 
     DIDERROR_FINALIZE();
 }
@@ -2363,6 +2369,14 @@ int DIDStore_StoreDefaultPrivateKey(DIDStore *store, const char *storepass,
         return -1;
 
     return 0;
+}
+
+int DIDStore_StoreLazyPrivateKey(DIDStore *store, DIDURL *keyid)
+{
+    assert(store);
+    assert(keyid);
+
+    return DIDStore_StorePrivateKey_Internal(store, keyid, LAZY_PRIVATEKEY);
 }
 
 int DIDStore_ContainsRootIdentity(DIDStore *store, const char *id)
@@ -2749,13 +2763,19 @@ ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass,
     rc = get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring, PRIVATEKEYS_DIR, filename);
     if (rc == 0) {
         privatekey_str = load_file(path);
-        if (!privatekey_str) {
-            rc = -1;
-        }
+        if (!privatekey_str)
+            return -1;
     }
 
-    if (rc == -1)
+    if (!strcmp("", privatekey_str)) {
+        free((void*)privatekey_str);
+        return -1;
+    }
+
+    if (!strcmp(LAZY_PRIVATEKEY, privatekey_str)) {
+        free((void*)privatekey_str);
         return RootIdentity_LazyCreatePrivateKey(key, store, storepass, extendedkey, size);
+    }
 
     len = didstore_decrypt_from_base64(store, storepass, extendedkey, privatekey_str);
     free((void*)privatekey_str);
