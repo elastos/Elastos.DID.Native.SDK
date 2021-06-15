@@ -3257,7 +3257,7 @@ static int export_privatekey(JsonGenerator *gen, DIDStore *store, const char *st
                 idstring = DIDURL_ToString(keyid, _idstring, sizeof(_idstring), false);
                 CHECK_TO_MSG(DIDJG_WriteStringField(gen, "id", idstring),
                         DIDERR_OUT_OF_MEMORY, "Write 'id' failed.");
-                CHECK_TO_MSG(DIDJG_WriteStringField(gen, "privatekey", (char*)base64),
+                CHECK_TO_MSG(DIDJG_WriteStringField(gen, "key", (char*)base64),
                         DIDERR_OUT_OF_MEMORY, "Write 'key' failed.");
                 CHECK_TO_MSG(DIDJG_WriteEndObject(gen),
                         DIDERR_OUT_OF_MEMORY, "End 'privatekey' failed.");
@@ -3772,7 +3772,7 @@ static ssize_t import_privatekey(json_t *json, const char *storepass, const char
         DIDURL_Copy(&prvs[i].keyid, id);
         DIDURL_Destroy(id);
 
-        key_field = json_object_get(field, "privatekey");
+        key_field = json_object_get(field, "key");
         if (!key_field) {
             DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Missing 'key' in 'privatekey'.");
             return -1;
