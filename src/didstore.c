@@ -3157,7 +3157,7 @@ static int export_document(JsonGenerator *gen, DIDDocument *doc, Sha256_Digest *
     CHECK(DIDJG_WriteFieldName(gen, "document"));
     CHECK(DIDJG_WriteStartObject(gen));
     CHECK(DIDJG_WriteFieldName(gen, "content"));
-    CHECK(DIDDocument_ToJson_Internal(gen, doc, true, false));
+    CHECK(DIDDocument_ToJson_Internal(gen, doc, false, false));
     CHECK(DIDJG_WriteFieldName(gen, "metadata"));
     CHECK(DIDMetadata_ToJson_Internal(&doc->metadata, gen));
     CHECK(DIDJG_WriteEndObject(gen));
@@ -3232,10 +3232,10 @@ static int export_privatekey(JsonGenerator *gen, DIDStore *store, const char *st
             //return -1;
             return 0;
 
-        CHECK_TO_MSG(DIDJG_WriteFieldName(gen, "privatekey"),
-                DIDERR_OUT_OF_MEMORY, "Write 'privatekey' failed.");
+        CHECK_TO_MSG(DIDJG_WriteFieldName(gen, "privateKey"),
+                DIDERR_OUT_OF_MEMORY, "Write 'privateKey' failed.");
         CHECK_TO_MSG(DIDJG_WriteStartArray(gen),
-                DIDERR_OUT_OF_MEMORY, "Start 'privatekey' array failed.");
+                DIDERR_OUT_OF_MEMORY, "Start 'privateKey' array failed.");
 
         for (i = 0; i < size; i++) {
             char base64[512];
@@ -3253,22 +3253,22 @@ static int export_privatekey(JsonGenerator *gen, DIDStore *store, const char *st
                 }
 
                 CHECK_TO_MSG(DIDJG_WriteStartObject(gen),
-                        DIDERR_OUT_OF_MEMORY, "Start 'privatekey' failed.");
+                        DIDERR_OUT_OF_MEMORY, "Start 'privateKey' failed.");
                 idstring = DIDURL_ToString(keyid, _idstring, sizeof(_idstring), false);
                 CHECK_TO_MSG(DIDJG_WriteStringField(gen, "id", idstring),
                         DIDERR_OUT_OF_MEMORY, "Write 'id' failed.");
                 CHECK_TO_MSG(DIDJG_WriteStringField(gen, "key", (char*)base64),
                         DIDERR_OUT_OF_MEMORY, "Write 'key' failed.");
                 CHECK_TO_MSG(DIDJG_WriteEndObject(gen),
-                        DIDERR_OUT_OF_MEMORY, "End 'privatekey' failed.");
+                        DIDERR_OUT_OF_MEMORY, "End 'privateKey' failed.");
 
                 CHECK_TO_MSG(sha256_digest_update(digest, 2, idstring, strlen(idstring), base64, strlen(base64)),
-                        DIDERR_CRYPTO_ERROR, "Update digest with privatekey failed.");
+                        DIDERR_CRYPTO_ERROR, "Update digest with privateKey failed.");
             }
         }
 
         CHECK_TO_MSG(DIDJG_WriteEndArray(gen),
-                DIDERR_OUT_OF_MEMORY, "End 'privatekey' array failed.");
+                DIDERR_OUT_OF_MEMORY, "End 'privateKey' array failed.");
     }
 
     return 0;
@@ -3697,12 +3697,12 @@ static ssize_t import_privatekey_count(json_t *json)
 
     assert(json);
 
-    item = json_object_get(json, "privatekey");
+    item = json_object_get(json, "privateKey");
     if (!item)
         return 0;
 
     if (!json_is_array(item)) {
-        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'privatekey'.");
+        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'privateKey'.");
         return -1;
     }
 
@@ -3725,19 +3725,19 @@ static ssize_t import_privatekey(json_t *json, const char *storepass, const char
     assert(size > 0);
     assert(digest);
 
-    item = json_object_get(json, "privatekey");
+    item = json_object_get(json, "privateKey");
     if (!item) {
-        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Missing 'privatekey'.");
+        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Missing 'privateKey'.");
         return -1;
     }
     if (!json_is_array(item)) {
-        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'privatekey' array.");
+        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'privateKey' array.");
         return -1;
     }
 
     count = json_array_size(item);
     if (count == 0) {
-        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'privatekey' array.");
+        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'privateKey' array.");
         return -1;
     }
     if (count > size) {
@@ -3748,20 +3748,20 @@ static ssize_t import_privatekey(json_t *json, const char *storepass, const char
     for (i = 0; i < count; i++) {
         field = json_array_get(item, i);
         if (!field) {
-            DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Missing 'privatekey' item.");
+            DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Missing 'privateKey' item.");
             return -1;
         }
         if (!json_is_object(field)) {
-            DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'privatekey'.");
+            DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'privateKey'.");
             return -1;
         }
         id_field = json_object_get(field, "id");
         if (!id_field) {
-            DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Missing 'id' in 'privatekey' failed.");
+            DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Missing 'id' in 'privateKey' failed.");
             return -1;
         }
         if (!json_is_string(id_field)) {
-            DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'id' in 'privatekey' failed.");
+            DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'id' in 'privateKey' failed.");
             return -1;
         }
 
@@ -4033,11 +4033,11 @@ static int export_prvkey(JsonGenerator *gen, DIDStore *store, const char *storep
     size = encrypt_to_b64(encryptedKey, password, extendedkey, size);
     memset(extendedkey, 0, sizeof(extendedkey));
     if (size < 0) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt extended privatekey of rootidentity failed.");
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Encrypt extended privateKey of rootidentity failed.");
         return -1;
     }
 
-    CHECK_TO_MSG(DIDJG_WriteStringField(gen, "privatekey", encryptedKey),
+    CHECK_TO_MSG(DIDJG_WriteStringField(gen, "privateKey", encryptedKey),
         DIDERR_OUT_OF_MEMORY, "Write 'key' failed.");
     CHECK_TO_MSG(sha256_digest_update(digest, 1, encryptedKey, strlen(encryptedKey)),
         DIDERR_CRYPTO_ERROR, "Sha256 'key' failed.");
@@ -4059,10 +4059,10 @@ static int export_pubkey(JsonGenerator *gen, DIDStore *store, const char *id, Sh
     if (!pubKey)
         return -1;
 
-    CHECK_TO_MSG_ERROREXIT(DIDJG_WriteStringField(gen, "publickey", pubKey),
-            DIDERR_OUT_OF_MEMORY, "Write 'publickey' failed.");
+    CHECK_TO_MSG_ERROREXIT(DIDJG_WriteStringField(gen, "publicKey", pubKey),
+            DIDERR_OUT_OF_MEMORY, "Write 'publicKey' failed.");
     CHECK_TO_MSG_ERROREXIT(sha256_digest_update(digest, 1, pubKey, strlen(pubKey)),
-            DIDERR_CRYPTO_ERROR, "Sha256 'publickey' failed.");
+            DIDERR_CRYPTO_ERROR, "Sha256 'publicKey' failed.");
 
     rc = 0;
 
@@ -4196,19 +4196,19 @@ static int import_rootidentity_id(json_t *json, DIDStore *store, char *id, size_
     assert(id);
     assert(size > 0);
 
-    item = json_object_get(json, "publickey");
+    item = json_object_get(json, "publicKey");
     if (!item) {
-        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Missing 'publickey'.");
+        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Missing 'publicKey'.");
         return -1;
     }
     if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'publickey'.");
+        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'publicKey'.");
         return -1;
     }
 
     string = json_string_value(item);
     if (!string) {
-        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "No 'publickey' value.");
+        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "No 'publicKey' value.");
         return -1;
     }
 
@@ -4235,7 +4235,7 @@ static int import_pubkey(DIDStore *store, const char *id, Sha256_Digest *digest)
         return -1;
 
     CHECK_TO_MSG_ERROREXIT(sha256_digest_update(digest, 1, string, strlen(string)),
-            DIDERR_CRYPTO_ERROR, "Sha256 'publickey' failed.");
+            DIDERR_CRYPTO_ERROR, "Sha256 'publicKey' failed.");
     rc = 0;
 
 errorExit:
@@ -4257,26 +4257,26 @@ static int import_prvkey(json_t *json, DIDStore *store, const char *storepass,
     assert(digest);
     assert(password);
 
-    item = json_object_get(json, "privatekey");
+    item = json_object_get(json, "privateKey");
     if (!item) {
-        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Missing 'privatekey'.");
+        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Missing 'privateKey'.");
         return -1;
     }
     if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'privatekey'.");
+        DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'privateKey'.");
         return -1;
     }
     memset(extendedkey, 0, sizeof(extendedkey));
     size = decrypt_from_b64(extendedkey, password, json_string_value(item));
     if (size < 0) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt 'privatekey' failed.");
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Decrypt 'privateKey' failed.");
         return -1;
     }
 
     CHECK(store_extendedprvkey(store, storepass, id, extendedkey, size));
     memset(extendedkey, 0, sizeof(extendedkey));
     CHECK_TO_MSG(sha256_digest_update(digest, 1, json_string_value(item), strlen(json_string_value(item))),
-            DIDERR_CRYPTO_ERROR, "Sha256 'privatekey' failed.");
+            DIDERR_CRYPTO_ERROR, "Sha256 'privateKey' failed.");
     return 0;
 }
 
