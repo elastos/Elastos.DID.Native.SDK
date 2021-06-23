@@ -303,7 +303,7 @@ errorExit:
     return rc;
 }
 
-int Metadata_SetExtraWithInteger(Metadata *metadata, const char *key, int value)
+int Metadata_SetExtraWithLongLong(Metadata *metadata, const char *key, long long value)
 {
     char *uskey;
     json_t *json;
@@ -430,7 +430,7 @@ errorExit:
     return value;
 }
 
-int Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key)
+bool Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key, bool dvalue)
 {
     char *uskey;
     json_t *json;
@@ -458,7 +458,7 @@ int Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key)
 
 errorExit:
     DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
-    return -1;
+    return dvalue;
 }
 
 int Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key)
@@ -480,11 +480,11 @@ int Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key)
     return (int)json_is_true(json);
 }
 
-double Metadata_GetExtraAsDouble(Metadata *metadata, const char *key)
+double Metadata_GetExtraAsDouble(Metadata *metadata, const char *key, double dvalue)
 {
     char *uskey;
     json_t *json;
-    double value = 0;
+    double value = dvalue;
 
     assert(metadata);
     assert(key);
@@ -506,16 +506,16 @@ double Metadata_GetExtraAsDouble(Metadata *metadata, const char *key)
     value = json_real_value(json);
 
 errorExit:
-    if (value == 0)
+    if (value == dvalue)
         DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
 
     return value;
 }
 
-double Metadata_GetDefaultExtraAsDouble(Metadata *metadata, const char *key)
+double Metadata_GetDefaultExtraAsDouble(Metadata *metadata, const char *key, double dvalue)
 {
     json_t *json;
-    double value = 0;
+    double value = dvalue;
 
     assert(metadata);
     assert(key);
@@ -530,17 +530,17 @@ double Metadata_GetDefaultExtraAsDouble(Metadata *metadata, const char *key)
     value = json_real_value(json);
 
 errorExit:
-    if (value == 0)
+    if (value == dvalue)
         DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
 
     return value;
 }
 
-int Metadata_GetExtraAsInteger(Metadata *metadata, const char *key)
+long long Metadata_GetExtraAsLongLong(Metadata *metadata, const char *key, long long dvalue)
 {
     char *uskey;
     json_t *json;
-    int value = -1;
+    long long value = dvalue;
 
     assert(metadata);
     assert(key);
@@ -562,16 +562,16 @@ int Metadata_GetExtraAsInteger(Metadata *metadata, const char *key)
     value = json_integer_value(json);
 
 errorExit:
-    if (value == -1)
+    if (value == dvalue)
         DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
 
     return value;
 }
 
-int Metadata_GetDefaultExtraAsInteger(Metadata *metadata, const char *key)
+long long Metadata_GetDefaultExtraAsLongLong(Metadata *metadata, const char *key, long long dvalue)
 {
     json_t *json;
-    int value = -1;
+    int value = dvalue;
 
     assert(metadata);
     assert(key);
@@ -586,7 +586,7 @@ int Metadata_GetDefaultExtraAsInteger(Metadata *metadata, const char *key)
     value = json_integer_value(json);
 
 errorExit:
-    if (value == -1)
+    if (value == dvalue)
         DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
 
     return value;

@@ -637,25 +637,45 @@ extern "Python" const char* MyResolve(const char *request);
  *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      key                            [in] The key string.
+ * @param
+ *      dvalue                         [in] The default value, if error occurs or no key filed.
  * @return
- *      return value = -1, if error occurs;
- *      return value = 0, it equals to 'false';
- *      return value = 1, it equals to 'true'.
+ *      return 'boolean' value if no error occurs. Other, return dvalue.
  */
-/* DID_API */ int DIDMetadata_GetExtraAsBoolean(DIDMetadata *metadata, const char *key);
+/* DID_API */bool DIDMetadata_GetExtraAsBoolean(DIDMetadata *metadata,
+        const char *key, bool dvalue);
 
 /**
  * \~English
  * Get 'double' extra elem from DID.
  *
  * @param
+ *      metadata                       [in] The handle of DIDMetadata.
+ * @param
+ *      key                            [in] The key string.
+ * @param
+ *      dvalue                         [in] The default value, if error occurs or no key filed.
+ * @return
+ *      return 'double' value if no error occurs. Other, return default value.
+ */
+/* DID_API */ double DIDMetadata_GetExtraAsDouble(DIDMetadata *metadata, const char *key,
+        double dvalue);
+
+/**
+ * \~English
+ * Get number extra elem from DID.
+ *
+ * @param
  *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      key                            [in] The key string.
+ * @param
+ *      dvalue                         [in] The default value, if error occurs or no key filed.
  * @return
- *      'double' elem value.
+ *      return number value if no error occurs. Other, return default value.
  */
-/* DID_API */ double DIDMetadata_GetExtraAsDouble(DIDMetadata *metadata, const char *key);
+/* DID_API */long long DIDMetadata_GetExtraAsLongLong(DIDMetadata *metadata, const char *key,
+        long long dvalue);
 
 /******************************************************************************
  * DIDURL
@@ -931,11 +951,13 @@ extern "Python" const char* MyResolve(const char *request);
  *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      key                            [in] The key string.
+ * @param
+ *      dvalue                         [in] The default value.
  * @return
  *      'boolean' elem value.
  */
 /* DID_API */ bool CredentialMetadata_GetExtraAsBoolean(CredentialMetadata *metadata,
-        const char *key);
+        const char *key, bool dvalue);
 
 /**
  * \~English
@@ -945,11 +967,29 @@ extern "Python" const char* MyResolve(const char *request);
  *      metadata                       [in] The handle of CredentialMetadata.
  * @param
  *      key                            [in] The key string.
+ * @param
+ *      dvalue                         [in] The default value.
  * @return
  *      'double' elem value.
  */
 /* DID_API */ double CredentialMetadata_GetExtraAsDouble(CredentialMetadata *metadata,
-        const char *key);
+        const char *key, double dvalue);
+
+/**
+ * \~English
+ * Get number extra elem from Credential.
+ *
+ * @param
+ *      metadata                       [in] The handle of CredentialMetadata.
+ * @param
+ *      key                            [in] The key string.
+ * @param
+ *      dvalue                         [in] The default value.
+ * @return
+ *      number elem value.
+ */
+/* DID_API */ long long CredentialMetadata_GetExtraAsLongLong(CredentialMetadata *metadata,
+        const char *key, long long dvalue);
 
 /******************************************************************************
  * DIDBiography
