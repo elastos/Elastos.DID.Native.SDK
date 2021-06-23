@@ -598,6 +598,10 @@ DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index)
     HDKey_Wipe(derivedkey);
     return did;
 
+    DIDMetadata_SetRootIdentity(&did->metadata, rootidentity->id);
+    DIDMetadata_SetIndex(&did->metadata, index);
+    did->metadata.base.store = store;
+
     DIDERROR_FINALIZE();
 }
 

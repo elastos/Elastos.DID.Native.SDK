@@ -308,6 +308,8 @@ JWT *JWTParser_Parse(const char *token)
 {
     int isjwt;
 
+    DIDERROR_INITIALIZE();
+
     if (!token || !*token) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -323,11 +325,15 @@ JWT *JWTParser_Parse(const char *token)
     }
 
     return parse_jwt(token);
+
+    DIDERROR_FINALIZE();
 }
 
 JWT *JWSParser_Parse(JWSParser *parser, const char *token)
 {
     int isjwt;
+
+    DIDERROR_INITIALIZE();
 
     if (!parser || !token || !*token) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -344,11 +350,15 @@ JWT *JWSParser_Parse(JWSParser *parser, const char *token)
     }
 
     return parse_jws(parser, token);
+
+    DIDERROR_FINALIZE();
 }
 
 JWT *DefaultJWSParser_Parse(const char *token)
 {
     int isjwt;
+
+    DIDERROR_INITIALIZE();
 
     if (!token || !*token) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -365,6 +375,8 @@ JWT *DefaultJWSParser_Parse(const char *token)
     }
 
     return parse_jws(NULL, token);
+
+    DIDERROR_FINALIZE();
 }
 
 JWSParser *JWSParser_Create(DIDDocument *document)
@@ -400,10 +412,14 @@ errorExit:
 
 void JWSParser_Destroy(JWSParser *parser)
 {
+    DIDERROR_INITIALIZE();
+
     if (parser) {
         if (parser->doc)
             DIDDocument_Destroy(parser->doc);
 
         free((void*)parser);
     }
+
+    DIDERROR_FINALIZE();
 }

@@ -32,6 +32,8 @@
 
 void JWT_Destroy(JWT *jwt)
 {
+    DIDERROR_INITIALIZE();
+
     if (!jwt)
         return;
 
@@ -41,12 +43,16 @@ void JWT_Destroy(JWT *jwt)
         json_decref(jwt->claims);
 
     free(jwt);
+
+    DIDERROR_FINALIZE();
 }
 
 const char *JWT_GetHeader(JWT *jwt, const char *attr)
 {
     cjose_err err;
     const char *data;
+
+    DIDERROR_INITIALIZE();
 
     if (!jwt || !attr) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -60,6 +66,8 @@ const char *JWT_GetHeader(JWT *jwt, const char *attr)
     }
 
     return data;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *JWT_GetAlgorithm(JWT *jwt)
@@ -76,6 +84,8 @@ const char *JWT_GetClaim(JWT *jwt, const char *key)
 {
     json_t *value;
     const char *data;
+
+    DIDERROR_INITIALIZE();
 
     if (!jwt || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -100,12 +110,16 @@ const char *JWT_GetClaim(JWT *jwt, const char *key)
     }
 
     return data;
+
+    DIDERROR_FINALIZE();
 }
 
 const char *JWT_GetClaimAsJson(JWT *jwt, const char *key)
 {
     json_t *value;
     const char *data;
+
+    DIDERROR_INITIALIZE();
 
     if (!jwt || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -136,11 +150,15 @@ const char *JWT_GetClaimAsJson(JWT *jwt, const char *key)
 
     DIDError_Set(DIDERR_UNSUPPORTED, "Unsupport this claim type.");
     return NULL;
+
+    DIDERROR_FINALIZE();
 }
 
 long JWT_GetClaimAsInteger(JWT *jwt, const char *key)
 {
     json_t *value;
+
+    DIDERROR_INITIALIZE();
 
     if (!jwt || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -158,11 +176,15 @@ long JWT_GetClaimAsInteger(JWT *jwt, const char *key)
     }
 
     return json_integer_value(value);
+
+    DIDERROR_FINALIZE();
 }
 
 bool JWT_GetClaimAsBoolean(JWT *jwt, const char *key)
 {
     json_t *value;
+
+    DIDERROR_INITIALIZE();
 
     if (!jwt || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -180,6 +202,8 @@ bool JWT_GetClaimAsBoolean(JWT *jwt, const char *key)
     }
 
     return json_boolean_value(value);
+
+    DIDERROR_FINALIZE();
 }
 
 const char *JWT_GetIssuer(JWT *jwt)

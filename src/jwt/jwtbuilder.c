@@ -101,6 +101,8 @@ JWTBuilder *JWTBuilder_Create(DID *issuer)
 
 void JWTBuilder_Destroy(JWTBuilder *builder)
 {
+    DIDERROR_INITIALIZE();
+
     if (!builder)
         return;
 
@@ -114,12 +116,16 @@ void JWTBuilder_Destroy(JWTBuilder *builder)
         DIDDocument_Destroy(builder->doc);
 
     free(builder);
+
+    DIDERROR_FINALIZE();
 }
 
 bool JWTBuilder_SetHeader(JWTBuilder *builder, const char *attr, const char *value)
 {
     cjose_err err;
     bool succuss;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !attr || !*attr || !value) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -141,6 +147,8 @@ bool JWTBuilder_SetHeader(JWTBuilder *builder, const char *attr, const char *val
         DIDError_Set(DIDERR_JWT, "Set header '%s' failed.", attr);
 
     return succuss;
+
+    DIDERROR_FINALIZE();
 }
 
 bool JWTBuilder_SetClaim(JWTBuilder *builder, const char *key, const char *value)
@@ -148,6 +156,8 @@ bool JWTBuilder_SetClaim(JWTBuilder *builder, const char *key, const char *value
     json_t *value_obj;
     int rc;
     bool succuss;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !key || !*key || !value) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -166,6 +176,8 @@ bool JWTBuilder_SetClaim(JWTBuilder *builder, const char *key, const char *value
         DIDError_Set(DIDERR_JWT, "Set claim '%s' failed.", key);
 
     return succuss;
+
+    DIDERROR_FINALIZE();
 }
 
 bool JWTBuilder_SetClaimWithJson(JWTBuilder *builder, const char *key, const char *json)
@@ -173,6 +185,8 @@ bool JWTBuilder_SetClaimWithJson(JWTBuilder *builder, const char *key, const cha
     json_t *json_obj;
     int rc;
     bool succuss;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !key || !*key || !json || !*json) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -191,6 +205,8 @@ bool JWTBuilder_SetClaimWithJson(JWTBuilder *builder, const char *key, const cha
         DIDError_Set(DIDERR_JWT, "Set json claim '%s' failed.", key);
 
     return succuss;
+
+    DIDERROR_FINALIZE();
 }
 
 bool JWTBuilder_SetClaimWithIntegar(JWTBuilder *builder, const char *key, long value)
@@ -198,6 +214,8 @@ bool JWTBuilder_SetClaimWithIntegar(JWTBuilder *builder, const char *key, long v
     json_t *value_obj;
     int rc;
     bool succuss;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !key || !*key || !value) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -216,6 +234,8 @@ bool JWTBuilder_SetClaimWithIntegar(JWTBuilder *builder, const char *key, long v
         DIDError_Set(DIDERR_JWT, "Set claim '%s' failed.", key);
 
     return succuss;
+
+    DIDERROR_FINALIZE();
 }
 
 bool JWTBuilder_SetClaimWithBoolean(JWTBuilder *builder, const char *key, bool value)
@@ -223,6 +243,8 @@ bool JWTBuilder_SetClaimWithBoolean(JWTBuilder *builder, const char *key, bool v
     json_t *value_obj;
     int rc;
     bool succuss;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !key || !*key) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
@@ -241,6 +263,8 @@ bool JWTBuilder_SetClaimWithBoolean(JWTBuilder *builder, const char *key, bool v
         DIDError_Set(DIDERR_JWT, "Set claim '%s' failed.", key);
 
     return succuss;
+
+    DIDERROR_FINALIZE();
 }
 
 bool JWTBuilder_SetIssuer(JWTBuilder *builder, const char *issuer)
@@ -289,6 +313,8 @@ int JWTBuilder_Sign(JWTBuilder *builder, DIDURL *keyid, const char *storepass)
     const char *payload;
     KeySpec _keyspec, *keyspec;
     DID *issuer;
+
+    DIDERROR_INITIALIZE();
 
     if (!builder || !storepass || !*storepass)
         return -1;
@@ -348,6 +374,8 @@ int JWTBuilder_Sign(JWTBuilder *builder, DIDURL *keyid, const char *storepass)
     }
 
     return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 static const char *jws_export(JWTBuilder *builder)
@@ -432,6 +460,8 @@ errorExit:
 
 const char *JWTBuilder_Compact(JWTBuilder *builder)
 {
+    DIDERROR_INITIALIZE();
+
     if (!builder) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return NULL;
@@ -446,10 +476,14 @@ const char *JWTBuilder_Compact(JWTBuilder *builder)
         return jwt_export(builder);
 
     return jws_export(builder);
+
+    DIDERROR_FINALIZE();
 }
 
 int JWTBuilder_Reset(JWTBuilder *builder)
 {
+    DIDERROR_INITIALIZE();
+
     if (!builder) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Invalid arguments.");
         return -1;
@@ -469,4 +503,6 @@ int JWTBuilder_Reset(JWTBuilder *builder)
     }
 
     return init_jwtbuilder(builder);
+
+    DIDERROR_FINALIZE();
 }
