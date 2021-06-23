@@ -196,7 +196,7 @@ static void test_didstore_newdid_withouAlias(void)
     CU_ASSERT_PTR_NOT_NULL(metadata);
     CU_ASSERT_STRING_EQUAL("testdoc", DIDMetadata_GetAlias(metadata));
     CU_ASSERT_STRING_EQUAL("littlefish", DIDMetadata_GetExtra(metadata, "name"));
-    CU_ASSERT_FALSE(DIDMetadata_GetExtraAsBoolean(metadata, "femal"));
+    CU_ASSERT_FALSE(DIDMetadata_GetExtraAsBoolean(metadata, "femal", false));
 
     RootIdentity_Destroy(rootidentity);
     DIDDocument_Destroy(doc);

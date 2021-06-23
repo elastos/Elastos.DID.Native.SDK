@@ -145,7 +145,7 @@ time_t CredentialMetadata_GetPublished(CredentialMetadata *metadata)
 {
     CHECK_ARG(!metadata, "No credential metadata argument.", 0);
 
-    return (time_t)Metadata_GetDefaultExtraAsInteger(&metadata->base, PUBLISHED);
+    return (time_t)Metadata_GetDefaultExtraAsLongLong(&metadata->base, PUBLISHED, 0);
 }
 
 DIDStore *CredentialMetadata_GetStore(CredentialMetadata *metadata)
@@ -258,6 +258,23 @@ int CredentialMetadata_SetExtraWithDouble(CredentialMetadata *metadata, const ch
     DIDERROR_FINALIZE();
 }
 
+int CredentialMetadata_SetExtraWithLongLong(CredentialMetadata *metadata,
+        const char *key, long long value)
+{
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!metadata, "No credential metadata argument.", -1);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", -1);
+
+    if (Metadata_SetExtraWithLongLong(&metadata->base, key, value) < 0 ||
+            CredentialMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
+
+    DIDERROR_FINALIZE();
+}
+
 const char *CredentialMetadata_GetExtra(CredentialMetadata *metadata, const char *key)
 {
     DIDERROR_INITIALIZE();
@@ -270,26 +287,41 @@ const char *CredentialMetadata_GetExtra(CredentialMetadata *metadata, const char
     DIDERROR_FINALIZE();
 }
 
-bool CredentialMetadata_GetExtraAsBoolean(CredentialMetadata *metadata, const char *key)
+bool CredentialMetadata_GetExtraAsBoolean(CredentialMetadata *metadata, const char *key,
+        bool dvalue)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!metadata, "No credential metadata argument.", false);
-    CHECK_ARG(!key || !*key, "Invalid key argument.", false);
+    CHECK_ARG(!metadata, "No credential metadata argument.", dvalue);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", dvalue);
 
-    return Metadata_GetExtraAsBoolean(&metadata->base, key);
+    return Metadata_GetExtraAsBoolean(&metadata->base, key, dvalue);
 
     DIDERROR_FINALIZE();
 }
 
-double CredentialMetadata_GetExtraAsDouble(CredentialMetadata *metadata, const char *key)
+double CredentialMetadata_GetExtraAsDouble(CredentialMetadata *metadata, const char *key,
+        double dvalue)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!metadata, "No credential metadata argument.", 0);
-    CHECK_ARG(!key || !*key, "Invalid key argument.", 0);
+    CHECK_ARG(!metadata, "No credential metadata argument.", dvalue);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", dvalue);
 
-    return Metadata_GetExtraAsDouble(&metadata->base, key);
+    return Metadata_GetExtraAsDouble(&metadata->base, key, dvalue);
+
+    DIDERROR_FINALIZE();
+}
+
+long long CredentialMetadata_GetExtraAsLongLong(CredentialMetadata *metadata,
+        const char *key, long long dvalue)
+{
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!metadata, "No credential metadata argument.", dvalue);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", dvalue);
+
+    return Metadata_GetExtraAsLongLong(&metadata->base, key, dvalue);
 
     DIDERROR_FINALIZE();
 }

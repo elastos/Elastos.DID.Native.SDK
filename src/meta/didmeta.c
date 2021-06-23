@@ -186,7 +186,7 @@ int DIDMetadata_GetIndex(DIDMetadata *metadata)
 {
     assert(metadata);
 
-    return Metadata_GetDefaultExtraAsInteger(&metadata->base, INDEX);
+    return (int)Metadata_GetDefaultExtraAsLongLong(&metadata->base, INDEX, -1);
 }
 
 const char *DIDMetadata_GetTxid(DIDMetadata *metadata)
@@ -252,7 +252,7 @@ time_t DIDMetadata_GetPublished(DIDMetadata *metadata)
 
     CHECK_ARG(!metadata, "No did metadata argument.", 0);
 
-    return (time_t)Metadata_GetDefaultExtraAsInteger(&metadata->base, PUBLISHED);
+    return (time_t)Metadata_GetDefaultExtraAsLongLong(&metadata->base, PUBLISHED, 0);
 
     DIDERROR_FINALIZE();
 }
@@ -342,6 +342,23 @@ int DIDMetadata_SetExtraWithDouble(DIDMetadata *metadata, const char *key, doubl
     DIDERROR_FINALIZE();
 }
 
+int DIDMetadata_SetExtraWithLongLong(DIDMetadata *metadata, const char *key,
+    long long value)
+{
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!metadata, "No did metadata argument.", -1);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", -1);
+
+    if (Metadata_SetExtraWithLongLong(&metadata->base, key, value) < 0 ||
+            DIDMetadata_Store(metadata) < 0)
+        return -1;
+
+    return 0;
+
+    DIDERROR_FINALIZE();
+}
+
 const char *DIDMetadata_GetExtra(DIDMetadata *metadata, const char *key)
 {
     DIDERROR_INITIALIZE();
@@ -354,26 +371,38 @@ const char *DIDMetadata_GetExtra(DIDMetadata *metadata, const char *key)
     DIDERROR_FINALIZE();
 }
 
-int DIDMetadata_GetExtraAsBoolean(DIDMetadata *metadata, const char *key)
+bool DIDMetadata_GetExtraAsBoolean(DIDMetadata *metadata, const char *key, bool dvalue)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!metadata, "No did metadata argument.", -1);
-    CHECK_ARG(!key || !*key, "Invalid key argument.", -1);
+    CHECK_ARG(!metadata, "No did metadata argument.", dvalue);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", dvalue);
 
-    return Metadata_GetExtraAsBoolean(&metadata->base, key);
+    return Metadata_GetExtraAsBoolean(&metadata->base, key, dvalue);
 
     DIDERROR_FINALIZE();
 }
 
-double DIDMetadata_GetExtraAsDouble(DIDMetadata *metadata, const char *key)
+double DIDMetadata_GetExtraAsDouble(DIDMetadata *metadata, const char *key, double dvalue)
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!metadata, "No did metadata argument.", 0);
-    CHECK_ARG(!key || !*key, "Invalid key argument.", 0);
+    CHECK_ARG(!metadata, "No did metadata argument.", dvalue);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", dvalue);
 
-    return Metadata_GetExtraAsDouble(&metadata->base, key);
+    return Metadata_GetExtraAsDouble(&metadata->base, key, dvalue);
+
+    DIDERROR_FINALIZE();
+}
+
+long long DIDMetadata_GetExtraAsLongLong(DIDMetadata *metadata, const char *key, long long dvalue)
+{
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!metadata, "No did metadata argument.", dvalue);
+    CHECK_ARG(!key || !*key, "Invalid key argument.", dvalue);
+
+    return Metadata_GetExtraAsLongLong(&metadata->base, key, dvalue);
 
     DIDERROR_FINALIZE();
 }
