@@ -81,18 +81,6 @@ CredentialBiography *CredentialBiography_FromJson(json_t *json)
         return NULL;
     }
 
-    item = json_object_get(json, "id");
-    if (!item) {
-        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Missing resolved DID.");
-        goto errorExit;
-    }
-    if (!json_is_string(item)) {
-        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid resolved DID.");
-        goto errorExit;
-    }
-    if (DIDURL_Parse(&biography->id, json_string_value(item), NULL) == -1)
-        goto errorExit;
-
     item = json_object_get(json, "status");
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Missing credential status.");
@@ -107,6 +95,21 @@ CredentialBiography *CredentialBiography_FromJson(json_t *json)
         goto errorExit;
     }
     biography->status = json_integer_value(item);
+    //todo:
+    if (biography->status == CredentialStatus_NotFound)
+        return biography;
+
+    item = json_object_get(json, "id");
+    if (!item) {
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Missing resolved DID.");
+        goto errorExit;
+    }
+    if (!json_is_string(item)) {
+        DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESULT, "Invalid resolved DID.");
+        goto errorExit;
+    }
+    if (DIDURL_Parse(&biography->id, json_string_value(item), NULL) == -1)
+        goto errorExit;
 
     item = json_object_get(json, "transaction");
     if (item) {
