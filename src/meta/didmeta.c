@@ -186,7 +186,7 @@ int DIDMetadata_GetIndex(DIDMetadata *metadata)
 {
     assert(metadata);
 
-    return (int)Metadata_GetDefaultExtraAsLongLong(&metadata->base, INDEX, -1);
+    return (int)Metadata_GetDefaultExtraAsInteger(&metadata->base, INDEX, -1);
 }
 
 const char *DIDMetadata_GetTxid(DIDMetadata *metadata)
@@ -252,7 +252,7 @@ time_t DIDMetadata_GetPublished(DIDMetadata *metadata)
 
     CHECK_ARG(!metadata, "No did metadata argument.", 0);
 
-    return (time_t)Metadata_GetDefaultExtraAsLongLong(&metadata->base, PUBLISHED, 0);
+    return (time_t)Metadata_GetDefaultExtraAsInteger(&metadata->base, PUBLISHED, 0);
 
     DIDERROR_FINALIZE();
 }
@@ -342,7 +342,7 @@ int DIDMetadata_SetExtraWithDouble(DIDMetadata *metadata, const char *key, doubl
     DIDERROR_FINALIZE();
 }
 
-int DIDMetadata_SetExtraWithLongLong(DIDMetadata *metadata, const char *key,
+int DIDMetadata_SetExtraWithInteger(DIDMetadata *metadata, const char *key,
     long long value)
 {
     DIDERROR_INITIALIZE();
@@ -350,7 +350,7 @@ int DIDMetadata_SetExtraWithLongLong(DIDMetadata *metadata, const char *key,
     CHECK_ARG(!metadata, "No did metadata argument.", -1);
     CHECK_ARG(!key || !*key, "Invalid key argument.", -1);
 
-    if (Metadata_SetExtraWithLongLong(&metadata->base, key, value) < 0 ||
+    if (Metadata_SetExtraWithInteger(&metadata->base, key, value) < 0 ||
             DIDMetadata_Store(metadata) < 0)
         return -1;
 
@@ -395,14 +395,14 @@ double DIDMetadata_GetExtraAsDouble(DIDMetadata *metadata, const char *key, doub
     DIDERROR_FINALIZE();
 }
 
-long long DIDMetadata_GetExtraAsLongLong(DIDMetadata *metadata, const char *key, long long dvalue)
+long long DIDMetadata_GetExtraAsInteger(DIDMetadata *metadata, const char *key, long long dvalue)
 {
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!metadata, "No did metadata argument.", dvalue);
     CHECK_ARG(!key || !*key, "Invalid key argument.", dvalue);
 
-    return Metadata_GetExtraAsLongLong(&metadata->base, key, dvalue);
+    return Metadata_GetExtraAsInteger(&metadata->base, key, dvalue);
 
     DIDERROR_FINALIZE();
 }

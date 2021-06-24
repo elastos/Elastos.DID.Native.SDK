@@ -666,7 +666,7 @@ DID_API int DIDMetadata_SetExtraWithDouble(DIDMetadata *metadata, const char *ke
  * @return
  *      If no error occurs, return 0. Otherwise, return -1.
  */
-DID_API int DIDMetadata_SetExtraWithLongLong(DIDMetadata *metadata, const char *key, long long value);
+DID_API int DIDMetadata_SetExtraWithInteger(DIDMetadata *metadata, const char *key, long long value);
 
 /**
  * \~English
@@ -724,7 +724,7 @@ DID_API double DIDMetadata_GetExtraAsDouble(DIDMetadata *metadata, const char *k
  * @return
  *      return number value if no error occurs. Other, return default value.
  */
-DID_API long long DIDMetadata_GetExtraAsLongLong(DIDMetadata *metadata, const char *key,
+DID_API long long DIDMetadata_GetExtraAsInteger(DIDMetadata *metadata, const char *key,
         long long dvalue);
 
 /******************************************************************************
@@ -947,7 +947,7 @@ DID_API int CredentialMetadata_SetExtraWithDouble(CredentialMetadata *metadata,
  * @return
  *      If no error occurs, return the 0. Otherwise, return -1.
  */
-DID_API int CredentialMetadata_SetExtraWithLongLong(CredentialMetadata *metadata,
+DID_API int CredentialMetadata_SetExtraWithInteger(CredentialMetadata *metadata,
         const char *key, long long value);
 
 /**
@@ -1055,7 +1055,7 @@ DID_API double CredentialMetadata_GetExtraAsDouble(CredentialMetadata *metadata,
  * @return
  *      number elem value.
  */
-DID_API long long CredentialMetadata_GetExtraAsLongLong(CredentialMetadata *metadata,
+DID_API long long CredentialMetadata_GetExtraAsInteger(CredentialMetadata *metadata,
         const char *key, long long dvalue);
 
 /******************************************************************************
