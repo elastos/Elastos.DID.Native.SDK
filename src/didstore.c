@@ -152,6 +152,48 @@ typedef struct DefaultRootIdentity_Helper {
     int count;
 } DefaultRootIdentity_Helper;
 
+//only for fragment path
+static char *replace_path(const char *path, size_t size, char *replaced, size_t replaced_size)
+{
+    int i;
+
+    assert(replaced_size > size);
+
+    replaced[0] = '#';
+    for(i = 0; i < size; i++) {
+        if (path[i] == ';')
+            replaced[i + 1] = '+';
+        else if (path[i] == '/')
+            replaced[i + 1] = '~';
+        else if (path[i] == '?')
+            replaced[i + 1] = '!';
+        else
+            replaced[i + 1] = path[i];
+    }
+
+    return replaced;
+}
+
+static char *translate_path(const char *path, size_t size, char *fragment, size_t fragment_size)
+{
+    int i;
+
+    assert(fragment_size >= size);
+
+    for(i = 1; i < size; i++) {
+        if (path[i] == '+')
+            fragment[i - 1] = ';';
+        else if (path[i] == '~')
+            fragment[i - 1] = '/';
+        else if (path[i] == '!')
+            fragment[i - 1] = '?';
+        else
+            fragment[i - 1] = path[i];
+    }
+
+    return fragment;
+}
+
 int DIDStore_StoreDIDMetadata(DIDStore *store, DIDMetadata *metadata, DID *did)
 {
     char path[PATH_MAX];
@@ -258,7 +300,7 @@ int DIDStore_StoreCredMetadata(DIDStore *store, CredentialMetadata *metadata, DI
     if (!data)
         return -1;
 
-    sprintf(filename, "%s%s", "#", id->fragment);
+    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 1, 7, store->root, DATA_DIR, IDS_DIR, id->did.idstring,
             CREDENTIALS_DIR, filename, META_FILE) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for credential metadata failed.");
@@ -307,7 +349,7 @@ static int DIDStore_LoadCredMetadata(DIDStore *store, CredentialMetadata *metada
 
     memset(metadata, 0, sizeof(CredentialMetadata));
 
-    sprintf(filename, "%s%s", "#", id->fragment);
+    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     CredentialMetadata_SetStore(metadata, store);
     if (get_file(path, 0, 7, store->root, DATA_DIR, IDS_DIR, &id->did.idstring, CREDENTIALS_DIR,
             filename, META_FILE) == -1)
@@ -1535,7 +1577,7 @@ static int select_credential_helper(const char *path, void *context)
     Cred_List_Helper *ch = (Cred_List_Helper*)context;
     const char* data;
     Credential *credential;
-    char credpath[PATH_MAX];
+    char credpath[PATH_MAX], filename[128];
     DIDURL id;
 
     if (!path)
@@ -1567,7 +1609,8 @@ static int select_credential_helper(const char *path, void *context)
             continue;
         if (strcmp(new_type, ch->type) == 0) {
             strcpy(id.did.idstring, ch->did.idstring);
-            strcpy(id.fragment, path);
+            translate_path(path, strlen(path) + 1, filename, 128);
+            strcpy(id.fragment, filename);
             Credential_Destroy(credential);
             return ch->cb(&id, ch->context);
         }
@@ -1579,7 +1622,7 @@ static int select_credential_helper(const char *path, void *context)
 static int list_credential_helper(const char *path, void *context)
 {
     Cred_List_Helper *ch = (Cred_List_Helper*)context;
-    char credpath[PATH_MAX];
+    char credpath[PATH_MAX], filename[128];
     DIDURL id;
     int rc;
 
@@ -1598,7 +1641,8 @@ static int list_credential_helper(const char *path, void *context)
     }
 
     strcpy(id.did.idstring, ch->did.idstring);
-    strcpy(id.fragment, path + 1);
+    translate_path(path, strlen(path) + 1, filename, 128);
+    strcpy(id.fragment, filename);
     DIDStore_LoadCredMetadata(ch->store, &id.metadata, &id);
     rc = ch->cb(&id, ch->context);
     CredentialMetadata_Free(&id.metadata);
@@ -1623,7 +1667,7 @@ static int store_credential(DIDStore *store, Credential *credential)
     if (!data)
         return -1;
 
-    sprintf(filename, "%s%s", "#", id->fragment);
+    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 1, 7, store->root, DATA_DIR, IDS_DIR, id->did.idstring,
             CREDENTIALS_DIR, filename, CREDENTIAL_FILE) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create credential (%s) file failed.", DIDURLSTR(&credential->id));
@@ -1984,7 +2028,7 @@ Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
     CHECK_ARG(!did, "No owner of credential.", NULL);
     CHECK_ARG(!id, "No credential to be loaded.", NULL);
 
-    sprintf(filename, "#%s", id->fragment);
+    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 0, 7, store->root, DATA_DIR, IDS_DIR, did->idstring,
             CREDENTIALS_DIR, filename, CREDENTIAL_FILE) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "The credential(%s) file doesn't exist.", DIDURLSTR(id));
@@ -2064,7 +2108,7 @@ int DIDStore_ContainsCredential(DIDStore *store, DID *did, DIDURL *id)
     CHECK_ARG(!did, "No owner of credential.", -1);
     CHECK_ARG(!id, "No id of credential to be checked existence.", -1);
 
-    sprintf(filename, "#%s", id->fragment);
+    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_dir(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
             CREDENTIALS_DIR, filename) == -1)
         return 0;
@@ -2094,7 +2138,7 @@ bool DIDStore_DeleteCredential(DIDStore *store, DID *did, DIDURL *id)
     CHECK_ARG(!did, "No owner of credential.", false);
     CHECK_ARG(!id, "No id of credential to be deleted.", false);
 
-    sprintf(filename, "#%s", id->fragment);
+    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_dir(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
             CREDENTIALS_DIR, filename) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Credential[%s] doesn't exist in didstore.", DIDURLSTR(id));
@@ -2176,7 +2220,7 @@ int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *id,
     CHECK_ARG(!id && !type, "No feature to select credential.", -1);
 
     if (id) {
-        sprintf(filename, "#%s", id->fragment);
+        replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
         if (get_file(path, 0, 7, store->root, DATA_DIR, IDS_DIR, did->idstring,
                 CREDENTIALS_DIR, filename, CREDENTIAL_FILE) == -1) {
             DIDError_Set(DIDERR_NOT_EXISTS, "Credentials don't exist.");
@@ -2262,7 +2306,7 @@ int DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
     CHECK_ARG(!did, "No owner of privatekey.", -1);
     CHECK_ARG(!id, "No privatekey id.", -1);
 
-    sprintf(filename, "#%s", id->fragment);
+    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
             PRIVATEKEYS_DIR, filename) == -1)
         return 0;
@@ -2295,7 +2339,7 @@ int DIDStore_StorePrivateKey_Internal(DIDStore *store, DIDURL *id, const char *p
     assert(id);
     assert(prvkey && *prvkey);
 
-    sprintf(filename, "#%s", id->fragment);
+    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 1, 6, store->root, DATA_DIR, IDS_DIR, id->did.idstring,
             PRIVATEKEYS_DIR, filename) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create privatekey(%s) file failed.", DIDURLSTR(id));
@@ -2341,7 +2385,7 @@ void DIDStore_DeletePrivateKey(DIDStore *store, DIDURL *id)
     if (!store || !id)
         return;
 
-    sprintf(filename, "%s%s", "#", id->fragment);
+    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, &id->did,
             PRIVATEKEYS_DIR, filename) == -1)
         return;
@@ -2759,7 +2803,7 @@ ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass,
     assert(extendedkey);
     assert(size >= EXTENDEDKEY_BYTES);
 
-    sprintf(filename, "%s%s", "#", key->fragment);
+    replace_path(key->fragment, strlen(key->fragment) + 1, filename, 128);
     rc = get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring, PRIVATEKEYS_DIR, filename);
     if (rc == 0) {
         privatekey_str = load_file(path);
