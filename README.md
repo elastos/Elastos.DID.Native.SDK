@@ -1,4 +1,4 @@
-﻿# Elastos DID Native SDK
+# Elastos DID Native SDK
 
 |Linux && Mac|Windows|
 |:-:|:-:|
@@ -6,7 +6,7 @@
 
 ## Introduction
 
-**Elastos DID (Decentralized Identifier) framework** is a set of C APIs for Elastos DID that is compatibility to W3C DIDs specs.
+**Elastos DID (Decentralized Identifier) framework** is a set of C APIs for Elastos DID that is compatible with W3C DIDs specs.
 
 DID (Decentralized identifier) is a new type of identifier that enables verifiable, decentralized digital identity. A DID identifies any subject (e.g., a person, organization, thing, data model, abstract entity, etc.) that the controller of the DID decides that it identifies.
 
@@ -25,7 +25,7 @@ DID (Decentralized identifier) is a new type of identifier that enables verifiab
       - [4.2. Stress Test](#5-stress-test)
       - [4.3. Dummy Test](#5-dummy-test)
     - [5. Cross-compilation for Android Platform](#5-cross-compilation-for-android-platform)
-  - [Build on MacOS Host](#build-on-macos-host)
+  - [Build on macOS Host](#build-on-macos-host)
     - [1. Brief introduction](#1-brief-introduction-2)
     - [2. Install Pre-Requirements](#2-install-pre-requirements-2)
     - [3. Build to run on host](#3-build-to-run-on-host-1)
@@ -46,11 +46,11 @@ DID (Decentralized identifier) is a new type of identifier that enables verifiab
 
 ## Usage
 
-**CMake** is used to build, test and package the Elastos DID project in an operating system as well as compiler-independent manner.
+**CMake** is used to build, test, and package the Elastos DID project in an operating system and compiler independent manner.
 
-Certain knowledge of CMake is required.
+Confident knowledge of CMake is required.
 
-At the time of this writing, The compilation of sources works on **macOS**, **Linux** (Ubuntu, Debian etc.) and **Windows**(support later), and provides the option to cross-compile for target systems of **iOS**, **Android** and **RaspberryPi**（support later）.
+At the time of this writing, The compilation of sources works on **macOS**, **Linux** (Ubuntu, Debian, etc.), and **Windows** (support later) and provides the option to cross-compile for target systems of **iOS**, **Android**, and **RaspberryPi** (support later).
 
 ## Build on Ubuntu / Debian / Linux Host
 
@@ -58,12 +58,12 @@ At the time of this writing, The compilation of sources works on **macOS**, **Li
 
 On Ubuntu / Debian / Linux, besides the compilation for the host itself, cross-compilation is possible for the following targets:
 
-- Android with architectures of **armv7a**, **arm64** and simulators of **x86/x86_64** are supported.
-- RaspberryPi with architecture **armv7l** only(support later).
+- Android with architectures of **armv7a**, **arm64**, and simulators of **x86/x86_64** are supported.
+- RaspberryPi with architecture **armv7l** only will be supported later.
 
 ### 2. Install Pre-Requirements
 
-To generate Makefiles by using **configure** or **cmake** and manage dependencies of the DID project, certain packages must be installed on the host before compilation.
+To generate Makefiles by using **configure** or **cmake** and manage dependencies of the DID project certain packages must be installed on the host before compilation.
 
 Run the following commands to install the prerequisite utilities:
 
@@ -96,7 +96,7 @@ Enter the 'build' folder.
 cd build
 ```
 
-Create a new folder with the target platform name, then change directory.
+Create a new folder with the target platform name, then change the directory.
 
 ```shell
 mkdir linux
@@ -118,7 +118,8 @@ Optional (Generate the Makefile): To be able to build a distribution with a spec
 ```shell
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=YOUR-INSTALL-PATH ../..
 ```
-tips:  Must update cmake version larger than 3.13, if enable python (-DENABLE_PYTHON=TURE) on Linux platform!
+**Tips**:  Must update cmake version larger than 3.13, if enable python (-DENABLE_PYTHON=TURE) on Linux platform!
+
 ***
 
 Build the program:
@@ -147,11 +148,11 @@ make dist
 
 ### 4. Run DIDTest
 
-DIDTest is a shell program to imitate every DID flow and to prove DID API . The output is displayed in the terminal for a simple evaluation of test results.
+DIDTest is a shell program to imitate every DID flow and to prove DID API. The output is displayed in the terminal for a simple evaluation of test results.
 
-DIDTest supports three modules: normal test, stress test and dummy test.
+DIDTest supports three modules: normal test, stress test, and dummy test.
 
-To run DIDTest, first extract the distribution package created previously and enter the extracted folder. Then, change directory to the 'bin' folder.
+To run DIDTest, first, extract the distribution package created previously and enter the extracted folder. Then, change the directory to the 'bin' folder.
 
 ```shell
 cd YOUR-DISTRIBUTION-PACKAGE-PATH/bin
@@ -159,7 +160,7 @@ cd YOUR-DISTRIBUTION-PACKAGE-PATH/bin
 
 #### 4.1 Normal Test
 
-Run DIDTest as normal module, including dummy test cases and IDChain Transaction test case. Run normal module, test case needs spv wallet to pay coins for IDChain Transaction. So the first thing is creating spv wallet, detail operation is as follow:
+Run DIDTest as normal module, including dummy test cases and IDChain Transaction test cases. Run normal module, test case needs SPV wallet to pay coins for IDChain Transaction. So the first thing is creating an SPV wallet. Detailed operation is as follow:
 
 ```shell
 $ ./wallet -d YOUR-WALLET-DATA-DIRECTORY -n NETWOR-NAME
@@ -167,12 +168,12 @@ Wallet data directory: YOUR-WALLET-DATA-DIRECTORY
 -> wallet $ create YOUR-WALLET-NAME
 ```
 
-'YOUR-WALLET-DATA-DIRECTORY' : wallet data directory with given path;
+'YOUR-WALLET-DATA-DIRECTORY': wallet data directory with the given path;
 
-'YOUR-WALLET-NAME' : a new wallet with given name.
+'YOUR-WALLET-NAME': a new wallet with given name.
 
-After inputing 'create' command, you also need choose the mnemonic language, mnemonic word count, passphrase for encoring mnemonic and payment password. After finishing a
-series of operation, you has a new spv wallet.
+After entering the 'create' command, you also need to choose the mnemonic language, mnemonic word count, passphrase for encoring mnemonic, and payment password. After finishing a
+series of operations, you have a new SPV wallet.
 
 Second, open your test case folder:
 
@@ -184,7 +185,7 @@ Modify 'walletdir', 'walletId' and 'walletpass' in constant.c file with your wal
 
 Third, rebuild the DID project as above operation. (make && make install)
 
-Finally, Then, change directory to the 'bin' folder.
+Finally, Then, change the directory to the 'bin' folder.
 
 ```shell
 cd YOUR-DISTRIBUTION-PACKAGE-PATH/bin
@@ -193,7 +194,7 @@ cd YOUR-DISTRIBUTION-PACKAGE-PATH/bin
 
 #### 4.2 Stress Test
 
-At the same time, DIDTest support stress test. Use Available commands in the shell can be listed by using the command **help**. Specific command usage descriptions can be displayed by using **help [Command]** where [Command] must be replaced with the specific command name.
+At the same time, DIDTest supports the stress test. Use Available commands in the shell can be listed by using the command **help**. Specific command usage descriptions can be displayed by using **help [Command]**, where [Command] must be replaced with the particular command name.
 
 For example:
 
@@ -203,7 +204,7 @@ For example:
 
 #### 4.3 Dummy Test
 
-Run DIDTest without IDChain Transaction, this module does not need spv wallet. If you no spv wallet or only want to run basic DID functions, you can choose this module.
+Run DIDTest without IDChain Transaction. This module does not need an SPV wallet. If you don't have an SPV wallet or only want to run essential DID functions, you can choose this module.
 
 ```shell
 ./didtest --dummy
@@ -221,13 +222,13 @@ COMING SOON
 
 COMING SOON
 
-## Build on MacOS Host
+## Build on macOS Host
 
 ### 1. Brief introduction
 
 On macOS, besides the compilation for the host itself, cross-compilation is possible for the following targets:
 
-- Android with architectures of **armv7a**, **arm64** and simulators of **x86/x86_64** are supported.
+- Android with architectures of **armv7a**, **arm64**, and simulators of **x86/x86_64** are supported.
 - iOS platforms to run on **iPhone-arm64** and **iPhoneSimulator-x86_64**.
 
 ### 2. Install Pre-Requirements
@@ -236,7 +237,7 @@ packages must be installed on the host before compilation.
 
 The following packages related to **configure** and **cmake** must be installed on the host before compilation either by installation through the package manager **homebrew** or by building from source:
 
-Note: Homebrew can be downloaded from [Homebrew web site](https://brew.sh/).
+Note: Homebrew can be downloaded from the [Homebrew web site](https://brew.sh/).
 
 Install packages with Homebrew:
 
@@ -494,7 +495,7 @@ Additional tools are optional, some additional ones are installed by default wit
 
 After modifications, restarting of Visual Studio might be required.
 
-### 3. Build to run on host
+### 3. Build to run on a host
 
 To compile the project from source code for the target to run on Windows, carry out the following steps:
 
@@ -561,7 +562,7 @@ cd YOUR-DISTRIBUTION-PACKAGE-PATH/bin
 
 #### 4.1 Normal Test (Dummy Test)
 
-In Windows, Normal test is not support IDChain Transaction , so run normal module is equal to dummy module. 
+In Windows, the Normal test does not support IDChain Transaction, so the normal module is equal to dummy module. 
 
 
 ```shell
@@ -574,7 +575,7 @@ or
 
 #### 4.2 Stress Test
 
-At the same time, DIDTest supports stress test. Use Available commands in the shell can be listed by using the command **help**. Specific command usage descriptions can be displayed by using **help [Command]** where [Command] must be replaced with the specific command name.
+At the same time, DIDTest supports stress tests. Use Available commands in the shell can be listed by using the command **help**. Specific command usage descriptions can be displayed by using **help [Command]** where [Command] must be replaced with the specific command name.
 
 For example:
 
@@ -593,3 +594,4 @@ A sincere thank you to all teams and projects that we rely on directly or indire
 ## License
 
 This project is licensed under the terms of the [MIT license](https://github.com/elastos/Elastos.DID.Native.SDK/blob/master/LICENSE).
+
