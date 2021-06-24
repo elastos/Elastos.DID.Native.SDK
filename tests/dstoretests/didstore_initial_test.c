@@ -187,7 +187,7 @@ static void test_didstore_newdid_withouAlias(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     rc = DIDMetadata_SetExtra(metadata, "name", "littlefish");
     CU_ASSERT_NOT_EQUAL(rc, -1);
-    rc = DIDMetadata_SetExtraWithBoolean(metadata, "femal", false);
+    rc = DIDMetadata_SetExtraWithBoolean(metadata, "famale", false);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
     loaddoc = DIDStore_LoadDID(store, did);
@@ -196,7 +196,7 @@ static void test_didstore_newdid_withouAlias(void)
     CU_ASSERT_PTR_NOT_NULL(metadata);
     CU_ASSERT_STRING_EQUAL("testdoc", DIDMetadata_GetAlias(metadata));
     CU_ASSERT_STRING_EQUAL("littlefish", DIDMetadata_GetExtra(metadata, "name"));
-    CU_ASSERT_FALSE(DIDMetadata_GetExtraAsBoolean(metadata, "femal", false));
+    CU_ASSERT_FALSE(DIDMetadata_GetExtraAsBoolean(metadata, "famale", false));
 
     RootIdentity_Destroy(rootidentity);
     DIDDocument_Destroy(doc);

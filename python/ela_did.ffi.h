@@ -674,7 +674,7 @@ extern "Python" const char* MyResolve(const char *request);
  * @return
  *      return number value if no error occurs. Other, return default value.
  */
-/* DID_API */long long DIDMetadata_GetExtraAsLongLong(DIDMetadata *metadata, const char *key,
+/* DID_API */long long DIDMetadata_GetExtraAsInteger(DIDMetadata *metadata, const char *key,
         long long dvalue);
 
 /******************************************************************************
@@ -988,7 +988,7 @@ extern "Python" const char* MyResolve(const char *request);
  * @return
  *      number elem value.
  */
-/* DID_API */ long long CredentialMetadata_GetExtraAsLongLong(CredentialMetadata *metadata,
+/* DID_API */ long long CredentialMetadata_GetExtraAsInteger(CredentialMetadata *metadata,
         const char *key, long long dvalue);
 
 /******************************************************************************

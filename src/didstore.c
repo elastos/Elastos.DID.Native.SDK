@@ -153,7 +153,7 @@ typedef struct DefaultRootIdentity_Helper {
 } DefaultRootIdentity_Helper;
 
 //only for fragment path
-static char *replace_path(const char *path, size_t size, char *replaced, size_t replaced_size)
+static char *id2path(const char *path, size_t size, char *replaced, size_t replaced_size)
 {
     int i;
 
@@ -174,7 +174,7 @@ static char *replace_path(const char *path, size_t size, char *replaced, size_t 
     return replaced;
 }
 
-static char *translate_path(const char *path, size_t size, char *fragment, size_t fragment_size)
+static char *path2id(const char *path, size_t size, char *fragment, size_t fragment_size)
 {
     int i;
 
@@ -300,7 +300,7 @@ int DIDStore_StoreCredMetadata(DIDStore *store, CredentialMetadata *metadata, DI
     if (!data)
         return -1;
 
-    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
+    id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 1, 7, store->root, DATA_DIR, IDS_DIR, id->did.idstring,
             CREDENTIALS_DIR, filename, META_FILE) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create file for credential metadata failed.");
@@ -349,7 +349,7 @@ static int DIDStore_LoadCredMetadata(DIDStore *store, CredentialMetadata *metada
 
     memset(metadata, 0, sizeof(CredentialMetadata));
 
-    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
+    id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     CredentialMetadata_SetStore(metadata, store);
     if (get_file(path, 0, 7, store->root, DATA_DIR, IDS_DIR, &id->did.idstring, CREDENTIALS_DIR,
             filename, META_FILE) == -1)
@@ -1609,7 +1609,7 @@ static int select_credential_helper(const char *path, void *context)
             continue;
         if (strcmp(new_type, ch->type) == 0) {
             strcpy(id.did.idstring, ch->did.idstring);
-            translate_path(path, strlen(path) + 1, filename, 128);
+            path2id(path, strlen(path) + 1, filename, 128);
             strcpy(id.fragment, filename);
             Credential_Destroy(credential);
             return ch->cb(&id, ch->context);
@@ -1641,7 +1641,7 @@ static int list_credential_helper(const char *path, void *context)
     }
 
     strcpy(id.did.idstring, ch->did.idstring);
-    translate_path(path, strlen(path) + 1, filename, 128);
+    path2id(path, strlen(path) + 1, filename, 128);
     strcpy(id.fragment, filename);
     DIDStore_LoadCredMetadata(ch->store, &id.metadata, &id);
     rc = ch->cb(&id, ch->context);
@@ -1667,7 +1667,7 @@ static int store_credential(DIDStore *store, Credential *credential)
     if (!data)
         return -1;
 
-    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
+    id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 1, 7, store->root, DATA_DIR, IDS_DIR, id->did.idstring,
             CREDENTIALS_DIR, filename, CREDENTIAL_FILE) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create credential (%s) file failed.", DIDURLSTR(&credential->id));
@@ -2028,7 +2028,7 @@ Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
     CHECK_ARG(!did, "No owner of credential.", NULL);
     CHECK_ARG(!id, "No credential to be loaded.", NULL);
 
-    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
+    id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 0, 7, store->root, DATA_DIR, IDS_DIR, did->idstring,
             CREDENTIALS_DIR, filename, CREDENTIAL_FILE) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "The credential(%s) file doesn't exist.", DIDURLSTR(id));
@@ -2108,7 +2108,7 @@ int DIDStore_ContainsCredential(DIDStore *store, DID *did, DIDURL *id)
     CHECK_ARG(!did, "No owner of credential.", -1);
     CHECK_ARG(!id, "No id of credential to be checked existence.", -1);
 
-    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
+    id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_dir(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
             CREDENTIALS_DIR, filename) == -1)
         return 0;
@@ -2138,7 +2138,7 @@ bool DIDStore_DeleteCredential(DIDStore *store, DID *did, DIDURL *id)
     CHECK_ARG(!did, "No owner of credential.", false);
     CHECK_ARG(!id, "No id of credential to be deleted.", false);
 
-    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
+    id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_dir(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
             CREDENTIALS_DIR, filename) == -1) {
         DIDError_Set(DIDERR_NOT_EXISTS, "Credential[%s] doesn't exist in didstore.", DIDURLSTR(id));
@@ -2220,7 +2220,7 @@ int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *id,
     CHECK_ARG(!id && !type, "No feature to select credential.", -1);
 
     if (id) {
-        replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
+        id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
         if (get_file(path, 0, 7, store->root, DATA_DIR, IDS_DIR, did->idstring,
                 CREDENTIALS_DIR, filename, CREDENTIAL_FILE) == -1) {
             DIDError_Set(DIDERR_NOT_EXISTS, "Credentials don't exist.");
@@ -2306,7 +2306,7 @@ int DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
     CHECK_ARG(!did, "No owner of privatekey.", -1);
     CHECK_ARG(!id, "No privatekey id.", -1);
 
-    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
+    id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
             PRIVATEKEYS_DIR, filename) == -1)
         return 0;
@@ -2339,7 +2339,7 @@ int DIDStore_StorePrivateKey_Internal(DIDStore *store, DIDURL *id, const char *p
     assert(id);
     assert(prvkey && *prvkey);
 
-    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
+    id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 1, 6, store->root, DATA_DIR, IDS_DIR, id->did.idstring,
             PRIVATEKEYS_DIR, filename) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create privatekey(%s) file failed.", DIDURLSTR(id));
@@ -2385,7 +2385,7 @@ void DIDStore_DeletePrivateKey(DIDStore *store, DIDURL *id)
     if (!store || !id)
         return;
 
-    replace_path(id->fragment, strlen(id->fragment) + 1, filename, 128);
+    id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, &id->did,
             PRIVATEKEYS_DIR, filename) == -1)
         return;
@@ -2803,7 +2803,7 @@ ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass,
     assert(extendedkey);
     assert(size >= EXTENDEDKEY_BYTES);
 
-    replace_path(key->fragment, strlen(key->fragment) + 1, filename, 128);
+    id2path(key->fragment, strlen(key->fragment) + 1, filename, 128);
     rc = get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring, PRIVATEKEYS_DIR, filename);
     if (rc == 0) {
         privatekey_str = load_file(path);

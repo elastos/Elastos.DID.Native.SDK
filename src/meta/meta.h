@@ -55,12 +55,12 @@ int Metadata_Copy(Metadata *metadata, Metadata *frommeta);
 int Metadata_SetExtra(Metadata *metadata, const char* key, const char *value);
 int Metadata_SetExtraWithBoolean(Metadata *metadata, const char *key, bool value);
 int Metadata_SetExtraWithDouble(Metadata *metadata, const char *key, double value);
-int Metadata_SetExtraWithLongLong(Metadata *metadata, const char *key, long long value);
+int Metadata_SetExtraWithInteger(Metadata *metadata, const char *key, long long value);
 
 const char *Metadata_GetExtra(Metadata *metadata, const char *key);
 bool Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key, bool dvalue);
 double Metadata_GetExtraAsDouble(Metadata *metadata, const char *key, double dvalue);
-long long Metadata_GetExtraAsLongLong(Metadata *metadata, const char *key, long long dvalue);
+long long Metadata_GetExtraAsInteger(Metadata *metadata, const char *key, long long dvalue);
 
 int Metadata_SetDefaultExtra(Metadata *metadata, const char* key, const char *value);
 int Metadata_SetDefaultExtraWithBoolean(Metadata *metadata, const char *key, bool value);
@@ -71,7 +71,7 @@ const char *Metadata_GetDefaultExtra(Metadata *metadata, const char *key);
 int Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key);
 double Metadata_GetDefaultExtraAsDouble(Metadata *metadata, const char *key,
         double dvalue);
-long long Metadata_GetDefaultExtraAsLongLong(Metadata *metadata, const char *key,
+long long Metadata_GetDefaultExtraAsInteger(Metadata *metadata, const char *key,
         long long dvalue);
 
 void Metadata_SetStore(Metadata *metadata, DIDStore *store);
