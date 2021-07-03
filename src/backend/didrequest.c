@@ -474,6 +474,11 @@ bool DIDRequest_IsValid(DIDRequest *request, DIDDocument *document)
         }
     }
 
+    if (!DIDDocument_IsValid(signerdoc)) {
+        DIDError_Set(DIDERR_INVALID_KEY, "Signer isn't valid.");
+        return false;
+    }
+
     rc = DIDDocument_Verify(signerdoc, &request->proof.verificationMethod,
                 (char*)request->proof.signatureValue, 5,
                 request->header.spec, strlen(request->header.spec),
