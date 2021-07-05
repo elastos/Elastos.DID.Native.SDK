@@ -626,10 +626,6 @@ static DIDDocument* diddocument_conflict_merge(DIDDocument *chaincopy, DIDDocume
     assert(chaincopy);
     assert(localcopy);
 
-    DIDMetadata_SetPublished(&localcopy->metadata, DIDMetadata_GetPublished(&chaincopy->metadata));
-    DIDMetadata_SetSignature(&localcopy->metadata, DIDMetadata_GetSignature(&chaincopy->metadata));
-    memcpy(&localcopy->did.metadata, &localcopy->metadata, sizeof(DIDMetadata));
-
     return localcopy;
 }
 
@@ -715,6 +711,8 @@ bool RootIdentity_SynchronizeByIndex(RootIdentity *rootidentity, int index,
     DIDMetadata_SetRootIdentity(&finalcopy->metadata, rootidentity->id);
     DIDMetadata_SetIndex(&finalcopy->metadata, index);
     DIDMetadata_SetDeactivated(&finalcopy->metadata, DIDMetadata_GetDeactivated(&chaincopy->metadata));
+    DIDMetadata_SetPublished(&finalcopy->metadata, DIDMetadata_GetPublished(&chaincopy->metadata));
+    DIDMetadata_SetSignature(&finalcopy->metadata, DIDMetadata_GetSignature(&chaincopy->metadata));
 
     if (DIDStore_StoreDID(store, finalcopy) == 0 &&
             DIDStore_StoreLazyPrivateKey(store, DIDDocument_GetDefaultPublicKey(finalcopy)) == 0)

@@ -608,6 +608,9 @@ int Metadata_Merge(Metadata *tometadata, Metadata *frommetadata)
         }
     }
 
+    if (!tometadata->store && frommetadata->store)
+        tometadata->store = frommetadata->store;
+
     return 0;
 
 errorExit:
