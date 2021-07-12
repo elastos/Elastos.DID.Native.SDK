@@ -1631,6 +1631,12 @@ DIDBackend_Initialize
 .. doxygenfunction:: DIDBackend_Initialize
    :project: DIDAPI
 
+DIDBackend_IsInitialized
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDBackend_IsInitialized
+   :project: DIDAPI
+
 DIDBackend_SetTTL
 ~~~~~~~~~~~~~~~~~
 
