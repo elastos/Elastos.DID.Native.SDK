@@ -4670,6 +4670,15 @@ DID_API int DIDBackend_Initialize(CreateIdTransaction_Callback *createtransactio
 
 /**
  * \~English
+ * Check if the DIDBackend already initialized.
+ *
+ * @return
+ *      true if the DIDBackend is initialized; false if it's not.
+ */
+DID_API bool DIDBackend_IsInitialized(void);
+
+/**
+ * \~English
  * Set ttl for resolve cache.
  *
  * @param

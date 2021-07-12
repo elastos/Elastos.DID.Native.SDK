@@ -4578,6 +4578,15 @@ extern "Python" const char* MyResolve(const char *request);
 
 /**
  * \~English
+ * Check if the DIDBackend already initialized.
+ *
+ * @return
+ *      true if the DIDBackend is initialized; false if it's not.
+ */
+/* DID_API */ bool DIDBackend_IsInitialized(void);
+
+/**
+ * \~English
  * Initialize DIDBackend.
  *
  * @param
