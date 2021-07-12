@@ -216,7 +216,6 @@ static void test_sync_with_localmodification1(void)
     DIDStore_Close(cleanstore);
 }
 
-
 static void test_sync_with_localmodification2(void)
 {
     RootIdentity *rootidentity;

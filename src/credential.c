@@ -890,7 +890,7 @@ int Credential_IsGenuine_Internal(Credential *credential, DIDDocument *document)
         }
     }
 
-    if (!DIDDocument_IsAuthenticationKey(issuerdoc, &credential->proof.verificationMethod)) {
+    if (DIDDocument_IsAuthenticationKey(issuerdoc, &credential->proof.verificationMethod) != 1) {
         DIDError_Set(DIDERR_INVALID_KEY, "Verification key isn't an authentication key.");
         goto errorExit;
     }
