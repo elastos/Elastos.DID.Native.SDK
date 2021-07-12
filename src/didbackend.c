@@ -113,6 +113,15 @@ int DIDBackend_Initialize(CreateIdTransaction_Callback *createtransaction,
     DIDERROR_FINALIZE();
 }
 
+bool DIDBackend_IsInitialized()
+{
+    DIDERROR_INITIALIZE();
+
+    return gResolve ? true : false;
+
+    DIDERROR_FINALIZE();
+}
+
 int DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
 {
     const char *reqstring;
