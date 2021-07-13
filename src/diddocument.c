@@ -4610,11 +4610,6 @@ int DIDDocument_TransferDID(DIDDocument *document, TransferTicket *ticket,
         goto errorExit;
     }
 
-    if (controllers_equals(document, resolve_doc) && document->multisig == resolve_doc->multisig) {
-        DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't transfer DID which is changed controller, please publish it.");
-        goto errorExit;
-    }
-
     check = TransferTicket_IsValid(ticket);
     if (check != 1) {
         if (check == 0)
