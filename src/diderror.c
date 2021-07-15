@@ -143,13 +143,15 @@ void __diderror_finalize_helper(int *p)
 const char *DIDSTR(DID *did)
 {
     static __thread char buffer[ELA_MAX_DID_LEN] = {0};
-    return DID_ToString(did, buffer, sizeof(buffer));
+    const char *str = DID_ToString(did, buffer, sizeof(buffer));
+    return str ? str : "(null)";
 }
 
 const char *DIDURLSTR(DIDURL *id)
 {
     static __thread char buffer[ELA_MAX_DIDURL_LEN] = {0};
-    return DIDURL_ToString(id, buffer, sizeof(buffer), false);
+    const char *str = DIDURL_ToString(id, buffer, sizeof(buffer), false);
+    return str ? str : "(null)";
 }
 
 const char *DIDSTATUS_MSG(int status)

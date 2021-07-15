@@ -876,6 +876,7 @@ int DIDDocument_IsCustomizedDID(DIDDocument *document)
 
 bool controllers_check(DIDDocument *document)
 {
+    DIDDocument *doc;
     int i;
 
     assert(document);
@@ -883,19 +884,20 @@ bool controllers_check(DIDDocument *document)
             (document->controllers.size == 0 && !document->controllers.docs));
 
     if (!DIDDocument_IsCustomizedDID(document) && document->controllers.size > 0) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "DID is not customized did, so it doesn't have controller.");
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, " * %s : is not customized did, so it doesn't have controller.", DIDSTR(&document->did));
         return false;
     }
 
     if (DIDDocument_IsCustomizedDID(document)) {
         if (document->controllers.size == 0) {
-            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Customized DID must have one controller at least.");
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, " * %s : no controller.", DIDSTR(&document->did));
             return false;
         }
 
         for (i = 0; i < document->controllers.size; i++) {
-            if (DIDDocument_IsCustomizedDID(document->controllers.docs[i])) {
-                DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "The controller must not be customized DID.");
+            doc = document->controllers.docs[i];
+            if (DIDDocument_IsCustomizedDID(doc)) {
+                DIDError_Set(DIDERR_MALFORMED_DOCUMENT, " * %s: is a controller that must not be customized DID.", DIDSTR(&doc->did));
                 return false;
             }
         }
@@ -1356,15 +1358,18 @@ static int DIDDocument_IsGenuine_Internal(DIDDocument *document, bool qualified)
     assert(document);
 
     if (qualified && !DIDDocument_IsQualified(document)) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "The signers are less than multisig number.");
+        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, " * %s : signers are less than multisig number.", DIDSTR(&document->did));
         return 0;
     }
 
     if (document->controllers.size > 0) {
         for(i = 0; i < document->controllers.size; i++) {
             rc = DIDDocument_IsGenuine(document->controllers.docs[i]);
-            if (rc != 1)
+            if (rc != 1) {
+                DIDError_Set(DIDERR_NOT_GENUINE, " * %s : controller %s is not geninue.",
+                        DIDSTR(&document->did), DIDSTR(&document->controllers.docs[i]->did));
                 return rc;
+            }
         }
     }
 
@@ -1375,7 +1380,7 @@ static int DIDDocument_IsGenuine_Internal(DIDDocument *document, bool qualified)
     size = document->proofs.size;
     checksigners = (DID**)alloca(size * sizeof(DID*));
     if (!checksigners) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for signers failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, " * %s : malloc buffer for signers failed.", DIDSTR(&document->did));
         genuine = -1;
         goto errorExit;
     }
@@ -1388,30 +1393,34 @@ static int DIDDocument_IsGenuine_Internal(DIDDocument *document, bool qualified)
         } else {
             proof_doc = DIDDocument_GetControllerDocument(document, &proof->creater.did);
             if (!proof_doc) {
-                DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "The signer isn't a controller.");
+                DIDError_Set(DIDERR_MALFORMED_DOCUMENT, " * %s : the signer %s isn't the controller.",
+                        DIDSTR(&document->did), DIDSTR(&proof->creater.did));
                 goto errorExit;
             }
         }
 
         if (Contains_DID(checksigners, i, &proof->creater.did)) {
-            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "There is the same controller signed document two times.");
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, " * %s : there is the same controller signed document two times.",
+                    DIDSTR(&document->did));
             goto errorExit;
         }
 
         if (strcmp(proof->type, ProofType)) {
-            DIDError_Set(DIDERR_UNSUPPORTED, "Unsupported other publicKey type.");
+            DIDError_Set(DIDERR_UNSUPPORTED, " * %s : unsupported other publicKey type.",
+                    DIDSTR(&document->did));
             goto errorExit;
         }
 
         if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(proof_doc), &proof->creater)) {
-            DIDError_Set(DIDERR_MALFORMED_DOCUMENT,
-                    "Signkey is not controller's default key.");
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, " * %s : signkey %s is not controller's default key.",
+                    DIDSTR(&document->did), DIDURLSTR(&proof->creater));
             goto errorExit;
         }
 
         if (DIDDocument_Verify(proof_doc, &proof->creater, proof->signatureValue, 1,
                 data, strlen(data)) < 0) {
-            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Verify document signature failed.");
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, " * %s : verify document signature failed.",
+                    DIDSTR(&document->did));
             goto errorExit;
         }
 
@@ -1430,7 +1439,11 @@ int DIDDocument_IsGenuine(DIDDocument *document)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!document, "No document to check geninue.", -1);
-    return DIDDocument_IsGenuine_Internal(document, true);
+    int rc = DIDDocument_IsGenuine_Internal(document, true);
+    if (rc != 1)
+        DIDError_Set(DIDERR_NOT_GENUINE, " * %s : is not geninue.", DIDSTR(&document->did));
+
+    return rc;
 
     DIDERROR_FINALIZE();
 }
@@ -1473,28 +1486,36 @@ int DIDDocument_IsValid_Internal(DIDDocument *document, bool isqualified)
     rc = DIDDocument_IsExpired(document);
     if (rc != 0) {
         if (rc == 1)
-            DIDError_Set(DIDERR_EXPIRED, "Did %s is expired.", DIDSTR(&document->did));
+            DIDError_Set(DIDERR_EXPIRED, " * %s : is expired.", DIDSTR(&document->did));
         return rc;
     }
 
     rc = DIDDocument_IsDeactivated(document);
     if (rc != 0) {
         if (rc == 1)
-            DIDError_Set(DIDERR_DID_DEACTIVATED, "Did %s is deactivated.", DIDSTR(&document->did));
+            DIDError_Set(DIDERR_DID_DEACTIVATED, "* %s : is deactivated.", DIDSTR(&document->did));
         return rc;
     }
 
     rc = DIDDocument_IsGenuine_Internal(document, isqualified);
     if (rc != 1)
-        DIDError_Set(DIDERR_NOT_GENUINE, "Did %s isn't geninue.", DIDSTR(&document->did));
+        DIDError_Set(DIDERR_NOT_GENUINE, "* %s : is not geninue.", DIDSTR(&document->did));
 
     return rc;
 }
 
 int DIDDocument_IsValid(DIDDocument *document)
 {
+    DIDERROR_INITIALIZE();
+
     CHECK_ARG(!document, "No document argument to check valid.",-1);
-    return DIDDocument_IsValid_Internal(document, true);
+    int rc = DIDDocument_IsValid_Internal(document, true);
+    if (rc != 1)
+        DIDError_Set(DIDERR_NOT_VALID, " * %s : is not valid.", DIDSTR(&document->did));
+
+    return rc;
+
+    DIDERROR_FINALIZE();
 }
 
 static int publickeys_copy(DIDDocument *doc, PublicKey **pks, size_t size)

@@ -115,11 +115,7 @@ int DIDBackend_Initialize(CreateIdTransaction_Callback *createtransaction,
 
 bool DIDBackend_IsInitialized()
 {
-    DIDERROR_INITIALIZE();
-
     return gResolve ? true : false;
-
-    DIDERROR_FINALIZE();
 }
 
 int DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
@@ -883,9 +879,5 @@ void DIDBackend_SetTTL(long _ttl)
 
 void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle)
 {
-    DIDERROR_INITIALIZE();
-
     gLocalResolveHandle = handle;
-
-    DIDERROR_FINALIZE();
 }
