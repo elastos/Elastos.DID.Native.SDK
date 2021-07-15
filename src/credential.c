@@ -884,24 +884,27 @@ int Credential_IsGenuine_Internal(Credential *credential, DIDDocument *document)
     if (!issuerdoc) {
         issuerdoc = DID_Resolve(&credential->issuer, &status, false);
         if (!issuerdoc) {
-            DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Issuer of credential %s %s.",
+            DIDError_Set(DIDERR_DID_RESOLVE_ERROR, " * VC %s : issuer %s %s.",
                     DIDSTR(&credential->issuer), DIDSTATUS_MSG(status));
             return -1;
         }
     }
 
     if (DIDDocument_IsAuthenticationKey(issuerdoc, &credential->proof.verificationMethod) != 1) {
-        DIDError_Set(DIDERR_INVALID_KEY, "Verification key isn't an authentication key.");
+        DIDError_Set(DIDERR_INVALID_KEY, " * VC %s : verification key %s isn't an authentication key.",
+                DIDURLSTR(&credential->id), DIDURLSTR(&credential->proof.verificationMethod));
         goto errorExit;
     }
 
     if (strcmp(credential->proof.type, ProofType)) {
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Unknow credential proof type.");
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, " * VC %s : unknow credential proof type.",
+                DIDURLSTR(&credential->id));
         goto errorExit;
     }
 
     data = Credential_ToJson_ForSign(credential, false, true);
     if (!data) {
+        DIDError_Set(DIDERRCODE, " * VC %s : %s.", DIDURLSTR(&credential->id), DIDERRMSG);
         genuine = -1;
         goto errorExit;
     }
@@ -910,7 +913,8 @@ int Credential_IsGenuine_Internal(Credential *credential, DIDDocument *document)
             credential->proof.signatureValue, 1, data, strlen(data));
     free((void *)data);
     if (rc < 0)
-        DIDError_Set(DIDERR_VERIFY_ERROR, "Verify credential failed.");
+        DIDError_Set(DIDERR_VERIFY_ERROR, " * VC %s : verify failed.",
+                DIDURLSTR(&credential->id));
 
     genuine = (rc == -1 ? 0 : 1);
 
@@ -925,8 +929,11 @@ int Credential_IsGenuine(Credential *credential)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!credential, "No credential to check genuine.", -1);
-    return Credential_IsGenuine_Internal(credential, NULL);
+    int rc = Credential_IsGenuine_Internal(credential, NULL);
+    if (rc != 1)
+        DIDError_Set(DIDERR_NOT_GENUINE, " * VC %s : is not genuine.", DIDURLSTR(&credential->id));
 
+    return rc;
     DIDERROR_FINALIZE();
 }
 
@@ -939,29 +946,38 @@ int Credential_IsValid_Internal(Credential *credential, DIDDocument *document)
     assert(document);
 
     if (!DID_Equals(&credential->id.did, &credential->subject.id)) {
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Credential id mismatch with Credential subject's owner.");
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL,
+                " * VC %s : id mismatch with Credential subject's owner.",
+                DIDURLSTR(&credential->id));
         return 0;
     }
 
     if (!Credential_IsSelfProclaimed(credential)) {
         issuerdoc = DID_Resolve(&credential->issuer, &status, false);
         if (!issuerdoc) {
-            DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Issuer %s %s.", DIDSTR(&credential->issuer), DIDSTATUS_MSG(status));
+            DIDError_Set(DIDERR_DID_RESOLVE_ERROR, " * VC %s : issuer %s %s.",
+                    DIDURLSTR(&credential->id), DIDSTR(&credential->issuer), DIDSTATUS_MSG(status));
             return -1;
         }
 
         if (DIDDocument_IsValid(issuerdoc) != 1) {
             DIDDocument_Destroy(issuerdoc);
+            DIDError_Set(DIDERR_NOT_VALID, " * VC %s : issuer %s is not valid",
+                    DIDURLSTR(&credential->id), DIDSTR(&credential->issuer));
             return 0;
         }
     } else {
         issuerdoc = document;
     }
 
-    if (Credential_IsExpired_Internal(credential, document))
+    if (Credential_IsExpired_Internal(credential, document)) {
+        DIDError_Set(DIDERR_EXPIRED, " * VC %s : is expired.", DIDURLSTR(&credential->id));
         goto errorExit;
+    }
 
     valid = Credential_IsGenuine_Internal(credential, issuerdoc);
+    if (valid != 1)
+        DIDError_Set(DIDERR_NOT_GENUINE, " * VC %s : is not genuine.", DIDURLSTR(&credential->id));
 
 errorExit:
     if (issuerdoc != document)
@@ -980,18 +996,24 @@ int Credential_IsValid(Credential *credential)
 
     doc = DID_Resolve(&credential->subject.id, &status, false);
     if (!doc) {
-        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Owner of credential %s %s.",
-                DIDSTR(&credential->subject.id), DIDSTATUS_MSG(status));
+        DIDError_Set(DIDERR_NOT_VALID, " * VC %s : is invalid, error: owner of credential %s %s.",
+                DIDURLSTR(&credential->id), DIDSTR(&credential->subject.id), DIDSTATUS_MSG(status));
         return -1;
     }
 
     if (DIDDocument_IsValid(doc) != 1) {
         DIDDocument_Destroy(doc);
+        DIDError_Set(DIDERR_NOT_VALID, " * VC %s : is invalid.",
+                DIDURLSTR(&credential->id));
         return 0;
     }
 
     valid = Credential_IsValid_Internal(credential, doc);
     DIDDocument_Destroy(doc);
+    if (valid != 1)
+        DIDError_Set(DIDERR_NOT_VALID, " * VC %s : is invalid.",
+                DIDURLSTR(&credential->id));
+
     return valid;
 
     DIDERROR_FINALIZE();
