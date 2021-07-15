@@ -4913,6 +4913,11 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
 #endif
 /**
  * \~English
+ * DID/Credential is not genuine.
+ */
+#define DIDERR_NOT_VALID                            0x8D00002A
+/**
+ * \~English
  * Unknown error.
  */
 #define DIDERR_UNKNOWN                              0x8D0000FF

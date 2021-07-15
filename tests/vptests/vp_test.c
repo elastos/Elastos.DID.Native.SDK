@@ -37,6 +37,12 @@ static void test_vp_getelem(void)
         vp = TestData_GetPresentation("user1", "nonempty", NULL, version);
         CU_ASSERT_PTR_NOT_NULL(vp);
 
+        if (version == 1) {
+            CU_ASSERT_PTR_NULL(Presentation_GetId(vp));
+        } else {
+            CU_ASSERT_PTR_NOT_NULL(Presentation_GetId(vp));
+        }
+
         CU_ASSERT_EQUAL(1, Presentation_GetTypeCount(vp));
         CU_ASSERT_NOT_EQUAL(-1, Presentation_GetTypes(vp, types, 1));
         CU_ASSERT_STRING_EQUAL(PresentationType, types[0]);
@@ -154,6 +160,12 @@ static void test_vp_getelem_withemptyvp(void)
 
         vp = TestData_GetPresentation("user1", "empty", NULL, version);
         CU_ASSERT_PTR_NOT_NULL(vp);
+
+        if (version == 1) {
+            CU_ASSERT_PTR_NULL(Presentation_GetId(vp));
+        } else {
+            CU_ASSERT_PTR_NOT_NULL(Presentation_GetId(vp));
+        }
 
         CU_ASSERT_EQUAL(1, Presentation_GetTypeCount(vp));
         CU_ASSERT_NOT_EQUAL(-1, Presentation_GetTypes(vp, types, 1));
