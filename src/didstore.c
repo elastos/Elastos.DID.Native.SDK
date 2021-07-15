@@ -1020,7 +1020,7 @@ static int upgradeFromV2(DIDStore *store)
     char path[PATH_MAX], v2path[PATH_MAX * 2], id[MAX_ID_LEN] = {0};
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
     StoreMetadata metadata;
-    const char *data;
+    const char *data, *_id = NULL;
     time_t current = 0;
     size_t len;
     int rc;
@@ -1036,85 +1036,84 @@ static int upgradeFromV2(DIDStore *store)
     if (get_dir(v2path, 0, 2, store->root, DATA_JOURNAL) == 0)
         delete_file(v2path);
 
-    if (get_dir(path, 0, 2, store->root, "private") == -1) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Get rootidentity directory (old store) failed.");
-        return -1;
-    }
-
     if (get_dir(v2path, 1, 2, store->root, DATA_JOURNAL) == -1) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Create data journal directory failed.");
         return -1;
     }
 
-    if (test_path(path) != S_IFDIR) {
-        DIDError_Set(DIDERR_IO_ERROR, "Invalid rootidentity folder.");
-        goto errorExit;
-    }
+    if (get_dir(path, 0, 2, store->root, "private") == 0) {
+        if (test_path(path) != S_IFDIR) {
+            DIDError_Set(DIDERR_IO_ERROR, "Invalid rootidentity folder.");
+            goto errorExit;
+        }
 
-    //private/key.pub
-    data = get_rootfile(store, "key.pub");
-    if (!data) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Get root prederived public key failed.");
-        goto errorExit;
-    }
+        //private/key.pub
+        data = get_rootfile(store, "key.pub");
+        if (!data) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Get root prederived public key failed.");
+            goto errorExit;
+        }
 
-    len = b58_decode(extendedkey, EXTENDEDKEY_BYTES, data);
-    if (len < 0) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode extended public key failed.");
+        len = b58_decode(extendedkey, EXTENDEDKEY_BYTES, data);
+        if (len < 0) {
+            DIDError_Set(DIDERR_CRYPTO_ERROR, "Decode extended public key failed.");
+            free((void*)data);
+            goto errorExit;
+        }
+
+        if (md5_hex(id, sizeof(id), extendedkey, EXTENDEDKEY_BYTES) < 0) {
+            DIDError_Set(DIDERR_CRYPTO_ERROR, "Get id from public key failed.");
+            free((void*)data);
+            goto errorExit;
+        }
+
+        rc = store_pubkey_file(store, DATA_JOURNAL, id, data);
         free((void*)data);
-        goto errorExit;
-    }
+        if (rc < 0) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store root publicKey in the data journal directory failed.");
+            goto errorExit;
+        }
 
-    if (md5_hex(id, sizeof(id), extendedkey, EXTENDEDKEY_BYTES) < 0) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get id from public key failed.");
+        //private/key
+        data = get_rootfile(store, "key");
+        if (!data) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Get root prederived publicKey failed.");
+            goto errorExit;
+        }
+        rc = store_prvkey_file(store, DATA_JOURNAL, id, data);
         free((void*)data);
-        goto errorExit;
-    }
+        if (rc < 0) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store root privatekey in the data journal directory failed.");
+            goto errorExit;
+        }
 
-    rc = store_pubkey_file(store, DATA_JOURNAL, id, data);
-    free((void*)data);
-    if (rc < 0) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store root publicKey in the data journal directory failed.");
-        goto errorExit;
-    }
+        //private/mnemonic
+        data = get_rootfile(store, MNEMONIC_FILE);
+        if (!data) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Load mnemonic string failed.");
+            goto errorExit;
+        }
+        rc = store_mnemonic_file(store, DATA_JOURNAL, id, data);
+        free((void*)data);
+        if (rc < 0) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store nmemonic in the data journal directory failed.");
+            goto errorExit;
+        }
 
-    //private/key
-    data = get_rootfile(store, "key");
-    if (!data) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Get root prederived publicKey failed.");
-        goto errorExit;
-    }
-    rc = store_prvkey_file(store, DATA_JOURNAL, id, data);
-    free((void*)data);
-    if (rc < 0) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store root privatekey in the data journal directory failed.");
-        goto errorExit;
-    }
+        //private/index
+        data = get_rootfile(store, INDEX_FILE);
+        if (!data) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Load index string failed.");
+            goto errorExit;
+        }
+        rc = store_index_string(store, DATA_JOURNAL, id, data);
+        free((void*)data);
+        if (rc < 0) {
+            DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store index failed.");
+            goto errorExit;
+        }
 
-    //private/mnemonic
-    data = get_rootfile(store, MNEMONIC_FILE);
-    if (!data) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Load mnemonic string failed.");
-        goto errorExit;
-    }
-    rc = store_mnemonic_file(store, DATA_JOURNAL, id, data);
-    free((void*)data);
-    if (rc < 0) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store nmemonic in the data journal directory failed.");
-        goto errorExit;
-    }
-
-    //private/index
-    data = get_rootfile(store, INDEX_FILE);
-    if (!data) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Load index string failed.");
-        goto errorExit;
-    }
-    rc = store_index_string(store, DATA_JOURNAL, id, data);
-    free((void*)data);
-    if (rc < 0) {
-        DIDError_Set(DIDERR_DIDSTORE_ERROR, "Store index failed.");
-        goto errorExit;
+        _id = id;
     }
 
     //ids
@@ -1129,7 +1128,7 @@ static int upgradeFromV2(DIDStore *store)
         }
     }
 
-    if (StoreMetadata_Init(&metadata, DIDSTORE_TYPE, DIDSTORE_VERSION, NULL, id) < 0) {
+    if (StoreMetadata_Init(&metadata, DIDSTORE_TYPE, DIDSTORE_VERSION, NULL, _id) < 0) {
         DIDError_Set(DIDERR_DIDSTORE_ERROR, "Upgrade store metadata failed.");
         goto errorExit;
     }
