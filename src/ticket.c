@@ -519,22 +519,29 @@ int TransferTicket_IsValid(TransferTicket *ticket)
     CHECK_ARG(!ticket, "No ticket argument.", -1);
 
     if (!ticket->doc) {
-        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "No owner's document.");
+        DIDError_Set(DIDERR_NOT_VALID, " * TICKET %s : is invalid,\
+                error: no owner's document.", DIDSTR(&ticket->did));
         return -1;
     }
 
     rc = DIDDocument_IsValid(ticket->doc);
     if (rc != 1) {
-        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Owner's lastest document isn't valid.");
+        DIDError_Set(DIDERR_NOT_VALID, " * TICKET %s : is invalid, \
+                error: owner's lastest document is invalid.", DIDSTR(&ticket->did));
         return rc;
     }
 
     rc = TransferTicket_IsGenuine(ticket);
-    if (rc != 1)
+    if (rc != 1) {
+        DIDError_Set(DIDERR_NOT_VALID, " * TICKET %s : is invalid, \
+                error: the ticket is not genuine.", DIDSTR(&ticket->did));
         return rc;
+    }
 
     if (strcmp(ticket->txid, DIDMetadata_GetTxid(&ticket->doc->metadata))) {
-        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "The ticket doesn't have the lastest transaction id.");
+        DIDError_Set(DIDERR_NOT_VALID, "* TICKET %s : is invalid, \
+                error: the ticket doesn't have the lastest transaction id.",
+                DIDSTR(&ticket->did));
         return 0;
     }
 
@@ -572,24 +579,30 @@ int TransferTicket_IsGenuine(TransferTicket *ticket)
 
     check = DIDDocument_IsGenuine(ticket->doc);
     if (check != 1) {
-        DIDError_Set(DIDERR_NOT_GENUINE, "Owner of ticket isn't genuine.");
+        DIDError_Set(DIDERR_NOT_GENUINE, " * TICKET %s : is not genuine,\
+                error: owner of ticket isn't genuine.", DIDSTR(&ticket->did));
         return check;
     }
 
     check = TransferTicket_IsQualified(ticket);
     if (check != 1) {
-        DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET, "Ticket is not qualified.");
+        DIDError_Set(DIDERR_NOT_GENUINE, " * TICKET %s : is not genuine,\
+                error: ticket is not qualified.", DIDSTR(&ticket->did));
         return check;
     }
 
     data = ticket_tojson_forsign(ticket, true);
-    if (!data)
+    if (!data) {
+        DIDError_Set(DIDERR_NOT_GENUINE, " * TICKET %s : is not genuine,\
+                error: %s.", DIDSTR(&ticket->did), DIDERRMSG);
         return -1;
+    }
 
     size = ticket->proofs.size;
     checksigners = (DID**)alloca(size * sizeof(DID*));
     if (!checksigners) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for signers failed.");
+        DIDError_Set(DIDERR_NOT_GENUINE, " * TICKET %s : is not genuine,\
+                error: malloc buffer for signers failed.", DIDSTR(&ticket->did));
         rc = -1;
         goto errorExit;
     }
@@ -598,24 +611,26 @@ int TransferTicket_IsGenuine(TransferTicket *ticket)
         proof = &ticket->proofs.proofs[i];
         doc = DIDDocument_GetControllerDocument(ticket->doc, &proof->verificationMethod.did);
         if (!doc) {
-            DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET,
-                    "The signer isn't controller of ticket's owner.");
+            DIDError_Set(DIDERR_NOT_GENUINE, " * TICKET %s : is not genuine,\
+                    error: the signer isn't controller of ticket's owner.", DIDSTR(&ticket->did));
             goto errorExit;
         }
 
         if (Contains_DID(checksigners, i, &proof->verificationMethod.did)) {
-            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "There is the same controller signed ticket two times.");
+            DIDError_Set(DIDERR_NOT_GENUINE, " * TICKET %s : is not genuine,\
+                    error: there is the same controller signed ticket two times.", DIDSTR(&ticket->did));
             goto errorExit;
         }
 
         if (!DIDURL_Equals(DIDDocument_GetDefaultPublicKey(doc), &proof->verificationMethod)) {
-            DIDError_Set(DIDERR_MALFORMED_TRANSFERTICKET,
-                    "Signkey isn't controller's default key.");
+            DIDError_Set(DIDERR_NOT_GENUINE, " * TICKET %s : is not genuine,\
+                    error: signkey isn't controller's default key.", DIDSTR(&ticket->did));
             goto errorExit;
         }
 
         if (strcmp(proof->type, ProofType)) {
-            DIDError_Set(DIDERR_UNKNOWN, "Unsupported public key type.");
+            DIDError_Set(DIDERR_NOT_GENUINE, " * TICKET %s : is not genuine,\
+                    error: unsupported public key type.", DIDSTR(&ticket->did));
             goto errorExit;
         }
 
@@ -625,7 +640,8 @@ int TransferTicket_IsGenuine(TransferTicket *ticket)
 
         if (DIDDocument_Verify(doc, &proof->verificationMethod, proof->signatureValue,
                 1, data, strlen(data)) < 0) {
-            DIDError_Set(DIDERR_VERIFY_ERROR, "Verify ticket failed.");
+            DIDError_Set(DIDERR_NOT_GENUINE, " * TICKET %s : is not genuine,\
+                    error: verify ticket failed.", DIDSTR(&ticket->did));
             goto errorExit;
         }
 

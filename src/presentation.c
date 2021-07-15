@@ -928,59 +928,77 @@ static int check_presentation(Presentation *presentation, bool validtype)
 
     doc = DID_Resolve(Presentation_GetHolder(presentation), &status, false);
     if (!doc) {
-        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Presentation holder %s %s.",
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, " * VP %s : holder %s %s.",
+                DIDURLSTR(Presentation_GetId(presentation)),
                 DIDSTR(Presentation_GetHolder(presentation)), DIDSTATUS_MSG(status));
         return -1;
     }
 
     if (validtype) {
         rc = DIDDocument_IsValid(doc);
-        if (rc != 1)
+        if (rc != 1) {
+            DIDError_Set(DIDERR_NOT_VALID, " * VP %s : holder's document is invalid.",
+                    DIDURLSTR(Presentation_GetId(presentation)));
             goto errorExit;
+        }
     } else {
         rc = DIDDocument_IsGenuine(doc);
         if (rc != 1) {
-            DIDError_Set(DIDERR_NOT_GENUINE, "Signer isn't genuine.");
+            DIDError_Set(DIDERR_NOT_GENUINE, " * VP %s : signer's document is not genuine.",
+                    DIDURLSTR(Presentation_GetId(presentation)));
             goto errorExit;
         }
     }
 
     if (!DIDDocument_IsAuthenticationKey(doc, &presentation->proof.verificationMethod)) {
-        DIDError_Set(DIDERR_INVALID_KEY, "Invalid authentication key.");
+        DIDError_Set(DIDERR_INVALID_KEY, " * VP %s : invalid authentication key.",
+                DIDURLSTR(Presentation_GetId(presentation)));
         goto errorExit;
     }
 
     if (presentation->credentials.size > 0 && !presentation->credentials.credentials) {
-        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing credentials.");
+        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, " * VP %s : missing credentials.",
+                DIDURLSTR(Presentation_GetId(presentation)));
         goto errorExit;
     }
 
     for (i = 0; i < presentation->credentials.size; i++) {
         Credential *cred = presentation->credentials.credentials[i];
         if (!cred) {
-            DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing credential.");
+            DIDError_Set(DIDERR_MALFORMED_PRESENTATION, " * VP %s : missing credential.",
+                    DIDURLSTR(Presentation_GetId(presentation)));
             goto errorExit;
         }
         if (!DID_Equals(&cred->subject.id, Presentation_GetHolder(presentation))) {
-            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Credential %s doesn't match with signer.", DIDURLSTR(&cred->id));
+            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL,
+                    " * VP %s : credential %s doesn't match with signer.",
+                    DIDURLSTR(Presentation_GetId(presentation)), DIDURLSTR(&cred->id));
             goto errorExit;
         }
         if (validtype) {
             rc = Credential_IsValid(cred);
-            if (rc != 1)
+            if (rc != 1) {
+                DIDError_Set(DIDERR_NOT_VALID,
+                        " * VP %s : credential %s doesn't match with signer.",
+                        DIDURLSTR(Presentation_GetId(presentation)), DIDURLSTR(&cred->id));
                 goto errorExit;
+            }
         } else {
             rc = Credential_IsGenuine(cred);
             if (rc != 1) {
-                DIDError_Set(DIDERR_NOT_GENUINE, "Credential %s isn't genuine.", DIDURLSTR(&cred->id));
+                DIDError_Set(DIDERR_NOT_GENUINE, " * VP %s : credential %s isn't genuine.",
+                        DIDURLSTR(Presentation_GetId(presentation)), DIDURLSTR(&cred->id));
                 goto errorExit;
             }
         }
     }
 
     data = presentation_tojson_forsign(presentation, false, true);
-    if (!data)
+    if (!data) {
+        DIDError_Set(DIDERRCODE, " * VP %s : %s.",
+                DIDURLSTR(Presentation_GetId(presentation)), DIDERRMSG);
         goto errorExit;
+    }
 
     check = DIDDocument_Verify(doc, &presentation->proof.verificationMethod,
             presentation->proof.signatureValue, 3, (unsigned char*)data, strlen(data),
@@ -988,7 +1006,8 @@ static int check_presentation(Presentation *presentation, bool validtype)
             presentation->proof.nonce, strlen(presentation->proof.nonce));
     free((void*)data);
     if (check < 0) {
-        DIDError_Set(DIDERR_VERIFY_ERROR, "Verify persentation failed.");
+        DIDError_Set(DIDERR_VERIFY_ERROR, " * VP %s : verify persentation failed.",
+                DIDURLSTR(Presentation_GetId(presentation)));
         goto errorExit;
     }
 
@@ -1004,7 +1023,12 @@ int Presentation_IsGenuine(Presentation *presentation)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!presentation, "No persentation argument.", -1);
-    return check_presentation(presentation, false);
+    int rc = check_presentation(presentation, false);
+    if (rc != 1)
+        DIDError_Set(DIDERR_NOT_GENUINE, " * VP %s : is not genuine.",
+                DIDURLSTR(Presentation_GetId(presentation)));
+
+    return rc;
 
     DIDERROR_FINALIZE();
 }
@@ -1014,7 +1038,12 @@ int Presentation_IsValid(Presentation *presentation)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!presentation, "No persentation argument.", -1);
-    return check_presentation(presentation, true);
+    int rc = check_presentation(presentation, true);
+    if (rc != 1)
+        DIDError_Set(DIDERR_NOT_VALID, " * VP %s : is invalid.",
+                DIDURLSTR(Presentation_GetId(presentation)));
+
+    return rc;
 
     DIDERROR_FINALIZE();
 }
