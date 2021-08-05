@@ -4639,7 +4639,6 @@ DID_API const char *TransferTicket_GetProofSignature(TransferTicket *ticket, int
 /**
  * \~English
  * Initialize DIDBackend by url.
- * eg: User must be set ‘CURLOPT_CAINFO‘ environment variable for Windows before resolve DID.
  *
  * @param
  *      createtransaction  [in] The method to create id transaction.
