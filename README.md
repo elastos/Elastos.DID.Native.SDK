@@ -1,4 +1,4 @@
-# Elastos DID Native SDK
+﻿# Elastos DID Native SDK
 
 |Linux && Mac|Windows|
 |:-:|:-:|
@@ -35,6 +35,11 @@ DID (Decentralized identifier) is a new type of identifier that enables verifiab
       - [4.3. Dummy Test](#5-dummy-test)
     - [5. Cross-compilation for Android Platform](#5-cross-compilation-for-android-platform-1)
     - [6. Cross-compilation for iOS Platform](#6-cross-compilation-for-ios-platform)
+  - [Build on Windows Host](#build-on-windows-host)
+    - [1. Brief introduction](#1-brief-introduction-3)
+    - [2. Set up Environment](#2-set-up-environment)
+    - [3. Build to run on host](#3-build-to-run-on-host-2)
+    - [4. Run Elashell or Elatests](#4-run-elashell-or-elatests-3)
   - [Build API Documentation](#build-api-documentation)
     - [Build on Ubuntu / Debian / Linux Host](#build-on-ubuntu--debian--linux-host-1)
       - [1. Install Pre-Requirements](#1-install-pre-requirements)
@@ -553,6 +558,10 @@ nmake dist
 DIDTest is a shell program to imitate every DID flow and to prove DID API . The output is displayed in the terminal for a simple evaluation of test results.
 
 DIDTest supports two modules: normal test (dummy test) and stress test.
+
+***
+**NOTICE**: How to enable the HTTPS did resolver on Windows OpenSSL does not support using the Windows "CA certificate store", so the cURL will fail on the SSL certificates verification. To enable the HTTPS support in DID SDK, the application should provide the Mozilla CA certificate store in PEM format, then the DID SDK will use this CA store to verify the SSL certificates. 1. Download the Mozilla CA certificate store in PEM format from https://curl.se/ca/cacert.pem, and bundle it inside the application's distribution package. 2. Set an environment variable 'CURLOPT_CAINFO' to the full path of the cert store when the application launchs, the DID SDK will use this variable get the cert store file.
+***
 
 To run DIDTest, first extract the distribution package created previously and enter the extracted folder. Then, change directory to the 'bin' folder.
 
