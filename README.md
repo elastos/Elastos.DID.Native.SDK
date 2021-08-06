@@ -560,7 +560,10 @@ DIDTest is a shell program to imitate every DID flow and to prove DID API . The 
 DIDTest supports two modules: normal test (dummy test) and stress test.
 
 ***
-**NOTICE**: How to enable the HTTPS did resolver on Windows OpenSSL does not support using the Windows "CA certificate store", so the cURL will fail on the SSL certificates verification. To enable the HTTPS support in DID SDK, the application should provide the Mozilla CA certificate store in PEM format, then the DID SDK will use this CA store to verify the SSL certificates. 1. Download the Mozilla CA certificate store in PEM format from https://curl.se/ca/cacert.pem, and bundle it inside the application's distribution package. 2. Set an environment variable 'CURLOPT_CAINFO' to the full path of the cert store when the application launchs, the DID SDK will use this variable get the cert store file.
+**NOTICE**: How to enable the HTTPS did resolver on Windows 
+OpenSSL does not support using the Windows "CA certificate store", so the cURL will fail on the SSL certificates verification. To enable the HTTPS support in DID SDK, the application should provide the Mozilla CA certificate store in PEM format, then the DID SDK will use this CA store to verify the SSL certificates. 
+1. Download the Mozilla CA certificate store in PEM format from https://curl.se/ca/cacert.pem, and bundle it inside the application's distribution package. 
+2. Set an environment variable 'CURLOPT_CAINFO' to the full path of the cert store when the application launchs, the DID SDK will use this variable get the cert store file.
 ***
 
 To run DIDTest, first extract the distribution package created previously and enter the extracted folder. Then, change directory to the 'bin' folder.

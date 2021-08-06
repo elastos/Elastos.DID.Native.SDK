@@ -130,12 +130,8 @@ const char *DefaultResolve_Resolve(const char *resolve_request)
 
 #if defined(_WIN32) || defined(_WIN64)
     char *cacert = getenv("CURLOPT_CAINFO");
-    if (!cacert) {
-        DIDError_Set(DIDERR_NETWORK, "No cerification file.");
-        return NULL;
-    }
-
-    curl_easy_setopt(curl, CURLOPT_CAINFO, cacert);
+    if (cacert)
+        curl_easy_setopt(curl, CURLOPT_CAINFO, cacert);
 #endif
     // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
