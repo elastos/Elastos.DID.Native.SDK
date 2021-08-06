@@ -1,13 +1,17 @@
-﻿07/16/2021 Chen Yu chenyu_kaola@126.com Version 2.1.1, new version of DID SDK has main change as follow:
+﻿08/06/2021 Chen Yu chenyu_kaola@126.com Version 2.1.2, new version of DID SDK has main change as follow:
+- Support certificate verification on Windows
+
+
+07/16/2021 Chen Yu chenyu_kaola@126.com Version 2.1.1, new version of DID SDK has main change as follow:
 - Add more detail log for DID objects verification
 - Fix some bugs.
 
 07/06/2021 Chen Yu chenyu_kaola@126.com Version 2.1.0, the second version of DID SDK, DID 2.0 SDK new features:
 
-- Customized DID, user can choose their DID identifiers  
-- New method to declare or revoke credentials to the ID chain  
-- New method to transfer Customized DID  
-- Many internal improvements  
+- Customized DID, user can choose their DID identifiers
+- New method to declare or revoke credentials to the ID chain
+- New method to transfer Customized DID
+- Many internal improvements
 - Backward compatible support for DID 1.x SDK
 
 
