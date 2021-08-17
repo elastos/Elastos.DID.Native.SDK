@@ -47,7 +47,7 @@ static void test_didstore_change_password(void)
         if (size < 0 || size > sizeof(alias))
             continue;
 
-        DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+        DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
         if (!doc)
             continue;
 
@@ -113,7 +113,7 @@ static void test_didstore_change_password(void)
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 2, get_did, (void*)&count));
     CU_ASSERT_EQUAL(count, 0);
 
-    newdoc = RootIdentity_NewDID(rootidentity, "newpasswd", "new");
+    newdoc = RootIdentity_NewDID(rootidentity, "newpasswd", "new", false);
     CU_ASSERT_PTR_NOT_NULL(newdoc);
     DIDDocument_Destroy(newdoc);
 
@@ -139,7 +139,7 @@ static void test_didstore_change_with_wrongpassword(void)
         if (size < 0 || size > sizeof(alias))
             continue;
 
-        DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+        DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
         if (!doc)
             continue;
         CU_ASSERT_TRUE(DIDDocument_IsValid(doc));

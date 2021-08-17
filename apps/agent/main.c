@@ -76,7 +76,7 @@ static void newdid(int argc, char *argv[])
         return;
     }
 
-    doc = RootIdentity_NewDID(ctx.rootidentity, ctx.storepass, argv[1]);
+    doc = RootIdentity_NewDID(ctx.rootidentity, ctx.storepass, argv[1], false);
     if (!doc) {
         printf("Error: new did document failed.\n");
         return;

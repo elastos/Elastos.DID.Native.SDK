@@ -64,7 +64,7 @@ static void test_rootidentity_newdid(void)
     CU_ASSERT_STRING_EQUAL(RootIdentity_GetId(rootidentity), RootIdentity_GetId(_rootidentity));
     CU_ASSERT_PTR_NULL(RootIdentity_GetDefaultDID(_rootidentity));
 
-    doc1 = RootIdentity_NewDID(_rootidentity, storepass, NULL);
+    doc1 = RootIdentity_NewDID(_rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL(doc1);
 
     did = RootIdentity_GetDefaultDID(_rootidentity);
@@ -78,7 +78,7 @@ static void test_rootidentity_newdid(void)
     CU_ASSERT_STRING_EQUAL(alias, RootIdentity_GetAlias(_rootidentity));
 
     //new did2
-    doc2 = RootIdentity_NewDID(rootidentity, storepass, NULL);
+    doc2 = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL(doc2);
 
     //get did by index 1
@@ -118,13 +118,13 @@ static void test_rootidentitybyrootkey_newdid(void)
     rootidentity = RootIdentity_CreateFromRootKey(ExtendedkeyBase, true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    doc = RootIdentity_NewDID(rootidentity, storepass, NULL);
+    doc = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL(doc);
     CU_ASSERT_STRING_EQUAL(doc->did.idstring, expectedIDString);
     DIDDocument_Destroy(doc);
 
     for (i = 1; i < 20; i++) {
-        doc = RootIdentity_NewDIDByIndex(rootidentity, i, storepass, NULL);
+        doc = RootIdentity_NewDIDByIndex(rootidentity, i, storepass, NULL, false);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
         did = RootIdentity_GetDIDByIndex(rootidentity, i);
