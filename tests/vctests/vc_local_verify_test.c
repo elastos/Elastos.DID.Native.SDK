@@ -36,14 +36,14 @@ static void test_vc_local_verify(void)
     Mnemonic_Free((void*)newmnemonic);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     CU_ASSERT_PTR_NOT_NULL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
     DID_Copy(&owner, DIDDocument_GetSubject(doc));
     DIDDocument_Destroy(doc);
 
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
