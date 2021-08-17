@@ -55,7 +55,7 @@ static void test_idchain_publishdid(void)
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -241,7 +241,7 @@ static void test_idchain_publishdid_without_txid(void)
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -403,7 +403,7 @@ static void test_idchain_publishdid_without_signature(void)
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -561,7 +561,7 @@ static void test_idchain_publishdid_without_prevsignature(void)
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -719,7 +719,7 @@ static void test_idchain_publishdid_without_prevsignature_and_signature(void)
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -793,7 +793,7 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -889,7 +889,7 @@ static void test_updatedid_with_diffprevsignature_only(void)
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -980,7 +980,7 @@ static void test_updatedid_with_diffsignature_only(void)
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -1127,7 +1127,7 @@ static void test_updatedid_with_diff_prevsignature_and_signature(void)
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -1205,7 +1205,7 @@ static void test_force_updatedid_with_wrongsignature(void)
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -1299,7 +1299,7 @@ static void test_idchain_publishdid_with_credential(void)
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
-    doc = RootIdentity_NewDID(rootidentity, storepass, "littlefish");
+    doc = RootIdentity_NewDID(rootidentity, storepass, "littlefish", false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -1385,7 +1385,7 @@ static void test_idchain_deactivedid_after_create(void)
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
-    doc = RootIdentity_NewDID(rootidentity, storepass, "littlefish");
+    doc = RootIdentity_NewDID(rootidentity, storepass, "littlefish", false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -1443,7 +1443,7 @@ static void test_idchain_deactivedid_after_update(void)
     Mnemonic_Free((void*)mnemonic);
 
     //create
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -1559,7 +1559,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
-    authorizordoc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    authorizordoc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     CU_ASSERT_PTR_NOT_NULL(authorizordoc);
 
     DID_Copy(&controller, DIDDocument_GetSubject(authorizordoc));
@@ -1582,7 +1582,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
 
     printf("\n   txid: %s\n-- resolve authorization result: successfully!\n", txid);
 
-    targetdoc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    targetdoc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     CU_ASSERT_PTR_NOT_NULL(targetdoc);
 
     DID_Copy(&did, DIDDocument_GetSubject(targetdoc));
@@ -1659,7 +1659,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
     Mnemonic_Free((void*)mnemonic);
 
-    authorizordoc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    authorizordoc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     CU_ASSERT_PTR_NOT_NULL(authorizordoc);
 
     DID_Copy(&controller, DIDDocument_GetSubject(authorizordoc));
@@ -1706,7 +1706,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
 
     printf("\n   txid: %s\n-- resolve authorization result: successfully!\n", txid);
 
-    targetdoc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    targetdoc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     CU_ASSERT_PTR_NOT_NULL(targetdoc);
 
     builder = DIDDocument_Edit(targetdoc, NULL);

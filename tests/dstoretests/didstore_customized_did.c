@@ -45,7 +45,7 @@ static void test_new_customizedid_with_onecontroller(void)
     rootidentity = TestData_InitIdentity(store);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    controller_doc = RootIdentity_NewDID(rootidentity, storepass, NULL);
+    controller_doc = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller_doc);
 
     controller = DIDDocument_GetSubject(controller_doc);
@@ -99,14 +99,14 @@ static void test_new_customizedid_with_multicontrollers(void)
     rootidentity = TestData_InitIdentity(store);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    controller1_doc = RootIdentity_NewDID(rootidentity, storepass, NULL);
+    controller1_doc = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1_doc);
 
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1);
     CU_ASSERT_TRUE_FATAL(DIDDocument_PublishDID(controller1_doc, NULL, true, storepass));
 
-    controller2_doc = RootIdentity_NewDID(rootidentity, storepass, NULL);
+    controller2_doc = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2_doc);
 
     controller2 = DIDDocument_GetSubject(controller2_doc);
@@ -174,14 +174,14 @@ static void test_new_customizedid_with_multicontrollers2(void)
     rootidentity = TestData_InitIdentity(store);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    controller1_doc = RootIdentity_NewDID(rootidentity, storepass, NULL);
+    controller1_doc = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1_doc);
 
     controller1 = DIDDocument_GetSubject(controller1_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1);
     CU_ASSERT_TRUE_FATAL(DIDDocument_PublishDID(controller1_doc, NULL, true, storepass));
 
-    controller2_doc = RootIdentity_NewDID(rootidentity, storepass, NULL);
+    controller2_doc = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller2_doc);
 
     controller2 = DIDDocument_GetSubject(controller2_doc);

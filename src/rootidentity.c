@@ -426,7 +426,7 @@ static DIDDocument *create_document(DID *did, const char *key, const char *alias
 }
 
 static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index, const char *alias,
-        DIDStore *store, const char *storepass)
+        DIDStore *store, const char *storepass, bool overwrite)
 {
     char publickeybase58[PUBLICKEY_BASE58_BYTES];
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
@@ -450,7 +450,6 @@ static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index
     //check did is exist or not
     document = DIDStore_LoadDID(store, &did);
     if (document) {
-        DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exists.");
         HDKey_Wipe(derivedkey);
         DIDDocument_Destroy(document);
         return NULL;
@@ -458,10 +457,16 @@ static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index
 
     document = DID_Resolve(&did, &status, true);
     if (document) {
-        DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exists.");
-        HDKey_Wipe(derivedkey);
-        DIDDocument_Destroy(document);
-        return NULL;
+        if (DIDDocument_IsDeactivated(document) || !overwrite) {
+            if (DIDDocument_IsDeactivated(document))
+                DIDError_Set(DIDERR_DID_DEACTIVATED, "DID is deactivated.");
+            else
+                DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exists.");
+
+            HDKey_Wipe(derivedkey);
+            DIDDocument_Destroy(document);
+            return NULL;
+        }
     }
 
     if (HDKey_SerializePrv(derivedkey, extendedkey, sizeof(extendedkey)) < 0) {
@@ -501,7 +506,8 @@ static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index
     return document;
 }
 
-DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepass, const char *alias)
+DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepass,
+        const char *alias, bool overwrite)
 {
     DIDDocument *document;
     DIDStore *store;
@@ -523,7 +529,7 @@ DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepa
     if (index < 0)
         return NULL;
 
-    document = rootidentity_createdid(rootidentity, index++, alias, store, storepass);
+    document = rootidentity_createdid(rootidentity, index++, alias, store, storepass, overwrite);
     if (!document)
         return NULL;
 
@@ -541,7 +547,7 @@ DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepa
 }
 
 DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
-        const char *storepass, const char *alias)
+        const char *storepass, const char *alias, bool overwrite)
 {
     DIDStore *store;
     DIDDocument *document;
@@ -559,7 +565,7 @@ DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
         return NULL;
     }
 
-    document = rootidentity_createdid(rootidentity, index, alias, store, storepass);
+    document = rootidentity_createdid(rootidentity, index, alias, store, storepass, overwrite);
     if (!document)
         return NULL;
 

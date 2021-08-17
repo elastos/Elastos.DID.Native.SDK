@@ -50,7 +50,7 @@ static void test_didstore_newdid(void)
     CU_ASSERT_TRUE(DIDStore_ContainsRootIdentity(store, id));
 
     //doc = DIDStore_NewDID(store, storepass, alias);
-    doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+    doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -104,7 +104,7 @@ static void test_didstore_newdid_byindex(void)
     Mnemonic_Free((void*)mnemonic);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    doc = RootIdentity_NewDIDByIndex(rootidentity, 0, storepass, "did0 by index");
+    doc = RootIdentity_NewDIDByIndex(rootidentity, 0, storepass, "did0 by index", false);
     CU_ASSERT_PTR_NOT_NULL(doc);
     DID_Copy(&did, DIDDocument_GetSubject(doc));
 
@@ -119,12 +119,12 @@ static void test_didstore_newdid_byindex(void)
     DID_Destroy(ndid);
     DIDDocument_Destroy(doc);
 
-    doc = RootIdentity_NewDID(rootidentity, storepass, "did0");
+    doc = RootIdentity_NewDID(rootidentity, storepass, "did0", false);
     CU_ASSERT_PTR_NULL(doc);
     CU_ASSERT_TRUE(DIDStore_DeleteDID(store, &did));
     DIDDocument_Destroy(doc);
 
-    doc = RootIdentity_NewDID(rootidentity, storepass, "did0");
+    doc = RootIdentity_NewDID(rootidentity, storepass, "did0", false);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     CU_ASSERT_TRUE(DID_Equals(&did, DIDDocument_GetSubject(doc)));
@@ -167,7 +167,7 @@ static void test_didstore_newdid_withouAlias(void)
             PATH_STEP, ROOTS_DIR, PATH_STEP, id, PATH_STEP, PRIVATE_FILE);
     CU_ASSERT_TRUE_FATAL(file_exist(path));
 
-    doc = RootIdentity_NewDID(rootidentity, storepass, NULL);
+    doc = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
 
@@ -247,7 +247,7 @@ static void test_didstore_newdid_emptystore(void)
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    doc = RootIdentity_NewDID(NULL, storepass, "little fish");
+    doc = RootIdentity_NewDID(NULL, storepass, "little fish", false);
     CU_ASSERT_PTR_NULL_FATAL(doc);
     DIDDocument_Destroy(doc);
 
@@ -271,7 +271,7 @@ static void test_didstore_privateidentity_compatibility(void)
     rootidentity = RootIdentity_Create(mnemonic, passphrase, false, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    doc = RootIdentity_NewDID(rootidentity, storepass, "identity test1");
+    doc = RootIdentity_NewDID(rootidentity, storepass, "identity test1", false);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     DID_Copy(&did, &doc->did);
@@ -282,7 +282,7 @@ static void test_didstore_privateidentity_compatibility(void)
     rootidentity = RootIdentity_CreateFromRootKey(ExtendedkeyBase, true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    doc = RootIdentity_NewDID(rootidentity, storepass, "identity test2");
+    doc = RootIdentity_NewDID(rootidentity, storepass, "identity test2", false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
