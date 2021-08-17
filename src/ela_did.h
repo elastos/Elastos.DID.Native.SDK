@@ -1454,13 +1454,16 @@ DID_API DID *RootIdentity_GetDefaultDID(RootIdentity *rootidentity);
  * @param
  *      alias                     [in] The nickname of DID.
  *                                     ‘alias' supports NULL.
+ * @param
+ *      overwrite                 [in] The document is overwrite or not.
+ *                                true for overwriting the existing one, fail otherwise.
  * @return
  *      If no error occurs, return the handle to DID Document.
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
 DID_API DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity,
-        const char *storepass, const char *alias);
+        const char *storepass, const char *alias, bool overwrite);
 
 /**
  * \~English
@@ -1475,13 +1478,16 @@ DID_API DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity,
  * @param
  *      alias                     [in] The nickname of DID.
  *                                     ‘alias' supports NULL.
+  * @param
+ *      overwrite                 [in] The document is overwrite or not.
+ *                                true for overwriting the existing one, fail otherwise.
  * @return
  *      If no error occurs, return the handle to DID Document.
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
 DID_API DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
-        const char *storepass, const char *alias);
+        const char *storepass, const char *alias, bool overwrite);
 
 /**
  * \~English

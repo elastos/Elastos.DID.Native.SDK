@@ -266,14 +266,14 @@ static void test_idchain_listvc(void)
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     //create owner document
-    document = RootIdentity_NewDID(rootidentity, storepass, NULL);
+    document = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL(document);
     DID_Copy(&did, &document->did);
 
     expires = DIDDocument_GetExpires(document);
 
     //create issuer
-    issuerdoc = RootIdentity_NewDID(rootidentity, storepass, NULL);
+    issuerdoc = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(issuerdoc);
     DID_Copy(&issuerid, &issuerdoc->did);
@@ -526,7 +526,7 @@ static void test_idchain_listvc_pagination(void)
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
     //create owner document
-    document = RootIdentity_NewDID(rootidentity, storepass, NULL);
+    document = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL(document);
     DID_Copy(&did, &document->did);
     CU_ASSERT_TRUE(DIDDocument_PublishDID(document, NULL, true, storepass));
@@ -535,7 +535,7 @@ static void test_idchain_listvc_pagination(void)
     DIDDocument_Destroy(document);
 
     //create issuer
-    issuerdoc = RootIdentity_NewDID(rootidentity, storepass, NULL);
+    issuerdoc = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL(issuerdoc);
     DID_Copy(&issuerid, &issuerdoc->did);
     CU_ASSERT_TRUE(DIDDocument_PublishDID(issuerdoc, NULL, true, storepass));

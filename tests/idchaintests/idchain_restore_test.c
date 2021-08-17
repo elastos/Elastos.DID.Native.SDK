@@ -315,7 +315,7 @@ static int idchain_restore_test_suite_init(void)
     }
 
     for (i = 0; i < 5; i++) {
-        doc = RootIdentity_NewDID(rootidentity, storepass, NULL);
+        doc = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
         if (!doc) {
             RootIdentity_Destroy(rootidentity);
             Mnemonic_Free((void*)newmnemonic);

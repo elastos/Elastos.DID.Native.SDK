@@ -44,7 +44,7 @@ static void test_didstore_bulk_newdid(void)
         if (size < 0 || size > sizeof(alias))
             continue;
 
-        DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+        DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
         if (!doc)
             continue;
         CU_ASSERT_TRUE(DIDDocument_IsValid(doc));
@@ -114,7 +114,7 @@ static void test_didstore_op_deletedid(void)
         if (size < 0 || size > sizeof(alias))
             continue;
 
-        DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias);
+        DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
         DID *did = DIDDocument_GetSubject(doc);

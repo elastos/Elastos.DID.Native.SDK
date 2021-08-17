@@ -225,7 +225,7 @@ static void test_openstore_compatibility(void)
         free((void*)id);
         CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-        doc = RootIdentity_NewDIDByIndex(rootidentity, 100, password, "");
+        doc = RootIdentity_NewDIDByIndex(rootidentity, 100, password, "", false);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
         did = RootIdentity_GetDIDByIndex(rootidentity, 100);
@@ -264,7 +264,7 @@ static void test_openstore_newdid_with_wrongpw(void)
     free((void*)id);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    doc = RootIdentity_NewDID(rootidentity, "1234", "");
+    doc = RootIdentity_NewDID(rootidentity, "1234", "", false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NULL(doc);
     DIDDocument_Destroy(doc);
@@ -324,7 +324,7 @@ static void didstore_openmultistore(void)
         CU_ASSERT_PTR_NOT_NULL(rootidentity);
         free((void*)id);
 
-        docs[i] = RootIdentity_NewDID(rootidentity, storepass, NULL);
+        docs[i] = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
         RootIdentity_Destroy(rootidentity);
         CU_ASSERT_PTR_NOT_NULL(docs[i]);
     }
