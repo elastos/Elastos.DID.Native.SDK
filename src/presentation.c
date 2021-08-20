@@ -309,6 +309,7 @@ static Presentation *parse_presentation(json_t *json)
     json_t *item;
     Presentation *presentation = NULL;
     DIDURL *id;
+    DID *holder;
 
     assert(json);
 
@@ -395,11 +396,33 @@ static Presentation *parse_presentation(json_t *json)
         goto errorExit;
     }
 
+    //check id and holder
     id = Presentation_GetId(presentation);
-    if ( id && !DID_Equals(Presentation_GetHolder(presentation), &id->did)) {
+    holder = Presentation_GetHolder(presentation);
+    if (!holder) {
+        if (id && !DIDURL_GetDid(id)) {
+            DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid presentation id.");
+            goto errorExit;
+        }
+
+        if (!DIDURL_GetDid(&presentation->proof.verificationMethod)) {
+            DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid verification method.");
+            goto errorExit;
+        }
+    } else {
+        if (id && !DIDURL_GetDid(id))
+            DID_Copy(&id->did, holder);
+
+        if (!DIDURL_GetDid(&presentation->proof.verificationMethod))
+            DID_Copy(&presentation->proof.verificationMethod.did, holder);
+    }
+
+    //check: it is necessary or not
+    /*id = Presentation_GetId(presentation);
+    if (id && !DID_Equals(Presentation_GetHolder(presentation), &id->did)) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "The holder mismatch with the id of persentation.");
         goto errorExit;
-    }
+    }*/
 
     return presentation;
 
