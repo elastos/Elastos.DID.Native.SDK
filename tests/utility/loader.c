@@ -479,6 +479,18 @@ static void presentation_basekey(char *basekey, char *did, char *vp, char *type,
     }
 }
 
+void ticket_basekey(char *basekey, char *did, bool json)
+{
+    assert(basekey);
+    assert(did);
+
+    strcpy(basekey, "res:");
+    if (json)
+        strcat(basekey, "json:");
+    strcat(basekey, "tt:");
+    strcat(basekey, did);
+}
+
 const char *TestData_GetDocumentJson(char *did, char *type, int version)
 {
     char path[PATH_MAX * 2], basekey[120] = {0};
@@ -687,6 +699,32 @@ const char *TestData_GetPresentationJson(char *did, char *vp, char *type, int ve
     return data;
 }
 
+const char *TestData_GetTransferTicketJson(char *did)
+{
+    char path[PATH_MAX * 2], basekey[120] = {0};
+    const char *data;
+    void *dvalue;
+
+    assert(did);
+
+    ticket_basekey(basekey, did, true);
+    dvalue = get_testdata(basekey);
+    if (dvalue)
+        return (const char*)dvalue;
+
+    get_ticket_path(path, did);
+    data = load_file(path);
+    if (!data)
+        return NULL;
+
+    if (set_testdata(basekey, (void*)data) < 0) {
+        free((void*)data);
+        return NULL;
+    }
+
+    return data;
+}
+
 Presentation *TestData_GetPresentation(char *did, char *vp, char *type, int version)
 {
     char basekey[120] = {0};
@@ -716,6 +754,37 @@ Presentation *TestData_GetPresentation(char *did, char *vp, char *type, int vers
 
     return presentation;
 }
+
+TransferTicket *TestData_GetTransferTicket(char *did)
+{
+    char basekey[120] = {0};
+    TransferTicket *ticket;
+    const char *data;
+    void *dvalue;
+
+    assert(did);
+
+    ticket_basekey(basekey, did, false);
+    dvalue = get_testdata(basekey);
+    if (dvalue)
+        return (TransferTicket*)dvalue;
+
+    data = TestData_GetTransferTicketJson(did);
+    if (!data)
+        return NULL;
+
+    ticket = TransferTicket_FromJson(data);
+    if (!ticket)
+        return NULL;
+
+    if (set_testdata(basekey, (void*)ticket) < 0) {
+        TransferTicket_Destroy(ticket);
+        return NULL;
+    }
+
+    return ticket;
+}
+
 
 /////////////////////////////////////
 void TestData_Init(int dummy)
@@ -828,6 +897,8 @@ void TestData_Cleanup(void)
             Credential_Destroy((Credential*)dvalue);
         } else if (!strncmp(dkey, "res:vp", 6)) {
             Presentation_Destroy((Presentation*)dvalue);
+        } else if (!strncmp(dkey, "res:tt", 6)) {
+            TransferTicket_Destroy((TransferTicket*)dvalue);
         } else {
             free(dvalue);
         }

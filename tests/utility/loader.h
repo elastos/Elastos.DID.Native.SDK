@@ -74,11 +74,15 @@ const char *TestData_GetCredentialJson(char *did, char *vc, char *type, int vers
 
 const char *TestData_GetPresentationJson(char *did, char *vp, char *type, int version);
 
+const char *TestData_GetTransferTicketJson(char *did);
+
 DIDDocument *TestData_GetDocument(char *did, char *type, int version);
 
 Credential *TestData_GetCredential(char *did, char *vc, char *type, int version);
 
 Presentation *TestData_GetPresentation(char *did, char *vp, char *type, int version);
+
+TransferTicket *TestData_GetTransferTicket(char *did);
 
 RootIdentity *TestData_InitIdentity(DIDStore *store);
 
