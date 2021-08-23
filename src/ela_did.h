@@ -4570,6 +4570,39 @@ DID_API int TransferTicket_IsGenuine(TransferTicket *ticket);
 
 /**
  * \~English
+ * Get the owner of transfer ticket.
+ *
+ * @param
+ *      ticket                    [in] The handle to TransferTicket.
+ * @return
+ *      Return the owner's did, NULL if an error occurred.
+ */
+DID_API DID *TransferTicket_GetOwner(TransferTicket *ticket);
+
+/**
+ * \~English
+ * Get the receiver of transfer ticket.
+ *
+ * @param
+ *      ticket                    [in] The handle to TransferTicket.
+ * @return
+ *      Return the receiver's did, NULL if an error occurred.
+ */
+DID_API DID *TransferTicket_GetReceiver(TransferTicket *ticket);
+
+/**
+ * \~English
+ * Get reference transaction id for this transfer operation.
+ *
+ * @param
+ *      ticket                    [in] The handle to TransferTicket.
+ * @return
+ *      Return the transaction id string, NULL if an error occurred.
+ */
+DID_API const char *TransferTicket_GetTransactionId(TransferTicket *ticket);
+
+/**
+ * \~English
  * Get the transfer ticket's signer count.
  *
  * @param

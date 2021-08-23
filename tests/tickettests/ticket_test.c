@@ -131,6 +131,68 @@ static void test_ticket(void)
     TestData_Free();
 }
 
+static void test_multi_signature_ticket(void)
+{
+    TransferTicket *ticket;
+    DID *owner, *receiver;
+    DIDStore *store;
+    DIDDocument *doc;
+
+    store = TestData_SetupStore(true);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(store);
+
+    doc = TestData_GetDocument("foobar", NULL, 2);
+    CU_ASSERT_PTR_NOT_NULL(doc);
+
+    ticket = TestData_GetTransferTicket("foobar");
+    CU_ASSERT_PTR_NOT_NULL(ticket);
+
+    owner = TransferTicket_GetOwner(ticket);
+    CU_ASSERT_PTR_NOT_NULL(owner);
+    CU_ASSERT_STRING_EQUAL("foobar", DID_GetMethodSpecificId(owner));
+
+    receiver = TransferTicket_GetReceiver(ticket);
+    CU_ASSERT_PTR_NOT_NULL(receiver);
+    CU_ASSERT_STRING_EQUAL("igHbSCez6H3gTuVPzwNZRrdj92GCJ6hD5d", DID_GetMethodSpecificId(receiver));
+
+    CU_ASSERT_STRING_EQUAL("4184a30d785a3579e944fd48e40e3cdf", TransferTicket_GetTransactionId(ticket));
+    CU_ASSERT_EQUAL(2, TransferTicket_GetProofCount(ticket));
+    CU_ASSERT_TRUE(TransferTicket_IsGenuine(ticket));
+
+    TestData_Free();
+}
+
+static void test_ticket2(void)
+{
+    TransferTicket *ticket;
+    DID *owner, *receiver;
+    DIDStore *store;
+    DIDDocument *doc;
+
+    store = TestData_SetupStore(true);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(store);
+
+    doc = TestData_GetDocument("baz", NULL, 2);
+    CU_ASSERT_PTR_NOT_NULL(doc);
+
+    ticket = TestData_GetTransferTicket("baz");
+    CU_ASSERT_PTR_NOT_NULL(ticket);
+
+    owner = TransferTicket_GetOwner(ticket);
+    CU_ASSERT_PTR_NOT_NULL(owner);
+    CU_ASSERT_STRING_EQUAL("baz", DID_GetMethodSpecificId(owner));
+
+    receiver = TransferTicket_GetReceiver(ticket);
+    CU_ASSERT_PTR_NOT_NULL(receiver);
+    CU_ASSERT_STRING_EQUAL("igHbSCez6H3gTuVPzwNZRrdj92GCJ6hD5d", DID_GetMethodSpecificId(receiver));
+
+    CU_ASSERT_STRING_EQUAL("f54c02fd7dcdd2be48a6353998a04811", TransferTicket_GetTransactionId(ticket));
+    CU_ASSERT_EQUAL(1, TransferTicket_GetProofCount(ticket));
+    CU_ASSERT_TRUE(TransferTicket_IsGenuine(ticket));
+
+    TestData_Free();
+}
+
 static int ticket_test_suite_init(void)
 {
     return 0;
@@ -142,8 +204,10 @@ static int ticket_test_suite_cleanup(void)
 }
 
 static CU_TestInfo cases[] = {
-    { "test_ticket",        test_ticket      },
-    { NULL,                 NULL             }
+    { "test_ticket",                        test_ticket                 },
+    { "test_multi_signature_ticket",        test_multi_signature_ticket },
+    { "test_ticket2",                       test_ticket2                },
+    { NULL,                                 NULL                        }
 };
 
 static CU_SuiteInfo suite[] = {

@@ -659,6 +659,39 @@ errorExit:
     DIDERROR_FINALIZE();
 }
 
+DID *TransferTicket_GetOwner(TransferTicket *ticket)
+{
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!ticket, "No ticket argument.", NULL);
+    return &ticket->did;
+
+    DIDERROR_FINALIZE();
+}
+
+DID *TransferTicket_GetReceiver(TransferTicket *ticket)
+{
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!ticket, "No ticket argument.", NULL);
+    return &ticket->to;
+
+    DIDERROR_FINALIZE();
+}
+
+const char *TransferTicket_GetTransactionId(TransferTicket *ticket)
+{
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!ticket, "No ticket argument.", NULL);
+    if (*ticket->txid)
+        return ticket->txid;
+
+    return NULL;
+
+    DIDERROR_FINALIZE();
+}
+
 ssize_t TransferTicket_GetProofCount(TransferTicket *ticket)
 {
     DIDERROR_INITIALIZE();
