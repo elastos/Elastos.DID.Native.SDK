@@ -2804,11 +2804,14 @@ ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass,
 
     id2path(key->fragment, strlen(key->fragment) + 1, filename, 128);
     rc = get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring, PRIVATEKEYS_DIR, filename);
-    if (rc == 0) {
-        privatekey_str = load_file(path);
-        if (!privatekey_str)
-            return -1;
+    if (rc == -1) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "No private key file.");
+        return -1;
     }
+
+    privatekey_str = load_file(path);
+    if (!privatekey_str)
+        return -1;
 
     if (!strcmp("", privatekey_str)) {
         free((void*)privatekey_str);

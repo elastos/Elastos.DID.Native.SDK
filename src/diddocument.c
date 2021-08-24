@@ -533,8 +533,12 @@ static int Parse_Auth_PublicKeys(DIDDocument *document, json_t *json, KeyType ty
         if (!pk_item)
             continue;
 
-        id_field = json_object_get(pk_item, ID);
-        if (!id_field) {
+        if (!json_is_object(pk_item) && !json_is_string(pk_item)) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Auth key array is invalid.");
+            return -1;
+        }
+
+        if (json_is_string(pk_item)) {
             if (DIDURL_Parse(&id, json_string_value(pk_item), &document->did) < 0)
                 continue;
 
@@ -939,6 +943,9 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
     DIDDocument *doc;
     json_t *item;
     int m, n;
+    uint8_t binkey[PUBLICKEY_BYTES];
+    char idstring[ELA_MAX_DID_LEN];
+    bool has = false;
 
     assert(root);
 
@@ -996,10 +1003,6 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
 
     //parse publickey
     item = json_object_get(root, PUBLICKEY);
-    if (!doc->controllers.size && !item) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing publicKey.");
-        goto errorExit;
-    }
     if (item && !json_is_array(item)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid publicKey.");
         goto errorExit;
@@ -1009,16 +1012,39 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
 
     //parse authentication
     item = json_object_get(root, AUTHENTICATION);
-    if (!doc->controllers.size && !item) {
-        DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing authentication key.");
-        goto errorExit;
-    }
     if (item && !json_is_array(item)) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid authentication key.");
         goto errorExit;
     }
     if (item && Parse_Auth_PublicKeys(doc, item, KeyType_Authentication) < 0)
         goto errorExit;
+
+    //check pk size
+    if (!doc->controllers.size) {
+        if (!doc->publickeys.size || !doc->publickeys.pks) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "No publicKey.");
+            goto errorExit;
+        }
+
+        //check: pk array has default key.
+        for (int i = 0; i < doc->publickeys.size; i++) {
+            PublicKey *pk = doc->publickeys.pks[i];
+            assert(pk);
+
+            b58_decode(binkey, sizeof(binkey), pk->publicKeyBase58);
+            HDKey_PublicKey2Address(binkey, idstring, sizeof(idstring));
+
+            if (!strcmp(idstring, pk->id.did.idstring)) {
+                pk->authenticationKey = true;
+                has = true;
+                break;
+            }
+        }
+        if (!has) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "No default key.");
+            goto errorExit;
+        }
+    }
 
     //parse authorization
     item = json_object_get(root, AUTHORIZATION);

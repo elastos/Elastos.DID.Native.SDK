@@ -255,7 +255,7 @@ static int parse_proof(Presentation *presentation, json_t *json)
         return -1;
     }
 
-    keyid = DIDURL_FromString(json_string_value(item), NULL);
+    keyid = DIDURL_FromString(json_string_value(item), &presentation->holder);
     if (!keyid) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid signkey for presentation.");
         return -1;
@@ -319,6 +319,19 @@ static Presentation *parse_presentation(json_t *json)
         return NULL;
     }
 
+    item = json_object_get(json, HOLDER);
+    if (item) {
+        if (!json_is_string(item)) {
+            DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid holder.");
+            goto errorExit;
+        }
+
+        if (DID_Parse(&presentation->holder, json_string_value(item)) < 0) {
+            DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid holder.");
+            goto errorExit;
+        }
+    }
+
     item = json_object_get(json, ID);
     if (item) {
         if (!json_is_string(item)) {
@@ -326,7 +339,7 @@ static Presentation *parse_presentation(json_t *json)
             goto errorExit;
         }
 
-        if (DIDURL_Parse(&presentation->id, json_string_value(item), NULL) < 0) {
+        if (DIDURL_Parse(&presentation->id, json_string_value(item), &presentation->holder) < 0) {
             DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid id.");
             goto errorExit;
         }
@@ -367,19 +380,6 @@ static Presentation *parse_presentation(json_t *json)
     }
     if (parse_proof(presentation, item) == -1)
         goto errorExit;
-
-    item = json_object_get(json, HOLDER);
-    if (item) {
-        if (!json_is_string(item)) {
-            DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid holder.");
-            goto errorExit;
-        }
-
-        if (DID_Parse(&presentation->holder, json_string_value(item)) < 0) {
-            DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid holder.");
-            goto errorExit;
-        }
-    }
 
     item = json_object_get(json, VERIFIABLE_CREDENTIAL);
     if (!item) {
