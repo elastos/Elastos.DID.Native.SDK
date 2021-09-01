@@ -3580,11 +3580,11 @@ static DIDDocument *import_document(json_t *json, DID *did, Sha256_Digest *diges
         return NULL;
     }
 
-    doc = DIDDocument_FromJson_Internal(field);
+    doc = DIDDocument_FromJson_Internal(field, false);
     if (!doc)
         return NULL;
 
-    if (!DID_Equals(&doc->did, did) || !DIDDocument_IsGenuine(doc)) {
+    if (!DID_Equals(&doc->did, did)) {
         DIDError_Set(DIDERR_NOT_GENUINE, "Invalid document in the export data.");
         goto errorExit;
     }
@@ -4146,26 +4146,21 @@ errorExit:
 
 static int export_defaultId(JsonGenerator *gen, DIDStore *store, const char *id, Sha256_Digest *digest)
 {
-    const char *defaultid;
-    bool isDefault = false;
+    const char *defaultid, *isDefault;
 
     assert(gen);
     assert(digest);
 
     defaultid = DIDStore_GetDefaultRootIdentity(store);
     if (defaultid) {
-        if (!strcmp(id, defaultid))
-           isDefault = true;
+        isDefault = !strcmp(id, defaultid) ? "true" : "false";
         free((void*)defaultid);
     }
 
-    defaultid = isDefault ? "true" : "false";
 
-    CHECK_TO_MSG(DIDJG_WriteFieldName(gen, "default"),
+    CHECK_TO_MSG(DIDJG_WriteStringField(gen, "default", isDefault),
             DIDERR_OUT_OF_MEMORY, "Write 'default' failed.");
-    CHECK_TO_MSG(DIDJG_WriteBoolean(gen, isDefault),
-            DIDERR_OUT_OF_MEMORY, "Write 'default' failed.");
-    CHECK_TO_MSG(sha256_digest_update(digest, 1, defaultid, strlen(defaultid)),
+    CHECK_TO_MSG(sha256_digest_update(digest, 1, isDefault, strlen(isDefault)),
             DIDERR_CRYPTO_ERROR, "Sha256 'default' failed.");
 
     return 0;
@@ -4402,13 +4397,13 @@ static int import_defaultId(json_t *json, DIDStore *store, const char *id,
         DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Missing 'default'.");
         return -1;
     }
-    if (!json_is_boolean(item)) {
+    if (!json_is_string(item)) {
         DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Invalid 'default'.");
         return -1;
     }
 
-    *isDefault = json_is_true(item) ? true : false;
-    data = *isDefault ? "true" : "false";
+    data = json_string_value(item);
+    *isDefault = !strcmp("true", data) ? true : false;
     CHECK_TO_MSG(sha256_digest_update(digest, 1, data, strlen(data)),
             DIDERR_CRYPTO_ERROR, "Sha256 'default' failed.");
     return 0;
@@ -4769,7 +4764,7 @@ int DIDStore_ImportStore(DIDStore *store, const char *storepass, const char *zip
                 goto errorExit;
             }
         } else if(!strncmp(stat.name, "did-", strlen("did-"))) {
-            DID * did = DID_New(stat.name);
+            DID * did = DID_New(stat.name + 4);
             if (!did)
                 goto errorExit;
 

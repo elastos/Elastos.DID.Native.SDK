@@ -60,6 +60,8 @@ void TestData_Cleanup(void);
 
 void TestData_Reset(int type);
 
+char *get_testdata_path(char *path, char *file, int version);
+
 DIDStore *TestData_SetupStore(bool dummybackend);
 
 DIDStore *TestData_SetupTestStore(bool dummybackend, int version);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 - 2021 Elastos Foundation
+ * Copyright (c) 2019 Elastos Foundation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,24 +26,18 @@
 DECL_TESTSUITE(didstore_initial_test);
 DECL_TESTSUITE(didstore_openstore_test);
 DECL_TESTSUITE(didstore_did_op_test);
-DECL_TESTSUITE(didstore_customized_did_test);
 DECL_TESTSUITE(didstore_vc_op_test);
 DECL_TESTSUITE(didstore_change_password_test);
 DECL_TESTSUITE(didstore_export_store_test);
-DECL_TESTSUITE(didstore_rootidentity_test);
 
 #define DEFINE_DSTORE_TESTSUITES \
-    DEFINE_TESTSUITE(didstore_rootidentity_test), \
     DEFINE_TESTSUITE(didstore_change_password_test), \
     DEFINE_TESTSUITE(didstore_did_op_test), \
     DEFINE_TESTSUITE(didstore_initial_test), \
-    DEFINE_TESTSUITE(didstore_customized_did_test), \
     DEFINE_TESTSUITE(didstore_openstore_test), \
     DEFINE_TESTSUITE(didstore_vc_op_test), \
     DEFINE_TESTSUITE(didstore_export_store_test)
 
 #endif /* __DSTORE_TEST_SUITES_H__ */
-
-
 
 
