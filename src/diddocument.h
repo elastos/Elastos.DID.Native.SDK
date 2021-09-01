@@ -104,7 +104,7 @@ int DIDDocument_SetStore(DIDDocument *document, DIDStore *store);
 int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
         bool compact, bool forsign);
 
-DIDDocument *DIDDocument_FromJson_Internal(json_t *root);
+DIDDocument *DIDDocument_FromJson_Internal(json_t *root, bool resolve);
 
 DIDDocument *DIDDocument_GetControllerDocument(DIDDocument *doc, DID *controller);
 

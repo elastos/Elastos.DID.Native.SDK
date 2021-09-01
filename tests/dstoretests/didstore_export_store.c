@@ -13,9 +13,26 @@
 #include "ela_did.h"
 #include "diddocument.h"
 #include "didstore.h"
+#include "rootidentity.h"
 
 static const char *alias = "littlefish";
 static const char *password = "passwd";
+
+static const char *user1Did = "iXcRhYB38gMt1phi5JXJMjeXL2TL8cg58y";
+static const char *user2Did = "idwuEMccSpsTH4ZqrhuHqg6y8XMVQAsY5g";
+static const char *user3Did = "igXiyCJEUjGJV1DMsMa4EbWunQqVg97GcS";
+static const char *user4Did = "igHbSCez6H3gTuVPzwNZRrdj92GCJ6hD5d";
+static const char *issuerDid = "imUUPBfrZ1yZx6nWXe6LNN59VeX2E6PPKj";
+static const char *exampleDid = "example";
+static const char *fooDid = "foo";
+static const char *foobarDid = "foobar";
+static const char *barDid = "bar";
+static const char *bazDid = "baz";
+
+typedef struct List_Helper {
+    DIDStore *store;
+    int count;
+} List_Helper;
 
 static int get_did(DID *did, void *context)
 {
@@ -28,6 +45,122 @@ static int get_did(DID *did, void *context)
         strcpy(d->idstring, did->idstring);
 
     return 0;
+}
+
+static int get_rootidentity(RootIdentity *rootidentity, void *context)
+{
+    int *count = (int*)context;
+
+    if (!rootidentity)
+        return 0;
+
+    if (strcmp("d2f3c0f07eda4e5130cbdc59962426b1", rootidentity->id) || rootidentity->index != 5)
+        return -1;
+
+    (*count)++;
+    return 0;
+}
+
+static int get_dids(DID *did, void *context)
+{
+    int *count = (int*)context;
+
+    if (!did)
+        return 0;
+
+    if (!strcmp(user1Did, did->idstring) || !strcmp(user2Did, did->idstring) ||
+            !strcmp(user3Did, did->idstring) || !strcmp(user4Did, did->idstring) ||
+            !strcmp(issuerDid, did->idstring) || !strcmp(exampleDid, did->idstring) ||
+            !strcmp(fooDid, did->idstring) || !strcmp(foobarDid, did->idstring) ||
+            !strcmp(barDid, did->idstring) || !strcmp(bazDid, did->idstring)) {
+        (*count)++;
+        return 0;
+    }
+
+    return -1;
+}
+
+static int get_user1vcs(DIDURL *id, void *context)
+{
+    List_Helper *helper = (List_Helper*)context;
+
+    if (!id)
+        return 0;
+
+    DIDStore *store = helper->store;
+
+    if (!strcmp("email", id->fragment) || !strcmp("json", id->fragment) ||
+            !strcmp("passport", id->fragment) || !strcmp("profile", id->fragment) ||
+            !strcmp("twitter", id->fragment)) {
+        Credential *vc = DIDStore_LoadCredential(store, &id->did, id);
+        if (vc) {
+            helper->count++;
+            Credential_Destroy(vc);
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
+static int get_user2vcs(DIDURL *id, void *context)
+{
+    List_Helper *helper = (List_Helper*)context;
+
+    if (!id)
+        return 0;
+
+    if (strcmp("profile", id->fragment))
+        return -1;
+
+    Credential *vc = DIDStore_LoadCredential(helper->store, &id->did, id);
+    if (!vc)
+        return -1;
+
+    helper->count++;
+    Credential_Destroy(vc);
+    return 0;
+}
+
+static int get_user3vcs(DIDURL *id, void *context)
+{
+    List_Helper *helper = (List_Helper*)context;
+
+    if (!id)
+        return 0;
+
+    if (strcmp("email", id->fragment))
+        return -1;
+
+    Credential *vc = DIDStore_LoadCredential(helper->store, &id->did, id);
+    if (!vc)
+        return -1;
+
+    helper->count++;
+    Credential_Destroy(vc);
+    return 0;
+}
+
+static int get_user4vcs(DIDURL *id, void *context)
+{
+    List_Helper *helper = (List_Helper*)context;
+
+    if (!id)
+        return 0;
+
+    DIDStore *store = helper->store;
+
+    if (!strcmp("email", id->fragment) || !strcmp("license", id->fragment) ||
+            !strcmp("services", id->fragment) || !strcmp("profile", id->fragment)) {
+        Credential *vc = DIDStore_LoadCredential(store, &id->did, id);
+        if (vc) {
+            helper->count++;
+            Credential_Destroy(vc);
+            return 0;
+        }
+    }
+
+    return -1;
 }
 
 static char *get_tmp_file(char *path, const char *filename)
@@ -208,6 +341,229 @@ static void test_didstore_export_import_store(void)
     TestData_Free();
 }
 
+static void testImportCompatible(void)
+{
+    char path[PATH_MAX], _storepath[PATH_MAX];
+    const char *storepath;
+    DIDStore *store2, *store;
+    DIDMetadata *metadata;
+    DIDDocument *doc, *user1Doc;
+    List_Helper helper;
+    DID *did;
+    int count = 0;
+
+    TestData_SetupStore(true);
+
+    get_testdata_path(path, "store-export.zip", 2);
+
+    //create new store
+    storepath = get_store_path(_storepath, "imported-store");
+    CU_ASSERT_PTR_NOT_NULL(storepath);
+    delete_file(storepath);
+
+    store2 = DIDStore_Open(storepath);
+    CU_ASSERT_PTR_NOT_NULL(store2);
+
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ImportStore(store2, storepass, path, "password"));
+
+    // Root identity
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store2, get_rootidentity, (void*)&count));
+    CU_ASSERT_EQUAL(1, count);
+
+    // DIDs
+    count = 0;
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store2, 0, get_dids, (void*)&count));
+    CU_ASSERT_EQUAL(10, count);
+
+    // DID: User1
+    did = DID_New(user1Did);
+    CU_ASSERT_PTR_NOT_NULL(did);
+
+    user1Doc = DIDStore_LoadDID(store2, did);
+    CU_ASSERT_PTR_NOT_NULL(user1Doc);
+
+    metadata = DIDDocument_GetMetadata(user1Doc);
+    CU_ASSERT_PTR_NOT_NULL(metadata);
+    CU_ASSERT_STRING_EQUAL("User1", DIDMetadata_GetAlias(metadata));
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(user1Doc, NULL, true, storepass));
+
+    helper.store = store2;
+    helper.count = 0;
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+        get_user1vcs, (void*)&helper));
+    CU_ASSERT_EQUAL(5, helper.count);
+    DID_Destroy(did);
+
+    // DID: User2
+    did = DID_New(user2Did);
+    CU_ASSERT_PTR_NOT_NULL(did);
+
+    doc = DIDStore_LoadDID(store2, did);
+    CU_ASSERT_PTR_NOT_NULL(doc);
+
+    metadata = DIDDocument_GetMetadata(doc);
+    CU_ASSERT_PTR_NOT_NULL(metadata);
+    CU_ASSERT_STRING_EQUAL("User2", DIDMetadata_GetAlias(metadata));
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+    DIDDocument_Destroy(doc);
+
+    helper.store = store2;
+    helper.count = 0;
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+        get_user2vcs, (void*)&helper));
+    CU_ASSERT_EQUAL(1, helper.count);
+    DID_Destroy(did);
+
+    // DID: User3
+    did = DID_New(user3Did);
+    CU_ASSERT_PTR_NOT_NULL(did);
+
+    doc = DIDStore_LoadDID(store2, did);
+    CU_ASSERT_PTR_NOT_NULL(doc);
+
+    metadata = DIDDocument_GetMetadata(doc);
+    CU_ASSERT_PTR_NOT_NULL(metadata);
+    CU_ASSERT_STRING_EQUAL("User3", DIDMetadata_GetAlias(metadata));
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+    DIDDocument_Destroy(doc);
+
+    helper.store = store2;
+    helper.count = 0;
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+        get_user2vcs, (void*)&helper));
+    CU_ASSERT_EQUAL(0, helper.count);
+    DID_Destroy(did);
+
+    // DID: User4
+    did = DID_New(user4Did);
+    CU_ASSERT_PTR_NOT_NULL(did);
+
+    doc = DIDStore_LoadDID(store2, did);
+    CU_ASSERT_PTR_NOT_NULL(doc);
+
+    metadata = DIDDocument_GetMetadata(doc);
+    CU_ASSERT_PTR_NOT_NULL(metadata);
+    CU_ASSERT_STRING_EQUAL("User4", DIDMetadata_GetAlias(metadata));
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+    DIDDocument_Destroy(doc);
+
+    helper.store = store2;
+    helper.count = 0;
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+        get_user2vcs, (void*)&helper));
+    CU_ASSERT_EQUAL(0, helper.count);
+    DID_Destroy(did);
+
+    // DID: Issuer
+    did = DID_New(issuerDid);
+    CU_ASSERT_PTR_NOT_NULL(did);
+
+    doc = DIDStore_LoadDID(store2, did);
+    CU_ASSERT_PTR_NOT_NULL(doc);
+
+    metadata = DIDDocument_GetMetadata(doc);
+    CU_ASSERT_PTR_NOT_NULL(metadata);
+    CU_ASSERT_STRING_EQUAL("Issuer", DIDMetadata_GetAlias(metadata));
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+    DIDDocument_Destroy(doc);
+
+    helper.store = store2;
+    helper.count = 0;
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+        get_user2vcs, (void*)&helper));
+    CU_ASSERT_EQUAL(1, helper.count);
+    DID_Destroy(did);
+
+    // DID: Example
+    did = DID_New(exampleDid);
+    CU_ASSERT_PTR_NOT_NULL(did);
+
+    doc = DIDStore_LoadDID(store2, did);
+    CU_ASSERT_PTR_NOT_NULL(doc);
+
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+    DIDDocument_Destroy(doc);
+
+    helper.store = store2;
+    helper.count = 0;
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+        get_user2vcs, (void*)&helper));
+    CU_ASSERT_EQUAL(1, helper.count);
+    DID_Destroy(did);
+
+    // DID: Foo
+    did = DID_New(fooDid);
+    CU_ASSERT_PTR_NOT_NULL(did);
+
+    doc = DIDStore_LoadDID(store2, did);
+    CU_ASSERT_PTR_NOT_NULL(doc);
+
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
+    DIDDocument_Destroy(doc);
+
+    helper.store = store2;
+    helper.count = 0;
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+        get_user3vcs, (void*)&helper));
+    CU_ASSERT_EQUAL(1, helper.count);
+    DID_Destroy(did);
+
+    // DID: FooBar
+    did = DID_New(foobarDid);
+    CU_ASSERT_PTR_NOT_NULL(did);
+
+    doc = DIDStore_LoadDID(store2, did);
+    CU_ASSERT_PTR_NOT_NULL(doc);
+
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
+    DIDDocument_Destroy(doc);
+
+    helper.store = store2;
+    helper.count = 0;
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+        get_user4vcs, (void*)&helper));
+    CU_ASSERT_EQUAL(4, helper.count);
+    DID_Destroy(did);
+
+    // DID: Bar
+    did = DID_New(barDid);
+    CU_ASSERT_PTR_NOT_NULL(did);
+
+    doc = DIDStore_LoadDID(store2, did);
+    CU_ASSERT_PTR_NOT_NULL(doc);
+
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
+    DIDDocument_Destroy(doc);
+
+    helper.store = store2;
+    helper.count = 0;
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+        get_user4vcs, (void*)&helper));
+    CU_ASSERT_EQUAL(0, helper.count);
+    DID_Destroy(did);
+
+    // DID: Baz
+    did = DID_New(bazDid);
+    CU_ASSERT_PTR_NOT_NULL(did);
+
+    doc = DIDStore_LoadDID(store2, did);
+    CU_ASSERT_PTR_NOT_NULL(doc);
+
+    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
+    DIDDocument_Destroy(doc);
+
+    helper.store = store2;
+    helper.count = 0;
+    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+        get_user4vcs, (void*)&helper));
+    CU_ASSERT_EQUAL(0, helper.count);
+    DID_Destroy(did);
+
+    DIDDocument_Destroy(user1Doc);
+
+    TestData_Free();
+}
+
 static int didstore_export_store_test_suite_init(void)
 {
     return 0;
@@ -222,6 +578,7 @@ static CU_TestInfo cases[] = {
     {  "test_didstore_export_import_did",              test_didstore_export_import_did              },
     {  "test_didstore_export_import_rootidentity",     test_didstore_export_import_rootidentity     },
     {  "test_didstore_export_import_store",            test_didstore_export_import_store            },
+    {  "testImportCompatible",                         testImportCompatible            },
     {  NULL,                                           NULL                                         }
 };
 
