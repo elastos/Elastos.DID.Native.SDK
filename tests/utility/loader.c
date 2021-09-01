@@ -77,7 +77,7 @@ char *get_store_path(char* path, const char *dir)
     return path;
 }
 
-static char *get_testdata_path(char *path, char *file, int version)
+char *get_testdata_path(char *path, char *file, int version)
 {
     size_t len;
 

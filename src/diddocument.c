@@ -412,7 +412,7 @@ static int Parse_PublicKey(DID *did, json_t *json, PublicKey **publickey)
     return 0;
 }
 
-static int Parse_Controllers(DIDDocument *document, json_t *json)
+static int Parse_Controllers(DIDDocument *document, json_t *json, bool resolve)
 {
     DIDDocument *controllerdoc;
     json_t *field;
@@ -446,10 +446,20 @@ static int Parse_Controllers(DIDDocument *document, json_t *json)
             return -1;
         }
 
-        controllerdoc = DID_Resolve(&controller, &status, false);
-        if (!controllerdoc) {
-            DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Controller %s %s", DIDSTR(&controller), DIDSTATUS_MSG(status));
-            return -1;
+        if (resolve) {
+            controllerdoc = DID_Resolve(&controller, &status, false);
+            if (!controllerdoc) {
+                DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Controller %s %s", DIDSTR(&controller), DIDSTATUS_MSG(status));
+                return -1;
+            }
+        } else {
+            controllerdoc = (DIDDocument*)calloc(1, sizeof(DIDDocument));
+            if (!controllerdoc) {
+                DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for Controller document %s failed.", DIDSTR(&controller));
+                return -1;
+            }
+
+            DID_Copy(&controllerdoc->did, &controller);
         }
 
         document->controllers.docs[document->controllers.size++] = controllerdoc;
@@ -938,7 +948,7 @@ static void parse_multisig(const char *buffer, int *m, int *n)
 }
 
 ////////////////////////////////Document/////////////////////////////////////
-DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
+DIDDocument *DIDDocument_FromJson_Internal(json_t *root, bool resolve)
 {
     DIDDocument *doc;
     json_t *item;
@@ -973,7 +983,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid controller.");
             goto errorExit;
         }
-        if (Parse_Controllers(doc, item) == -1)
+        if (Parse_Controllers(doc, item, resolve) == -1)
             goto errorExit;
     }
 
@@ -1104,7 +1114,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root)
         goto errorExit;
 
     //check the document format
-    if (!controllers_check(doc))
+    if (resolve && !controllers_check(doc))
         goto errorExit;
 
     return doc;
@@ -1130,7 +1140,7 @@ DIDDocument *DIDDocument_FromJson(const char *json)
         return NULL;
     }
 
-    doc = DIDDocument_FromJson_Internal(root);
+    doc = DIDDocument_FromJson_Internal(root, true);
     json_decref(root);
     return doc;
 
