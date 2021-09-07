@@ -669,7 +669,7 @@ DID *TransferTicket_GetOwner(TransferTicket *ticket)
     DIDERROR_FINALIZE();
 }
 
-DID *TransferTicket_GetReceiver(TransferTicket *ticket)
+DID *TransferTicket_GetRecipient(TransferTicket *ticket)
 {
     DIDERROR_INITIALIZE();
 

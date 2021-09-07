@@ -2810,10 +2810,13 @@ ssize_t DIDStore_LoadPrivateKey_Internal(DIDStore *store, const char *storepass,
     }
 
     privatekey_str = load_file(path);
-    if (!privatekey_str)
+    if (!privatekey_str) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "No private key.");
         return -1;
+    }
 
     if (!strcmp("", privatekey_str)) {
+        DIDError_Set(DIDERR_NOT_EXISTS, "Empty private key.");
         free((void*)privatekey_str);
         return -1;
     }
@@ -4512,7 +4515,7 @@ static zip_t *create_zip(const char *file)
 static int did_to_zip(DID *did, void *context)
 {
     DID_Export *export = (DID_Export*)context;
-    char tmpfile[PATH_MAX], path[PATH_MAX];
+    char tmpfile[PATH_MAX];
 
     if (!did)
         return 0;
@@ -4529,8 +4532,8 @@ static int did_to_zip(DID *did, void *context)
         return -1;
     }
 
-    sprintf(path, "did-%s", did->idstring);
-    if (zip_file_add(export->zip, path, did_source, 0) < 0) {
+    sprintf(tmpfile, "did-%s", did->idstring);
+    if (zip_file_add(export->zip, tmpfile, did_source, 0) < 0) {
         zip_source_free(did_source);
         DIDError_Set(DIDERR_MALFORMED_EXPORTDID, "Add source file failed.");
         return -1;
