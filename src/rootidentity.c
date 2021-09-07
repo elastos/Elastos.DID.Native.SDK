@@ -433,7 +433,7 @@ static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index
     HDKey _derivedkey, *derivedkey;
     DIDDocument *document;
     DID did;
-    int status;
+    int status, deactivated;
 
     assert(rootidentity);
     assert(index >= 0);
@@ -450,21 +450,30 @@ static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index
     //check did is exist or not
     document = DIDStore_LoadDID(store, &did);
     if (document) {
-        HDKey_Wipe(derivedkey);
+        deactivated = DIDDocument_IsDeactivated(document);
         DIDDocument_Destroy(document);
-        return NULL;
+        if (deactivated || !overwrite) {
+            if (deactivated)
+                DIDError_Set(DIDERR_DID_DEACTIVATED, "DID is deactivated.");
+            else
+                DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exists in the store.");
+
+            HDKey_Wipe(derivedkey);
+            return NULL;
+        }
     }
 
     document = DID_Resolve(&did, &status, true);
     if (document) {
-        if (DIDDocument_IsDeactivated(document) || !overwrite) {
-            if (DIDDocument_IsDeactivated(document))
+        deactivated = DIDDocument_IsDeactivated(document);
+        DIDDocument_Destroy(document);
+        if (deactivated || !overwrite) {
+            if (deactivated)
                 DIDError_Set(DIDERR_DID_DEACTIVATED, "DID is deactivated.");
             else
-                DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exists.");
+                DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already published.");
 
             HDKey_Wipe(derivedkey);
-            DIDDocument_Destroy(document);
             return NULL;
         }
     }

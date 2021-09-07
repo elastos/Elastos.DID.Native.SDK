@@ -1046,11 +1046,11 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root, bool resolve)
 
             if (!strcmp(idstring, pk->id.did.idstring)) {
                 pk->authenticationKey = true;
-                has = true;
+                doc->defaultkey = &pk->id;
                 break;
             }
         }
-        if (!has) {
+        if (!doc->defaultkey) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "No default key.");
             goto errorExit;
         }
@@ -3361,6 +3361,9 @@ DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
 
     CHECK_ARG(!document, "No document argument to get default key.", NULL);
 
+    if (document->defaultkey)
+        return document->defaultkey;
+
     if (document->controllers.size > 1) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Multipe controllers, so no default public key.");
         return NULL;
@@ -3380,8 +3383,10 @@ DIDURL *DIDDocument_GetDefaultPublicKey(DIDDocument *document)
         b58_decode(binkey, sizeof(binkey), pk->publicKeyBase58);
         HDKey_PublicKey2Address(binkey, idstring, sizeof(idstring));
 
-        if (!strcmp(idstring, pk->id.did.idstring))
+        if (!strcmp(idstring, pk->id.did.idstring)) {
+            document->defaultkey = &pk->id;
             return &pk->id;
+        }
     }
 
     DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "No default public key.");

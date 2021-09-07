@@ -54,6 +54,8 @@ struct DIDDocument {
 
     int multisig;
 
+    DIDURL *defaultkey;
+
     struct {
         size_t size;
         PublicKey **pks;

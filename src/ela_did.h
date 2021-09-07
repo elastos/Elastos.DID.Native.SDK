@@ -4588,7 +4588,7 @@ DID_API DID *TransferTicket_GetOwner(TransferTicket *ticket);
  * @return
  *      Return the receiver's did, NULL if an error occurred.
  */
-DID_API DID *TransferTicket_GetReceiver(TransferTicket *ticket);
+DID_API DID *TransferTicket_GetRecipient(TransferTicket *ticket);
 
 /**
  * \~English
