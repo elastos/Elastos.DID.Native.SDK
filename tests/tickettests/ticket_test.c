@@ -151,7 +151,7 @@ static void test_multi_signature_ticket(void)
     CU_ASSERT_PTR_NOT_NULL(owner);
     CU_ASSERT_STRING_EQUAL("foobar", DID_GetMethodSpecificId(owner));
 
-    receiver = TransferTicket_GetReceiver(ticket);
+    receiver = TransferTicket_GetRecipient(ticket);
     CU_ASSERT_PTR_NOT_NULL(receiver);
     CU_ASSERT_STRING_EQUAL("igHbSCez6H3gTuVPzwNZRrdj92GCJ6hD5d", DID_GetMethodSpecificId(receiver));
 
@@ -182,7 +182,7 @@ static void test_ticket2(void)
     CU_ASSERT_PTR_NOT_NULL(owner);
     CU_ASSERT_STRING_EQUAL("baz", DID_GetMethodSpecificId(owner));
 
-    receiver = TransferTicket_GetReceiver(ticket);
+    receiver = TransferTicket_GetRecipient(ticket);
     CU_ASSERT_PTR_NOT_NULL(receiver);
     CU_ASSERT_STRING_EQUAL("igHbSCez6H3gTuVPzwNZRrdj92GCJ6hD5d", DID_GetMethodSpecificId(receiver));
 
