@@ -560,6 +560,7 @@ static void testImportCompatible(void)
     DID_Destroy(did);
 
     DIDDocument_Destroy(user1Doc);
+    DIDStore_Close(store2);
 
     TestData_Free();
 }

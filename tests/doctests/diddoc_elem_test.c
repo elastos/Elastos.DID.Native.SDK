@@ -559,7 +559,7 @@ static void test_diddoc_add_authorization_key(void)
         CU_ASSERT_PTR_NOT_NULL(keybase);
         idstring = HDKey_GetAddress(dkey);
         CU_ASSERT_PTR_NOT_NULL(idstring);
-        strncpy(controller.idstring, idstring, sizeof(controller.idstring));
+        DID_Init(&controller, idstring);
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddPublicKey(builder, id1, &controller, keybase));
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthorizationKey(builder, id1, &controller, NULL));
 
@@ -570,7 +570,7 @@ static void test_diddoc_add_authorization_key(void)
         CU_ASSERT_PTR_NOT_NULL(keybase);
         idstring = HDKey_GetAddress(dkey);
         CU_ASSERT_PTR_NOT_NULL(idstring);
-        strncpy(controller.idstring, idstring, sizeof(controller.idstring));
+        DID_Init(&controller, idstring);
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddPublicKey(builder, id2, &controller, keybase));
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthorizationKey(builder, id2, NULL, keybase));
 
@@ -582,7 +582,7 @@ static void test_diddoc_add_authorization_key(void)
         CU_ASSERT_PTR_NOT_NULL(keybase);
         idstring = HDKey_GetAddress(dkey);
         CU_ASSERT_PTR_NOT_NULL(idstring);
-        strncpy(controller.idstring, idstring, sizeof(controller.idstring));
+        DID_Init(&controller, idstring);
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddPublicKey(builder, id3, &controller, keybase));
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthorizationKey(builder, id3, NULL, NULL));
 
@@ -593,7 +593,7 @@ static void test_diddoc_add_authorization_key(void)
         CU_ASSERT_PTR_NOT_NULL(keybase);
         idstring = HDKey_GetAddress(dkey);
         CU_ASSERT_PTR_NOT_NULL(idstring);
-        strncpy(controller.idstring, idstring, sizeof(controller.idstring));
+        DID_Init(&controller, idstring);
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthorizationKey(builder, id4, &controller, keybase));
 
         // Try to add a non existing key, should fail.
@@ -673,7 +673,7 @@ static void test_diddoc_remove_authorization_key(void)
         CU_ASSERT_PTR_NOT_NULL(keybase);
         idstring = HDKey_GetAddress(dkey);
         CU_ASSERT_PTR_NOT_NULL(idstring);
-        strncpy(controller.idstring, idstring, sizeof(controller.idstring));
+        DID_Init(&controller, idstring);
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthorizationKey(builder, id1, &controller, keybase));
 
         DIDURL *id2 = DIDURL_NewByDid(did, "test2");
@@ -684,7 +684,7 @@ static void test_diddoc_remove_authorization_key(void)
         CU_ASSERT_PTR_NOT_NULL(keybase);
         idstring = HDKey_GetAddress(dkey);
         CU_ASSERT_PTR_NOT_NULL(idstring);
-        strncpy(controller.idstring, idstring, sizeof(controller.idstring));
+        DID_Init(&controller, idstring);
         CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthorizationKey(builder, id2, &controller, keybase));
 
         // Remote keys

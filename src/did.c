@@ -299,7 +299,7 @@ char *DID_ToString(DID *did, char *idstring, size_t len)
         if (size < 0 || size > len)
             return NULL;
     } else {
-        *idstring = 0;
+        memset(idstring, 0, len);
     }
 
     return idstring;
@@ -341,7 +341,7 @@ int DID_Equals(DID *did1, DID *did2)
 
 int DID_Compare(DID *did1, DID *did2)
 {
-    char idstring1[ELA_MAX_DID_LEN], idstring2[ELA_MAX_DID_LEN];
+    char idstring1[ELA_MAX_DID_LEN] = {0}, idstring2[ELA_MAX_DID_LEN] = {0};
 
     DIDERROR_INITIALIZE();
 

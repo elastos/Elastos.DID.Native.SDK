@@ -19,7 +19,6 @@ typedef struct Check {
     const char *err;
 } Check;
 
-
 static const char *TEST_DID = "did:elastos:icJ4z2DULrHEzYSvjKNJpKyhqFDxvYV7pN";
 static const char *TEST_PATH = "/path/to/the/test-%E6%B5%8B%E8%AF%95-2020/resource";
 static const char *TEST_QUERY = "?qkey=qvalue&qkeyonly&hello=%E4%BD%A0%E5%A5%BD&test=true&a=%E5%95%8A";
@@ -147,8 +146,6 @@ static void test_didurl(void)
             value = DIDURL_GetQueryParameter(url, "qkeyonly");
             CU_ASSERT_PTR_NULL(value);
 
-            //expect(decodeURIComponent(url.getQueryParameter("hello"))).toEqual("你好");
-            //expect(decodeURIComponent(url.getQueryParameter("a"))).toEqual("啊");
             CU_ASSERT_EQUAL(1, DIDURL_HasQueryParameter(url, "qkeyonly"));
             CU_ASSERT_EQUAL(1, DIDURL_HasQueryParameter(url, "qkey"));
             CU_ASSERT_EQUAL(1, DIDURL_HasQueryParameter(url, "test"));
@@ -200,10 +197,6 @@ static void test_didurl(void)
         *id = 0;
         CU_ASSERT_PTR_NOT_NULL(DIDURL_ToString(url, id, sizeof(id)));
         CU_ASSERT_STRING_NOT_EQUAL(difURLString, id);
-
-        // hashCode()
-        //expect(url.hashCode()).toBe(refURL.hashCode());
-        //expect(url.hashCode()).not.toBe(difURL.hashCode());
 
         DIDURL_Destroy(difURL);
         DIDURL_Destroy(url);
@@ -340,13 +333,12 @@ static void test_didurl_withcontext(void)
         CU_ASSERT_PTR_NOT_NULL(DIDURL_ToString(url, id1, sizeof(id1)));
         CU_ASSERT_STRING_NOT_EQUAL(difURLString, id1);
 
-        // hashCode()
-        //expect(url.hashCode()).toBe(refURL.hashCode());
-        //expect(url.hashCode()).not.toBe(difURL.hashCode());
         DIDURL_Destroy(difURL);
         DIDURL_Destroy(url);
         DIDURL_Destroy(refURL);
     }
+
+    DID_Destroy(context);
 }
 
 static void test_compatible_with_plainfragment(void)
@@ -472,7 +464,6 @@ static void test_parse_wrongurl(void)
         CU_ASSERT_PTR_NULL(DIDURL_FromString(checks[i].value, NULL));
         CU_ASSERT_STRING_EQUAL(checks[i].err, DIDError_GetLastErrorMessage());
     }
-
 }
 
 static void test_parsewrongurl_with_padding(void)

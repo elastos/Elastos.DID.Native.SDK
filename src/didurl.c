@@ -165,13 +165,13 @@ int DIDURL_Parse(DIDURL *id, const char *url, DID *context)
         if (nextPart < 0)
             return -1;
 
-        id->path = calloc(1, nextPart - pos + 1);
-        if (!id->path) {
-            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for id path failed.");
+        if (nextPart - pos >= MAX_PATH) {
+            DIDError_Set(DIDERR_MALFORMED_DIDURL, "Path string is too long.");
             return -1;
         }
 
         strncpy(id->path, url + pos, nextPart - pos);
+        id->path[nextPart - pos] = 0;
         pos = nextPart;
     }
 
@@ -181,13 +181,13 @@ int DIDURL_Parse(DIDURL *id, const char *url, DID *context)
         if (nextPart < 0)
             return -1;
 
-        id->queryString = calloc(1, nextPart - pos);
-        if (!id->queryString) {
-            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for id query string failed.");
+        if (nextPart - pos > MAX_QUERY) {
+            DIDError_Set(DIDERR_MALFORMED_DIDURL, "Query string is too long.");
             return -1;
         }
 
         strncpy(id->queryString, url + pos + 1, nextPart - pos - 1);
+        id->queryString[nextPart - pos - 1] = 0;
         pos = nextPart;
     }
 
@@ -203,7 +203,7 @@ int DIDURL_Parse(DIDURL *id, const char *url, DID *context)
             return -1;
 
         if (nextPart - pos > MAX_FRAGMENT) {
-            DIDError_Set(DIDERR_MALFORMED_DIDURL, "DIDURL fragment is too long.");
+            DIDError_Set(DIDERR_MALFORMED_DIDURL, "Fragment string is too long.");
             return -1;
         }
 
@@ -227,7 +227,6 @@ int DIDURL_Init(DIDURL *id, DID *did, const char *fragment)
 
     DID_Copy(&id->did, did);
     strcpy(id->fragment, fragment);
-    memset(&id->metadata, 0, sizeof(CredentialMetadata));
     return 0;
 }
 
@@ -356,6 +355,9 @@ const char *DIDURL_GetPath(DIDURL *id)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!id, "No didurl argument.", NULL);
+    if (!*id->path)
+        return NULL;
+
     return (const char*)id->path;
 
     DIDERROR_FINALIZE();
@@ -366,6 +368,9 @@ const char *DIDURL_GetQueryString(DIDURL *id)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!id, "No didurl argument.", NULL);
+    if (!*id->queryString)
+        return NULL;
+
     return (const char*)id->queryString;
 
     DIDERROR_FINALIZE();
@@ -379,9 +384,6 @@ int DIDURL_GetQuerySize(DIDURL *id)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!id, "No didurl argument.", -1);
-
-    if (!id->queryString)
-        return count;
 
     strcpy(query, id->queryString);
 
@@ -404,9 +406,6 @@ const char *DIDURL_GetQueryParameter(DIDURL *id, const char *key)
 
     CHECK_ARG(!id, "No didurl argument.", NULL);
     CHECK_ARG(!key || !*key, "No key argument.", NULL);
-
-    if (!id->queryString)
-        return NULL;
 
     strcpy(query, id->queryString);
 
@@ -440,9 +439,6 @@ int DIDURL_HasQueryParameter(DIDURL *id, const char *key)
     CHECK_ARG(!id, "No didurl argument.", -1);
     CHECK_ARG(!key || !*key, "No key argument.", -1);
 
-    if (!id->queryString)
-        return 0;
-
     strcpy(query, id->queryString);
 
     token = strtok(query, "&");
@@ -464,22 +460,18 @@ int DIDURL_HasQueryParameter(DIDURL *id, const char *key)
 
 int DIDURL_SetQueryParameter(DIDURL *id, const char *key, const char *value)
 {
-    int len, tail = 0;
+    int len;
 
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!id, "No didurl argument.", -1);
     CHECK_ARG(!key || !*key, "No key argument.", -1);
 
-    len = strlen(key) + 1;
+    len = strlen(key) + 1;   //include "&"
     if (value)
-        len += strlen(value) + 1;
+        len += strlen(value) + 1;    //include "="
 
-    if (id->queryString)
-        tail = strlen(id->queryString);
-
-    id->queryString = realloc(id->queryString, tail + len);
-    if (!id->queryString) {
+    if (strlen(id->queryString) + len >= MAX_QUERY) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for queryString failed.");
         return -1;
     }
@@ -503,10 +495,10 @@ char *DIDURL_ToString_Internal(DIDURL *id, char *idstring, size_t len, bool comp
     char str[ELA_MAX_DID_LEN] = {0};
 
     memset(idstring, 0, len);
-    if (id->path)
-        path_len = strlen(id->path);
-    if (id->queryString)
-        query_len = strlen(id->queryString) + 1;   //include "&"
+
+    path_len = strlen(id->path);
+    if (*id->queryString)
+        query_len = strlen(id->queryString) + 1;   //include "?"
     if (*id->fragment)
         fragment_len = strlen(id->fragment) + 1;   //inclue "#"
 
@@ -523,9 +515,8 @@ char *DIDURL_ToString_Internal(DIDURL *id, char *idstring, size_t len, bool comp
         strcpy(idstring, str);
     }
 
-    if (id->path)
-        strcat(idstring, id->path);
-    if (id->queryString) {
+    strcat(idstring, id->path);
+    if (*id->queryString) {
         strcat(idstring, "?");
         strcat(idstring, id->queryString);
     }
@@ -587,8 +578,8 @@ DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src)
     assert(src);
 
     DID_Copy(&dest->did, &src->did);
-    dest->path = src->path? strdup(src->path) : src->path;
-    dest->queryString = src->queryString ? strdup(src->queryString) : src->queryString;
+    strcpy(dest->path, src->path);
+    strcpy(dest->queryString, src->queryString);
     strcpy(dest->fragment, src->fragment);
 
     return dest;
@@ -600,11 +591,6 @@ void DIDURL_Destroy(DIDURL *id)
 
     if (!id)
         return;
-
-    if (id->path)
-        free((void*)id->path);
-    if (id->queryString)
-        free((void*)id->queryString);
 
     CredentialMetadata_Free(&id->metadata);
     free(id);
@@ -620,15 +606,4 @@ CredentialMetadata *DIDURL_GetMetadata(DIDURL *id)
     return &id->metadata;
 
     DIDERROR_FINALIZE();
-}
-
-void DIDURL_Clear(DIDURL *id)
-{
-    if (id) {
-        if (id->path)
-            free((void*)id->path);
-        if (id->queryString)
-            free((void*)id->queryString);
-        memset(id, 0, sizeof(DIDURL));
-    }
 }

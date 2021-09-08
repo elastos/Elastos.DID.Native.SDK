@@ -778,7 +778,7 @@ static void test_ctmdoc_add_authorization_key(void)
     CU_ASSERT_PTR_NOT_NULL(keybase);
     idstring = HDKey_GetAddress(dkey);
     CU_ASSERT_PTR_NOT_NULL(idstring);
-    strncpy(controller.idstring, idstring, sizeof(controller.idstring));
+    DID_Init(&controller, idstring);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddPublicKey(builder, id, &controller, keybase));
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddAuthorizationKey(builder, id, &controller, NULL));
 
@@ -1606,7 +1606,7 @@ static void test_multictmdoc_add_authorization_key(void)
     CU_ASSERT_PTR_NOT_NULL(keybase);
     idstring = HDKey_GetAddress(dkey);
     CU_ASSERT_PTR_NOT_NULL(idstring);
-    strncpy(controller.idstring, idstring, sizeof(controller.idstring));
+    DID_Init(&controller, idstring);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddAuthorizationKey(builder, keyid1, &controller, keybase));
     DIDURL_Destroy(keyid1);
 

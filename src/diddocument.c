@@ -538,8 +538,6 @@ static int Parse_Auth_PublicKeys(DIDDocument *document, json_t *json, KeyType ty
 
     for (i = 0; i < pk_size; i++) {
         DIDURL id;
-        memset(&id, 0, sizeof(DIDURL));
-
         json_t *pk_item, *id_field;
 
         pk_item = json_array_get(json, i);
@@ -557,7 +555,6 @@ static int Parse_Auth_PublicKeys(DIDDocument *document, json_t *json, KeyType ty
 
             pk = DIDDocument_GetPublicKey(document, &id);
             if (!pk) {
-                DIDURL_Clear(&id);
                 DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Auth key is not in pulicKeys.");
                 return -1;
             }
@@ -567,10 +564,8 @@ static int Parse_Auth_PublicKeys(DIDDocument *document, json_t *json, KeyType ty
             if (type == KeyType_Authorization)
                 pk->authorizationKey = true;
         } else {
-            if (Parse_PublicKey(&(document->did), pk_item, &pk) < 0) {
-                DIDURL_Clear(&id);
+            if (Parse_PublicKey(&(document->did), pk_item, &pk) < 0)
                 return -1;
-            }
 
             if (type == KeyType_Authentication)
                 pk->authenticationKey = true;
@@ -579,11 +574,9 @@ static int Parse_Auth_PublicKeys(DIDDocument *document, json_t *json, KeyType ty
 
             if (add_to_publickeys(document, pk) < 0) {
                 free(pk);
-                DIDURL_Clear(&id);
                 return -1;
             }
         }
-        DIDURL_Clear(&id);
     }
 
     return 0;

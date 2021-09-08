@@ -61,9 +61,6 @@ static void test_did(void)
         CU_ASSERT_EQUAL(1, DID_Equals(did, ref));
         CU_ASSERT_NOT_EQUAL(1, DID_Equals(did, dif));
 
-        // hash code
-        //expect(did.hashCode()).toBe(ref.hashCode());
-        //expect(did.hashCode()).not.toBe(dif.hashCode());
         DID_Destroy(did);
         DID_Destroy(ref);
         DID_Destroy(dif);

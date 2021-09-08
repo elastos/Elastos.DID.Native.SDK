@@ -231,7 +231,7 @@ static void test_new_customizedid_with_existcontrollers(void)
     DIDStore *store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    strcpy(customized_did.idstring, customizedid);
+    DID_Init(&customized_did, customizedid);
 
     controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(controller1_doc);

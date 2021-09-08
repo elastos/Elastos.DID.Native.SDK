@@ -32,12 +32,13 @@ extern "C" {
 #endif
 
 #define MAX_FRAGMENT                    48
+#define MAX_PATH                        128
 #define MAX_QUERY                       128
 
 struct  DIDURL {
     DID did;
-    char *path;
-    char *queryString;
+    char path[MAX_PATH];
+    char queryString[MAX_QUERY];
     char fragment[MAX_FRAGMENT];
     CredentialMetadata metadata;
 };
@@ -48,7 +49,6 @@ int DIDURL_Init(DIDURL *id, DID *did, const char *fragment);
 int DIDURL_InitFromString(DIDURL *id, const char *idstring, const char *fragment);
 DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src);
 char *DIDURL_ToString_Internal(DIDURL *id, char *idstring, size_t len, bool compact);
-void DIDURL_Clear(DIDURL *id);
 
 #ifdef __cplusplus
 }
