@@ -32,7 +32,6 @@ extern "C" {
 #endif
 
 #define MAX_FRAGMENT                    48
-#define MAX_PATH                        56
 #define MAX_QUERY                       128
 
 struct  DIDURL {

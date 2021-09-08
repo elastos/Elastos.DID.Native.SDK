@@ -435,6 +435,8 @@ int DIDURL_HasQueryParameter(DIDURL *id, const char *key)
 {
     char query[MAX_QUERY], *token, *pos;
 
+    DIDERROR_INITIALIZE();
+
     CHECK_ARG(!id, "No didurl argument.", -1);
     CHECK_ARG(!key || !*key, "No key argument.", -1);
 
