@@ -41,8 +41,8 @@ static int get_did(DID *did, void *context)
     if (!did)
         return 0;
 
-    if (strlen(d->idstring) == 0)
-        strcpy(d->idstring, did->idstring);
+    if (DID_IsEmpty(d))
+        DID_Copy(d, did);
 
     return 0;
 }

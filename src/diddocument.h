@@ -27,6 +27,7 @@
 
 #include "ela_did.h"
 #include "did.h"
+#include "didurl.h"
 #include "didmeta.h"
 #include "common.h"
 #include "HDkey.h"

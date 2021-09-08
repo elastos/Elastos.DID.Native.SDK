@@ -374,7 +374,7 @@ static int DIDStore_LoadCredMetadata(DIDStore *store, CredentialMetadata *metada
     rc = CredentialMetadata_FromJson(metadata, data);
     free((void*)data);
     CredentialMetadata_SetStore(metadata, store);
-    DIDURL_ToString(id, metadata->id, sizeof(metadata->id), false);
+    DIDURL_ToString_Internal(id, metadata->id, sizeof(metadata->id), false);
     if (rc < 0) {
         //compatible with the oldest version
         delete_file(path);
@@ -1491,7 +1491,7 @@ static int list_did_helper(const char *path, void *context)
         return 0;
     }
 
-    strcpy(did.idstring, path);
+    DID_Init(&did, path);
     DIDStore_LoadDIDMetadata(dh->store, &did.metadata, &did);
 
     if (dh->filter == 0 || (dh->filter == 1 && DIDSotre_ContainsPrivateKeys(dh->store, &did)) ||
@@ -1607,9 +1607,8 @@ static int select_credential_helper(const char *path, void *context)
         if (!new_type)
             continue;
         if (strcmp(new_type, ch->type) == 0) {
-            strcpy(id.did.idstring, ch->did.idstring);
             path2id(path, strlen(path) + 1, filename, 128);
-            strcpy(id.fragment, filename);
+            DIDURL_InitFromString(&id, ch->did.idstring, filename);
             Credential_Destroy(credential);
             return ch->cb(&id, ch->context);
         }
@@ -1639,9 +1638,8 @@ static int list_credential_helper(const char *path, void *context)
         }
     }
 
-    strcpy(id.did.idstring, ch->did.idstring);
     path2id(path, strlen(path) + 1, filename, 128);
-    strcpy(id.fragment, filename);
+    DIDURL_InitFromString(&id, ch->did.idstring, filename);
     DIDStore_LoadCredMetadata(ch->store, &id.metadata, &id);
     rc = ch->cb(&id, ch->context);
     CredentialMetadata_Free(&id.metadata);
@@ -2001,7 +1999,7 @@ int DIDStore_StoreCredential(DIDStore *store, Credential *credential)
         return -1;
 
     CredentialMetadata_SetStore(&credential->metadata, store);
-    DIDURL_ToString(&credential->id, credential->metadata.id, sizeof(credential->metadata.id), false);
+    DIDURL_ToString_Internal(&credential->id, credential->metadata.id, sizeof(credential->metadata.id), false);
     memcpy(&credential->id.metadata, &credential->metadata, sizeof(CredentialMetadata));
     CredentialMetadata_Free(&metadata);
 
@@ -2191,7 +2189,7 @@ int DIDStore_ListCredentials(DIDStore *store, DID *did,
     ch.store = store;
     ch.cb = callback;
     ch.context = context;
-    strcpy((char*)ch.did.idstring, did->idstring);
+    DID_Copy(&ch.did, did);
     ch.type = NULL;
 
     if (list_dir(path, "*", list_credential_helper, (void*)&ch) == -1) {
@@ -2263,7 +2261,7 @@ int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *id,
     ch.store = store;
     ch.cb = callback;
     ch.context = context;
-    strcpy((char*)ch.did.idstring, did->idstring);
+    DID_Copy(&ch.did, did);
     ch.type = type;
 
     if (list_dir(path, "*.*", select_credential_helper, (void*)&ch) == -1) {
@@ -3303,7 +3301,7 @@ static int export_privatekey(JsonGenerator *gen, DIDStore *store, const char *st
 
                 CHECK_TO_MSG(DIDJG_WriteStartObject(gen),
                         DIDERR_OUT_OF_MEMORY, "Start 'privateKey' failed.");
-                idstring = DIDURL_ToString(keyid, _idstring, sizeof(_idstring), false);
+                idstring = DIDURL_ToString_Internal(keyid, _idstring, sizeof(_idstring), false);
                 CHECK_TO_MSG(DIDJG_WriteStringField(gen, "id", idstring),
                         DIDERR_OUT_OF_MEMORY, "Write 'id' failed.");
                 CHECK_TO_MSG(DIDJG_WriteStringField(gen, "key", (char*)base64),

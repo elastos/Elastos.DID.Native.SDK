@@ -61,7 +61,7 @@ static int proof_toJson(JsonGenerator *gen, CredentialRequest *request)
     assert(gen);
     assert(request);
 
-    method = DIDURL_ToString(&request->proof.verificationMethod, _method, ELA_MAX_DIDURL_LEN, 0);
+    method = DIDURL_ToString_Internal(&request->proof.verificationMethod, _method, ELA_MAX_DIDURL_LEN, false);
     if (!method)
         return -1;
 
@@ -122,7 +122,7 @@ const char *CredentialRequest_Sign(CredentialRequest_Type type, DIDURL *credid,
     assert(storepass && *storepass);
 
     if (type == RequestType_Revoke) {
-        data = DIDURL_ToString(credid, idstring, sizeof(idstring), false);
+        data = DIDURL_ToString_Internal(credid, idstring, sizeof(idstring), false);
         if (!data)
             return NULL;
         payload = strdup(data);

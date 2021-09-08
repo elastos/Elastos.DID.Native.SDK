@@ -72,7 +72,7 @@ typedef ptrdiff_t       ssize_t;
  * \~English
  * DIDURL string max length. eg, did:elastos:ixxxxxxxxxx#xxxxxx
  */
-#define ELA_MAX_DIDURL_LEN              256
+#define ELA_MAX_DIDURL_LEN              512
 /**
  * \~English
  * DIDDocument and Credential alias max length.
@@ -420,7 +420,7 @@ DID_API DID *DID_FromString(const char *idstring);
 
 /**
  * \~English
- * Create a new DID according to method specific string.
+ * Create a new DID according to method specific string and default method string.
  *
  * @param
  *      method_specific_string    [in] A pointer to specific string.
@@ -432,6 +432,23 @@ DID_API DID *DID_FromString(const char *idstring);
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
 DID_API DID *DID_New(const char *method_specific_string);
+
+/**
+ * \~English
+ * Create a new DID according to method specific string and method string.
+ *
+ * @param
+ *      method                    [in] Method string.
+ * @param
+ *      method_specific_string    [in] A pointer to specific string.
+ *                                     The method-specific-id value should be
+ *                                     globally unique by itself.
+ * @return
+ *      If no error occurs, return the pointer of DID.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+DID_API DID *DID_NewWithMethod(const char *method, const char *method_specific_string);
 
 /**
  * \~English
@@ -739,13 +756,13 @@ DID_API long long DIDMetadata_GetExtraAsInteger(DIDMetadata *metadata, const cha
  *                   idstring support: 1. "did:elastos:xxxxxxx#xxxxx"
  *                                     2. "#xxxxxxx"
  * @param
- *      ref          [in] A pointer to DID.
+ *      context       [in] A pointer to DID.
  * @return
  *      If no error occurs, return the handle to DID URL.
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API DIDURL *DIDURL_FromString(const char *idstring, DID *ref);
+DID_API DIDURL *DIDURL_FromString(const char *idstring, DID *context);
 
 /**
  * \~English
@@ -805,6 +822,88 @@ DID_API const char *DIDURL_GetFragment(DIDURL *id);
 
 /**
  * \~English
+ * Get path from DID URL.
+ *
+ * @param
+ *      id               [in] A handle to DID URL.
+ * @return
+ *      If no error occurs, return path string.
+ *      Otherwise, return NULL.
+ */
+DID_API const char *DIDURL_GetPath(DIDURL *id);
+
+/**
+ * \~English
+ * Get query string from DID URL.
+ *
+ * @param
+ *      id               [in] A handle to DID URL.
+ * @return
+ *      If no error occurs, return query string.
+ *      Otherwise, return NULL.
+ */
+DID_API const char *DIDURL_GetQueryString(DIDURL *id);
+
+/**
+ * \~English
+ * Get the count of query parameter from DID URL.
+ *
+ * @param
+ *      id               [in] A handle to DID URL.
+ * @return
+ *      If no error occurs, return the count of query parameter.
+ *      Otherwise, return -1.
+ */
+DID_API int DIDURL_GetQuerySize(DIDURL *id);
+
+/**
+ * \~English
+ * Get specified query parameter from DID URL.
+ *
+ * @param
+ *      id               [in] A handle to DID URL.
+ * @param
+ *      key              [in] The parameter key string.
+ * @return
+ *      If no error occurs, return the query value string.
+ *      Otherwise, return NULL.
+ *      Notice that user need to free the returned value that it's memory.
+ */
+DID_API const char *DIDURL_GetQueryParameter(DIDURL *id, const char *key);
+
+/**
+ * \~English
+ * Check the query parameter exitance.
+ *
+ * @param
+ *      id               [in] A handle to DID URL.
+ * @param
+ *      key              [in] The parameter key string.
+ * @return
+ *      return value < 0(exclude -1), there is errror occurs;
+ *      return value == 0, no query parameter;
+ *      return value == 1, has query parameter.
+ */
+DID_API int DIDURL_HasQueryParameter(DIDURL *id, const char *key);
+
+/**
+ * \~English
+ * Set the query parameter.
+ *
+ * @param
+ *      id               [in] A handle to DID URL.
+ * @param
+ *      key              [in] The parameter key string.
+ * @param
+ *      value            [in] The parameter value string.
+ * @return
+ *      If has query parameter, return 0.
+ *      Otherwise, return -1.
+ */
+DID_API int DIDURL_SetQueryParameter(DIDURL *id, const char *key, const char *value);
+
+/**
+ * \~English
  * Get id string from DID URL.
  *
  * @param
@@ -814,13 +913,10 @@ DID_API const char *DIDURL_GetFragment(DIDURL *id);
  *                             The buffer size should at least (ELA_MAX_DID_LEN) bytes.
  * @param
  *      len              [in] The buffer size of idstring.
- * @param
- *      compact          [in] Id string is compact or not.
- *                       true represents compact, flase represents not compact.
  * @return
  *      If no error occurs, return id string. Otherwise, return NULL.
  */
-DID_API char *DIDURL_ToString(DIDURL *id, char *idstring, size_t len, bool compact);
+DID_API char *DIDURL_ToString(DIDURL *id, char *idstring, size_t len);
 
 /**
  * \~English
@@ -3871,7 +3967,7 @@ DID_API int DIDStore_StoreCredential(DIDStore *store, Credential *credential);
  * @param
  *      did                     [in] The handle to DID.
  * @param
- *      credid                   [in] The identifier of credential.
+ *      credid                  [in] The identifier of credential.
  * @return
  *      If no error occurs, return the handle to Credential.
  *      Otherwise, return NULL.

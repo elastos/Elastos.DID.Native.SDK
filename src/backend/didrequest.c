@@ -64,7 +64,7 @@ static int proof_toJson(JsonGenerator *gen, DIDRequest *req)
     assert(gen);
     assert(req);
 
-    method = DIDURL_ToString(&req->proof.verificationMethod, _method, ELA_MAX_DIDURL_LEN, 0);
+    method = DIDURL_ToString_Internal(&req->proof.verificationMethod, _method, ELA_MAX_DIDURL_LEN, false);
     if (!method)
         return -1;
 
@@ -334,13 +334,13 @@ static int parser_payload(DIDRequest *request, json_t *json)
             return -1;
         }
 
-        strcpy(request->did.idstring, request->doc->did.idstring);
+        DID_Copy(&request->did, &request->doc->did);
     } else {
         subject = DID_FromString(request->payload);
         if (!subject)
             return -1;
 
-        strcpy(request->did.idstring, subject->idstring);
+        DID_Copy(&request->did, subject);
         request->doc = NULL;
         DID_Destroy(subject);
     }

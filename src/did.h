@@ -25,35 +25,25 @@
 
 #include "ela_did.h"
 #include "didmeta.h"
-#include "credmeta.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define MAX_ID_SPECIFIC_STRING          48
-#define MAX_FRAGMENT                    48
+#define MAX_METHOD_STRING               48
 
 struct DID {
+    char method[MAX_METHOD_STRING];
     char idstring[MAX_ID_SPECIFIC_STRING];
     DIDMetadata metadata;
 };
 
-struct  DIDURL {
-    DID did;
-    char fragment[MAX_FRAGMENT];
-    CredentialMetadata metadata;
-};
-
 int DID_Parse(DID *did, const char *idstring);
 int DID_Init (DID *did, const char *idstring);
+int DID_InitByPos(DID *did, const char *idstring, int start, int limit);
 DID *DID_Copy(DID *dest, DID *src);
-
-int DIDURL_Parse(DIDURL *id, const char *idstring, DID *base);
-//caller provide DIDURL object
-int DIDURL_Init(DIDURL *id, DID *did, const char *fragment);
-int DIDURL_InitFromString(DIDURL *id, const char *idstring, const char *fragment);
-DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src);
+bool DID_IsEmpty(DID *did);
 
 bool Contains_DID(DID **dids, size_t size, DID *did);
 

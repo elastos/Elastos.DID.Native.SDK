@@ -42,8 +42,6 @@ static int get_did(DID *did, void *context)
 {
     DIDs *dids = (DIDs*)context;
 
-    DIDDocument *doc = NULL;
-
     if (!did)
         return 0;
 

@@ -352,7 +352,7 @@ int JWTBuilder_Sign(JWTBuilder *builder, DIDURL *keyid, const char *storepass)
     }
 
     if (!cjose_header_set(builder->header, CJOSE_HDR_KID,
-            DIDURL_ToString(keyid, idstring, sizeof(idstring), false), &err)) {
+            DIDURL_ToString_Internal(keyid, idstring, sizeof(idstring), false), &err)) {
         DIDError_Set(DIDERR_JWT, "Set jwt's signkey failed.");
         cjose_jwk_release(jwk);
         return -1;

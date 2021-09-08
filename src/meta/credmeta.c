@@ -41,12 +41,15 @@ static const char *TXID = "txid";
 int CredentialMetadata_Store(CredentialMetadata *metadata)
 {
     DIDURL id;
+    int rc;
 
     assert(metadata);
 
     if (metadata->base.store && *metadata->id) {
         DIDURL_Parse(&id, metadata->id, NULL);
-        return DIDStore_StoreCredMetadata(metadata->base.store, metadata, &id);
+        rc = DIDStore_StoreCredMetadata(metadata->base.store, metadata, &id);
+        DIDURL_Clear(&id);
+        return rc;
     }
 
     return 0;

@@ -20,23 +20,39 @@
  * SOFTWARE.
  */
 
-#ifndef __ISSUER_H__
-#define __ISSUER_H__
+#ifndef __DIDURL_H__
+#define __DIDURL_H__
 
 #include "ela_did.h"
-#include "didurl.h"
+#include "did.h"
+#include "credmeta.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct Issuer {
-    DIDDocument *signer;
-    DIDURL signkey;
+#define MAX_FRAGMENT                    48
+#define MAX_PATH                        56
+#define MAX_QUERY                       128
+
+struct  DIDURL {
+    DID did;
+    char *path;
+    char *queryString;
+    char fragment[MAX_FRAGMENT];
+    CredentialMetadata metadata;
 };
+
+int DIDURL_Parse(DIDURL *id, const char *idstring, DID *context);
+//caller provide DIDURL object
+int DIDURL_Init(DIDURL *id, DID *did, const char *fragment);
+int DIDURL_InitFromString(DIDURL *id, const char *idstring, const char *fragment);
+DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src);
+char *DIDURL_ToString_Internal(DIDURL *id, char *idstring, size_t len, bool compact);
+void DIDURL_Clear(DIDURL *id);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //__ISSUER_H__
+#endif //__DIDURL_H__
