@@ -116,7 +116,7 @@ static void test_idchain_restore(void)
 
         time_t expires = DIDDocument_GetExpires(doc);
 
-        DIDURL *credid = DIDURL_NewByDid(did, "selfcredential");
+        DIDURL *credid = DIDURL_NewFromDid(did, "selfcredential");
         CU_ASSERT_PTR_NOT_NULL(credid);
 
         Issuer *issuer = Issuer_Create(did, NULL, cleanstore);
@@ -172,7 +172,7 @@ static void test_sync_with_localmodification1(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
     DIDDocument_Destroy(modified_doc);
 
-    DIDURL *serviceid = DIDURL_NewByDid(modified_did, "test1");
+    DIDURL *serviceid = DIDURL_NewFromDid(modified_did, "test1");
     CU_ASSERT_PTR_NOT_NULL(serviceid);
 
     CU_ASSERT_NOT_EQUAL_FATAL(-1,
@@ -248,7 +248,7 @@ static void test_sync_with_localmodification2(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
     DIDDocument_Destroy(modified_doc);
 
-    DIDURL *serviceid = DIDURL_NewByDid(modified_did, "test1");
+    DIDURL *serviceid = DIDURL_NewFromDid(modified_did, "test1");
     CU_ASSERT_PTR_NOT_NULL_FATAL(serviceid);
 
     CU_ASSERT_NOT_EQUAL(-1,

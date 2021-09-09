@@ -54,7 +54,7 @@ static int scan_didurl_nextpart(const char *url, int start, int limit,
         const char *partSeps, const char *tokenSeps)
 {
     int nextPart = limit;
-    bool bTokenStart = true;
+    bool tokenStart = true;
 
     assert(url);
     assert(start >= 0);
@@ -69,17 +69,17 @@ static int scan_didurl_nextpart(const char *url, int start, int limit,
         }
 
         if (tokenSeps && strchr(tokenSeps, ch) != NULL) {
-            if (bTokenStart) {
+            if (tokenStart) {
                 DIDError_Set(DIDERR_MALFORMED_DIDURL, "Invalid char at: %d", i);
                 return -1;
             }
 
-            bTokenStart = true;
+            tokenStart = true;
             continue;
         }
 
-        if (is_token(ch, bTokenStart)) {
-            bTokenStart = false;
+        if (is_token(ch, tokenStart)) {
+            tokenStart = false;
             continue;
         }
 
@@ -101,7 +101,7 @@ static int scan_didurl_nextpart(const char *url, int start, int limit,
                 return -1;
             }
 
-            bTokenStart = false;
+            tokenStart = false;
             continue;
         }
 
@@ -213,7 +213,7 @@ int DIDURL_Parse(DIDURL *id, const char *url, DID *context)
     return 0;
 }
 
-int DIDURL_Init(DIDURL *id, DID *did, const char *fragment)
+int DIDURL_InitFromDid(DIDURL *id, DID *did, const char *fragment)
 {
     assert(id);
     assert(did);
@@ -300,7 +300,7 @@ DIDURL *DIDURL_New(const char *method_specific_string, const char *fragment)
     DIDERROR_FINALIZE();
 }
 
-DIDURL *DIDURL_NewByDid(DID *did, const char *fragment)
+DIDURL *DIDURL_NewFromDid(DID *did, const char *fragment)
 {
     DIDURL *id;
 
@@ -378,7 +378,7 @@ const char *DIDURL_GetQueryString(DIDURL *id)
 
 int DIDURL_GetQuerySize(DIDURL *id)
 {
-    char query[MAX_QUERY], *token;
+    char query[MAX_QUERY], *token, *save = NULL;
     int count = 0;
 
     DIDERROR_INITIALIZE();
@@ -387,10 +387,10 @@ int DIDURL_GetQuerySize(DIDURL *id)
 
     strcpy(query, id->queryString);
 
-    token = strtok(query, "&");
+    token = strtok_r(query, "&", &save);
     while(token) {
         count++;
-        token = strtok(NULL, "&");
+        token = strtok_r(NULL, "&", &save);
     }
 
     return count;
@@ -400,7 +400,7 @@ int DIDURL_GetQuerySize(DIDURL *id)
 
 const char *DIDURL_GetQueryParameter(DIDURL *id, const char *key)
 {
-    char query[MAX_QUERY], *token, *pos;
+    char query[MAX_QUERY], *token, *pos, *save = NULL;
 
     DIDERROR_INITIALIZE();
 
@@ -409,7 +409,7 @@ const char *DIDURL_GetQueryParameter(DIDURL *id, const char *key)
 
     strcpy(query, id->queryString);
 
-    token = strtok(query, "&");
+    token = strtok_r(query, "&", &save);
     while(token) {
         pos = strstr(token, "=");
         if (!pos)
@@ -422,7 +422,7 @@ const char *DIDURL_GetQueryParameter(DIDURL *id, const char *key)
             return (pos == token + strlen(token)) ? NULL : strdup(pos + 1);
         }
 
-        token = strtok(NULL, "&");
+        token = strtok_r(NULL, "&", &save);
     }
 
     return NULL;
@@ -432,7 +432,7 @@ const char *DIDURL_GetQueryParameter(DIDURL *id, const char *key)
 
 int DIDURL_HasQueryParameter(DIDURL *id, const char *key)
 {
-    char query[MAX_QUERY], *token, *pos;
+    char query[MAX_QUERY], *token, *pos, *save = NULL;
 
     DIDERROR_INITIALIZE();
 
@@ -441,7 +441,7 @@ int DIDURL_HasQueryParameter(DIDURL *id, const char *key)
 
     strcpy(query, id->queryString);
 
-    token = strtok(query, "&");
+    token = strtok_r(query, "&", &save);
     while(token) {
         pos = strstr(token, "=");
         if (!pos)
@@ -450,37 +450,7 @@ int DIDURL_HasQueryParameter(DIDURL *id, const char *key)
         if (strlen(key) == pos - token && !strncmp(token, key, pos - token))
             return 1;
 
-        token = strtok(NULL, "&");
-    }
-
-    return 0;
-
-    DIDERROR_FINALIZE();
-}
-
-int DIDURL_SetQueryParameter(DIDURL *id, const char *key, const char *value)
-{
-    int len;
-
-    DIDERROR_INITIALIZE();
-
-    CHECK_ARG(!id, "No didurl argument.", -1);
-    CHECK_ARG(!key || !*key, "No key argument.", -1);
-
-    len = strlen(key) + 1;   //include "&"
-    if (value)
-        len += strlen(value) + 1;    //include "="
-
-    if (strlen(id->queryString) + len >= MAX_QUERY) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for queryString failed.");
-        return -1;
-    }
-
-    strcat(id->queryString, "&");
-    strcat(id->queryString, key);
-    if (value) {
-        strcat(id->queryString, "=");
-        strcat(id->queryString, value);
+        token = strtok_r(NULL, "&", &save);
     }
 
     return 0;

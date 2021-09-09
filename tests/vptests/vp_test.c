@@ -67,27 +67,27 @@ static void test_vp_getelem(void)
         holder = Presentation_GetHolder(vp);
         CU_ASSERT_PTR_NOT_NULL(holder);
 
-        id = DIDURL_NewByDid(holder, "profile");
+        id = DIDURL_NewFromDid(holder, "profile");
         CU_ASSERT_PTR_NOT_NULL_FATAL(id);
         CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
         DIDURL_Destroy(id);
 
-        id = DIDURL_NewByDid(holder, "email");
+        id = DIDURL_NewFromDid(holder, "email");
         CU_ASSERT_PTR_NOT_NULL_FATAL(id);
         CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
         DIDURL_Destroy(id);
 
-        id = DIDURL_NewByDid(holder, "twitter");
+        id = DIDURL_NewFromDid(holder, "twitter");
         CU_ASSERT_PTR_NOT_NULL_FATAL(id);
         CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
         DIDURL_Destroy(id);
 
-        id = DIDURL_NewByDid(holder, "passport");
+        id = DIDURL_NewFromDid(holder, "passport");
         CU_ASSERT_PTR_NOT_NULL_FATAL(id);
         CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
         DIDURL_Destroy(id);
 
-        id = DIDURL_NewByDid(holder, "notexist");
+        id = DIDURL_NewFromDid(holder, "notexist");
         CU_ASSERT_PTR_NOT_NULL_FATAL(id);
         CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
         DIDURL_Destroy(id);
@@ -178,7 +178,7 @@ static void test_vp_getelem_withemptyvp(void)
         holder = Presentation_GetHolder(vp);
         CU_ASSERT_PTR_NOT_NULL(holder);
 
-        id = DIDURL_NewByDid(holder, "notexist");
+        id = DIDURL_NewFromDid(holder, "notexist");
         CU_ASSERT_PTR_NOT_NULL_FATAL(id);
         CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
         DIDURL_Destroy(id);
@@ -215,7 +215,7 @@ static void test_vp_getelem_withemptyvp_ctmid(void)
     holder = Presentation_GetHolder(vp);
     CU_ASSERT_PTR_NOT_NULL(holder);
 
-    id = DIDURL_NewByDid(holder, "notexist");
+    id = DIDURL_NewFromDid(holder, "notexist");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
@@ -379,7 +379,7 @@ static void test_vp_create(void)
     doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
-    id = DIDURL_NewByDid(&doc->did, "vp1");
+    id = DIDURL_NewFromDid(&doc->did, "vp1");
     CU_ASSERT_PTR_NOT_NULL(id);
 
     vp = Presentation_Create(id, &doc->did, types, 2, "873172f58701a9ee686f0630204fee59",
@@ -419,27 +419,27 @@ static void test_vp_create(void)
     holder = Presentation_GetHolder(vp);
     CU_ASSERT_PTR_NOT_NULL(holder);
 
-    id = DIDURL_NewByDid(holder, "profile");
+    id = DIDURL_NewFromDid(holder, "profile");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(holder, "email");
+    id = DIDURL_NewFromDid(holder, "email");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(holder, "twitter");
+    id = DIDURL_NewFromDid(holder, "twitter");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(holder, "passport");
+    id = DIDURL_NewFromDid(holder, "passport");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(holder, "notexist");
+    id = DIDURL_NewFromDid(holder, "notexist");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
@@ -475,16 +475,16 @@ static void test_vp_create_ctmid(void)
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
 
-    signkey = DIDURL_NewByDid(&user1doc->did, "key2");
+    signkey = DIDURL_NewFromDid(&user1doc->did, "key2");
     CU_ASSERT_PTR_NOT_NULL(signkey);
 
-    credid1 = DIDURL_NewByDid(&doc->did, "profile");
+    credid1 = DIDURL_NewFromDid(&doc->did, "profile");
     CU_ASSERT_PTR_NOT_NULL(credid1);
 
-    credid2 = DIDURL_NewByDid(&doc->did, "email");
+    credid2 = DIDURL_NewFromDid(&doc->did, "email");
     CU_ASSERT_PTR_NOT_NULL(credid2);
 
-    id = DIDURL_NewByDid(&doc->did, "vp2");
+    id = DIDURL_NewFromDid(&doc->did, "vp2");
     CU_ASSERT_PTR_NOT_NULL(id);
 
     vp = Presentation_Create(id, did, types, 2, "873172f58701a9ee686f0630204fee59",
@@ -528,17 +528,17 @@ static void test_vp_create_ctmid(void)
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, credid2));
     DIDURL_Destroy(credid2);
 
-    id = DIDURL_NewByDid(Presentation_GetHolder(vp), "services");
+    id = DIDURL_NewFromDid(Presentation_GetHolder(vp), "services");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(Presentation_GetHolder(vp), "license");
+    id = DIDURL_NewFromDid(Presentation_GetHolder(vp), "license");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(Presentation_GetHolder(vp), "notexist");
+    id = DIDURL_NewFromDid(Presentation_GetHolder(vp), "notexist");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
@@ -566,7 +566,7 @@ static void test_vp_create_by_credarray(void)
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(did);
 
-    id = DIDURL_NewByDid(did, "vp3");
+    id = DIDURL_NewFromDid(did, "vp3");
     CU_ASSERT_PTR_NOT_NULL_FATAL(id);
 
     vcs[0] = TestData_GetCredential(NULL, "vc-profile", NULL, 0);
@@ -606,27 +606,27 @@ static void test_vp_create_by_credarray(void)
     holder = Presentation_GetHolder(vp);
     CU_ASSERT_PTR_NOT_NULL_FATAL(holder);
 
-    id = DIDURL_NewByDid(holder, "profile");
+    id = DIDURL_NewFromDid(holder, "profile");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(holder, "email");
+    id = DIDURL_NewFromDid(holder, "email");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(holder, "twitter");
+    id = DIDURL_NewFromDid(holder, "twitter");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(holder, "passport");
+    id = DIDURL_NewFromDid(holder, "passport");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(holder, "notexist");
+    id = DIDURL_NewFromDid(holder, "notexist");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
@@ -660,16 +660,16 @@ static void test_vp_create_by_credarray_ctmid(void)
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
 
-    signkey = DIDURL_NewByDid(&user1doc->did, "key2");
+    signkey = DIDURL_NewFromDid(&user1doc->did, "key2");
     CU_ASSERT_PTR_NOT_NULL(signkey);
 
-    credid1 = DIDURL_NewByDid(&doc->did, "email");
+    credid1 = DIDURL_NewFromDid(&doc->did, "email");
     CU_ASSERT_PTR_NOT_NULL(credid1);
 
-    credid2 = DIDURL_NewByDid(&doc->did, "profile");
+    credid2 = DIDURL_NewFromDid(&doc->did, "profile");
     CU_ASSERT_PTR_NOT_NULL(credid2);
 
-    id = DIDURL_NewByDid(&doc->did, "vp4");
+    id = DIDURL_NewFromDid(&doc->did, "vp4");
     CU_ASSERT_PTR_NOT_NULL(id);
 
     vcs[0] = TestData_GetCredential("foobar", "license", NULL, 2);
@@ -717,17 +717,17 @@ static void test_vp_create_by_credarray_ctmid(void)
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, credid1));
     DIDURL_Destroy(credid1);
 
-    id = DIDURL_NewByDid(&doc->did, "license");
+    id = DIDURL_NewFromDid(&doc->did, "license");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(&doc->did, "services");
+    id = DIDURL_NewFromDid(&doc->did, "services");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NOT_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(&doc->did, "notexist");
+    id = DIDURL_NewFromDid(&doc->did, "notexist");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
@@ -754,7 +754,7 @@ static void test_vp_create_without_creds(void)
     did = DIDDocument_GetSubject(doc);
     CU_ASSERT_PTR_NOT_NULL(did);
 
-    id = DIDURL_NewByDid(&doc->did, "vp5");
+    id = DIDURL_NewFromDid(&doc->did, "vp5");
     CU_ASSERT_PTR_NOT_NULL(id);
 
     vp = Presentation_Create(id, did, types, 2, "873172f58701a9ee686f0630204fee59",

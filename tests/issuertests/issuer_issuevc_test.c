@@ -49,7 +49,7 @@ static void test_issuer_issuevc(void)
     issuer = Issuer_Create(issuerid, NULL, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
 
-    credid = DIDURL_NewByDid(did, "kyccredential");
+    credid = DIDURL_NewFromDid(did, "kyccredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "PhoneCredential"};
@@ -131,7 +131,7 @@ static void test_issuer_issueselfvc(void)
     issuer = Issuer_Create(issuerid, NULL, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
 
-    credid = DIDURL_NewByDid(issuerid, "mycredential");
+    credid = DIDURL_NewFromDid(issuerid, "mycredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "PhoneCredential",
@@ -215,7 +215,7 @@ static void test_issuer_issuerbystring(void)
     issuer = Issuer_Create(issuerid, NULL, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
 
-    credid = DIDURL_NewByDid(issuerid, "mycredential");
+    credid = DIDURL_NewFromDid(issuerid, "mycredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential",
@@ -273,7 +273,7 @@ static void test_issuer_issuerbystring_with_ctrl_chars(void)
 
     expires = DIDDocument_GetExpires(issuerdoc);
 
-    credid = DIDURL_NewByDid(issuerid, "mycredential");
+    credid = DIDURL_NewFromDid(issuerid, "mycredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     issuer = Issuer_Create(issuerid, NULL, store);
@@ -351,7 +351,7 @@ static void test_cidissuer_issue_kycvc(void)
     issuer = Issuer_Create(subject, NULL, store);
     CU_ASSERT_PTR_NOT_NULL(issuer);
 
-    credid = DIDURL_NewByDid(did, "testcredential");
+    credid = DIDURL_NewFromDid(did, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "InternetAccountCredential"};
@@ -436,7 +436,7 @@ static void test_issuer_issue_cidvc(void)
     issuer = Issuer_Create(issuerid, NULL, store);
     CU_ASSERT_PTR_NOT_NULL(issuer);
 
-    credid = DIDURL_NewByDid(subject, "testcredential");
+    credid = DIDURL_NewFromDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "InternetAccountCredential"};
@@ -520,7 +520,7 @@ static void test_cidissuer_issue_selfvc(void)
     issuer = Issuer_Create(subject, NULL, store);
     CU_ASSERT_PTR_NOT_NULL(issuer);
 
-    credid = DIDURL_NewByDid(subject, "testcredential");
+    credid = DIDURL_NewFromDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "SelfProclaimedCredential"};
@@ -597,7 +597,7 @@ static void test_issuer_issue_multicidvc(void)
     issuer = Issuer_Create(issuerid, NULL, store);
     CU_ASSERT_PTR_NOT_NULL(issuer);
 
-    credid = DIDURL_NewByDid(subject, "testcredential");
+    credid = DIDURL_NewFromDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "InternetAccountCredential"};
@@ -680,14 +680,14 @@ static void test_multicidissuer_issue_kycvc(void)
     subject = DIDDocument_GetSubject(customizeddoc);
     CU_ASSERT_PTR_NOT_NULL(subject);
 
-    signkey = DIDURL_NewByDid(&customizeddoc->controllers.docs[0]->did, "key2");
+    signkey = DIDURL_NewFromDid(&customizeddoc->controllers.docs[0]->did, "key2");
     CU_ASSERT_PTR_NOT_NULL(signkey);
 
     issuer = Issuer_Create(subject, signkey, store);
     CU_ASSERT_PTR_NOT_NULL(issuer);
     DIDURL_Destroy(signkey);
 
-    credid = DIDURL_NewByDid(did, "testcredential");
+    credid = DIDURL_NewFromDid(did, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "InternetAccountCredential"};
@@ -770,14 +770,14 @@ static void test_multicidissuer_issue_kycvc2(void)
     subject = DIDDocument_GetSubject(customizeddoc);
     CU_ASSERT_PTR_NOT_NULL(subject);
 
-    signkey = DIDURL_NewByDid(subject, "k2");
+    signkey = DIDURL_NewFromDid(subject, "k2");
     CU_ASSERT_PTR_NOT_NULL(signkey);
 
     issuer = Issuer_Create(subject, signkey, store);
     CU_ASSERT_PTR_NOT_NULL(issuer);
     DIDURL_Destroy(signkey);
 
-    credid = DIDURL_NewByDid(issuerid, "testcredential");
+    credid = DIDURL_NewFromDid(issuerid, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "InternetAccountCredential"};
@@ -859,14 +859,14 @@ static void test_multicidissuer_issue_selfvc(void)
     subject = DIDDocument_GetSubject(customizeddoc);
     CU_ASSERT_PTR_NOT_NULL(subject);
 
-    signkey = DIDURL_NewByDid(&customizeddoc->controllers.docs[1]->did, "pk1");
+    signkey = DIDURL_NewFromDid(&customizeddoc->controllers.docs[1]->did, "pk1");
     CU_ASSERT_PTR_NOT_NULL(signkey);
 
     issuer = Issuer_Create(subject, signkey, store);
     CU_ASSERT_PTR_NOT_NULL(issuer);
     DIDURL_Destroy(signkey);
 
-    credid = DIDURL_NewByDid(subject, "testcredential");
+    credid = DIDURL_NewFromDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "SelfProclaimedCredential"};
@@ -938,14 +938,14 @@ static void test_multicidissuer_issue_selfvc2(void)
     subject = DIDDocument_GetSubject(customizeddoc);
     CU_ASSERT_PTR_NOT_NULL(subject);
 
-    signkey = DIDURL_NewByDid(subject, "k2");
+    signkey = DIDURL_NewFromDid(subject, "k2");
     CU_ASSERT_PTR_NOT_NULL(signkey);
 
     issuer = Issuer_Create(subject, signkey, store);
     CU_ASSERT_PTR_NOT_NULL(issuer);
     DIDURL_Destroy(signkey);
 
-    credid = DIDURL_NewByDid(subject, "testcredential");
+    credid = DIDURL_NewFromDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "SelfProclaimedCredential"};

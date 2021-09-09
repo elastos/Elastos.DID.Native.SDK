@@ -425,7 +425,7 @@ static void test_new_customizedid_with_existcontrollers2(void)
     DIDDocument_Destroy(customized1_doc);
 
     //add one public key
-    id1 = DIDURL_NewByDid(&customized_did, "k1");
+    id1 = DIDURL_NewFromDid(&customized_did, "k1");
     CU_ASSERT_PTR_NOT_NULL(id1);
     hdkey = Generater_KeyPair(&_hdkey);
     CU_ASSERT_PTR_NOT_NULL(hdkey);
@@ -440,7 +440,7 @@ static void test_new_customizedid_with_existcontrollers2(void)
 
     //add one authentication key
     memset(&_hdkey, 0, sizeof(HDKey));
-    id2 = DIDURL_NewByDid(&customized_did, "k2");
+    id2 = DIDURL_NewFromDid(&customized_did, "k2");
     CU_ASSERT_PTR_NOT_NULL(id2);
     hdkey = Generater_KeyPair(&_hdkey);
     CU_ASSERT_PTR_NOT_NULL(hdkey);
@@ -454,18 +454,18 @@ static void test_new_customizedid_with_existcontrollers2(void)
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id2, keybase2));
 
     //add two services
-    serviceid1 = DIDURL_NewByDid(&customized_did, "test-svc-1");
+    serviceid1 = DIDURL_NewFromDid(&customized_did, "test-svc-1");
     CU_ASSERT_PTR_NOT_NULL(serviceid1);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, serviceid1, "Service.Testing",
             "https://www.elastos.org/testing1", NULL, 0));
 
-    serviceid2 = DIDURL_NewByDid(&customized_did, "test-svc-2");
+    serviceid2 = DIDURL_NewFromDid(&customized_did, "test-svc-2");
     CU_ASSERT_PTR_NOT_NULL(serviceid2);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, serviceid2, "Service.Testing",
             "https://www.elastos.org/testing2", NULL, 0));
 
     //add one credential
-    credid = DIDURL_NewByDid(&customized_did, "vc-1");
+    credid = DIDURL_NewFromDid(&customized_did, "vc-1");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "SelfProclaimedCredential"};

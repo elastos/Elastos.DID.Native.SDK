@@ -59,7 +59,7 @@ static void test_issuer_create_with_invalidkey1(void)
     publickeybase = Generater_Publickey(pkbase, sizeof(pkbase));
     CU_ASSERT_PTR_NOT_NULL_FATAL(publickeybase);
 
-    keyid = DIDURL_NewByDid(DIDDocument_GetSubject(issuerdoc), "testkey");
+    keyid = DIDURL_NewFromDid(DIDDocument_GetSubject(issuerdoc), "testkey");
     CU_ASSERT_PTR_NOT_NULL_FATAL(keyid);
 
     rc = DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, publickeybase);
@@ -83,7 +83,7 @@ static void test_issuer_create_with_invalidkey2(void)
     DIDURL *key;
     Issuer *issuer;
 
-    key = DIDURL_NewByDid(issuerid, "key2");
+    key = DIDURL_NewFromDid(issuerid, "key2");
     CU_ASSERT_PTR_NOT_NULL_FATAL(key);
 
     issuer = Issuer_Create(issuerid, key, store);
@@ -106,7 +106,7 @@ static void test_issuer_create_by_cid(void)
     DIDDocument *doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
 
-    DIDURL *signkey = DIDURL_NewByDid(&doc->did, "key3");
+    DIDURL *signkey = DIDURL_NewFromDid(&doc->did, "key3");
     CU_ASSERT_PTR_NOT_NULL_FATAL(signkey);
 
     issuer = Issuer_Create(&customized_doc->did, signkey, store);
@@ -116,7 +116,7 @@ static void test_issuer_create_by_cid(void)
     DIDURL_Destroy(signkey);
     Issuer_Destroy(issuer);
 
-    signkey = DIDURL_NewByDid(&customized_doc->did, "k1");
+    signkey = DIDURL_NewFromDid(&customized_doc->did, "k1");
     CU_ASSERT_PTR_NOT_NULL_FATAL(signkey);
 
     issuer = Issuer_Create(&customized_doc->did, signkey, store);
@@ -156,7 +156,7 @@ static void test_issuer_create_by_multicid(void)
     DID_Copy(&controller2, controllers[1]);
     DID_Copy(&controller3, controllers[2]);
 
-    DIDURL *signkey = DIDURL_NewByDid(&controller1, "key3");
+    DIDURL *signkey = DIDURL_NewFromDid(&controller1, "key3");
     CU_ASSERT_PTR_NOT_NULL_FATAL(signkey);
 
     issuer = Issuer_Create(&customized_doc->did, signkey, store);
@@ -166,7 +166,7 @@ static void test_issuer_create_by_multicid(void)
     DIDURL_Destroy(signkey);
     Issuer_Destroy(issuer);
 
-    signkey = DIDURL_NewByDid(&controller2, "pk1");
+    signkey = DIDURL_NewFromDid(&controller2, "pk1");
     CU_ASSERT_PTR_NOT_NULL_FATAL(signkey);
 
     issuer = Issuer_Create(&customized_doc->did, signkey, store);
@@ -176,7 +176,7 @@ static void test_issuer_create_by_multicid(void)
     DIDURL_Destroy(signkey);
     Issuer_Destroy(issuer);
 
-    signkey = DIDURL_NewByDid(&customized_doc->did, "k1");
+    signkey = DIDURL_NewFromDid(&customized_doc->did, "k1");
     CU_ASSERT_PTR_NOT_NULL_FATAL(signkey);
 
     issuer = Issuer_Create(&customized_doc->did, signkey, store);

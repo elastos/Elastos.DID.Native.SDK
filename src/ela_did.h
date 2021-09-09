@@ -794,7 +794,7 @@ DID_API DIDURL *DIDURL_New(const char *method_specific_string, const char *fragm
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API DIDURL *DIDURL_NewByDid(DID *did, const char *fragment);
+DID_API DIDURL *DIDURL_NewFromDid(DID *did, const char *fragment);
 
 /**
  * \~English
@@ -885,22 +885,6 @@ DID_API const char *DIDURL_GetQueryParameter(DIDURL *id, const char *key);
  *      return value == 1, has query parameter.
  */
 DID_API int DIDURL_HasQueryParameter(DIDURL *id, const char *key);
-
-/**
- * \~English
- * Set the query parameter.
- *
- * @param
- *      id               [in] A handle to DID URL.
- * @param
- *      key              [in] The parameter key string.
- * @param
- *      value            [in] The parameter value string.
- * @return
- *      If has query parameter, return 0.
- *      Otherwise, return -1.
- */
-DID_API int DIDURL_SetQueryParameter(DIDURL *id, const char *key, const char *value);
 
 /**
  * \~English

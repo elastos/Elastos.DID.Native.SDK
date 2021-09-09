@@ -86,14 +86,14 @@ static void test_emptyctmdoc_get_publickey(void)
     defaultkey = DIDDocument_GetDefaultPublicKey(doc);
     CU_ASSERT_PTR_NOT_NULL(defaultkey);
 
-    primaryid = DIDURL_NewByDid(controller, "primary");
+    primaryid = DIDURL_NewFromDid(controller, "primary");
     CU_ASSERT_PTR_NOT_NULL(primaryid);
     pk = DIDDocument_GetPublicKey(doc, primaryid);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(primaryid, PublicKey_GetId(pk)));
     CU_ASSERT_TRUE(DIDURL_Equals(primaryid, defaultkey));
 
-    id = DIDURL_NewByDid(controller, "key2");
+    id = DIDURL_NewFromDid(controller, "key2");
     CU_ASSERT_PTR_NOT_NULL(id);
     pk = DIDDocument_GetPublicKey(doc, id);
     CU_ASSERT_PTR_NOT_NULL(pk);
@@ -101,7 +101,7 @@ static void test_emptyctmdoc_get_publickey(void)
     DIDURL_Destroy(id);
 
     //Key not exist, should fail.
-    id = DIDURL_NewByDid(did, "notExist");
+    id = DIDURL_NewFromDid(did, "notExist");
     CU_ASSERT_PTR_NOT_NULL(id);
     pk = DIDDocument_GetPublicKey(doc, id);
     CU_ASSERT_PTR_NULL(pk);
@@ -117,13 +117,13 @@ static void test_emptyctmdoc_get_publickey(void)
 
     CU_ASSERT_EQUAL(4, DIDDocument_SelectPublicKeys(doc, default_type, NULL, pks, 4));
 
-    id = DIDURL_NewByDid(controller, "key2");
+    id = DIDURL_NewFromDid(controller, "key2");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_EQUAL(1, DIDDocument_SelectPublicKeys(doc, default_type, id, pks, 4));
     CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(controller, "key3");
+    id = DIDURL_NewFromDid(controller, "key3");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_EQUAL(1, DIDDocument_SelectPublicKeys(doc, NULL, id, pks, 4));
     CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), id));
@@ -187,21 +187,21 @@ static void test_ctmdoc_get_publickey(void)
     defaultkey = DIDDocument_GetDefaultPublicKey(doc);
     CU_ASSERT_PTR_NOT_NULL(defaultkey);
 
-    id = DIDURL_NewByDid(&doc->did, "k1");
+    id = DIDURL_NewFromDid(&doc->did, "k1");
     CU_ASSERT_PTR_NOT_NULL(id);
     pk = DIDDocument_GetPublicKey(doc, id);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(id, PublicKey_GetId(pk)));
     DIDURL_Destroy(id);
 
-    primaryid = DIDURL_NewByDid(controller, "primary");
+    primaryid = DIDURL_NewFromDid(controller, "primary");
     CU_ASSERT_PTR_NOT_NULL(primaryid);
     pk = DIDDocument_GetPublicKey(doc, primaryid);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(primaryid, PublicKey_GetId(pk)));
     CU_ASSERT_TRUE(DIDURL_Equals(primaryid, defaultkey));
 
-    id = DIDURL_NewByDid(controller, "key2");
+    id = DIDURL_NewFromDid(controller, "key2");
     CU_ASSERT_PTR_NOT_NULL(id);
     pk = DIDDocument_GetPublicKey(doc, id);
     CU_ASSERT_PTR_NOT_NULL(pk);
@@ -209,13 +209,13 @@ static void test_ctmdoc_get_publickey(void)
     DIDURL_Destroy(id);
 
     //Key not exist, should fail.
-    id = DIDURL_NewByDid(did, "notExist");
+    id = DIDURL_NewFromDid(did, "notExist");
     CU_ASSERT_PTR_NOT_NULL(id);
     pk = DIDDocument_GetPublicKey(doc, id);
     CU_ASSERT_PTR_NULL(pk);
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(controller, "notExist");
+    id = DIDURL_NewFromDid(controller, "notExist");
     CU_ASSERT_PTR_NOT_NULL(id);
     pk = DIDDocument_GetPublicKey(doc, id);
     CU_ASSERT_PTR_NULL(pk);
@@ -231,13 +231,13 @@ static void test_ctmdoc_get_publickey(void)
 
     CU_ASSERT_EQUAL(6, DIDDocument_SelectPublicKeys(doc, default_type, NULL, pks, 6));
 
-    id = DIDURL_NewByDid(did, "k2");
+    id = DIDURL_NewFromDid(did, "k2");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_EQUAL(1, DIDDocument_SelectPublicKeys(doc, default_type, id, pks, 6));
     CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(controller, "key3");
+    id = DIDURL_NewFromDid(controller, "key3");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_EQUAL(1, DIDDocument_SelectPublicKeys(doc, NULL, id, pks, 6));
     CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), id));
@@ -273,13 +273,13 @@ static void test_ctmdoc_add_publickey(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
-    id1 = DIDURL_NewByDid(did, "test1");
+    id1 = DIDURL_NewFromDid(did, "test1");
     CU_ASSERT_PTR_NOT_NULL(id1);
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddPublicKey(builder, id1, did, keybase));
 
-    id2 = DIDURL_NewByDid(did, "test2");
+    id2 = DIDURL_NewFromDid(did, "test2");
     CU_ASSERT_PTR_NOT_NULL(id2);
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
@@ -338,18 +338,18 @@ static void test_ctmdoc_remove_publickey(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // can not remove the controller's key
-    keyid = DIDURL_NewByDid(controller, "key2");
+    keyid = DIDURL_NewFromDid(controller, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid, false));
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid, true));
     DIDURL_Destroy(keyid);
 
-    keyid1 = DIDURL_NewByDid(did, "k1");
+    keyid1 = DIDURL_NewFromDid(did, "k1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid1, false));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid1, true));
 
-    keyid2 = DIDURL_NewByDid(did, "k2");
+    keyid2 = DIDURL_NewFromDid(did, "k2");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid2, true));
 
@@ -362,7 +362,7 @@ static void test_ctmdoc_remove_publickey(void)
     DIDDocumentBuilder_Destroy(builder);
 
     // Check existence
-    recoveryid = DIDURL_NewByDid(did, "recovery");
+    recoveryid = DIDURL_NewFromDid(did, "recovery");
     CU_ASSERT_PTR_NOT_NULL(recoveryid);
     CU_ASSERT_PTR_NULL(DIDDocument_GetPublicKey(sealeddoc, recoveryid));
     DIDURL_Destroy(recoveryid);
@@ -431,38 +431,38 @@ static void test_ctmdoc_get_authentication_key(void)
     }
 
     // AuthenticationKey getter
-    id = DIDURL_NewByDid(controller, "primary");
+    id = DIDURL_NewFromDid(controller, "primary");
     CU_ASSERT_PTR_NOT_NULL(id);
     pk = DIDDocument_GetAuthenticationKey(doc, id);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(id, PublicKey_GetId(pk)));
     DIDURL_Destroy(id);
 
-    keyid3 = DIDURL_NewByDid(controller, "key3");
+    keyid3 = DIDURL_NewFromDid(controller, "key3");
     CU_ASSERT_PTR_NOT_NULL(keyid3);
     pk = DIDDocument_GetAuthenticationKey(doc, keyid3);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(keyid3, PublicKey_GetId(pk)));
 
-    keyid1 = DIDURL_NewByDid(did, "k1");
+    keyid1 = DIDURL_NewFromDid(did, "k1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
     pk = DIDDocument_GetAuthenticationKey(doc, keyid1);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(keyid1, PublicKey_GetId(pk)));
 
-    keyid2 = DIDURL_NewByDid(did, "k2");
+    keyid2 = DIDURL_NewFromDid(did, "k2");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
     pk = DIDDocument_GetAuthenticationKey(doc, keyid2);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(keyid2, PublicKey_GetId(pk)));
 
     //key not exist, should fail.
-    id = DIDURL_NewByDid(did, "notExist");
+    id = DIDURL_NewFromDid(did, "notExist");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NULL(DIDDocument_GetAuthenticationKey(doc, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(controller, "notExist");
+    id = DIDURL_NewFromDid(controller, "notExist");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NULL(DIDDocument_GetAuthenticationKey(doc, id));
     DIDURL_Destroy(id);
@@ -518,7 +518,7 @@ static void test_ctmdoc_add_authentication_key(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
-    id1 = DIDURL_NewByDid(did, "test1");
+    id1 = DIDURL_NewFromDid(did, "test1");
     CU_ASSERT_PTR_NOT_NULL(id1);
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
@@ -526,7 +526,7 @@ static void test_ctmdoc_add_authentication_key(void)
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddPublicKey(builder, id1, did, keybase));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id1, NULL));
 
-    id2 = DIDURL_NewByDid(did, "test2");
+    id2 = DIDURL_NewFromDid(did, "test2");
     CU_ASSERT_PTR_NOT_NULL(id2);
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
@@ -534,32 +534,32 @@ static void test_ctmdoc_add_authentication_key(void)
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id2, NULL));
 
     // Add new keys
-    id3 = DIDURL_NewByDid(did, "test3");
+    id3 = DIDURL_NewFromDid(did, "test3");
     CU_ASSERT_PTR_NOT_NULL(id3);
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id3, keybase));
 
-    id4 = DIDURL_NewByDid(did, "test4");
+    id4 = DIDURL_NewFromDid(did, "test4");
     CU_ASSERT_PTR_NOT_NULL(id4);
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id4, keybase));
 
     // Try to add the controller's key, should fail.
-    id = DIDURL_NewByDid(did, "key3");
+    id = DIDURL_NewFromDid(did, "key3");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id, NULL));
     DIDURL_Destroy(id);
 
     // Try to add a non existing key, should fail.
-    id = DIDURL_NewByDid(did, "notExistKey");
+    id = DIDURL_NewFromDid(did, "notExistKey");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id, NULL));
     DIDURL_Destroy(id);
 
     // Try to add a key not owned by self, should fail.
-    id = DIDURL_NewByDid(controller, "recovery");
+    id = DIDURL_NewFromDid(controller, "recovery");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, id, NULL));
     DIDURL_Destroy(id);
@@ -631,22 +631,22 @@ static void test_ctmdoc_remove_authentication_key(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Remove keys
-    id1 = DIDURL_NewByDid(did, "k1");
+    id1 = DIDURL_NewFromDid(did, "k1");
     CU_ASSERT_PTR_NOT_NULL(id1);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveAuthenticationKey(builder, id1));
 
-    id2 = DIDURL_NewByDid(did, "k2");
+    id2 = DIDURL_NewFromDid(did, "k2");
     CU_ASSERT_PTR_NOT_NULL(id2);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveAuthenticationKey(builder, id2));
 
     // Key not exist, should fail.
-    id = DIDURL_NewByDid(did, "notExistKey");
+    id = DIDURL_NewFromDid(did, "notExistKey");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemoveAuthenticationKey(builder, id));
     DIDURL_Destroy(id);
 
     // Remove controller's key, should fail.
-    id = DIDURL_NewByDid(controller, "key2");
+    id = DIDURL_NewFromDid(controller, "key2");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemoveAuthenticationKey(builder, id));
     DIDURL_Destroy(id);
@@ -715,19 +715,19 @@ static void test_ctmdoc_get_authorization_key(void)
     }
 
     // AuthorizationKey getter
-    keyid = DIDURL_NewByDid(controller, "recovery");
+    keyid = DIDURL_NewFromDid(controller, "recovery");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     pk = DIDDocument_GetAuthorizationKey(doc, keyid);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(keyid, PublicKey_GetId(pk)));
 
     //Key not exist, should fail.
-    id = DIDURL_NewByDid(did, "notExist");
+    id = DIDURL_NewFromDid(did, "notExist");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NULL(DIDDocument_GetAuthorizationKey(doc, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(controller, "notExistKey");
+    id = DIDURL_NewFromDid(controller, "notExistKey");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_PTR_NULL(DIDDocument_GetAuthorizationKey(doc, id));
     DIDURL_Destroy(id);
@@ -771,7 +771,7 @@ static void test_ctmdoc_add_authorization_key(void)
     builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
-    id = DIDURL_NewByDid(did, "test1");
+    id = DIDURL_NewFromDid(did, "test1");
     CU_ASSERT_PTR_NOT_NULL(id);
     dkey = Generater_KeyPair(&_dkey);
     keybase = HDKey_GetPublicKeyBase58(dkey, publickeybase58, sizeof(publickeybase58));
@@ -864,38 +864,38 @@ static void test_empty_multictmdoc_get_publickey(void)
     keyid = DIDDocument_GetDefaultPublicKey(customized_doc);
     CU_ASSERT_PTR_NULL(keyid);
 
-    primaryid1 = DIDURL_NewByDid(&controller1, "primary");
+    primaryid1 = DIDURL_NewFromDid(&controller1, "primary");
     CU_ASSERT_PTR_NOT_NULL(primaryid1);
     pk = DIDDocument_GetPublicKey(customized_doc, primaryid1);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(primaryid1, PublicKey_GetId(pk)));
 
-    primaryid2 = DIDURL_NewByDid(&controller2, "primary");
+    primaryid2 = DIDURL_NewFromDid(&controller2, "primary");
     CU_ASSERT_PTR_NOT_NULL(primaryid2);
     pk = DIDDocument_GetPublicKey(customized_doc, primaryid2);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(primaryid2, PublicKey_GetId(pk)));
 
-    primaryid3 = DIDURL_NewByDid(&controller3, "primary");
+    primaryid3 = DIDURL_NewFromDid(&controller3, "primary");
     CU_ASSERT_PTR_NOT_NULL(primaryid3);
     pk = DIDDocument_GetPublicKey(customized_doc, primaryid3);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(primaryid3, PublicKey_GetId(pk)));
 
-    keyid1 = DIDURL_NewByDid(&controller1, "key2");
+    keyid1 = DIDURL_NewFromDid(&controller1, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
     pk = DIDDocument_GetPublicKey(customized_doc, keyid1);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(keyid1, PublicKey_GetId(pk)));
 
-    keyid2 = DIDURL_NewByDid(&controller2, "pk1");
+    keyid2 = DIDURL_NewFromDid(&controller2, "pk1");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
     pk = DIDDocument_GetPublicKey(customized_doc, keyid2);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(keyid2, PublicKey_GetId(pk)));
 
     //Key not exist, should fail.
-    keyid = DIDURL_NewByDid(customized_did, "notExist");
+    keyid = DIDURL_NewFromDid(customized_did, "notExist");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     pk = DIDDocument_GetPublicKey(customized_doc, keyid);
     CU_ASSERT_PTR_NULL(pk);
@@ -992,25 +992,25 @@ static void test_multictmdoc_get_publickey(void)
     keyid = DIDDocument_GetDefaultPublicKey(customized_doc);
     CU_ASSERT_PTR_NULL(keyid);
 
-    keyid1 = DIDURL_NewByDid(customized_did, "k1");
+    keyid1 = DIDURL_NewFromDid(customized_did, "k1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
     pk = DIDDocument_GetPublicKey(customized_doc, keyid1);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(keyid1, PublicKey_GetId(pk)));
 
-    primaryid1 = DIDURL_NewByDid(&controller1, "primary");
+    primaryid1 = DIDURL_NewFromDid(&controller1, "primary");
     CU_ASSERT_PTR_NOT_NULL(primaryid1);
     pk = DIDDocument_GetPublicKey(customized_doc, primaryid1);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(primaryid1, PublicKey_GetId(pk)));
 
-    keyid2 = DIDURL_NewByDid(&controller1, "key2");
+    keyid2 = DIDURL_NewFromDid(&controller1, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
     pk = DIDDocument_GetPublicKey(customized_doc, keyid2);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(keyid2, PublicKey_GetId(pk)));
 
-    keyid3 = DIDURL_NewByDid(&controller2, "pk1");
+    keyid3 = DIDURL_NewFromDid(&controller2, "pk1");
     CU_ASSERT_PTR_NOT_NULL(keyid3);
     pk = DIDDocument_GetPublicKey(customized_doc, keyid3);
     CU_ASSERT_PTR_NOT_NULL(pk);
@@ -1018,19 +1018,19 @@ static void test_multictmdoc_get_publickey(void)
     DIDURL_Destroy(keyid3);
 
     //Key not exist, should fail.
-    keyid = DIDURL_NewByDid(customized_did, "notExist");
+    keyid = DIDURL_NewFromDid(customized_did, "notExist");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     pk = DIDDocument_GetPublicKey(customized_doc, keyid);
     CU_ASSERT_PTR_NULL(pk);
     DIDURL_Destroy(keyid);
 
-    keyid = DIDURL_NewByDid(&controller1, "notExist");
+    keyid = DIDURL_NewFromDid(&controller1, "notExist");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     pk = DIDDocument_GetPublicKey(customized_doc, keyid);
     CU_ASSERT_PTR_NULL(pk);
     DIDURL_Destroy(keyid);
 
-    keyid = DIDURL_NewByDid(&controller1, "recovery");
+    keyid = DIDURL_NewFromDid(&controller1, "recovery");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     pk = DIDDocument_GetPublicKey(customized_doc, keyid);
     CU_ASSERT_PTR_NOT_NULL(pk);
@@ -1099,20 +1099,20 @@ static void test_multictmdoc_add_publickey(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Add 2 public keys
-    keyid1 = DIDURL_NewByDid(customized_did, "test1");
+    keyid1 = DIDURL_NewFromDid(customized_did, "test1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddPublicKey(builder, keyid1, customized_did, keybase));
 
-    keyid2 = DIDURL_NewByDid(customized_did, "test2");
+    keyid2 = DIDURL_NewFromDid(customized_did, "test2");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid2, keybase));
 
     //add controller's pk, fail
-    keyid = DIDURL_NewByDid(controller1, "test3");
+    keyid = DIDURL_NewFromDid(controller1, "test3");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
@@ -1184,24 +1184,24 @@ static void test_multictmdoc_remove_publickey(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // can not remove the controller's key
-    keyid = DIDURL_NewByDid(&controller1, "primary");
+    keyid = DIDURL_NewFromDid(&controller1, "primary");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid, false));
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid, true));
     CU_ASSERT_STRING_EQUAL("Can't remove other DID's key or controller's key!!!!", DIDError_GetLastErrorMessage());
     DIDURL_Destroy(keyid);
 
-    keyid = DIDURL_NewByDid(&controller2, "key2");
+    keyid = DIDURL_NewFromDid(&controller2, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid, false));
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid, true));
     CU_ASSERT_STRING_EQUAL("Can't remove other DID's key or controller's key!!!!", DIDError_GetLastErrorMessage());
 
-    keyid1 = DIDURL_NewByDid(customized_did, "k1");
+    keyid1 = DIDURL_NewFromDid(customized_did, "k1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid1, false));
 
-    keyid2 = DIDURL_NewByDid(customized_did, "k2");
+    keyid2 = DIDURL_NewFromDid(customized_did, "k2");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemovePublicKey(builder, keyid2, true));
 
@@ -1211,7 +1211,7 @@ static void test_multictmdoc_remove_publickey(void)
     DIDDocumentBuilder_Destroy(builder);
 
     // Check existence
-    recoveryid = DIDURL_NewByDid(&controller1, "recovery");
+    recoveryid = DIDURL_NewFromDid(&controller1, "recovery");
     CU_ASSERT_PTR_NOT_NULL(recoveryid);
     pk = DIDDocument_GetPublicKey(sealeddoc, recoveryid);
     CU_ASSERT_PTR_NOT_NULL(pk);
@@ -1289,37 +1289,37 @@ static void test_multictmdoc_get_authentication_key(void)
     }
 
     // AuthenticationKey getter
-    primaryid1 = DIDURL_NewByDid(&controller1, "primary");
+    primaryid1 = DIDURL_NewFromDid(&controller1, "primary");
     CU_ASSERT_PTR_NOT_NULL(primaryid1);
     pk = DIDDocument_GetAuthenticationKey(customized_doc, primaryid1);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(primaryid1, PublicKey_GetId(pk)));
 
-    keyid1 = DIDURL_NewByDid(&controller1, "key3");
+    keyid1 = DIDURL_NewFromDid(&controller1, "key3");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
     pk = DIDDocument_GetAuthenticationKey(customized_doc, keyid1);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(keyid1, PublicKey_GetId(pk)));
     DIDURL_Destroy(keyid1);
 
-    keyid1 = DIDURL_NewByDid(customized_did, "k2");
+    keyid1 = DIDURL_NewFromDid(customized_did, "k2");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customized_doc, keyid1));
 
-    keyid2 = DIDURL_NewByDid(&controller2, "pk1");
+    keyid2 = DIDURL_NewFromDid(&controller2, "pk1");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
     pk = DIDDocument_GetAuthenticationKey(customized_doc, keyid2);
     CU_ASSERT_PTR_NOT_NULL(pk);
     CU_ASSERT_TRUE(DIDURL_Equals(keyid2, PublicKey_GetId(pk)));
 
     //key not exist, should fail.
-    keyid = DIDURL_NewByDid(customized_did, "notExist");
+    keyid = DIDURL_NewFromDid(customized_did, "notExist");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     pk = DIDDocument_GetAuthenticationKey(customized_doc, keyid);
     CU_ASSERT_PTR_NULL(pk);
     DIDURL_Destroy(keyid);
 
-    keyid = DIDURL_NewByDid(&controller2, "notExist");
+    keyid = DIDURL_NewFromDid(&controller2, "notExist");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     pk = DIDDocument_GetAuthenticationKey(customized_doc, keyid);
     CU_ASSERT_PTR_NULL(pk);
@@ -1387,13 +1387,13 @@ static void test_multictmdoc_add_authentication_key(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Try to add the controller's key, should fail.
-    keyid1 = DIDURL_NewByDid(controller1, "test1");
+    keyid1 = DIDURL_NewFromDid(controller1, "test1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid1, keybase));
 
-    keyid2 = DIDURL_NewByDid(controller2, "test2");
+    keyid2 = DIDURL_NewFromDid(controller2, "test2");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
@@ -1401,26 +1401,26 @@ static void test_multictmdoc_add_authentication_key(void)
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid2, keybase));
 
     // Add new keys
-    keyid3 = DIDURL_NewByDid(customized_did, "test3");
+    keyid3 = DIDURL_NewFromDid(customized_did, "test3");
     CU_ASSERT_PTR_NOT_NULL(keyid3);
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid3, keybase));
 
-    keyid4 = DIDURL_NewByDid(customized_did, "test4");
+    keyid4 = DIDURL_NewFromDid(customized_did, "test4");
     CU_ASSERT_PTR_NOT_NULL(keyid4);
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid4, keybase));
 
     // Try to add a non existing key, should fail.
-    keyid = DIDURL_NewByDid(customized_did, "notExistKey");
+    keyid = DIDURL_NewFromDid(customized_did, "notExistKey");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, NULL));
     DIDURL_Destroy(keyid);
 
     // Try to add a key not owned by self, should fail.
-    keyid = DIDURL_NewByDid(controller1, "recovery");
+    keyid = DIDURL_NewFromDid(controller1, "recovery");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, NULL));
     DIDURL_Destroy(keyid);
@@ -1507,22 +1507,22 @@ static void test_multictmdoc_remove_authentication_key(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Remove keys
-    keyid1 = DIDURL_NewByDid(customized_did, "k1");
+    keyid1 = DIDURL_NewFromDid(customized_did, "k1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveAuthenticationKey(builder, keyid1));
 
-    keyid2 = DIDURL_NewByDid(customized_did, "k2");
+    keyid2 = DIDURL_NewFromDid(customized_did, "k2");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveAuthenticationKey(builder, keyid2));
 
     // Key not exist, should fail.
-    keyid = DIDURL_NewByDid(customized_did, "notExistKey");
+    keyid = DIDURL_NewFromDid(customized_did, "notExistKey");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemoveAuthenticationKey(builder, keyid));
     DIDURL_Destroy(keyid);
 
     // Remove controller's key, should fail.
-    keyid = DIDURL_NewByDid(controller1, "key2");
+    keyid = DIDURL_NewFromDid(controller1, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_RemoveAuthenticationKey(builder, keyid));
     DIDURL_Destroy(keyid);
@@ -1599,7 +1599,7 @@ static void test_multictmdoc_add_authorization_key(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
 
     // Try to add authorization key, fail.
-    keyid1 = DIDURL_NewByDid(customized_did, "test1");
+    keyid1 = DIDURL_NewFromDid(customized_did, "test1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
     dkey = Generater_KeyPair(&_dkey);
     keybase = HDKey_GetPublicKeyBase58(dkey, publickeybase58, sizeof(publickeybase58));
@@ -1653,7 +1653,7 @@ static void test_multictmdoc_get_credential(void)
         CU_ASSERT_TRUE(!strcmp(vcs[i]->id.fragment, "vc-1"));
     }
 
-    credid = DIDURL_NewByDid(controller1, "recovery");
+    credid = DIDURL_NewFromDid(controller1, "recovery");
     CU_ASSERT_PTR_NOT_NULL(credid);
     CU_ASSERT_PTR_NULL(DIDDocument_GetCredential(customized_doc, credid));
     DIDURL_Destroy(credid);
@@ -1698,7 +1698,7 @@ static void test_multictmdoc_add_credential(void)
     builder = DIDDocument_Edit(customized_doc, controller2_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
 
-    credid = DIDURL_NewByDid(&customized_doc->did, "vc-2");
+    credid = DIDURL_NewFromDid(&customized_doc->did, "vc-2");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "SelfProclaimedCredential"};
@@ -1772,7 +1772,7 @@ static void test_multictmdoc_remove_credential(void)
     builder = DIDDocument_Edit(customized_doc, controller2_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
 
-    credid = DIDURL_NewByDid(&customized_doc->did, "vc-1");
+    credid = DIDURL_NewFromDid(&customized_doc->did, "vc-1");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveCredential(builder, credid));
@@ -1833,17 +1833,17 @@ static void test_multictmdoc_get_service(void)
 
     CU_ASSERT_EQUAL(2, DIDDocument_GetServiceCount(customized_doc));
 
-    serviceid = DIDURL_NewByDid(&customized_doc->did, "test-svc-1");
+    serviceid = DIDURL_NewFromDid(&customized_doc->did, "test-svc-1");
     CU_ASSERT_PTR_NOT_NULL(serviceid);
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetService(customized_doc, serviceid));
     DIDURL_Destroy(serviceid);
 
-    serviceid = DIDURL_NewByDid(&customized_doc->did, "test-svc-2");
+    serviceid = DIDURL_NewFromDid(&customized_doc->did, "test-svc-2");
     CU_ASSERT_PTR_NOT_NULL(serviceid);
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetService(customized_doc, serviceid));
     DIDURL_Destroy(serviceid);
 
-    serviceid = DIDURL_NewByDid(controller1, "carrier");
+    serviceid = DIDURL_NewFromDid(controller1, "carrier");
     CU_ASSERT_PTR_NOT_NULL(serviceid);
     CU_ASSERT_PTR_NULL(DIDDocument_GetService(customized_doc, serviceid));
     DIDURL_Destroy(serviceid);
@@ -1891,18 +1891,18 @@ static void test_multictmdoc_add_service(void)
     builder = DIDDocument_Edit(customized_doc, controller1_doc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
 
-    id1 = DIDURL_NewByDid(&customized_doc->did, "test-svc-3");
+    id1 = DIDURL_NewFromDid(&customized_doc->did, "test-svc-3");
     CU_ASSERT_PTR_NOT_NULL(id1);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, id1, "Service.Testing3",
             "https://www.elastos.org/testing3", NULL, 0));
 
-    id2 = DIDURL_NewByDid(&customized_doc->did, "test-svc-4");
+    id2 = DIDURL_NewFromDid(&customized_doc->did, "test-svc-4");
     CU_ASSERT_PTR_NOT_NULL(id2);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddService(builder, id2, "Service.Testing",
             "https://www.elastos.org/testing2", props1, 4));
 
-    id3 = DIDURL_NewByDid(&customized_doc->did, "test-svc-5");
+    id3 = DIDURL_NewFromDid(&customized_doc->did, "test-svc-5");
     CU_ASSERT_PTR_NOT_NULL(id3);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddServiceByString(builder, id3, "Service.Testing",
             "https://www.elastos.org/testing3", props2));
@@ -2001,7 +2001,7 @@ static void test_multictmdoc_remove_service(void)
     builder = DIDDocument_Edit(customized_doc, controllerdoc);
     CU_ASSERT_PTR_NOT_NULL_FATAL(builder);
 
-    serviceid = DIDURL_NewByDid(&customized_doc->did, "test-svc-2");
+    serviceid = DIDURL_NewFromDid(&customized_doc->did, "test-svc-2");
     CU_ASSERT_PTR_NOT_NULL(serviceid);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_RemoveService(builder, serviceid));
@@ -2189,7 +2189,7 @@ static void test_multictmdoc_remove_controller(void)
     CU_ASSERT_EQUAL(3, DIDDocument_GetControllerCount(customized_doc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetCredentialCount(customized_doc));
 
-    credid = DIDURL_NewByDid(&customized_did, "vc-1");
+    credid = DIDURL_NewFromDid(&customized_did, "vc-1");
     CU_ASSERT_PTR_NOT_NULL(credid);
     cred = DIDDocument_GetCredential(customized_doc, credid);
     CU_ASSERT_PTR_NOT_NULL(cred);

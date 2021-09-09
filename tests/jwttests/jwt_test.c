@@ -96,7 +96,7 @@ static void test_jwt(void)
     rc = JWTBuilder_Reset(builder);
     CU_ASSERT_NOT_EQUAL(rc, -1);
 
-    keyid = DIDURL_NewByDid(did, "key2");
+    keyid = DIDURL_NewFromDid(did, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid);
 
     rc = JWTBuilder_Sign(builder, keyid, storepass);
@@ -183,7 +183,7 @@ static void test_jws(void)
     CU_ASSERT_TRUE(JWTBuilder_SetClaimWithJson(builder, "object", json));
     CU_ASSERT_TRUE(JWTBuilder_SetClaimWithBoolean(builder, "finished", false));
 
-    keyid = DIDURL_NewByDid(did, "key2");
+    keyid = DIDURL_NewFromDid(did, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid);
 
     rc = JWTBuilder_Sign(builder, keyid, storepass);
@@ -297,7 +297,7 @@ static void test_jws_withdefaultkey(void)
     CU_ASSERT_STRING_EQUAL("JWT", JWT_GetHeader(jwt, "typ"));
     CU_ASSERT_STRING_EQUAL("1.0", JWT_GetHeader(jwt, "version"));
 
-    keyid = DIDURL_NewByDid(did, "primary");
+    keyid = DIDURL_NewFromDid(did, "primary");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     CU_ASSERT_STRING_EQUAL(DIDURL_ToString(keyid, idstring, sizeof(idstring)), JWT_GetKeyId(jwt));
 

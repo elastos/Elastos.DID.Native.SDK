@@ -45,7 +45,7 @@ struct  DIDURL {
 
 int DIDURL_Parse(DIDURL *id, const char *idstring, DID *context);
 //caller provide DIDURL object
-int DIDURL_Init(DIDURL *id, DID *did, const char *fragment);
+int DIDURL_InitFromDid(DIDURL *id, DID *did, const char *fragment);
 int DIDURL_InitFromString(DIDURL *id, const char *idstring, const char *fragment);
 DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src);
 char *DIDURL_ToString_Internal(DIDURL *id, char *idstring, size_t len, bool compact);
