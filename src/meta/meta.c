@@ -201,158 +201,92 @@ errorExit:
 
 int Metadata_SetExtraWithBoolean(Metadata *metadata, const char *key, bool value)
 {
-    char *uskey;
-    json_t *json;
-    int rc = -1;
+    const char *_value;
 
     assert(metadata);
     assert(key);
 
-    json = json_boolean(value);
-    if (!json)
-        goto errorExit;
-
-    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
-    if (!uskey)
-        goto errorExit;
-
-    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        goto errorExit;
-
-    rc = Metadata_Set(metadata, uskey, json);
-    json_decref(json);
-
-errorExit:
-    if (rc < 0)
-        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
-
-    return rc;
+    _value = value ? "true" : "false";
+    return Metadata_SetExtra(metadata, key, _value);
 }
 
 int Metadata_SetDefaultExtraWithBoolean(Metadata *metadata, const char *key, bool value)
 {
-    json_t *json;
-    int rc = -1;
+    const char *_value;
 
     assert(metadata);
     assert(key);
 
-    json = json_boolean(value);
-    if (!json)
-        goto errorExit;
-
-    rc = Metadata_Set(metadata, key, json);
-    json_decref(json);
-
-errorExit:
-    if (rc < 0)
-        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
-
-    return rc;
+    _value = value ? "true" : "false";
+    return Metadata_SetDefaultExtra(metadata, key, _value);
 }
 
 int Metadata_SetExtraWithDouble(Metadata *metadata, const char *key, double value)
 {
-    char *uskey;
-    json_t *json;
-    int rc = -1;
+    char _value[128];
+    int len;
 
     assert(metadata);
     assert(key);
 
-    json = json_real(value);
-    if (!json)
-        goto errorExit;
+    len = snprintf(_value, sizeof(_value), "%lf", value);
+    if (len < 0 || len > sizeof(_value)) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Get string from double failed.");
+        return -1;
+    }
 
-    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
-    if (!uskey)
-        goto errorExit;
-
-    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        goto errorExit;
-
-    rc = Metadata_Set(metadata, uskey, json);
-    json_decref(json);
-
-errorExit:
-    if (rc < 0)
-        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
-
-    return rc;
+    return Metadata_SetExtra(metadata, key, _value);
 }
 
 int Metadata_SetDefaultExtraWithDouble(Metadata *metadata, const char *key, double value)
 {
-    json_t *json;
-    int rc = -1;
+    char _value[128];
+    int len;
 
     assert(metadata);
     assert(key);
 
-    json = json_real(value);
-    if (!json)
-        goto errorExit;
+    len = snprintf(_value, sizeof(_value), "%lf", value);
+    if (len < 0 || len > sizeof(_value)) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Get string from double failed.");
+        return -1;
+    }
 
-    rc = Metadata_Set(metadata, key, json);
-    json_decref(json);
-
-errorExit:
-    if (rc < 0)
-        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
-
-    return rc;
+    return Metadata_SetDefaultExtra(metadata, key, _value);
 }
 
 int Metadata_SetExtraWithInteger(Metadata *metadata, const char *key, long long value)
 {
-    char *uskey;
-    json_t *json;
-    int rc = -1;
+    char _value[128];
+    int len;
 
     assert(metadata);
     assert(key);
 
-    json = json_integer(value);
-    if (!json)
-        goto errorExit;
+    len = snprintf(_value, sizeof(_value), "%lld", value);
+    if (len < 0 || len > sizeof(_value)) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Get string from intergar failed.");
+        return -1;
+    }
 
-    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
-    if (!uskey)
-        goto errorExit;
-
-    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        goto errorExit;
-
-    rc = Metadata_Set(metadata, uskey, json);
-    json_decref(json);
-
-errorExit:
-    if (rc < 0)
-        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
-
-    return rc;
+    return Metadata_SetExtra(metadata, key, _value);
 }
 
 int Metadata_SetDefaultExtraWithInteger(Metadata *metadata, const char *key, int value)
 {
-    json_t *json;
-    int rc = -1;
+    char _value[128];
+    int len;
 
     assert(metadata);
     assert(key);
 
-    json = json_integer(value);
-    if (!json)
-        goto errorExit;
+    len = snprintf(_value, sizeof(_value), "%d", value);
+    if (len < 0 || len > sizeof(_value)) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Get string from intergar failed.");
+        return -1;
+    }
 
-    rc = Metadata_Set(metadata, key, json);
-    json_decref(json);
-
-errorExit:
-    if (rc < 0)
-        DIDError_Set(DIDERR_METADATA_ERROR, "Set '%s' to metadata failed.", key);
-
-    return rc;
+    return Metadata_SetDefaultExtra(metadata, key, _value);
 }
 
 static json_t *Metadata_Get(Metadata *metadata, const char *key)
@@ -432,152 +366,83 @@ errorExit:
 
 bool Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key, bool dvalue)
 {
-    char *uskey;
-    json_t *json;
+    const char *value;
 
     assert(metadata);
     assert(key);
 
-    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
-    if (!uskey)
-        goto errorExit;
+    value = Metadata_GetExtra(metadata, key);
+    if (!value || !*value)
+        return dvalue;
 
-    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        goto errorExit;
-
-    json = Metadata_Get(metadata, uskey);
-    if (!json)
-        goto errorExit;
-
-    if (!json_is_boolean(json)) {
-        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not boolean type.", key);
-        goto errorExit;
-    }
-
-    return (int)json_is_true(json);
-
-errorExit:
-    DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
-    return dvalue;
+    return !strcmp("false", value) ? false : true;
 }
 
 int Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key)
 {
-    json_t *json;
+    const char *value;
 
     assert(metadata);
     assert(key);
 
-    json = Metadata_Get(metadata, key);
-    if (!json)
-        return 0;
-
-    if (!json_is_boolean(json)) {
-        DIDError_Set(DIDERR_METADATA_ERROR, "'%s' elem is not boolean type.", key);
-        return -1;
-    }
-
-    return (int)json_is_true(json);
+    value = Metadata_GetDefaultExtra(metadata, key);
+    return (!value || !*value || !strcmp("false", value)) ? false : true;
 }
 
 double Metadata_GetExtraAsDouble(Metadata *metadata, const char *key, double dvalue)
 {
-    char *uskey;
-    json_t *json;
+    const char *value;
 
     assert(metadata);
     assert(key);
 
-    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
-    if (!uskey)
-        goto errorExit;
+    value = Metadata_GetExtra(metadata, key);
+    if (!value || !*value)
+        return dvalue;
 
-    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        goto errorExit;
-
-    json = Metadata_Get(metadata, uskey);
-    if (!json)
-        goto errorExit;
-
-    if (!json_is_real(json))
-        goto errorExit;
-
-    return json_real_value(json);
-
-errorExit:
-    DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
-    return dvalue;
+    return atof(value);
 }
 
 double Metadata_GetDefaultExtraAsDouble(Metadata *metadata, const char *key, double dvalue)
 {
-    json_t *json;
+    const char *value;
 
     assert(metadata);
     assert(key);
 
-    json = Metadata_Get(metadata, key);
-    if (!json)
-        goto errorExit;
+    value = Metadata_GetDefaultExtra(metadata, key);
+    if (!value || !*value)
+        return dvalue;
 
-    if (!json_is_real(json))
-        goto errorExit;
-
-    return json_real_value(json);
-
-errorExit:
-    DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
-    return dvalue;
+    return atof(value);
 }
 
 long long Metadata_GetExtraAsInteger(Metadata *metadata, const char *key, long long dvalue)
 {
-    char *uskey;
-    json_t *json;
+    const char *value;
 
     assert(metadata);
     assert(key);
 
-    uskey = alloca(strlen(PREFIX) + strlen(key) + 1);
-    if (!uskey)
-        goto errorExit;
+    value = Metadata_GetExtra(metadata, key);
+    if (!value || !*value)
+        return dvalue;
 
-    if (sprintf(uskey, "%s%s", PREFIX, key) == -1)
-        goto errorExit;
-
-    json = Metadata_Get(metadata, uskey);
-    if (!json)
-        goto errorExit;
-
-    if (!json_is_integer(json))
-        goto errorExit;
-
-    return json_integer_value(json);
-
-errorExit:
-    DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
-    return dvalue;
+    return atoll(value);
 }
 
 long long Metadata_GetDefaultExtraAsInteger(Metadata *metadata, const char *key, long long dvalue)
 {
-    json_t *json;
+    const char *value;
 
     assert(metadata);
     assert(key);
 
-    json = Metadata_Get(metadata, key);
-    if (!json)
-        goto errorExit;
+    value = Metadata_GetDefaultExtra(metadata, key);
+    if (!value || !*value)
+        return dvalue;
 
-    if (!json_is_integer(json))
-        goto errorExit;
-
-    return json_integer_value(json);
-
-errorExit:
-    DIDError_Set(DIDERR_METADATA_ERROR, "Get '%s' value from metadata failed", key);
-    return dvalue;
+    return atoll(value);
 }
 
 int Metadata_Merge(Metadata *tometadata, Metadata *frommetadata)
