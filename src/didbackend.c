@@ -28,6 +28,7 @@
 #include "ela_did.h"
 #include "common.h"
 #include "did.h"
+#include "didurl.h"
 #include "didrequest.h"
 #include "didbackend.h"
 #include "didmeta.h"
@@ -437,7 +438,7 @@ static CredentialBiography *resolvevc_from_backend(DIDURL *id, DID *issuer)
 
     assert(id);
 
-    idstring = DIDURL_ToString(id, _idstring, sizeof(_idstring), false);
+    idstring = DIDURL_ToString_Internal(id, _idstring, sizeof(_idstring), false);
     if (!idstring)
         return NULL;
 

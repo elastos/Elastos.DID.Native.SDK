@@ -101,7 +101,7 @@ static int PublicKey_ToJson(JsonGenerator *gen, PublicKey *pk, int compact)
 
     CHECK(DIDJG_WriteStartObject(gen));
     CHECK(DIDJG_WriteStringField(gen, ID,
-        DIDURL_ToString(&pk->id, id, sizeof(id), compact)));
+        DIDURL_ToString_Internal(&pk->id, id, sizeof(id), compact)));
     if (!compact) {
         CHECK(DIDJG_WriteStringField(gen, TYPE, pk->type));
         CHECK(DIDJG_WriteStringField(gen, CONTROLLER,
@@ -125,8 +125,8 @@ static int didurl_func(const void *a, const void *b)
     PublicKey *keya = *(PublicKey**)a;
     PublicKey *keyb = *(PublicKey**)b;
 
-    stringa = DIDURL_ToString(&keya->id, _stringa, ELA_MAX_DIDURL_LEN, true);
-    stringb = DIDURL_ToString(&keyb->id, _stringb, ELA_MAX_DIDURL_LEN, true);
+    stringa = DIDURL_ToString_Internal(&keya->id, _stringa, ELA_MAX_DIDURL_LEN, true);
+    stringb = DIDURL_ToString_Internal(&keyb->id, _stringb, ELA_MAX_DIDURL_LEN, true);
 
     return strcmp(stringa, stringb);
 }
@@ -206,7 +206,7 @@ static int PublicKeyArray_ToJson(JsonGenerator *gen, PublicKey **pks, size_t siz
             CHECK(PublicKey_ToJson(gen, pks[i], compact));
         else
             CHECK(DIDJG_WriteString(gen,
-                DIDURL_ToString(&pks[i]->id, id, sizeof(id), compact)));
+                DIDURL_ToString_Internal(&pks[i]->id, id, sizeof(id), compact)));
     }
     CHECK(DIDJG_WriteEndArray(gen));
 
@@ -223,7 +223,7 @@ static int Service_ToJson(JsonGenerator *gen, Service *service, int compact)
 
     CHECK(DIDJG_WriteStartObject(gen));
     CHECK(DIDJG_WriteStringField(gen, ID,
-        DIDURL_ToString(&service->id, id, sizeof(id), compact)));
+        DIDURL_ToString_Internal(&service->id, id, sizeof(id), compact)));
     CHECK(DIDJG_WriteStringField(gen, TYPE, service->type));
     CHECK(DIDJG_WriteStringField(gen, SERVICE_ENDPOINT, service->endpoint));
 
@@ -272,7 +272,7 @@ static int Proof_ToJson(JsonGenerator *gen, DocumentProof *proof, DIDDocument *d
             get_time_string(_timestring, sizeof(_timestring), &proof->created)));
     if (!compact || !DID_Equals(&document->did, &proof->creater.did)) {
         CHECK(DIDJG_WriteStringField(gen, CREATOR,
-                DIDURL_ToString(&proof->creater, id, sizeof(id), false)));
+                DIDURL_ToString_Internal(&proof->creater, id, sizeof(id), false)));
     }
 
     CHECK(DIDJG_WriteStringField(gen, SIGNATURE_VALUE, proof->signatureValue));
@@ -293,8 +293,8 @@ static int proof_cmp(const void *a, const void *b)
     if (equals != 0)
         return equals;
 
-    stringa = DIDURL_ToString(&proofa->creater, _stringa, ELA_MAX_DIDURL_LEN, false);
-    stringb = DIDURL_ToString(&proofb->creater, _stringb, ELA_MAX_DIDURL_LEN, false);
+    stringa = DIDURL_ToString_Internal(&proofa->creater, _stringa, ELA_MAX_DIDURL_LEN, false);
+    stringb = DIDURL_ToString_Internal(&proofb->creater, _stringb, ELA_MAX_DIDURL_LEN, false);
 
     return strcmp(stringa, stringb);
 }
@@ -403,7 +403,8 @@ static int Parse_PublicKey(DID *did, json_t *json, PublicKey **publickey)
     }
 
     if (!field) { // the controller is self did.
-        strcpy(pk->controller.idstring, did->idstring);
+        DID_Copy(&pk->controller, did);
+        //strcpy(pk->controller.idstring, did->idstring);
         *publickey = pk;
         return 0;
     }
@@ -625,8 +626,10 @@ static int Parse_Services(DIDDocument *document, json_t *json)
             continue;
         }
 
-        if (!*service->id.did.idstring)
-            strcpy(service->id.did.idstring, document->did.idstring);
+        //if (!*service->id.did.idstring)
+        if (DID_IsEmpty(&service->id.did))
+            DID_Copy(&service->id.did, &document->did);
+            //strcpy(service->id.did.idstring, document->did.idstring);
 
         field = json_object_get(item, TYPE);
         if (!field || !json_is_string(field)) {
@@ -3314,8 +3317,8 @@ ssize_t DIDDocument_SelectPublicKeys(DIDDocument *document, const char *type,
         return -1;
     }
 
-    if (keyid && !*keyid->did.idstring)
-        strcpy(keyid->did.idstring, document->did.idstring);
+    if (keyid && DID_IsEmpty(&keyid->did))
+        DID_Copy(&keyid->did, &document->did);
 
     total_size = document->publickeys.size;
     for (i = 0; i < total_size; i++) {
@@ -3777,8 +3780,8 @@ ssize_t DIDDocument_SelectCredentials(DIDDocument *document, const char *type,
         return -1;
     }
 
-    if (credid && (!*credid->did.idstring))
-        strcpy(credid->did.idstring, document->did.idstring);
+    if (credid && DID_IsEmpty(&credid->did))
+        DID_Copy(&credid->did, &document->did);
 
     for (i = 0; i < total_size; i++) {
         Credential *cred = document->credentials.credentials[i];
@@ -3903,8 +3906,8 @@ ssize_t DIDDocument_SelectServices(DIDDocument *document,
         return -1;
     }
 
-    if (serviceid && !*serviceid->did.idstring)
-        strcpy(serviceid->did.idstring, document->did.idstring);
+    if (serviceid && DID_IsEmpty(&serviceid->did))
+        DID_Copy(&serviceid->did, &document->did);
 
     for (i = 0; i < total_size; i++) {
         Service *service = document->services.services[i];

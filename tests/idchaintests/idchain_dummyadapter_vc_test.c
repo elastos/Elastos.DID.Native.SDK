@@ -284,7 +284,7 @@ static void test_idchain_listvc(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
 
     //create kyc credential
-    credid1 = DIDURL_NewByDid(&did, "kyccredential");
+    credid1 = DIDURL_NewFromDid(&did, "kyccredential");
     CU_ASSERT_PTR_NOT_NULL(credid1);
 
     const char *types[2];
@@ -315,7 +315,7 @@ static void test_idchain_listvc(void)
     DIDDocument_Destroy(document);
     CU_ASSERT_PTR_NOT_NULL(builder);
 
-    credid2 = DIDURL_NewByDid(&did, "selfvc");
+    credid2 = DIDURL_NewFromDid(&did, "selfvc");
     CU_ASSERT_PTR_NOT_NULL(credid2);
 
     types[0] = "BasicProfileCredential";
@@ -455,7 +455,7 @@ static void test_idchain_listvc2(void)
             CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, param->version));
             signkey1 = DIDDocument_GetDefaultPublicKey(user1doc);
             CU_ASSERT_PTR_NOT_NULL(signkey1);
-            signkey = DIDURL_NewByDid(&user1doc->did, "key2");
+            signkey = DIDURL_NewFromDid(&user1doc->did, "key2");
             CU_ASSERT_PTR_NOT_NULL(signkey);
 
             doc = TestData_GetDocument(param->did, NULL, param->version);
@@ -464,7 +464,7 @@ static void test_idchain_listvc2(void)
             doc = TestData_GetDocument(param->did, NULL, param->version);
             CU_ASSERT_PTR_NOT_NULL(doc);
 
-            signkey = DIDURL_NewByDid(&doc->did, "key2");
+            signkey = DIDURL_NewFromDid(&doc->did, "key2");
             CU_ASSERT_PTR_NOT_NULL(signkey);
         }
 
@@ -548,7 +548,7 @@ static void test_idchain_listvc_pagination(void)
     printf("\n------------------------------------------------------------\ncreate 1028 credentials, please wait...\n");
     for (i = 0; i < 1028; i++) {
         sprintf(fragment, "test%d", i);
-        credid = DIDURL_NewByDid(&did, fragment);
+        credid = DIDURL_NewFromDid(&did, fragment);
         CU_ASSERT_PTR_NOT_NULL(credid);
 
         const char *types[1];
@@ -574,7 +574,7 @@ static void test_idchain_listvc_pagination(void)
     for (i = 0; i < size; i++) {
         vcid = buffer[i];
         sprintf(fragment, "test%d", 1027 - i);
-        credid = DIDURL_NewByDid(&did, fragment);
+        credid = DIDURL_NewFromDid(&did, fragment);
         CU_ASSERT_PTR_NOT_NULL(credid);
         CU_ASSERT_TRUE(DIDURL_Equals(credid, vcid));
 
@@ -594,7 +594,7 @@ static void test_idchain_listvc_pagination(void)
     for (i = 0; i < size; i++) {
         vcid = buffer[i];
         sprintf(fragment, "test%d", 1027 - i);
-        credid = DIDURL_NewByDid(&did, fragment);
+        credid = DIDURL_NewFromDid(&did, fragment);
         CU_ASSERT_PTR_NOT_NULL(credid);
         CU_ASSERT_TRUE(DIDURL_Equals(credid, vcid));
 
@@ -624,7 +624,7 @@ static void test_idchain_listvc_pagination(void)
         for (i = 0; i < size; i++) {
             vcid = buffer[i];
             sprintf(fragment, "test%d", --index);
-            credid = DIDURL_NewByDid(&did, fragment);
+            credid = DIDURL_NewFromDid(&did, fragment);
             CU_ASSERT_PTR_NOT_NULL(credid);
             CU_ASSERT_TRUE(DIDURL_Equals(credid, vcid));
 
@@ -655,7 +655,7 @@ static void test_idchain_listvc_pagination(void)
         for (i = 0; i < size; i++) {
             vcid = buffer[i];
             sprintf(fragment, "test%d", --index);
-            credid = DIDURL_NewByDid(&did, fragment);
+            credid = DIDURL_NewFromDid(&did, fragment);
             CU_ASSERT_PTR_NOT_NULL(credid);
             CU_ASSERT_TRUE(DIDURL_Equals(credid, vcid));
 

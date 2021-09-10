@@ -28,22 +28,6 @@ static void test_didurl_get_fragment(void)
     CU_ASSERT_STRING_EQUAL(tempfragment, fragment);
 }
 
-static void test_didurl_tostring(void)
-{
-    char _idstring[ELA_MAX_DIDURL_LEN];
-    CU_ASSERT_STRING_EQUAL(DIDURL_ToString(id, _idstring, sizeof(_idstring), false),
-            testid_string);
-    CU_ASSERT_STRING_EQUAL(DIDURL_ToString(id, _idstring, sizeof(_idstring), true),
-            compact_idstring);
-}
-
-static void test_didurl_tostring_error(void)
-{
-    char _idstring[5];
-    CU_ASSERT_PTR_NULL(DIDURL_ToString(id, _idstring, sizeof(_idstring), false));
-    CU_ASSERT_PTR_NULL(DIDURL_ToString(id, _idstring, sizeof(_idstring), true));
-}
-
 static void test_didurl_compare(void)
 {
     int rc;
@@ -100,8 +84,6 @@ static int didurl_test_operation_suite_cleanup(void)
 static CU_TestInfo cases[] = {
     {   "test_didurl_get_did",                    test_didurl_get_did         },
     {   "test_didurl_get_fragment",               test_didurl_get_fragment    },
-    {   "test_didurl_tostring",                   test_didurl_tostring        },
-    {   "test_didurl_tostring_error",             test_didurl_tostring_error  },
     {   "test_didurl_compare",                    test_didurl_compare         },
     {   "test_didurl_equals",                     test_didurl_equals          },
     {   NULL,                                     NULL                        }

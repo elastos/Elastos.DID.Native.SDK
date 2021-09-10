@@ -63,7 +63,7 @@ static int proof_toJson(JsonGenerator *gen, Presentation *presentation, int comp
     if (!compact)
         CHECK(DIDJG_WriteStringField(gen, TYPE, presentation->proof.type));
     CHECK(DIDJG_WriteStringField(gen, VERIFICATION_METHOD,
-        DIDURL_ToString(&presentation->proof.verificationMethod, id, sizeof(id), compact)));
+        DIDURL_ToString_Internal(&presentation->proof.verificationMethod, id, sizeof(id), compact)));
     CHECK(DIDJG_WriteStringField(gen, REALM, presentation->proof.realm));
     CHECK(DIDJG_WriteStringField(gen, NONCE, presentation->proof.nonce));
     CHECK(DIDJG_WriteStringField(gen, SIGNATURE, presentation->proof.signatureValue));
@@ -105,7 +105,7 @@ static int presentation_tojson_internal(JsonGenerator *gen, Presentation *presen
 
     CHECK(DIDJG_WriteStartObject(gen));
     if (*presentation->id.did.idstring) {
-        id = DIDURL_ToString(&presentation->id, idstring, sizeof(idstring), false);
+        id = DIDURL_ToString_Internal(&presentation->id, idstring, sizeof(idstring), false);
         CHECK(DIDJG_WriteStringField(gen, ID, id));
     }
     if (presentation->type.size > 1) {

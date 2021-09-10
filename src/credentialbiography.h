@@ -25,6 +25,7 @@
 
 #include <jansson.h>
 #include "ela_did.h"
+#include "didurl.h"
 #include "vctransactioninfo.h"
 
 #ifdef __cplusplus

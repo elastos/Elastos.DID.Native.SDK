@@ -28,6 +28,7 @@
 #include "ela_did.h"
 #include "JsonGenerator.h"
 #include "did.h"
+#include "didurl.h"
 #include "common.h"
 #include "ticket.h"
 

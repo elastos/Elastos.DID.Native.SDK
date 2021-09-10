@@ -72,7 +72,7 @@ static void test_publish_ctmdid_with_onecontroller(void)
     keybase = HDKey_GetPublicKeyBase58(dkey, publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
 
-    keyid1 = DIDURL_NewByDid(&customizedid, "key1");
+    keyid1 = DIDURL_NewFromDid(&customizedid, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, keyid1,
@@ -80,7 +80,7 @@ static void test_publish_ctmdid_with_onecontroller(void)
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid1, keybase));
 
-    credid = DIDURL_NewByDid(&customizedid, "cred-1");
+    credid = DIDURL_NewFromDid(&customizedid, "cred-1");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "SelfClaimedCredential"};
@@ -119,7 +119,7 @@ static void test_publish_ctmdid_with_onecontroller(void)
     dkey = Generater_KeyPair(&_dkey);
     keybase = HDKey_GetPublicKeyBase58(dkey, publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
-    keyid2 = DIDURL_NewByDid(&customizedid, "key2");
+    keyid2 = DIDURL_NewFromDid(&customizedid, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, keyid2,
             HDKey_GetPrivateKey(dkey), PRIVATEKEY_BYTES));
@@ -222,14 +222,14 @@ static void test_publish_ctmdid_with_multicontroller(void)
     keybase = HDKey_GetPublicKeyBase58(dkey, publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
 
-    keyid1 = DIDURL_NewByDid(&customizedid, "key1");
+    keyid1 = DIDURL_NewFromDid(&customizedid, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, keyid1,
             HDKey_GetPrivateKey(dkey), PRIVATEKEY_BYTES));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid1, keybase));
 
-    credid = DIDURL_NewByDid(&customizedid, "cred-1");
+    credid = DIDURL_NewFromDid(&customizedid, "cred-1");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "SelfClaimedCredential"};
@@ -286,7 +286,7 @@ static void test_publish_ctmdid_with_multicontroller(void)
 
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
-    keyid2 = DIDURL_NewByDid(&customizedid, "key2");
+    keyid2 = DIDURL_NewFromDid(&customizedid, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid2, keybase));
 
@@ -361,13 +361,13 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     keybase = HDKey_GetPublicKeyBase58(dkey, publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
 
-    keyid1 = DIDURL_NewByDid(&customizedid, "key1");
+    keyid1 = DIDURL_NewFromDid(&customizedid, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, keyid1,
             HDKey_GetPrivateKey(dkey), PRIVATEKEY_BYTES));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid1, keybase));
 
-    credid = DIDURL_NewByDid(&customizedid, "cred-1");
+    credid = DIDURL_NewFromDid(&customizedid, "cred-1");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "SelfClaimedCredential"};
@@ -434,7 +434,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
 
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
-    keyid2 = DIDURL_NewByDid(&customizedid, "key2");
+    keyid2 = DIDURL_NewFromDid(&customizedid, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid2, keybase));
 
@@ -590,11 +590,11 @@ static void test_transfer_ctmdid_with_multicontroller(void)
 
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
-    keyid1 = DIDURL_NewByDid(&customizedid, "key1");
+    keyid1 = DIDURL_NewFromDid(&customizedid, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid1);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid1, keybase));
 
-    credid = DIDURL_NewByDid(&customizedid, "cred-1");
+    credid = DIDURL_NewFromDid(&customizedid, "cred-1");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "SelfClaimedCredential"};
@@ -675,7 +675,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     dkey = Generater_KeyPair(&_dkey);
     keybase = HDKey_GetPublicKeyBase58(dkey, publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
-    keyid2 = DIDURL_NewByDid(&customizedid, "key2");
+    keyid2 = DIDURL_NewFromDid(&customizedid, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid2);
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, keyid2,
             HDKey_GetPrivateKey(dkey), PRIVATEKEY_BYTES));
