@@ -395,7 +395,7 @@ static DIDDocument *create_document(DID *did, const char *key, const char *alias
     assert(store);
     assert(storepass && *storepass);
 
-    if (DIDURL_Init(&id, did, "primary") == -1)
+    if (DIDURL_InitFromDid(&id, did, "primary") == -1)
         return NULL;
 
     builder = DIDDocument_CreateBuilder(did, NULL, store);

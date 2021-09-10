@@ -172,7 +172,7 @@ static int credentialbiography_toJson_internal(JsonGenerator *gen, CredentialBio
 
     CHECK(DIDJG_WriteStartObject(gen));
     CHECK(DIDJG_WriteStringField(gen, "did",
-            DIDURL_ToString(&biography->id, id, sizeof(id), false)));
+            DIDURL_ToString_Internal(&biography->id, id, sizeof(id), false)));
     CHECK(DIDJG_WriteFieldName(gen, "status"));
     CHECK(DIDJG_WriteNumber(gen, biography->status));
     if (biography->status != CredentialStatus_NotFound) {

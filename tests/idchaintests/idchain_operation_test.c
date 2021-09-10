@@ -84,7 +84,7 @@ static void test_idchain_publishdid_and_resolve(void)
 
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
-    DIDURL *keyid = DIDURL_NewByDid(&did, "key1");
+    DIDURL *keyid = DIDURL_NewFromDid(&did, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase));
     DIDURL_Destroy(keyid);
@@ -142,7 +142,7 @@ static void test_idchain_publishdid_and_resolve(void)
 
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
-    keyid = DIDURL_NewByDid(&did, "key2");
+    keyid = DIDURL_NewFromDid(&did, "key2");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase));
     DIDURL_Destroy(keyid);
@@ -246,7 +246,7 @@ static void test_idchain_publishdid_with_credential(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
     DIDDocument_Destroy(doc);
 
-    DIDURL *credid = DIDURL_NewByDid(&did, "cred-1");
+    DIDURL *credid = DIDURL_NewFromDid(&did, "cred-1");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "SelfClaimedCredential"};
@@ -448,7 +448,7 @@ static void test_idchain_deactivedid_after_update(void)
 
     keybase = Generater_Publickey(publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
-    DIDURL *keyid = DIDURL_NewByDid(&did, "key1");
+    DIDURL *keyid = DIDURL_NewFromDid(&did, "key1");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthenticationKey(builder, keyid, keybase));
     DIDURL_Destroy(keyid);
@@ -584,7 +584,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
     DIDDocument_Destroy(targetdoc);
 
-    DIDURL *keyid = DIDURL_NewByDid(&did, "recovery");
+    DIDURL *keyid = DIDURL_NewFromDid(&did, "recovery");
     CU_ASSERT_PTR_NOT_NULL(keyid);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AuthorizeDid(builder, keyid, &controller, NULL));
@@ -688,7 +688,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     keybase = HDKey_GetPublicKeyBase58(dkey, publickeybase58, sizeof(publickeybase58));
     CU_ASSERT_PTR_NOT_NULL(keybase);
 
-    DIDURL *signkey = DIDURL_NewByDid(&controller, "key-2");
+    DIDURL *signkey = DIDURL_NewFromDid(&controller, "key-2");
     CU_ASSERT_PTR_NOT_NULL(signkey);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StorePrivateKey(store, storepass, signkey,
@@ -741,7 +741,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     DID_Copy(&did, DIDDocument_GetSubject(targetdoc));
     DIDDocument_Destroy(targetdoc);
 
-    DIDURL *keyid = DIDURL_NewByDid(&did, "recovery");
+    DIDURL *keyid = DIDURL_NewFromDid(&did, "recovery");
     CU_ASSERT_PTR_NOT_NULL(keyid);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddAuthorizationKey(builder, keyid, &controller, keybase));

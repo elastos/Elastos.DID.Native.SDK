@@ -154,7 +154,7 @@ Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
         goto errorExit;
 
     //subject
-    strcpy(cred->subject.id.idstring, owner->idstring);
+    DID_Copy(&cred->subject.id, owner);
     cred->subject.properties = json_deep_copy(json);
 
     //set type

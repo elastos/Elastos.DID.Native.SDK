@@ -605,7 +605,7 @@ static int listvcs_result_tojson(JsonGenerator *gen, DID *did, int skip, int _li
         CHECK(DIDJG_WriteFieldName(gen, "credentials"));
         CHECK(DIDJG_WriteStartArray(gen));
         for (i = 0; i < size; i++)
-            CHECK(DIDJG_WriteString(gen, DIDURL_ToString(&vcs[i], idstring, sizeof(idstring), false)));
+            CHECK(DIDJG_WriteString(gen, DIDURL_ToString(&vcs[i], idstring, sizeof(idstring))));
         CHECK(DIDJG_WriteEndArray(gen));
     }
 
@@ -688,7 +688,7 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, DID *issuer)
 
     CHECK(DIDJG_WriteStartObject(gen));
     CHECK(DIDJG_WriteStringField(gen, "id",
-            DIDURL_ToString(id, idstring, sizeof(idstring), false)));
+            DIDURL_ToString(id, idstring, sizeof(idstring))));
 
     for (i = 0; i < vcnum; i++) {
         info = vcinfos[i];

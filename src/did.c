@@ -28,85 +28,141 @@
 
 #include "ela_did.h"
 #include "did.h"
-#include "diddocument.h"
-#include "didstore.h"
-#include "credential.h"
 #include "didmeta.h"
 #include "diderror.h"
 #include "didbackend.h"
 
 static const char did_scheme[] = "did";
 static const char did_method[] = "elastos";
-static const char elastos_did_prefix[] = "did:elastos:";
 
-// idstring has three informats:
-// 1. did:elastos:xxxxxxx
-// 2. did:elastos:xxxxxxx#xxxxx
-// 3. #xxxxxxx
-static int parse_id_string(char *id, char *fragment, const char *idstring, DID *base)
+static bool is_token(char ch, bool start)
 {
-    const char *s, *e;
-    size_t len;
+    if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+            (ch >= '0' && ch <= '9'))
+        return true;
 
-    assert(id);
-    assert(idstring && *idstring);
+    if (start)
+        return false;
 
-    // Fragment only, need base DID object
-    if (*idstring == '#') {
-        if (!fragment || !base) {
-            DIDError_Set(DIDERR_MALFORMED_DIDURL, "DIDURL error: Fragment only, need base DID object");
-            return -1;
+    return (ch  == '.' || ch == '_' || ch == '-');
+}
+
+static int scan_did_nextpart(const char *idstring, int start, int limit,
+        const char *delimiter)
+{
+    int nextPart = limit;
+    bool bTokenStart = true;
+
+    assert(idstring);
+    assert(start >= 0);
+    assert(limit >= 0);
+
+    for (int i = start; i < limit; i++) {
+        char ch = *(idstring + i);
+        if (ch == *delimiter) {
+            nextPart = i;
+            break;
         }
 
-        len = strlen(++idstring);
-        if (len == 0 || len >= MAX_FRAGMENT) {
-            DIDError_Set(DIDERR_MALFORMED_DIDURL, "DIDURL error: the fragment is too long.");
-            return -1;
+        if (is_token(ch, bTokenStart)) {
+            bTokenStart = false;
+            continue;
         }
 
-        strcpy(id, base->idstring);
-        strcpy(fragment, idstring);
-        return 0;
-    }
-
-    if (strncmp(idstring, elastos_did_prefix, sizeof(elastos_did_prefix) - 1) != 0) {
-        DIDError_Set(DIDERR_MALFORMED_DID, "Unknow did spec.");
+        DIDError_Set(DIDERR_MALFORMED_DID, "Invalid char at: %d", i);
         return -1;
     }
 
-    s = idstring + sizeof(elastos_did_prefix) - 1;
-    for (e = s; *e != '#' && *e != '?' && *e != '/' && *e != '\x0'; e++);
-    len = e - s;
-    if (len >= MAX_ID_SPECIFIC_STRING || len == 0) {
-        DIDError_Set(DIDERR_MALFORMED_DID, "The method specific identifier is too long.");
+    return nextPart;
+}
+
+static int parse_did_string(DID *did, const char *idstring, int start, int limit)
+{
+    int pos, nextPart;
+    char check[ELA_MAX_DID_LEN] = {0};
+
+    assert(did);
+    assert(idstring);
+
+    memset(did, 0, sizeof(DID));
+
+    if (start < 0)
+        start = 0;
+    if (limit < 0)
+        limit = strlen(idstring);
+
+    // trim the leading and trailing spaces
+    while (limit > start && *(idstring + limit - 1) <= ' ')
+        limit--;        //eliminate trailing whitespace
+
+    while (start < limit && *(idstring + start) <= ' ')
+        start++;        // eliminate leading whitespace
+
+    if (start == limit) {  // empty did string
+        DIDError_Set(DIDERR_MALFORMED_DID, "empty DID string");
         return -1;
     }
 
-    strncpy(id, s, len);
-    id[len] = 0;
+    pos = start;
 
-    if (!fragment)
-        return 0;
-
-    for (; *e != '#' && *e != '\x0'; e++);
-    if (*e != '#') {
-        DIDError_Set(DIDERR_MALFORMED_DIDURL, "Unknow id string.");
+    // did
+    nextPart = scan_did_nextpart(idstring, pos, limit, ":");
+    if (nextPart < 0) {
+        memset(did, 0, sizeof(DID));
         return -1;
     }
 
-    len = strlen(++e);
-    if (len == 0 || len >= MAX_FRAGMENT) {
-        DIDError_Set(DIDERR_MALFORMED_DIDURL, "Wrong fragment length.");
+    strncpy(check, idstring + pos, nextPart - pos);
+    if (strlen(check) != strlen(did_scheme) || strncmp(check, did_scheme, strlen(did_scheme))) {
+        DIDError_Set(DIDERR_MALFORMED_DID, "Invalid DID schema: '%s', at: %d", check, pos);
         return -1;
     }
 
-    strcpy(fragment, e);
+    pos = nextPart;
+
+    // method
+    if (pos + 1 >= limit || *(idstring + pos) != ':') {
+        DIDError_Set(DIDERR_MALFORMED_DID, "Missing method and id string at: %d", pos);
+        return -1;
+    }
+
+    nextPart = scan_did_nextpart(idstring, ++pos, limit, ":");
+    if (nextPart < 0) {
+        memset(did, 0, sizeof(DID));
+        return -1;
+    }
+
+    strncpy(check, idstring + pos, nextPart - pos);
+    check[nextPart - pos] = 0;
+    if (strlen(check) != strlen(did_method) || strncmp(idstring + pos, did_method, strlen(did_method))) {
+        DIDError_Set(DIDERR_MALFORMED_DID, "Unknown DID method: '%s', at: %d", check, pos);
+        return -1;
+    }
+
+    strcpy(did->method, did_method);
+    pos = nextPart;
+
+    // id string
+    if (pos + 1 >= limit || *(idstring + pos) != ':') {
+        DIDError_Set(DIDERR_MALFORMED_DID, "Missing id string at: %d",
+                (pos + 1 > limit ? pos : pos + 1));
+        return -1;
+    }
+
+    nextPart = scan_did_nextpart(idstring, ++pos, limit, "\x0");
+    if (nextPart < 0) {
+        memset(did, 0, sizeof(DID));
+        return -1;
+    }
+
+    strncpy(did->idstring, idstring + pos, nextPart - pos);
+    did->idstring[nextPart - pos] = 0;
     return 0;
 }
 
 int DID_Parse(DID *did, const char *idstring)
 {
-    return parse_id_string(did->idstring, NULL, idstring, NULL);
+    return parse_did_string(did, idstring, -1, -1);
 }
 
 int DID_Init(DID *did, const char *idstring)
@@ -119,8 +175,10 @@ int DID_Init(DID *did, const char *idstring)
         return -1;
     }
 
+    memset(did, 0, sizeof(DID));
+
+    strcpy(did->method, did_method);
     strcpy(did->idstring, idstring);
-    memset(&did->metadata, 0, sizeof(DIDMetadata));
     return 0;
 }
 
@@ -165,10 +223,44 @@ DID *DID_New(const char *method_specific_string)
         return NULL;
     }
 
+    strcpy(did->method, did_method);
     strcpy(did->idstring, method_specific_string);
     return did;
 
     DIDERROR_FINALIZE();
+}
+
+DID *DID_NewWithMethod(const char *method, const char *method_specific_string)
+{
+    DID *did;
+
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!method || !*method,
+            "Invalid method specific string argument.", NULL);
+    CHECK_ARG(strlen(method) >= MAX_ID_SPECIFIC_STRING,
+            "Method specific string is too long.", NULL);
+    CHECK_ARG(!method_specific_string || !*method_specific_string,
+            "Invalid method specific string argument.", NULL);
+    CHECK_ARG(strlen(method_specific_string) >= MAX_ID_SPECIFIC_STRING,
+            "Method specific string is too long.", NULL);
+
+    did = (DID *)calloc(1, sizeof(DID));
+    if (!did) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for DID failed.");
+        return NULL;
+    }
+
+    strcpy(did->method, method);
+    strcpy(did->idstring, method_specific_string);
+    return did;
+
+    DIDERROR_FINALIZE();
+}
+
+int DID_InitByPos(DID *did, const char *idstring, int start, int limit)
+{
+    return parse_did_string(did, idstring, start, limit);
 }
 
 const char *DID_GetMethod(DID *did)
@@ -176,7 +268,7 @@ const char *DID_GetMethod(DID *did)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!did, "No did argument.", NULL);
-    return did_method;
+    return (const char*)did->method;
 
     DIDERROR_FINALIZE();
 }
@@ -193,15 +285,22 @@ const char *DID_GetMethodSpecificId(DID *did)
 
 char *DID_ToString(DID *did, char *idstring, size_t len)
 {
+    int size;
+
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!did, "No did argument.", NULL);
     CHECK_ARG(!idstring, "No idstring buffer.", NULL);
-    CHECK_ARG(strlen(did->idstring) + strlen(elastos_did_prefix) >= len,
+    CHECK_ARG(strlen(did->method) + strlen(did->idstring) + 4 >= len,
             "Buffer is too small.", NULL);
 
-    strcpy(idstring, elastos_did_prefix);
-    strcat(idstring, did->idstring);
+    if (*did->method && *did->idstring) {
+        size = snprintf(idstring, len, "did:%s:%s", did->method, did->idstring);
+        if (size < 0 || size > len)
+            return NULL;
+    } else {
+        memset(idstring, 0, len);
+    }
 
     return idstring;
 
@@ -213,8 +312,19 @@ DID *DID_Copy(DID *dest, DID *src)
     assert(dest);
     assert(src);
 
+    strcpy(dest->method, src->method);
     strcpy(dest->idstring, src->idstring);
     return dest;
+}
+
+bool DID_IsEmpty(DID *did)
+{
+    assert(did);
+
+    if (!*did->method && !*did->idstring)
+        return true;
+
+    return false;
 }
 
 int DID_Equals(DID *did1, DID *did2)
@@ -224,19 +334,25 @@ int DID_Equals(DID *did1, DID *did2)
     CHECK_ARG(!did1, "No did1 argument.", -1);
     CHECK_ARG(!did2, "No did2 argument.", -1);
 
-    return strcmp(did1->idstring, did2->idstring) == 0 ? 1 : 0;
+    return (!strcmp(did1->idstring, did2->idstring) && !strcmp(did1->method, did2->method)) ? 1 : 0;
 
     DIDERROR_FINALIZE();
 }
 
 int DID_Compare(DID *did1, DID *did2)
 {
+    char idstring1[ELA_MAX_DID_LEN] = {0}, idstring2[ELA_MAX_DID_LEN] = {0};
+
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!did1, "No did1 argument.", -1);
     CHECK_ARG(!did2, "No did2 argument.", -1);
 
-    return strcmp(did1->idstring, did2->idstring);
+    if (!DID_ToString(did1, idstring1, sizeof(idstring1)) ||
+            !DID_ToString(did2, idstring2, sizeof(idstring2)))
+        return -1;
+
+    return strcmp(idstring1, idstring2);
 
     DIDERROR_FINALIZE();
 }
@@ -280,247 +396,6 @@ DIDMetadata *DID_GetMetadata(DID *did)
 
     CHECK_ARG(!did, "No did to get metadata.", NULL);
     return &did->metadata;
-
-    DIDERROR_FINALIZE();
-}
-
-int DIDURL_Parse(DIDURL *id, const char *idstring, DID *base)
-{
-    return parse_id_string(id->did.idstring, id->fragment, idstring, base);
-}
-
-int DIDURL_Init(DIDURL *id, DID *did, const char *fragment)
-{
-    assert(id);
-    assert(did);
-    assert(fragment && *fragment);
-
-    if (strlen(fragment) >= sizeof(id->fragment)) {
-        DIDError_Set(DIDERR_MALFORMED_DIDURL, "The fragment is too long.");
-        return -1;
-    }
-
-    DID_Copy(&id->did, did);
-    strcpy(id->fragment, fragment);
-    memset(&id->metadata, 0, sizeof(CredentialMetadata));
-    return 0;
-}
-
-int DIDURL_InitFromString(DIDURL *id, const char *idstring, const char *fragment)
-{
-    assert(id);
-    assert(idstring && *idstring);
-    assert(fragment && *fragment);
-
-    if (strlen(fragment) >= sizeof(id->fragment)) {
-        DIDError_Set(DIDERR_MALFORMED_DIDURL, "The fragment is too long.");
-        return -1;
-    }
-
-    strcpy(id->did.idstring, idstring);
-    strcpy(id->fragment, fragment);
-    return 0;
-}
-
-DIDURL *DIDURL_FromString(const char *idstring, DID *ref)
-{
-    DIDURL *id;
-
-    DIDERROR_INITIALIZE();
-
-    CHECK_ARG(!idstring || !*idstring, "Invalid idstring.", NULL);
-
-    id = (DIDURL*)calloc(1, sizeof(DIDURL));
-    if (!id) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for DIDURL failed.");
-        return NULL;
-    }
-
-    if (DIDURL_Parse(id, idstring, ref) < 0) {
-        free(id);
-        return NULL;
-    }
-
-    return id;
-
-    DIDERROR_FINALIZE();
-}
-
-DIDURL *DIDURL_New(const char *method_specific_string, const char *fragment)
-{
-    DIDURL *id;
-
-    DIDERROR_INITIALIZE();
-
-    CHECK_ARG(!method_specific_string || !*method_specific_string,
-            "Invalid method specific string argument.", NULL);
-    CHECK_ARG(!fragment || !*fragment, "Invalid fragment string.", NULL);
-    CHECK_ARG(strlen(method_specific_string) >= MAX_ID_SPECIFIC_STRING,
-            "method specific string is too long.", NULL);
-    CHECK_ARG(strlen(fragment) >= MAX_FRAGMENT, "The fragment is too long.", NULL);
-
-    id = (DIDURL *)calloc(1, sizeof(DIDURL));
-    if (!id) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for DIDURL failed.");
-        return NULL;
-    }
-
-    strcpy(id->did.idstring, method_specific_string);
-    strcpy(id->fragment, fragment);
-
-    return id;
-
-    DIDERROR_FINALIZE();
-}
-
-DIDURL *DIDURL_NewByDid(DID *did, const char *fragment)
-{
-    DIDURL *id;
-
-    DIDERROR_INITIALIZE();
-
-    CHECK_ARG(!did, "No did argument.", NULL);
-    CHECK_ARG(!fragment || !*fragment, "Invalid fragment string.", NULL);
-    CHECK_ARG(strlen(fragment) >= MAX_FRAGMENT, "The fragment is too long.", NULL);
-
-    id = (DIDURL*)calloc(1, sizeof(DIDURL));
-    if (!id) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for DIDURL failed.");
-        return NULL;
-    }
-
-    if (!DID_Copy(&id->did, did)) {
-        free(id);
-        return NULL;
-    }
-
-    strcpy(id->fragment, fragment);
-    return id;
-
-    DIDERROR_FINALIZE();
-}
-
-DID *DIDURL_GetDid(DIDURL *id)
-{
-    DIDERROR_INITIALIZE();
-
-    CHECK_ARG(!id, "No didurl argument.", NULL);
-    return &(id->did);
-
-    DIDERROR_FINALIZE();
-}
-
-const char *DIDURL_GetFragment(DIDURL *id)
-{
-    DIDERROR_INITIALIZE();
-
-    CHECK_ARG(!id, "No didurl argument.", NULL);
-    return (const char*)id->fragment;
-
-    DIDERROR_FINALIZE();
-}
-
-char *DIDURL_ToString(DIDURL *id, char *idstring, size_t len, bool compact)
-{
-    size_t expect_len = 0;
-    int size;
-
-    DIDERROR_INITIALIZE();
-
-    CHECK_ARG(!id, "No didurl argument.", NULL);
-    CHECK_ARG(!idstring, "No buffer argument.", NULL);
-
-    expect_len += strlen(id->fragment) + 1;         /* #xxxx */
-    expect_len += compact ? 0 : strlen(elastos_did_prefix) + strlen(id->did.idstring);
-
-    if (expect_len >= len) {
-        DIDError_Set(DIDERR_INVALID_ARGS, "Buffer is too small, please give buffer which has %d length.", expect_len);
-        return NULL;
-    }
-
-    if (compact) {
-        size = snprintf(idstring, len, "#%s", id->fragment);
-        if (size < 0 || size > (int)len) {
-            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Buffer is too small.");
-            return NULL;
-        }
-    } else {
-        size = snprintf(idstring, len, "%s%s#%s", elastos_did_prefix,
-            id->did.idstring, id->fragment);
-        if (size < 0 || size > (int)len) {
-            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Buffer is too small.");
-            return NULL;
-        }
-    }
-
-    return idstring;
-
-    DIDERROR_FINALIZE();
-}
-
-int DIDURL_Equals(DIDURL *id1, DIDURL *id2)
-{
-    DIDERROR_INITIALIZE();
-
-    CHECK_ARG(!id1, "No id1 argument.", -1);
-    CHECK_ARG(!id2, "No id2 argument.", -1);
-
-    return (strcmp(id1->did.idstring, id2->did.idstring) == 0 &&
-            strcmp(id1->fragment, id2->fragment) == 0);
-
-    DIDERROR_FINALIZE();
-}
-
-int DIDURL_Compare(DIDURL *id1, DIDURL *id2)
-{
-    char _idstring1[ELA_MAX_DIDURL_LEN], _idstring2[ELA_MAX_DIDURL_LEN];
-    char *idstring1, *idstring2;
-
-    DIDERROR_INITIALIZE();
-
-    CHECK_ARG(!id1, "No id1 argument.", -1);
-    CHECK_ARG(!id2, "No id2 argument.", -1);
-
-    idstring1 = DIDURL_ToString(id1, _idstring1, ELA_MAX_DIDURL_LEN, false);
-    idstring2 = DIDURL_ToString(id2, _idstring2, ELA_MAX_DIDURL_LEN, false);
-    if (!idstring1 || !idstring2)
-        return -1;
-
-    return strcmp(idstring1, idstring2);
-
-    DIDERROR_FINALIZE();
-}
-
-DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src)
-{
-    assert(dest);
-    assert(src);
-
-    strcpy(dest->did.idstring, src->did.idstring);
-    strcpy(dest->fragment, src->fragment);
-
-    return dest;
-}
-
-void DIDURL_Destroy(DIDURL *id)
-{
-    DIDERROR_INITIALIZE();
-
-    if (!id)
-        return;
-
-    CredentialMetadata_Free(&id->metadata);
-    free(id);
-
-    DIDERROR_FINALIZE();
-}
-
-CredentialMetadata *DIDURL_GetMetadata(DIDURL *id)
-{
-    DIDERROR_INITIALIZE();
-
-    CHECK_ARG(!id, "No destination id argument.", NULL);
-    return &id->metadata;
 
     DIDERROR_FINALIZE();
 }
