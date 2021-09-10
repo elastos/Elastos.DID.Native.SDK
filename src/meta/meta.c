@@ -375,7 +375,7 @@ bool Metadata_GetExtraAsBoolean(Metadata *metadata, const char *key, bool dvalue
     if (!value || !*value)
         return dvalue;
 
-    return !strcmp("false", value) ? false : true;
+    return !strcmp("true", value) ? true : false;
 }
 
 int Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key)
@@ -386,7 +386,7 @@ int Metadata_GetDefaultExtraAsBoolean(Metadata *metadata, const char *key)
     assert(key);
 
     value = Metadata_GetDefaultExtra(metadata, key);
-    return (!value || !*value || !strcmp("false", value)) ? false : true;
+    return (value && !strcmp("true", value)) ? true : false;
 }
 
 double Metadata_GetExtraAsDouble(Metadata *metadata, const char *key, double dvalue)
