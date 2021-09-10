@@ -82,7 +82,7 @@ static void test_didstore_load_vcs(void)
     metadata = Credential_GetMetadata(vc);
     CU_ASSERT_NOT_EQUAL(-1, CredentialMetadata_SetAlias(metadata, "Passport"));
 
-    id = DIDURL_NewByDid(did, "profile");
+    id = DIDURL_NewFromDid(did, "profile");
     CU_ASSERT_PTR_NOT_NULL(id);
 
     vc = DIDStore_LoadCredential(store, did, id);
@@ -98,7 +98,7 @@ static void test_didstore_load_vcs(void)
     Credential_Destroy(vc);
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(did, "twitter");
+    id = DIDURL_NewFromDid(did, "twitter");
     CU_ASSERT_PTR_NOT_NULL(id);
 
     vc = DIDStore_LoadCredential(store, did, id);
@@ -114,7 +114,7 @@ static void test_didstore_load_vcs(void)
     Credential_Destroy(vc);
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(did, "notExist");
+    id = DIDURL_NewFromDid(did, "notExist");
     CU_ASSERT_PTR_NOT_NULL(id);
 
     vc = DIDStore_LoadCredential(store, did, id);
@@ -220,17 +220,17 @@ static void test_didstore_delete_vc(void)
             "#passport", PATH_STEP, META_FILE);
     CU_ASSERT_TRUE(file_exist(path));
 
-    id = DIDURL_NewByDid(did, "twitter");
+    id = DIDURL_NewFromDid(did, "twitter");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_TRUE(DIDStore_DeleteCredential(store, did, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(did, "passport");
+    id = DIDURL_NewFromDid(did, "passport");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_TRUE(DIDStore_DeleteCredential(store, did, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(did, "notExist");
+    id = DIDURL_NewFromDid(did, "notExist");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_FALSE(DIDStore_DeleteCredential(store, did, id));
     DIDURL_Destroy(id);
@@ -245,22 +245,22 @@ static void test_didstore_delete_vc(void)
             "#passport");
     CU_ASSERT_FALSE(file_exist(path));
 
-    id = DIDURL_NewByDid(did, "email");
+    id = DIDURL_NewFromDid(did, "email");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_TRUE(DIDStore_ContainsCredential(store, did, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(did, "profile");
+    id = DIDURL_NewFromDid(did, "profile");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_TRUE(DIDStore_ContainsCredential(store, did, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(did, "twitter");
+    id = DIDURL_NewFromDid(did, "twitter");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_FALSE(DIDStore_ContainsCredential(store, did, id));
     DIDURL_Destroy(id);
 
-    id = DIDURL_NewByDid(did, "passport");
+    id = DIDURL_NewFromDid(did, "passport");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_FALSE(DIDStore_ContainsCredential(store, did, id));
     DIDURL_Destroy(id);

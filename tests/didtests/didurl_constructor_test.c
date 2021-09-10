@@ -22,16 +22,13 @@ static void test_didurl_fromString(void)
     DIDURL_Destroy(id);
 
     DID_Destroy(did);
-}
 
-static void test_didurl_fromString_error(void)
-{
-    DIDURL *id = DIDURL_FromString(testid_string, NULL);
+    id = DIDURL_FromString(testid_string, NULL);
     CU_ASSERT_PTR_NOT_NULL_FATAL(id);
     DIDURL_Destroy(id);
 
-    id = DIDURL_FromString(compact_idstring, NULL);
-    CU_ASSERT_PTR_NULL(id);
+    id = DIDURL_FromString("#default", NULL);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(id);
     DIDURL_Destroy(id);
 }
 
@@ -43,7 +40,7 @@ static void test_didurl_new_didurl(void)
     DIDURL *id = DIDURL_New(method_specific_string, fragment);
     CU_ASSERT_PTR_NOT_NULL_FATAL(id);
 
-    idstring = DIDURL_ToString(id, _idstring, sizeof(_idstring), false);
+    idstring = DIDURL_ToString(id, _idstring, sizeof(_idstring));
     DIDURL_Destroy(id);
     CU_ASSERT_PTR_NOT_NULL_FATAL(idstring);
     CU_ASSERT_STRING_EQUAL(idstring, testid_string);
@@ -70,7 +67,6 @@ static int didurl_test_constructor_suite_cleanup(void)
 
 static CU_TestInfo cases[] = {
     {  "test_didurl_fromString",                test_didurl_fromString         },
-    {  "test_didurl_fromString_error",          test_didurl_fromString_error   },
     {  "test_didurl_new_didurl",                test_didurl_new_didurl         },
     {  "test_didurl_new_didurl_error",          test_didurl_new_didurl_error   },
     {   NULL,                                   NULL                           }

@@ -54,7 +54,7 @@ static void test_vc_local_verify(void)
     Issuer *issuer = Issuer_Create(&kyc, NULL, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
 
-    DIDURL *credid = DIDURL_NewByDid(&owner, "kyccredential");
+    DIDURL *credid = DIDURL_NewFromDid(&owner, "kyccredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "PhoneCredential"};

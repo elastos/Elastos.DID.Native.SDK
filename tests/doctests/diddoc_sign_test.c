@@ -73,7 +73,7 @@ static void test_ctmdoc_sign_verify(void)
     keyid1 = DIDDocument_GetDefaultPublicKey(user1_doc);
     CU_ASSERT_PTR_NOT_NULL(keyid1);
 
-    DIDURL_Init(&keyid2, &document->did, "key2");
+    DIDURL_InitFromDid(&keyid2, &document->did, "key2");
 
     for (j = 0; j < 2; j++) {
         for (i = 0; i < 10; i++) {

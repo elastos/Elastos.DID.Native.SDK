@@ -25,13 +25,17 @@
 
 DECL_TESTSUITE(did_constructor_test);
 DECL_TESTSUITE(did_operation_test);
+DECL_TESTSUITE(did_parse_test);
 DECL_TESTSUITE(didurl_constructor_test);
 DECL_TESTSUITE(didurl_operation_test);
+DECL_TESTSUITE(didurl_parse_test);
 
 #define DEFINE_DID_TESTSUITES \
     DEFINE_TESTSUITE(did_constructor_test), \
     DEFINE_TESTSUITE(did_operation_test), \
+    DEFINE_TESTSUITE(did_parse_test), \
     DEFINE_TESTSUITE(didurl_constructor_test), \
-    DEFINE_TESTSUITE(didurl_operation_test)
+    DEFINE_TESTSUITE(didurl_operation_test), \
+    DEFINE_TESTSUITE(didurl_parse_test)
 
 #endif /* __DID_TEST_SUITES_H__ */

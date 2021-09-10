@@ -29,6 +29,7 @@
 
 #include "ela_did.h"
 #include "diderror.h"
+#include "didurl.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <crystal.h>
@@ -150,7 +151,7 @@ const char *DIDSTR(DID *did)
 const char *DIDURLSTR(DIDURL *id)
 {
     static __thread char buffer[ELA_MAX_DIDURL_LEN] = {0};
-    const char *str = DIDURL_ToString(id, buffer, sizeof(buffer), false);
+    const char *str = DIDURL_ToString_Internal(id, buffer, sizeof(buffer), false);
     return str ? str : "(null)";
 }
 

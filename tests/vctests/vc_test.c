@@ -35,7 +35,7 @@ static void test_vc_kycvc(void)
         cred = TestData_GetCredential("user1", "twitter", NULL, version);
         CU_ASSERT_PTR_NOT_NULL_FATAL(cred);
 
-        id = DIDURL_NewByDid(did, "twitter");
+        id = DIDURL_NewFromDid(did, "twitter");
         CU_ASSERT_PTR_NOT_NULL_FATAL(id);
         CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
         DIDURL_Destroy(id);
@@ -86,7 +86,7 @@ static void test_vc_selfclaimvc(void)
         cred = TestData_GetCredential("user1", "passport", NULL, version);
         CU_ASSERT_PTR_NOT_NULL_FATAL(cred);
 
-        id = DIDURL_NewByDid(did, "passport");
+        id = DIDURL_NewFromDid(did, "passport");
         CU_ASSERT_PTR_NOT_NULL_FATAL(id);
         CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
         DIDURL_Destroy(id);
@@ -258,7 +258,7 @@ static void test_vc_keycvc_tocid(void)
     cred = TestData_GetCredential("foo", "email", NULL, 2);
     CU_ASSERT_PTR_NOT_NULL(cred);
 
-    id = DIDURL_NewByDid(did, "email");
+    id = DIDURL_NewFromDid(did, "email");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
     DIDURL_Destroy(id);
@@ -311,7 +311,7 @@ static void test_vc_kycvc_fromcid(void)
     cred = TestData_GetCredential("foobar", "license", NULL, 2);
     CU_ASSERT_PTR_NOT_NULL(cred);
 
-    id = DIDURL_NewByDid(did, "license");
+    id = DIDURL_NewFromDid(did, "license");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
     DIDURL_Destroy(id);
@@ -364,7 +364,7 @@ static void test_vc_selfclaimvc_fromcid(void)
     cred = TestData_GetCredential("foobar", "services", NULL, 2);
     CU_ASSERT_PTR_NOT_NULL(cred);
 
-    id = DIDURL_NewByDid(did, "services");
+    id = DIDURL_NewFromDid(did, "services");
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
     DIDURL_Destroy(id);

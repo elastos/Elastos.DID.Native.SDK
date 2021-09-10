@@ -66,7 +66,7 @@ static int Proof_ToJson(JsonGenerator *gen, TicketProof *proof)
     CHECK(DIDJG_WriteStringField(gen, CREATED,
             get_time_string(_timestring, sizeof(_timestring), &proof->created)));
     CHECK(DIDJG_WriteStringField(gen, VERIFICATION_METHOD,
-            DIDURL_ToString(&proof->verificationMethod, id, sizeof(id), false)));
+            DIDURL_ToString_Internal(&proof->verificationMethod, id, sizeof(id), false)));
     CHECK(DIDJG_WriteStringField(gen, SIGNATURE, proof->signatureValue));
     CHECK(DIDJG_WriteEndObject(gen));
     return 0;

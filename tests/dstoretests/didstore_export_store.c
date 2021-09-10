@@ -41,8 +41,8 @@ static int get_did(DID *did, void *context)
     if (!did)
         return 0;
 
-    if (strlen(d->idstring) == 0)
-        strcpy(d->idstring, did->idstring);
+    if (DID_IsEmpty(d))
+        DID_Copy(d, did);
 
     return 0;
 }
@@ -560,6 +560,7 @@ static void testImportCompatible(void)
     DID_Destroy(did);
 
     DIDDocument_Destroy(user1Doc);
+    DIDStore_Close(store2);
 
     TestData_Free();
 }

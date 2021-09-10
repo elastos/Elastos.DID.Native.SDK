@@ -34,6 +34,7 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <crystal.h>
+#include <string.h>
 #endif
 
 #ifdef __cplusplus
@@ -64,6 +65,7 @@ extern "C" {
 
 #if defined(_WIN32) || defined(_WIN64)
     static const char *PATH_SEP = "\\";
+    #define strtok_r         strtok_s
 #else
     static const char *PATH_SEP = "/";
 #endif

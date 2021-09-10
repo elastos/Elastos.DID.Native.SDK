@@ -63,6 +63,7 @@ file(GLOB meta-SOURCES "meta/*.c")
 set(SRC
     diderror.c
     did.c
+    didurl.c
     diddocument.c
     credential.c
     didstore.c

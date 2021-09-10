@@ -188,10 +188,10 @@ static int proof_toJson(JsonGenerator *generator, Credential *credential, int co
                 get_time_string(_timestring, sizeof(_timestring), &credential->proof.created)));
     if (DID_Equals(&credential->id.did, &credential->proof.verificationMethod.did))
         CHECK(DIDJG_WriteStringField(generator, VERIFICATION_METHOD,
-                DIDURL_ToString(&credential->proof.verificationMethod, id, sizeof(id), compact)));
+                DIDURL_ToString_Internal(&credential->proof.verificationMethod, id, sizeof(id), compact)));
     else
         CHECK(DIDJG_WriteStringField(generator, VERIFICATION_METHOD,
-                DIDURL_ToString(&credential->proof.verificationMethod, id, sizeof(id), false)));
+                DIDURL_ToString_Internal(&credential->proof.verificationMethod, id, sizeof(id), false)));
     CHECK(DIDJG_WriteStringField(generator, SIGNATURE, credential->proof.signatureValue));
     CHECK(DIDJG_WriteEndObject(generator));
     return 0;
@@ -206,7 +206,7 @@ int Credential_ToJson_Internal(JsonGenerator *gen, Credential *credential, DID *
     assert(gen->buffer);
     assert(credential);
 
-    DIDURL_ToString(&credential->id, buf, sizeof(buf), compact);
+    DIDURL_ToString_Internal(&credential->id, buf, sizeof(buf), compact);
 
     CHECK(DIDJG_WriteStartObject(gen));
     CHECK(DIDJG_WriteStringField(gen, ID, buf));
@@ -700,8 +700,8 @@ static int didurl_func(const void *a, const void *b)
     Credential *creda = *(Credential**)a;
     Credential *credb = *(Credential**)b;
 
-    stringa = DIDURL_ToString(&creda->id, _stringa, ELA_MAX_DID_LEN, true);
-    stringb = DIDURL_ToString(&credb->id, _stringb, ELA_MAX_DID_LEN, true);
+    stringa = DIDURL_ToString_Internal(&creda->id, _stringa, ELA_MAX_DID_LEN, true);
+    stringb = DIDURL_ToString_Internal(&credb->id, _stringb, ELA_MAX_DID_LEN, true);
 
     return strcmp(stringa, stringb);
 }
