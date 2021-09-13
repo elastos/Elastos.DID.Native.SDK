@@ -25,18 +25,39 @@
 #include <stdio.h>
 #include <curl/curl.h>
 #include <assert.h>
+#include <jansson.h>
 
 #include "ela_did.h"
 #include "diderror.h"
 #include "didresolver.h"
 
 static char gURL[URL_LEN];
+static int MAX_DIFF = 10;
+
+static const char *MAINNET = "mainnet";
+static const char *TESTNET = "testnet";
+static const char *MAINNET_RESOLVERS[] = {
+    "https://api.elastos.io/eid",
+    "https://api.trinity-tech.cn/eid"
+};
+static const char *TESTNET_RESOLVERS[] = {
+    "https://api-testnet.elastos.io/eid",
+    "https://api-testnet.trinity-tech.cn/eid",
+};
+
+#define CHECK_NET_REQUEST "{\"id\": %ld,\"jsonrpc\":\"2.0\", \"method\":\"eth_blockNumber\"}"
 
 typedef struct HttpResponseBody {
     size_t used;
     size_t sz;
     void *data;
 } HttpResponseBody;
+
+typedef struct CheckResult {
+    const char *endpoint;
+    int latency;
+    int lastBlock;
+} CheckResult;
 
 static size_t HttpResponseBodyWriteCallback(char *ptr,
         size_t size, size_t nmemb, void *userdata)
@@ -105,20 +126,21 @@ static size_t HttpRequestBodyReadCallback(void *dest, size_t size,
     return 0;
 }
 
-const char *DefaultResolve_Resolve(const char *resolve_request)
+static const char *perform_request(const char *url, const char *request_content)
 {
     HttpRequestBody request;
     HttpResponseBody response;
     long httpcode;
 
-    assert(resolve_request);
+    assert(url);
+    assert(request_content);
 
     request.used = 0;
-    request.sz = strlen(resolve_request);
-    request.data = (char*)resolve_request;
+    request.sz = strlen(request_content);
+    request.data = (char*)request_content;
 
     CURL *curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_URL, gURL);
+    curl_easy_setopt(curl, CURLOPT_URL, url);
 
     curl_easy_setopt(curl, CURLOPT_POST, 1L);
     curl_easy_setopt(curl, CURLOPT_READFUNCTION, HttpRequestBodyReadCallback);
@@ -165,10 +187,17 @@ const char *DefaultResolve_Resolve(const char *resolve_request)
     return (const char *)response.data;
 }
 
-int DefaultResolve_Init(const char *url)
+const char *DefaultResolve_Resolve(const char *resolve_request)
+{
+    return perform_request(gURL, resolve_request);
+}
+
+static int check_url(const char *url)
 {
     CURLUcode rc;
     CURLU *curl;
+
+    assert(url);
 
     if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
         DIDError_Set(DIDERR_NETWORK, "Initialize curl failed.");
@@ -181,6 +210,159 @@ int DefaultResolve_Init(const char *url)
     if(rc != 0) {
         DIDError_Set(DIDERR_NETWORK, "Invalid url(%s).", url);
         return -1;
+    }
+
+    return 0;
+}
+
+static int check_point(CheckResult *result, const char *net)
+{
+    time_t id, start;
+    int latency, blockNumber;
+    char request[256];
+    const char *response = NULL;
+    json_error_t error;
+    json_t *root = NULL, *item;
+    int rc = -1;
+
+    assert(net);
+
+    time(&id);
+
+    memset(result, 0, sizeof(CheckResult));
+
+    if (sprintf(request, CHECK_NET_REQUEST, (long)id) == -1) {
+        DIDError_Set(DIDERR_IO_ERROR, "Generate resolve request failed.");
+        return rc;
+    }
+
+    start = time(NULL);
+    response = perform_request(net, request);
+    if (!response)
+        return rc;
+
+    latency = (int)(time(NULL) - start);
+    root = json_loads(response, JSON_COMPACT, &error);
+    if (!root) {
+        DIDError_Set(DIDERR_IO_ERROR, "Deserialize response data failed, error: %s.", error.text);
+        goto errorExit;
+    }
+
+    item = json_object_get(root, "id");
+    if (!item) {
+        DIDError_Set(DIDERR_IO_ERROR, "Missing 'id'.");
+        goto errorExit;
+    }
+    if (!json_is_integer(item)) {
+        DIDError_Set(DIDERR_IO_ERROR, "Invalid 'id'.");
+        goto errorExit;
+    }
+    if ((long)json_integer_value(item) != id) {
+        DIDError_Set(DIDERR_IO_ERROR, "Invalid JSON RPC id.");
+        goto errorExit;
+    }
+
+    item = json_object_get(root, "result");
+    if (!item) {
+        DIDError_Set(DIDERR_IO_ERROR, "Missing 'result'.");
+        goto errorExit;
+    }
+    if (!json_is_string(item)) {
+        DIDError_Set(DIDERR_IO_ERROR, "Invalid 'result'.");
+        goto errorExit;
+    }
+
+    blockNumber = strtol(json_string_value(item), NULL, 0);
+
+    result->endpoint = net;
+    result->latency = latency;
+    result->lastBlock = blockNumber;
+    return 0;
+
+errorExit:
+    if (root)
+        json_decref(root);
+    if (response)
+        free((void*)response);
+    return rc;
+}
+
+static int select_point(const void *a, const void *b)
+{
+    int diff;
+
+    CheckResult *resulta = (CheckResult*)a;
+    CheckResult *resultb = (CheckResult*)b;
+
+    if (resulta->latency < 0 && resultb->latency < 0)
+        return 0;
+
+    if (resulta->latency < 0 || resultb->latency < 0)
+        return resulta->latency < 0 ? 1 : -1;
+
+    diff = resultb->latency - resulta->latency;
+    if (abs(diff) > MAX_DIFF)
+        return diff;
+
+    if (resulta->latency == resultb->latency) {
+        return diff;
+    } else {
+        return resulta->latency - resultb->latency;
+    }
+}
+
+static const char *check_net(const char **nets, size_t size)
+{
+    int i, j = 0;
+    const char *net;
+    CheckResult *results;
+
+    assert(nets);
+
+    results = (CheckResult*)alloca(size * sizeof(CheckResult));
+    if (!results) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for check result failed.");
+        return NULL;
+    }
+
+    for (i = 0; i < size; i++) {
+        net = nets[i];
+        if (check_point(&results[j], net) == 0)
+            j++;
+    }
+
+    if (j == 0)
+        return NULL;
+
+    qsort(results, j, sizeof(CheckResult), select_point);
+    return results[0].endpoint;
+}
+
+int DefaultResolve_Init(const char *_url)
+{
+    const char *url, **points = NULL;
+    CURLUcode rc;
+
+    if (!strcmp(MAINNET, _url)) {
+        url = MAINNET_RESOLVERS[0];
+        points = MAINNET_RESOLVERS;
+    } else if (!strcmp(TESTNET, _url)) {
+        url = TESTNET_RESOLVERS[0];
+        points = TESTNET_RESOLVERS;
+    } else {
+        url = _url;
+    }
+
+    rc = check_url(url);
+    if(rc < 0)
+        return -1;
+
+    if (points) {
+        url = check_net(points, 2);
+        if (!url) {
+            DIDError_Set(DIDERR_IO_ERROR, "No available net.");
+            return -1;
+        }
     }
 
     strcpy(gURL, url);
