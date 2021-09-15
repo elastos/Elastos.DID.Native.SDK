@@ -28,6 +28,7 @@
 #include <jansson.h>
 
 #include "ela_did.h"
+#include "common.h"
 #include "diderror.h"
 #include "didresolver.h"
 
@@ -45,7 +46,7 @@ static const char *TESTNET_RESOLVERS[] = {
     "https://api-testnet.trinity-tech.cn/eid",
 };
 
-#define CHECK_NET_REQUEST "{\"id\": %ld,\"jsonrpc\":\"2.0\", \"method\":\"eth_blockNumber\"}"
+#define CHECK_NETWORK_REQUEST "{\"id\": %ld,\"jsonrpc\":\"2.0\", \"method\":\"eth_blockNumber\"}"
 
 typedef struct HttpResponseBody {
     size_t used;
@@ -199,11 +200,6 @@ static int check_url(const char *url)
 
     assert(url);
 
-    if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
-        DIDError_Set(DIDERR_NETWORK, "Initialize curl failed.");
-        return -1;
-    }
-
     curl = curl_url();
     rc = curl_url_set(curl, CURLUPART_URL, url, 0);
     curl_url_cleanup(curl);
@@ -215,7 +211,7 @@ static int check_url(const char *url)
     return 0;
 }
 
-static int check_point(CheckResult *result, const char *net)
+static int check_endpoint(CheckResult *result, const char *network)
 {
     time_t id, start;
     int latency, blockNumber;
@@ -225,19 +221,20 @@ static int check_point(CheckResult *result, const char *net)
     json_t *root = NULL, *item;
     int rc = -1;
 
-    assert(net);
+    assert(result);
+    assert(network);
 
     time(&id);
 
     memset(result, 0, sizeof(CheckResult));
 
-    if (sprintf(request, CHECK_NET_REQUEST, (long)id) == -1) {
+    if (sprintf(request, CHECK_NETWORK_REQUEST, (long)id) == -1) {
         DIDError_Set(DIDERR_IO_ERROR, "Generate resolve request failed.");
         return rc;
     }
 
     start = time(NULL);
-    response = perform_request(net, request);
+    response = perform_request(network, request);
     if (!response)
         return rc;
 
@@ -274,7 +271,7 @@ static int check_point(CheckResult *result, const char *net)
 
     blockNumber = strtol(json_string_value(item), NULL, 0);
 
-    result->endpoint = net;
+    result->endpoint = network;
     result->latency = latency;
     result->lastBlock = blockNumber;
     rc = 0;
@@ -287,7 +284,7 @@ errorExit:
     return rc;
 }
 
-static int select_point(const void *a, const void *b)
+static int select_endpoint(const void *a, const void *b)
 {
     int diff;
 
@@ -311,13 +308,21 @@ static int select_point(const void *a, const void *b)
     }
 }
 
-static const char *check_net(const char **nets, size_t size)
+static bool network_available(CheckResult *result)
 {
-    int i, j = 0;
-    const char *net;
+    assert(result);
+
+    return result->latency >= 0;
+}
+
+static const char *check_network(const char **networks, size_t size)
+{
+    int i;
+    const char *network;
     CheckResult *results;
 
-    assert(nets);
+    assert(networks);
+    assert(size > 0);
 
     results = (CheckResult*)alloca(size * sizeof(CheckResult));
     if (!results) {
@@ -326,29 +331,33 @@ static const char *check_net(const char **nets, size_t size)
     }
 
     for (i = 0; i < size; i++) {
-        net = nets[i];
-        if (check_point(&results[j], net) == 0)
-            j++;
+        network = networks[i];
+        check_endpoint(&results[i], network);
     }
 
-    if (j == 0)
+    qsort(results, size, sizeof(CheckResult), select_endpoint);
+    if (network_available(&results[0]))
+        return results[0].endpoint;
+    else
         return NULL;
-
-    qsort(results, j, sizeof(CheckResult), select_point);
-    return results[0].endpoint;
 }
 
 int DefaultResolve_Init(const char *_url)
 {
-    const char *url, **points = NULL;
+    const char *url, **endpoints = NULL;
     CURLUcode rc;
+
+    if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
+        DIDError_Set(DIDERR_NETWORK, "Initialize curl failed.");
+        return -1;
+    }
 
     if (!strcmp(MAINNET, _url)) {
         url = MAINNET_RESOLVERS[0];
-        points = MAINNET_RESOLVERS;
+        endpoints = MAINNET_RESOLVERS;
     } else if (!strcmp(TESTNET, _url)) {
         url = TESTNET_RESOLVERS[0];
-        points = TESTNET_RESOLVERS;
+        endpoints = TESTNET_RESOLVERS;
     } else {
         url = _url;
     }
@@ -357,14 +366,13 @@ int DefaultResolve_Init(const char *_url)
     if(rc < 0)
         return -1;
 
-    if (points) {
-        url = check_net(points, 2);
-        if (!url) {
-            DIDError_Set(DIDERR_IO_ERROR, "No available net.");
-            return -1;
-        }
+    strcpy(gURL, url);
+
+    if (endpoints) {
+        url = check_network(endpoints, 2);
+        if (url)
+            strcpy(gURL, url);
     }
 
-    strcpy(gURL, url);
     return 0;
 }
