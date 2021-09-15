@@ -277,7 +277,7 @@ static int check_point(CheckResult *result, const char *net)
     result->endpoint = net;
     result->latency = latency;
     result->lastBlock = blockNumber;
-    return 0;
+    rc = 0;
 
 errorExit:
     if (root)

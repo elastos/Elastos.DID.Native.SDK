@@ -15,7 +15,7 @@
 
 static const char *header_data = \
 "Web3 = require(\"web3\");\n\
-web3 = new Web3(\"http://52.80.107.251:1111\");\n\
+web3 = new Web3(\"https://api-testnet.elastos.io/eid\");\n\
 contract = new web3.eth.Contract([\n\
 {\n\
     \"inputs\": [\n\
@@ -47,8 +47,8 @@ contract = new web3.eth.Contract([\n\
         \"type\": \"function\"\n\
     }\n\
 ]);\n\
-contract.options.address = \"0x8b2324fd40a74843711C9B48BC968A5FAEdd4Ef0\";\n\
-acc = web3.eth.accounts.decrypt({\"address\":\"53781e106a2e3378083bdcede1874e5c2a7225f8\",\"crypto\":{\"cipher\":\"aes-128-ctr\",\"ciphertext\":\"bc53c1fcd6e31a6392ddc1777157ae961e636c202ed60fb5dda77244c5c4b6ff\",\"cipherparams\":{\"iv\":\"c5d1a7d86d0685aa4542d58c27ae7eb4\"},\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":262144,\"p\":1,\"r\":8,\"salt\":\"409429444dabb5664ba1314c93f0e1d7a1e994a307e7b43d3f6cc95850fbfa9f\"},\"mac\":\"4c37821c90d35118182c2d4a51356186482662bb945f0fcd33d3836749fe59c0\"},\"id\":\"39e7770e-4bc6-42f3-aa6a-c0ae7756b607\",\"version\":3}, \"123\");\n";
+contract.options.address = \"0xF654c3cBBB60D7F4ac7cDA325d51E62f47ACD436\";\n\
+acc = web3.eth.accounts.decrypt({\"address\":\"2291bb3d2b5d55217262bf1552ab9b95bfe5b72d\",\"id\":\"ffcd8c94-80ef-4410-b743-d2f72ecdc80e\",\"version\":3,\"crypto\":{\"cipher\":\"aes-128-ctr\",\"ciphertext\":\"38d49204366be1e7f51464c20f33e51d8138b72411cf055bbd1bd3d9e03624a2\",\"cipherparams\":{\"iv\":\"a5108e26cacaf50842f9b8ebf7047bdf\"},\"kdf\":\"scrypt\",\"kdfparams\":{\"dklen\":32,\"n\":262144,\"p\":1,\"r\":8,\"salt\":\"75a558ca5f7eda86237b11c514f96e348bdb94b554b15c55e5cd1dc6c79a577d\"},\"mac\":\"75e5b2371464435015f1d153bce23097774bdef78c67694a89b25434c2fa0ba2\"}}, \"password\");\n";
 
 static const char *tail_data = \
 "cdata = contract.methods.publishDidTransaction(payload).encodeABI();\n\
