@@ -3964,9 +3964,6 @@ ssize_t DIDDocument_GetDigest(DIDDocument *document, uint8_t *digest, size_t siz
 
 int DIDDocument_HasPrivateKey(DIDDocument *document, DIDURL *keyid)
  {
-    const char *rootidentity;
-    int rc;
-
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!document, "No document to check.", -1);

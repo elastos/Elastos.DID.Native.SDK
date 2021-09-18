@@ -31,15 +31,15 @@
 extern "C" {
 #endif
 
-#define MAX_FRAGMENT                    48
-#define MAX_PATH                        128
-#define MAX_QUERY                       128
+#define MAX_FRAGMENT_LEN                    48
+#define MAX_PATH_LEN                        128
+#define MAX_QUERY_LEN                       128
 
 struct  DIDURL {
     DID did;
-    char path[MAX_PATH];
-    char queryString[MAX_QUERY];
-    char fragment[MAX_FRAGMENT];
+    char path[MAX_PATH_LEN];
+    char queryString[MAX_QUERY_LEN];
+    char fragment[MAX_FRAGMENT_LEN];
     CredentialMetadata metadata;
 };
 

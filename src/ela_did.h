@@ -4763,6 +4763,7 @@ DID_API const char *TransferTicket_GetProofSignature(TransferTicket *ticket, int
  *      createtransaction  [in] The method to create id transaction.
  * @param
  *      url                [in] The URL string.
+ *                         eg: support url string or "mainnet" or "testnet".
  * @param
  *      cachedir           [in] The directory for cache.
  * @return
