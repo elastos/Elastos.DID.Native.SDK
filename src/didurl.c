@@ -165,7 +165,7 @@ int DIDURL_Parse(DIDURL *id, const char *url, DID *context)
         if (nextPart < 0)
             return -1;
 
-        if (nextPart - pos >= MAX_PATH) {
+        if (nextPart - pos >= MAX_PATH_LEN) {
             DIDError_Set(DIDERR_MALFORMED_DIDURL, "Path string is too long.");
             return -1;
         }
@@ -181,7 +181,7 @@ int DIDURL_Parse(DIDURL *id, const char *url, DID *context)
         if (nextPart < 0)
             return -1;
 
-        if (nextPart - pos > MAX_QUERY) {
+        if (nextPart - pos > MAX_QUERY_LEN) {
             DIDError_Set(DIDERR_MALFORMED_DIDURL, "Query string is too long.");
             return -1;
         }
@@ -202,7 +202,7 @@ int DIDURL_Parse(DIDURL *id, const char *url, DID *context)
         if (nextPart < 0)
             return -1;
 
-        if (nextPart - pos > MAX_FRAGMENT) {
+        if (nextPart - pos > MAX_FRAGMENT_LEN) {
             DIDError_Set(DIDERR_MALFORMED_DIDURL, "Fragment string is too long.");
             return -1;
         }
@@ -283,7 +283,7 @@ DIDURL *DIDURL_New(const char *method_specific_string, const char *fragment)
     CHECK_ARG(!fragment || !*fragment, "Invalid fragment string.", NULL);
     CHECK_ARG(strlen(method_specific_string) >= MAX_ID_SPECIFIC_STRING,
             "method specific string is too long.", NULL);
-    CHECK_ARG(strlen(fragment) >= MAX_FRAGMENT, "The fragment is too long.", NULL);
+    CHECK_ARG(strlen(fragment) >= MAX_FRAGMENT_LEN, "The fragment is too long.", NULL);
 
     id = (DIDURL *)calloc(1, sizeof(DIDURL));
     if (!id) {
@@ -308,7 +308,7 @@ DIDURL *DIDURL_NewFromDid(DID *did, const char *fragment)
 
     CHECK_ARG(!did, "No did argument.", NULL);
     CHECK_ARG(!fragment || !*fragment, "Invalid fragment string.", NULL);
-    CHECK_ARG(strlen(fragment) >= MAX_FRAGMENT, "The fragment is too long.", NULL);
+    CHECK_ARG(strlen(fragment) >= MAX_FRAGMENT_LEN, "The fragment is too long.", NULL);
 
     id = (DIDURL*)calloc(1, sizeof(DIDURL));
     if (!id) {
@@ -378,7 +378,7 @@ const char *DIDURL_GetQueryString(DIDURL *id)
 
 int DIDURL_GetQuerySize(DIDURL *id)
 {
-    char query[MAX_QUERY], *token, *save = NULL;
+    char query[MAX_QUERY_LEN], *token, *save = NULL;
     int count = 0;
 
     DIDERROR_INITIALIZE();
@@ -400,7 +400,7 @@ int DIDURL_GetQuerySize(DIDURL *id)
 
 const char *DIDURL_GetQueryParameter(DIDURL *id, const char *key)
 {
-    char query[MAX_QUERY], *token, *pos, *save = NULL;
+    char query[MAX_QUERY_LEN], *token, *pos, *save = NULL;
 
     DIDERROR_INITIALIZE();
 
@@ -432,7 +432,7 @@ const char *DIDURL_GetQueryParameter(DIDURL *id, const char *key)
 
 int DIDURL_HasQueryParameter(DIDURL *id, const char *key)
 {
-    char query[MAX_QUERY], *token, *pos, *save = NULL;
+    char query[MAX_QUERY_LEN], *token, *pos, *save = NULL;
 
     DIDERROR_INITIALIZE();
 
@@ -461,7 +461,7 @@ int DIDURL_HasQueryParameter(DIDURL *id, const char *key)
 char *DIDURL_ToString_Internal(DIDURL *id, char *idstring, size_t len, bool compact)
 {
     size_t expect_len = 0;
-    int size, path_len = 0, query_len = 0, fragment_len = 0;
+    int path_len = 0, query_len = 0, fragment_len = 0;
     char str[ELA_MAX_DID_LEN] = {0};
 
     memset(idstring, 0, len);
