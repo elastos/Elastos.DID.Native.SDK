@@ -44,6 +44,6 @@ target_compile_definitions(resolver PRIVATE CRYSTAL_DYNAMIC)
 target_link_libraries(resolver ${LIBS})
 
 install(TARGETS resolver
-    RUNTIME DESTINATION "bin"
-    ARCHIVE DESTINATION "lib"
-    LIBRARY DESTINATION "lib")
+    RUNTIME DESTINATION "${PROJECT_INT_DIST_DIR}/bin"
+    ARCHIVE DESTINATION "${PROJECT_INT_DIST_DIR}/lib"
+    LIBRARY DESTINATION "${PROJECT_INT_DIST_DIR}/lib")

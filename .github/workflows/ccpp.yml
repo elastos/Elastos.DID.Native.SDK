@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, ubuntu-16.04]
+        os: [ubuntu-18.04, ubuntu-20.04]
     steps:
       - uses: actions/checkout@v2
       - name: build and test
@@ -20,7 +20,7 @@ jobs:
           make
           make install
           make dist
-          cd dist/bin
+          cd intermediates/bin
           ./didtest --dummy
 
   build-macos:
@@ -53,7 +53,7 @@ jobs:
           make
           make install
           make dist
-          cd dist/bin
+          cd intermediates/bin
           ./didtest --dummy
 
       - name: build ios tool

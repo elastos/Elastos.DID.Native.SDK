@@ -59,6 +59,6 @@ target_compile_definitions(validater PRIVATE CRYSTAL_DYNAMIC)
 target_link_libraries(validater ${LIBS})
 
 install(TARGETS validater
-    RUNTIME DESTINATION "bin"
-    ARCHIVE DESTINATION "lib"
-    LIBRARY DESTINATION "lib")
+    RUNTIME DESTINATION "${PROJECT_INT_DIST_DIR}/bin"
+    ARCHIVE DESTINATION "${PROJECT_INT_DIST_DIR}/lib"
+    LIBRARY DESTINATION "${PROJECT_INT_DIST_DIR}/lib")
