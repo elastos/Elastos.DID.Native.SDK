@@ -14,7 +14,8 @@
 
 #include "constant.h"
 
-const char *resolver = "https://api-testnet.elastos.io/newid";
+//const char *resolver = "https://api.elastos.io/eid";
+const char* resolver = "testnet";
 
 const char *storepass = "passwd";
 const char *passphrase = "12345678";

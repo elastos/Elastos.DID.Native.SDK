@@ -235,7 +235,7 @@ if(ENABLE_SHARED)
         set_property(SOURCE ${SRC} APPEND PROPERTY
             OBJECT_DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/export.symbols")
         set_property(TARGET eladid-shared APPEND_STRING PROPERTY
-            LINK_FLAGS " -Wl,-exported_symbols_list,\"${CMAKE_CURRENT_BINARY_DIR}/export.symbols\"")
+            LINK_FLAGS "-framework CoreFoundation -framework Security -Wl,-exported_symbols_list,\"${CMAKE_CURRENT_BINARY_DIR}/export.symbols\"")
     endif()
     target_include_directories(eladid-shared
         PUBLIC

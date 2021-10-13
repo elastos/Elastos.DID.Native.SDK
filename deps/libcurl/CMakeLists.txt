@@ -33,8 +33,8 @@ if(WIN32)
         "WITH_DEVEL=${PROJECT_INT_DIST_DIR}"
         "WITH_SSL=static"
         "WITH_ZLIB=static"
-        "ENABLE_WINSSL=no"
-        "ENABLE_SSPI=no"
+        "ENABLE_SSPI=yes"
+        "ENABLE_WINSSL=yes"
         "ENABLE_IPV6=no"
         "ENABLE_IDN=no"
         "ENABLE_OPENSSL_AUTO_LOAD_CONFIG=no"
@@ -47,9 +47,19 @@ if(WIN32)
         copy "${OUTPUT_PATH}\\lib\\libcurl_a${BUILD_SUFFIX}.lib" "${PROJECT_INT_DIST_DIR}\\lib\\curl.lib" /y)
 else()
     include(ExternalConfigureArgs)
-
     set(PATCH_EXE "echo")
     set(PATCH_ARGS "Done")
+
+    if(DARWIN)
+        set(DARWINSSL
+            "--with-darwinssl"
+            "--with-secure-transport"
+            "--enable-proxy")
+    else()
+        set(DARWINSSL
+            "--without-darwinssl"
+            "--disable-proxy")
+    endif()
 
     set(CONFIGURE_CMD "./configure")
     set(CONFIGURE_ARGS
@@ -62,7 +72,6 @@ else()
         "--without-lber-lib"
         "--without-winssl"
         "--without-schannel"
-        "--without-darwinssl"
         "--without-gnutls"
         "--without-polarssl"
         "--without-mbedtls"
@@ -82,7 +91,6 @@ else()
         "--disable-ldap"
         "--disable-ldaps"
         "--disable-rtsp"
-        "--disable-proxy"
         "--disable-dict"
         "--disable-telnet"
         "--disable-tftp"
@@ -92,8 +100,9 @@ else()
         "--disable-smtp"
         "--disable-gopher"
         "--disable-manual"
+        ${DARWINSSL}
         ${CONFIGURE_ARGS_INIT}
-        "PKG_CONFIG= "
+        "PKG_CONFIG="
         "ac_tool_prefix=")
 
     set(INSTALL_CMD
