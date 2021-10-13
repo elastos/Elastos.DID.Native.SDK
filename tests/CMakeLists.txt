@@ -177,6 +177,10 @@ add_executable(didtest
 
 add_dependencies(didtest ${DEPS})
 target_link_libraries(didtest ${LIBS})
+if(DARWIN OR IOS)
+    set_property(TARGET didtest APPEND_STRING PROPERTY
+        LINK_FLAGS "-framework CoreFoundation -framework Security")
+endif()
 
 install(TARGETS didtest
     RUNTIME DESTINATION "${PROJECT_INT_DIST_DIR}/bin"
