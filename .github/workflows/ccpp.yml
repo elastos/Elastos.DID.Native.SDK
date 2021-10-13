@@ -20,7 +20,7 @@ jobs:
           make
           make install
           make dist
-          cd dist/bin
+          cd intermediates/bin
           ./didtest --dummy
 
   build-macos:
@@ -53,7 +53,7 @@ jobs:
           make
           make install
           make dist
-          cd dist/bin
+          cd intermediates/bin
           ./didtest --dummy
 
       - name: build ios tool
