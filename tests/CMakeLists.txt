@@ -58,31 +58,31 @@ if(WIN32)
     set(NODEJS "${CMAKE_CURRENT_BINARY_DIR}/../deps/nodejs/external/src/nodejs")
     set(ENV_CMD set)
     set(NODE_PATH ${NODEJS} %windir% %windir%\\SYSTEM32)
-    set(INSTALL_SCRIPT ${CMAKE_INSTALL_PREFIX}/bin/install_web3.bat)
+    set(INSTALL_SCRIPT ${PROJECT_INT_DIST_DIR}/bin/install_web3.bat)
     set(CHMOD_CMD echo)
 else()
     set(NODEJS "${CMAKE_CURRENT_BINARY_DIR}/../deps/nodejs/external/src/nodejs/bin")
     set(ENV_CMD export)
     set(NODE_PATH "$PATH:${NODEJS}")
-    set(INSTALL_SCRIPT ${CMAKE_INSTALL_PREFIX}/bin/install_web3.sh)
+    set(INSTALL_SCRIPT ${PROJECT_INT_DIST_DIR}/bin/install_web3.sh)
     set(CHMOD_CMD chmod)
 endif()
 
 set(INSTALL_ENV PATH=${NODE_PATH})
 set(INSTALL_CMD npm install --save web3)
 
-file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
+file(MAKE_DIRECTORY ${PROJECT_INT_DIST_DIR}/bin)
 add_custom_command(
-    WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin
+    WORKING_DIRECTORY ${PROJECT_INT_DIST_DIR}/bin
     COMMAND echo ${ENV_CMD} "${INSTALL_ENV}" > ${INSTALL_SCRIPT}
     COMMAND echo ${INSTALL_CMD} >> ${INSTALL_SCRIPT}
     COMMAND ${CHMOD_CMD} 755 ${INSTALL_SCRIPT}
     COMMAND ${INSTALL_SCRIPT}
-    OUTPUT ${CMAKE_INSTALL_PREFIX}/bin/node_modules/web3/package.json
+    OUTPUT ${PROJECT_INT_DIST_DIR}/bin/node_modules/web3/package.json
     VERBATIM)
 
 add_custom_target(web3 ALL
-    DEPENDS ${CMAKE_INSTALL_PREFIX}/bin/node_modules/web3/package.json
+    DEPENDS ${PROJECT_INT_DIST_DIR}/bin/node_modules/web3/package.json
 )
 
 file(GLOB ADAPTER_SOURCE "testadapter/*.c")
@@ -179,9 +179,10 @@ add_dependencies(didtest ${DEPS})
 target_link_libraries(didtest ${LIBS})
 
 install(TARGETS didtest
-    RUNTIME DESTINATION "bin"
-    ARCHIVE DESTINATION "lib"
-    LIBRARY DESTINATION "lib")
+    RUNTIME DESTINATION "${PROJECT_INT_DIST_DIR}/bin"
+    ARCHIVE DESTINATION "${PROJECT_INT_DIST_DIR}/lib"
+    LIBRARY DESTINATION "${PROJECT_INT_DIST_DIR}/lib")
 
 install(DIRECTORY resources
-    DESTINATION "etc/did")
+    DESTINATION "${PROJECT_INT_DIST_DIR}/etc/did")
+
