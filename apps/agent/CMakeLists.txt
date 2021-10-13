@@ -58,6 +58,6 @@ target_compile_definitions(agent PRIVATE CRYSTAL_DYNAMIC)
 target_link_libraries(agent ${LIBS} ${SYSTEM_LIBS})
 
 install(TARGETS agent
-    RUNTIME DESTINATION "bin"
-    ARCHIVE DESTINATION "lib"
-    LIBRARY DESTINATION "lib")
+    RUNTIME DESTINATION "${PROJECT_INT_DIST_DIR}/bin"
+    ARCHIVE DESTINATION "${PROJECT_INT_DIST_DIR}/lib"
+    LIBRARY DESTINATION "${PROJECT_INT_DIST_DIR}/lib")
