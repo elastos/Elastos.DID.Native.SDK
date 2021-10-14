@@ -51,12 +51,12 @@ else()
     set(PATCH_ARGS "Done")
 
     if(DARWIN)
-        set(DARWINSSL
+        set(SSL_OPTIONS
             "--with-darwinssl"
             "--with-secure-transport"
             "--enable-proxy")
     else()
-        set(DARWINSSL
+        set(SSL_OPTIONS
             "--without-darwinssl"
             "--disable-proxy")
     endif()
@@ -100,7 +100,7 @@ else()
         "--disable-smtp"
         "--disable-gopher"
         "--disable-manual"
-        ${DARWINSSL}
+        ${SSL_OPTIONS}
         ${CONFIGURE_ARGS_INIT}
         "PKG_CONFIG="
         "ac_tool_prefix=")

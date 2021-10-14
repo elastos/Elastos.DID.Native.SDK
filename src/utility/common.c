@@ -76,7 +76,6 @@ const char *get_time_string(char *timestring, size_t len, time_t *p_time)
         t = *p_time;
 
     gmtime_r(&t, &tm);
-    //gmtime_s(&tm, &t);
     strftime(timestring, 80, "%Y-%m-%dT%H:%M:%SZ", &tm);
 
     return timestring;

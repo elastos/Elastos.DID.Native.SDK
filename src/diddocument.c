@@ -3075,7 +3075,7 @@ int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires)
     max_expires = time(NULL);
     tm = gmtime(&max_expires);
     tm->tm_year += MAX_EXPIRES;
-    max_expires = mktime(tm);
+    max_expires = timegm(tm);
 
     document = builder->document;
     if (expires == 0) {
@@ -3083,10 +3083,6 @@ int DIDDocumentBuilder_SetExpires(DIDDocumentBuilder *builder, time_t expires)
         clean_proofs(document);
         return 0;
     }
-
-    //Don't remove, get local time
-    //tm = gmtime(&expires);
-    //expires = mktime(tm);
 
     if (expires > max_expires) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Expire time is too long, not longer than five years.");
