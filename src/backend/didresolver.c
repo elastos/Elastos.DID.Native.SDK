@@ -152,11 +152,8 @@ static const char *perform_request(const char *url, const char *request_content)
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 
 #if defined(_WIN32) || defined(_WIN64)
-    char *cacert = getenv("CURLOPT_CAINFO");
-    if (cacert)
-        curl_easy_setopt(curl, CURLOPT_CAINFO, cacert);
+    curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
 #endif
-    // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     struct curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
@@ -373,6 +370,8 @@ int DefaultResolve_Init(const char *_url)
         if (url)
             strcpy(gURL, url);
     }
+
+    printf("url: %s\n", gURL);
 
     return 0;
 }
