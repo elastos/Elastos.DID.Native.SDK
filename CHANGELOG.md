@@ -1,4 +1,10 @@
-﻿08/06/2021 Chen Yu chenyu_kaola@126.com Version 2.1.2, new version of DID SDK has main change as follow:
+﻿10/18/2021 Chen Yu chenyu_kaola@126.com Version 2.1.3, new version of DID SDK has main change as follow:
+- Modify the method to support certificate verification on Windows
+- Support ARM mode.
+- Auto select the best resolver.
+- Fix some bugs.
+
+08/06/2021 Chen Yu chenyu_kaola@126.com Version 2.1.2, new version of DID SDK has main change as follow:
 - Support certificate verification on Windows
 
 
