@@ -1,4 +1,4 @@
-﻿# Elastos DID Native SDK
+# Elastos DID Native SDK
 
 |Linux && Mac|Windows|
 |:-:|:-:|
@@ -74,7 +74,7 @@ Run the following commands to install the prerequisite utilities:
 
 ```shell
 sudo apt-get update
-sudo apt-get install -f build-essential autoconf automake autopoint libtool flex bison libncurses5-dev cmake
+sudo apt-get install -f build-essential autoconf automake autopoint libtool flex bison libncurses5-dev cmake pkg-config
 ```
 
 Download this repository using Git:
