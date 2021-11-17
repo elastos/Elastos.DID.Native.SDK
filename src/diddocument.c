@@ -1987,6 +1987,16 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
     DIDERROR_FINALIZE();
 }
 
+DID *DIDDocumentBuilder_GetSubject(DIDDocumentBuilder *builder)
+{
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!builder, "No document builder argument.", NULL);
+    return &builder->document->did;
+
+    DIDERROR_FINALIZE();
+}
+
 static PublicKey *create_publickey(DIDURL *id, DID *controller, const char *publickey,
         KeyType type)
 {

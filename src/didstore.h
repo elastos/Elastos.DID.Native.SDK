@@ -87,6 +87,9 @@ int DIDStore_SetDefaultRootIdentity(DIDStore *store, const char *id);
 
 int DIDStore_StoreLazyPrivateKey(DIDStore *store, DIDURL *keyid);
 
+bool DIDStore_SynchronizeInDid(DIDStore *store, DID *did, DIDDocument_ConflictHandle *handle,
+        const char *rootidentity, int index);
+
 #ifdef __cplusplus
 }
 #endif
