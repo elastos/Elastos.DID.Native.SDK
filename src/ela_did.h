@@ -3665,7 +3665,7 @@ DID_API Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *
  * @param
  *      issuer               [in] An issuer issues this credential.
  * @param
- *      owner                [in] A handle to DID.
+ *      holder                [in] A handle to DID.
  *                               The holder of this Credential.
  * @param
  *      credid               [in] The handle to DIDURL.
@@ -3684,7 +3684,7 @@ DID_API Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *
  *      Otherwise, return NULL.
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
-DID_API Credential *Issuer_CreateCredentialByString(Issuer *issuer, DID *owner,
+DID_API Credential *Issuer_CreateCredentialByString(Issuer *issuer, DID *holder,
         DIDURL *credid, const char **types, size_t typesize, const char *subject,
         time_t expires, const char *storepass);
 
@@ -3896,6 +3896,19 @@ DID_API DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did);
  *      return value = 1, did is in didstore.
  */
 DID_API int DIDStore_ContainsDID(DIDStore *store, DID *did);
+
+/**
+ * \~English
+ * Check if contain DID or not.
+ *
+ * @param
+ *      store                   [in] The handle to DIDStore.
+ * @return
+ *      return value = -1, if error occurs;
+ *      return value = 0, did isn't in didstore;
+ *      return value = 1, did is in didstore.
+ */
+DID_API int DIDStore_ContainsDIDs(DIDStore *store);
 
 /**
  * \~English
