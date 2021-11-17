@@ -1799,7 +1799,17 @@ DID_API void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder);
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
 DID_API DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *storepass);
-
+/**
+ * \~English
+ * Get subject of DID Document.
+ *
+ * @param
+ *      builder              [in] A handle to DIDDocument Builder.
+ * @return
+ *      If no error occurs, return a handle to DID.
+ *      Otherwise, return NULL.
+ */
+DID_API DID *DIDDocumentBuilder_GetSubject(DIDDocumentBuilder *builder);
 /**
  * \~English
  * Add controller for DIDDocument.
@@ -4072,7 +4082,7 @@ DID_API int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *credid
  *      return value = 0, there isn't private key in didstore;
  *      return value = 1, did is deacativated.
  */
-DID_API int DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did);
+DID_API int DIDStore_ContainsPrivateKeys(DIDStore *store, DID *did);
 
 /**
  * \~English
@@ -4122,6 +4132,17 @@ DID_API int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass,
  */
 DID_API void DIDStore_DeletePrivateKey(DIDStore *store, DIDURL *keyid);
 
+/**
+ * \~English
+ * Synchronize all did in the DID Store.
+ *
+ * @param
+ *      store                  [in] The handle to DIDStore.
+ * @param
+ *      handle                 [in] The method to merge document.
+ *                              handle == NULL, use default method supported by sdk.
+ */
+DID_API void DIDStore_Synchronize(DIDStore *store, DIDDocument_ConflictHandle *handle);
 /**
  * \~English
  * Change the store password from old one to new one.
