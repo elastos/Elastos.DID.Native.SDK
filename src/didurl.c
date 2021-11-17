@@ -466,6 +466,9 @@ char *DIDURL_ToString_Internal(DIDURL *id, char *idstring, size_t len, bool comp
 
     memset(idstring, 0, len);
 
+    if (!id)
+        return NULL;
+
     path_len = strlen(id->path);
     if (*id->queryString)
         query_len = strlen(id->queryString) + 1;   //include "?"
