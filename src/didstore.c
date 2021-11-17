@@ -1912,6 +1912,61 @@ int DIDStore_ContainsDID(DIDStore *store, DID *did)
     DIDERROR_FINALIZE();
 }
 
+static int contains_did_helper(const char *path, void *context)
+{
+    DIDStore *store = (DIDStore*)context;
+    char didpath[PATH_MAX];
+    int len;
+
+    if (!path)
+        return 0;
+
+    if (strcmp(path, ".") == 0 || strcmp(path, "..") == 0)
+        return 0;
+
+    len = snprintf(didpath, sizeof(didpath), "%s%s%s%s%s%s%s", store->root, PATH_SEP,
+            DATA_DIR,  PATH_SEP, IDS_DIR, PATH_SEP, path);
+    if (len < 0 || len > sizeof(didpath))
+        return 0;
+
+    if (test_path(didpath) == S_IFDIR)
+        return -1;
+
+    return 0;
+}
+
+int DIDStore_ContainsDIDs(DIDStore *store)
+{
+    char path[PATH_MAX];
+    int rc;
+
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!store, "No didstore to check did existence.", -1);
+
+    if (get_dir(path, 0, 3, store->root, DATA_DIR, IDS_DIR) == -1)
+        return 0;
+
+    rc = test_path(path);
+    if (rc < 0) {
+        DIDError_Set(DIDERR_IO_ERROR, "Invalid 'ids' directory in store.");
+        return -1;
+    }
+
+    if (rc == S_IFREG) {
+        DIDError_Set(DIDERR_IO_ERROR, "Invalid 'ids' directory in store.");
+        delete_file(path);
+        return -1;
+    }
+
+    if (is_empty(path))
+        return 0;
+
+    return list_dir(path, "*", contains_did_helper, (void*)store) == -1 ? 1 : 0;
+
+    DIDERROR_FINALIZE();
+}
+
 bool DIDStore_DeleteDID(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];

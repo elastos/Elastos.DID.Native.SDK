@@ -92,6 +92,8 @@ static void test_didstore_bulk_newdid(void)
     CU_ASSERT_NOT_EQUAL(rc, -1);
     CU_ASSERT_EQUAL(count, 0);
 
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsDIDs(store));
+
     TestData_Free();
 }
 
@@ -150,6 +152,8 @@ static void test_didstore_op_deletedid(void)
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
     CU_ASSERT_EQUAL(count, 0);
 
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsDIDs(store));
+
     TestData_Free();
 }
 
@@ -190,6 +194,8 @@ static void test_didstore_op_store_load_did(void)
     rc = DIDStore_ListDIDs(store, 2, get_did, (void*)&count);
     CU_ASSERT_NOT_EQUAL_FATAL(rc, -1);
     CU_ASSERT_EQUAL(count, 0);
+
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsDIDs(store));
 
     TestData_Free();
 }
