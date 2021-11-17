@@ -1499,8 +1499,8 @@ static int list_did_helper(const char *path, void *context)
     DID_Init(&did, path);
     DIDStore_LoadDIDMetadata(dh->store, &did.metadata, &did);
 
-    if (dh->filter == 0 || (dh->filter == 1 && DIDSotre_ContainsPrivateKeys(dh->store, &did)) ||
-            (dh->filter == 2 && !DIDSotre_ContainsPrivateKeys(dh->store, &did)))
+    if (dh->filter == 0 || (dh->filter == 1 && DIDStore_ContainsPrivateKeys(dh->store, &did)) ||
+            (dh->filter == 2 && !DIDStore_ContainsPrivateKeys(dh->store, &did)))
             rc = dh->cb(&did, dh->context);
 
     DIDMetadata_Free(&did.metadata);
@@ -2334,7 +2334,7 @@ int DIDStore_SelectCredentials(DIDStore *store, DID *did, DIDURL *id,
     DIDERROR_FINALIZE();
 }
 
-int DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did)
+int DIDStore_ContainsPrivateKeys(DIDStore *store, DID *did)
 {
     char path[PATH_MAX];
 
@@ -3458,7 +3458,7 @@ static int export_privatekey(JsonGenerator *gen, DIDStore *store, const char *st
 
     did = &doc->did;
     //todo: check customized did size == 0
-    if (DIDSotre_ContainsPrivateKeys(store, did)) {
+    if (DIDStore_ContainsPrivateKeys(store, did)) {
         size = doc->publickeys.size;
         if (size == 0)
             //return -1;
