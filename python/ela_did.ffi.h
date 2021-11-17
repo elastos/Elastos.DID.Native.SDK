@@ -3820,7 +3820,18 @@ extern "Python" const char* MyResolve(const char *request);
  *      return value = 1, did is in didstore.
  */
 /* DID_API */ int DIDStore_ContainsDID(DIDStore *store, DID *did);
-
+/**
+ * \~English
+ * Check if contain DID or not.
+ *
+ * @param
+ *      store                   [in] The handle to DIDStore.
+ * @return
+ *      return value = -1, if error occurs;
+ *      return value = 0, did isn't in didstore;
+ *      return value = 1, did is in didstore.
+ */
+/* DID_API */ int DIDStore_ContainsDIDs(DIDStore *store);
 /**
  * \~English
  * Delete specific DID.
@@ -3983,7 +3994,7 @@ extern "Python" const char* MyResolve(const char *request);
  *      return value = 0, there isn't private key in didstore;
  *      return value = 1, did is deacativated.
  */
-/* DID_API */ int DIDSotre_ContainsPrivateKeys(DIDStore *store, DID *did);
+/* DID_API */ int DIDStore_ContainsPrivateKeys(DIDStore *store, DID *did);
 
 /**
  * \~English
@@ -4032,7 +4043,17 @@ extern "Python" const char* MyResolve(const char *request);
  *      keyid                    [in] The identifier of public key.
  */
 /* DID_API */ void DIDStore_DeletePrivateKey(DIDStore *store, DIDURL *keyid);
-
+/**
+ * \~English
+ * Synchronize all did in the DID Store.
+ *
+ * @param
+ *      store                  [in] The handle to DIDStore.
+ * @param
+ *      handle                 [in] The method to merge document.
+ *                              handle == NULL, use default method supported by sdk.
+ */
+/* DID_API */ void DIDStore_Synchronize(DIDStore *store, DIDDocument_ConflictHandle *handle);
 /**
  * \~English
  * Change the store password from old one to new one.

@@ -113,6 +113,11 @@ typedef struct RootIdentity_List_Helper {
     void *context;
 } RootIdentity_List_Helper;
 
+typedef struct DID_Sync_Helper {
+    DIDStore *store;
+    void *context;
+} DID_Sync_Helper;
+
 typedef struct Dir_Copy_Helper {
     const char *srcpath;
     const char *dstpath;
@@ -2911,6 +2916,136 @@ int DIDStore_Sign(DIDStore *store, const char *storepass, DID *did,
 
     memset(binkey, 0, sizeof(binkey));
     return 0;
+}
+
+static DIDDocument* diddocument_conflict_merge(DIDDocument *chaincopy, DIDDocument *localcopy)
+{
+    assert(chaincopy);
+    assert(localcopy);
+
+    return localcopy;
+}
+
+static int synchronize_credentials(DIDURL *id, void *context)
+{
+    DIDStore *store = (DIDStore*)context;
+    Credential *localcopy = NULL, *chaincopy = NULL;
+    int status;
+
+    if (!id)
+        return 0;
+
+    chaincopy = Credential_Resolve(id, &status, true);
+    if (!chaincopy)
+        return 0;
+
+    DIDStore_StoreCredential(store, chaincopy);
+    return 0;
+}
+
+bool DIDStore_SynchronizeInDid(DIDStore *store, DID *did, DIDDocument_ConflictHandle *handle,
+        const char *rootidentity, int index)
+{
+    DIDDocument *chaincopy = NULL, *localcopy = NULL, *finalcopy = NULL;
+    const char *local_signature;
+    int status, isCustomized;
+    bool success = false;
+
+    if (!handle)
+        handle = diddocument_conflict_merge;
+
+    chaincopy = DID_Resolve(did, &status, true);
+    if (!chaincopy) {
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Synchronize DID %s %s.", DIDSTR(did), DIDSTATUS_MSG(status));
+        return false;
+    }
+
+    isCustomized = DIDDocument_IsCustomizedDID(chaincopy);
+
+    finalcopy = chaincopy;
+    localcopy = DIDStore_LoadDID(store, did);
+    if (localcopy) {
+        local_signature = DIDMetadata_GetSignature(&localcopy->metadata);
+        if (!*local_signature ||
+                strcmp(DIDDocument_GetProofSignature(localcopy, 0), local_signature)) {
+            finalcopy = handle(chaincopy, localcopy);
+            if (!finalcopy|| !DID_Equals(DIDDocument_GetSubject(finalcopy), did)) {
+                DIDError_Set(DIDERR_DIDSTORE_ERROR, "Conflict handle merge the DIDDocument error.");
+                goto errorExit;
+            }
+        }
+    }
+
+    DIDMetadata_SetDeactivated(&finalcopy->metadata, DIDMetadata_GetDeactivated(&chaincopy->metadata));
+    DIDMetadata_SetPublished(&finalcopy->metadata, DIDMetadata_GetPublished(&chaincopy->metadata));
+    DIDMetadata_SetSignature(&finalcopy->metadata, DIDMetadata_GetSignature(&chaincopy->metadata));
+
+    if (!isCustomized && rootidentity) {
+        DIDMetadata_SetRootIdentity(&finalcopy->metadata, rootidentity);
+        DIDMetadata_SetIndex(&finalcopy->metadata, index);
+    }
+
+    if (DIDStore_StoreDID(store, finalcopy) != 0 ||
+            DIDStore_StoreLazyPrivateKey(store, DIDDocument_GetDefaultPublicKey(finalcopy)) != 0)
+        goto errorExit;
+
+    if (DIDStore_ListCredentials(store, did, synchronize_credentials, (void*)store) < 0)
+        goto errorExit;
+
+    success = true;
+
+errorExit:
+    if (finalcopy != chaincopy && finalcopy != localcopy)
+        DIDDocument_Destroy(finalcopy);
+    DIDDocument_Destroy(chaincopy);
+    DIDDocument_Destroy(localcopy);
+    return success;
+}
+
+static int synchronize_rootidentity(RootIdentity *rootidentity, void *context)
+{
+    DIDDocument_ConflictHandle *handle = (DIDDocument_ConflictHandle*)context;
+
+    if (!rootidentity)
+        return 0;
+
+    RootIdentity_Synchronize(rootidentity, handle);
+    return 0;
+}
+
+static int synchronize_did(DID *did, void *context)
+{
+    DID_Sync_Helper *helper = (DID_Sync_Helper*)context;
+    DIDDocument_ConflictHandle *handle = (DIDDocument_ConflictHandle*)helper->context;
+    DIDDocument *doc;
+
+    if (!did)
+        return 0;
+
+    doc = DIDStore_LoadDID(helper->store, did);
+    if (!doc)
+        return 0;
+
+    if (DIDDocument_IsCustomizedDID(doc) != 1)
+        return 0;
+
+
+    return DIDStore_SynchronizeInDid(helper->store, did, handle, NULL, -1);
+}
+
+void DIDStore_Synchronize(DIDStore *store, DIDDocument_ConflictHandle *handle)
+{
+    DID_Sync_Helper helper;
+
+    if (!store)
+        return;
+
+    DIDStore_ListRootIdentities(store, synchronize_rootidentity, (void*)handle);
+
+    helper.store = store;
+    helper.context = (void*)handle;
+
+    DIDStore_ListDIDs(store, 0, synchronize_did, (void*)&helper);
 }
 
 static bool need_reencrypt(const char *path)

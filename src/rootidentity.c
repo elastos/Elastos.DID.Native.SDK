@@ -636,14 +636,6 @@ int RootIdentity_SetAsDefault(RootIdentity *rootidentity)
     DIDERROR_FINALIZE();
 }
 
-static DIDDocument* diddocument_conflict_merge(DIDDocument *chaincopy, DIDDocument *localcopy)
-{
-    assert(chaincopy);
-    assert(localcopy);
-
-    return localcopy;
-}
-
 bool RootIdentity_Synchronize(RootIdentity *rootidentity, DIDDocument_ConflictHandle *handle)
 {
     int lastindex, i = 0, blanks = 0;
@@ -652,9 +644,6 @@ bool RootIdentity_Synchronize(RootIdentity *rootidentity, DIDDocument_ConflictHa
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!rootidentity, "No rootidentity to synchronize.", false);
-
-    if (!handle)
-        handle = diddocument_conflict_merge;
 
     lastindex = rootidentity->index - 1;
     while (i < lastindex || blanks < 20) {
@@ -683,61 +672,21 @@ bool RootIdentity_Synchronize(RootIdentity *rootidentity, DIDDocument_ConflictHa
 bool RootIdentity_SynchronizeByIndex(RootIdentity *rootidentity, int index,
         DIDDocument_ConflictHandle *handle)
 {
-    DID *did = NULL;
+    DID *did;
     DIDStore *store;
-    DIDDocument *chaincopy = NULL, *localcopy = NULL, *finalcopy = NULL;
-    const char *local_signature;
-    int status;
-    bool success = false;
+    bool success;
 
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!rootidentity, "No rootidentity to synchronize.", false);
     CHECK_ARG(index < 0, "Invalid index.", false);
 
-    if (!handle)
-        handle = diddocument_conflict_merge;
-
     did = RootIdentity_GetDIDByIndex(rootidentity, index);
     if (!did)
         return false;
 
-    chaincopy = DID_Resolve(did, &status, true);
-    if (!chaincopy) {
-        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Synchronize DID %s %s.", DIDSTR(did), DIDSTATUS_MSG(status));
-        goto errorExit;
-    }
-
     store = rootidentity->metadata.base.store;
-    finalcopy = chaincopy;
-    localcopy = DIDStore_LoadDID(store, did);
-    if (localcopy) {
-        local_signature = DIDMetadata_GetSignature(&localcopy->metadata);
-        if (!*local_signature ||
-                strcmp(DIDDocument_GetProofSignature(localcopy, 0), local_signature)) {
-            finalcopy = handle(chaincopy, localcopy);
-            if (!finalcopy|| !DID_Equals(DIDDocument_GetSubject(finalcopy), did)) {
-                DIDError_Set(DIDERR_DIDSTORE_ERROR, "Conflict handle merge the DIDDocument error.");
-                goto errorExit;
-            }
-        }
-    }
-
-    DIDMetadata_SetRootIdentity(&finalcopy->metadata, rootidentity->id);
-    DIDMetadata_SetIndex(&finalcopy->metadata, index);
-    DIDMetadata_SetDeactivated(&finalcopy->metadata, DIDMetadata_GetDeactivated(&chaincopy->metadata));
-    DIDMetadata_SetPublished(&finalcopy->metadata, DIDMetadata_GetPublished(&chaincopy->metadata));
-    DIDMetadata_SetSignature(&finalcopy->metadata, DIDMetadata_GetSignature(&chaincopy->metadata));
-
-    if (DIDStore_StoreDID(store, finalcopy) == 0 &&
-            DIDStore_StoreLazyPrivateKey(store, DIDDocument_GetDefaultPublicKey(finalcopy)) == 0)
-        success = true;
-
-errorExit:
-    if (finalcopy != chaincopy && finalcopy != localcopy)
-        DIDDocument_Destroy(finalcopy);
-    DIDDocument_Destroy(chaincopy);
-    DIDDocument_Destroy(localcopy);
+    success = DIDStore_SynchronizeInDid(store, did, handle, rootidentity->id, index);
     DID_Destroy(did);
     return success;
 
