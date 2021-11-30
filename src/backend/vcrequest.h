@@ -48,6 +48,7 @@ typedef struct CredentialRequest {
     DIDURL id;
 
     struct {
+        char type[MAX_TYPE_LEN];
         DIDURL verificationMethod;
         char signature[MAX_SIGNATURE_LEN];
     } proof;

@@ -52,6 +52,7 @@ typedef struct DIDRequest {
     DID did;
 
     struct {
+        char type[MAX_TYPE_LEN];
         DIDURL verificationMethod;
         char signatureValue[MAX_SIGNATURE_LEN];
     } proof;
