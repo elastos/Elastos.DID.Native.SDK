@@ -41,6 +41,7 @@
 
 static const char *spec = "elastos/credential/1.0";
 static const char* operation[] = {"declare", "revoke"};
+extern const char *ProofType;
 
 static int header_toJson(JsonGenerator *gen, CredentialRequest *request)
 {
@@ -66,6 +67,7 @@ static int proof_toJson(JsonGenerator *gen, CredentialRequest *request)
         return -1;
 
     CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "type", request->proof.type));
     CHECK(DIDJG_WriteStringField(gen, "verificationMethod", method));
     CHECK(DIDJG_WriteStringField(gen, "signature", request->proof.signature));
     CHECK(DIDJG_WriteEndObject(gen));
@@ -150,6 +152,7 @@ const char *CredentialRequest_Sign(CredentialRequest_Type type, DIDURL *credid,
     strcpy(req.header.spec, (char*)spec);
     strcpy(req.header.op, (char*)op);
     req.payload = payload;
+    strcpy(req.proof.type, ProofType);
     strcpy(req.proof.signature, signature);
     DIDURL_Copy(&req.proof.verificationMethod, signkey);
 
@@ -271,6 +274,15 @@ int CredentialRequest_FromJson(CredentialRequest *request, json_t *json)
         DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid proof.");
         goto errorExit;
     }
+
+    field = json_object_get(item, "type");
+    if (field) {
+        if (!json_is_string(field) || strcmp(json_string_value(field), ProofType)) {
+            DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid type.");
+            goto errorExit;
+        }
+    }
+    strcpy(request->proof.type, ProofType);
 
     field = json_object_get(item, "verificationMethod");
     if (!field) {
