@@ -1,4 +1,9 @@
-﻿10/18/2021 Chen Yu chenyu_kaola@126.com Version 2.1.3, new version of DID SDK has main change as follow:
+﻿12/01/2021 Chen Yu chenyu_kaola@126.com Version 2.1.4, new version of DID SDK has main change as follow:
+- Add the method to synchnorize for DIDStore.
+- Modify the id chain request.
+- Fix some bugs.
+
+10/18/2021 Chen Yu chenyu_kaola@126.com Version 2.1.3, new version of DID SDK has main change as follow:
 - Modify the method to support certificate verification on Windows
 - Support ARM mode.
 - Auto select the best resolver.
