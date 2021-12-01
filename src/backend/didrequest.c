@@ -40,6 +40,7 @@
 
 static const char *spec = "elastos/did/1.0";
 static const char* operation[] = {"create", "update", "transfer", "deactivate"};
+extern const char *ProofType;
 
 static int header_toJson(JsonGenerator *gen, DIDRequest *req)
 {
@@ -69,6 +70,7 @@ static int proof_toJson(JsonGenerator *gen, DIDRequest *req)
         return -1;
 
     CHECK(DIDJG_WriteStartObject(gen));
+    CHECK(DIDJG_WriteStringField(gen, "type", req->proof.type));
     CHECK(DIDJG_WriteStringField(gen, "verificationMethod", method));
     CHECK(DIDJG_WriteStringField(gen, "signature", req->proof.signatureValue));
     CHECK(DIDJG_WriteEndObject(gen));
@@ -201,6 +203,7 @@ const char *DIDRequest_Sign(DIDRequest_Type type, DIDDocument *document,
         DIDURL_Copy(&req.proof.verificationMethod, creater);
     else
         DIDURL_Copy(&req.proof.verificationMethod, signkey);
+    strcpy(req.proof.type, ProofType);
 
     requestJson = DIDRequest_ToJson(&req);
 
@@ -354,6 +357,15 @@ static int parser_proof(DIDRequest *request, json_t *json)
 
     assert(request);
     assert(json);
+
+    item = json_object_get(json, "type");
+    if (item) {
+        if (!json_is_string(item) || strcmp(json_string_value(item), ProofType)) {
+            DIDError_Set(DIDERR_MALFORMED_IDCHAINREQUEST, "Invalid type.");
+            return -1;
+        }
+    }
+    strcpy(request->proof.type, ProofType);
 
     item = json_object_get(json, "verificationMethod");
     if (!item) {
