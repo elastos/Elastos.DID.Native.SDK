@@ -89,8 +89,8 @@ static void test_issuer_issuevc(void)
     CU_ASSERT_TRUE(has_type(tmptypes, 5, "VerifiableCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 5, "ProfileCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 5, "SelfProclaimedCredential"));
-
     CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 5);
+
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "John");
     free((void*)provalue);
@@ -169,6 +169,7 @@ static void test_issuer_issueselfvc(void)
     CU_ASSERT_TRUE(has_type(tmptypes, 5, "VerifiableCredential"));
 
     CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 5);
+
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "John");
     free((void*)provalue);
@@ -292,6 +293,7 @@ static void test_issuer_issuerbystring_with_ctrl_chars(void)
     const char *tmptypes[3];
     size = Credential_GetTypes(vc, tmptypes, 3);
     CU_ASSERT_EQUAL(size, 3);
+
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "ProfileCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
@@ -455,6 +457,7 @@ static void test_issuer_issue_cidvc(void)
     const char *tmptypes[3];
     size = Credential_GetTypes(vc, tmptypes, 3);
     CU_ASSERT_EQUAL(size, 3);
+
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "ProfileCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "SocialCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
@@ -533,6 +536,7 @@ static void test_cidissuer_issue_selfvc(void)
     const char *tmptypes[3];
     size = Credential_GetTypes(vc, tmptypes, 3);
     CU_ASSERT_EQUAL(size, 3);
+
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "SocialCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "ProfileCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
