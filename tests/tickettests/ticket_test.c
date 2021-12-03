@@ -155,7 +155,7 @@ static void test_multi_signature_ticket(void)
     CU_ASSERT_PTR_NOT_NULL(receiver);
     CU_ASSERT_STRING_EQUAL("igHbSCez6H3gTuVPzwNZRrdj92GCJ6hD5d", DID_GetMethodSpecificId(receiver));
 
-    CU_ASSERT_STRING_EQUAL("4184a30d785a3579e944fd48e40e3cdf", TransferTicket_GetTransactionId(ticket));
+    CU_ASSERT_STRING_EQUAL("8b98fa486d0ce78e1e676484f5826825", TransferTicket_GetTransactionId(ticket));
     CU_ASSERT_EQUAL(2, TransferTicket_GetProofCount(ticket));
     CU_ASSERT_TRUE(TransferTicket_IsGenuine(ticket));
 
@@ -186,7 +186,7 @@ static void test_ticket2(void)
     CU_ASSERT_PTR_NOT_NULL(receiver);
     CU_ASSERT_STRING_EQUAL("igHbSCez6H3gTuVPzwNZRrdj92GCJ6hD5d", DID_GetMethodSpecificId(receiver));
 
-    CU_ASSERT_STRING_EQUAL("f54c02fd7dcdd2be48a6353998a04811", TransferTicket_GetTransactionId(ticket));
+    CU_ASSERT_STRING_EQUAL("f9b2284b4525d5382ee8d0942c42442e", TransferTicket_GetTransactionId(ticket));
     CU_ASSERT_EQUAL(1, TransferTicket_GetProofCount(ticket));
     CU_ASSERT_TRUE(TransferTicket_IsGenuine(ticket));
 

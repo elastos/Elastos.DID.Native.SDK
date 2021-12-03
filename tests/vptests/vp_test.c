@@ -394,10 +394,11 @@ static void test_vp_create(void)
     DIDURL_Destroy(id);
 
     memset(types, 0, sizeof(types));
-    CU_ASSERT_EQUAL(2, Presentation_GetTypeCount(vp));
-    CU_ASSERT_EQUAL(2, Presentation_GetTypes(vp, types, 2));
-    for (i = 0; i < 2; i++)
-        CU_ASSERT_TRUE(!strcmp("Trail", types[i]) || !strcmp("TestPresentation", types[i]));
+    CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
+    CU_ASSERT_EQUAL(3, Presentation_GetTypes(vp, types, 3));
+    for (i = 0; i < 3; i++)
+        CU_ASSERT_TRUE(!strcmp("Trail", types[i]) || !strcmp("TestPresentation", types[i]) ||
+                !strcmp("VerifiablePresentation", types[i]));
 
     CU_ASSERT_TRUE(DID_Equals(&doc->did, Presentation_GetHolder(vp)));
     CU_ASSERT_EQUAL(4, Presentation_GetCredentialCount(vp));
@@ -500,10 +501,11 @@ static void test_vp_create_ctmid(void)
     DIDURL_Destroy(id);
 
     memset(types, 0, sizeof(types));
-    CU_ASSERT_EQUAL(2, Presentation_GetTypeCount(vp));
-    CU_ASSERT_EQUAL(2, Presentation_GetTypes(vp, types, 2));
-    for (i = 0; i < 2; i++)
-        CU_ASSERT_TRUE(!strcmp("Trail", types[i]) || !strcmp("TestPresentation", types[i]));
+     CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
+    CU_ASSERT_EQUAL(3, Presentation_GetTypes(vp, types, 3));
+    for (i = 0; i < 3; i++)
+        CU_ASSERT_TRUE(!strcmp("Trail", types[i]) || !strcmp("TestPresentation", types[i]) ||
+                !strcmp("VerifiablePresentation", types[i]));
 
     CU_ASSERT_TRUE(DID_Equals(did, Presentation_GetHolder(vp)));
     CU_ASSERT_EQUAL(4, Presentation_GetCredentialCount(vp));
@@ -581,10 +583,11 @@ static void test_vp_create_by_credarray(void)
     DIDURL_Destroy(id);
 
     memset(types, 0, sizeof(types));
-    CU_ASSERT_EQUAL(2, Presentation_GetTypeCount(vp));
-    CU_ASSERT_EQUAL(2, Presentation_GetTypes(vp, types, 2));
-    for (i = 0; i < 2; i++)
-        CU_ASSERT_TRUE(!strcmp("Trail", types[i]) || !strcmp("TestPresentation", types[i]));
+    CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
+    CU_ASSERT_EQUAL(3, Presentation_GetTypes(vp, types, 3));
+    for (i = 0; i < 3; i++)
+        CU_ASSERT_TRUE(!strcmp("Trail", types[i]) || !strcmp("TestPresentation", types[i]) ||
+                !strcmp("VerifiablePresentation", types[i]));
 
     CU_ASSERT_TRUE(DID_Equals(did, Presentation_GetHolder(vp)));
     CU_ASSERT_EQUAL(4, Presentation_GetCredentialCount(vp));
@@ -690,10 +693,11 @@ static void test_vp_create_by_credarray_ctmid(void)
     DIDURL_Destroy(id);
 
     memset(types, 0, sizeof(types));
-    CU_ASSERT_EQUAL(2, Presentation_GetTypeCount(vp));
-    CU_ASSERT_EQUAL(2, Presentation_GetTypes(vp, types, 2));
-    for (i = 0; i < 2; i++)
-        CU_ASSERT_TRUE(!strcmp("Trail", types[i]) || !strcmp("TestPresentation", types[i]));
+    CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
+    CU_ASSERT_EQUAL(3, Presentation_GetTypes(vp, types, 3));
+    for (i = 0; i < 3; i++)
+        CU_ASSERT_TRUE(!strcmp("Trail", types[i]) || !strcmp("TestPresentation", types[i]) ||
+                !strcmp("VerifiablePresentation", types[i]));
 
     CU_ASSERT_EQUAL(4, Presentation_GetCredentialCount(vp));
 
@@ -766,10 +770,11 @@ static void test_vp_create_without_creds(void)
     DIDURL_Destroy(id);
 
     memset(types, 0, sizeof(types));
-    CU_ASSERT_EQUAL(2, Presentation_GetTypeCount(vp));
-    CU_ASSERT_EQUAL(2, Presentation_GetTypes(vp, types, 2));
-    for (i = 0; i < 2; i++)
-        CU_ASSERT_TRUE(!strcmp("Trail", types[i]) || !strcmp("TestPresentation", types[i]));
+    CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
+    CU_ASSERT_EQUAL(3, Presentation_GetTypes(vp, types, 3));
+    for (i = 0; i < 3; i++)
+        CU_ASSERT_TRUE(!strcmp("Trail", types[i]) || !strcmp("TestPresentation", types[i]) ||
+                !strcmp("VerifiablePresentation", types[i]));
 
     CU_ASSERT_EQUAL(0, Presentation_GetCredentialCount(vp));
     CU_ASSERT_EQUAL(0, Presentation_GetCredentials(vp, creds, sizeof(creds)));

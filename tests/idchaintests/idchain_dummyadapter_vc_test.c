@@ -295,7 +295,7 @@ static void test_idchain_listvc(void)
     properties[0].value = "jack";
     properties[1].key = "gender";
     properties[1].value = "Male";
-    properties[2].key = "nation";
+    properties[2].key = "nationality";
     properties[2].value = "Singapore";
     properties[3].key = "language";
     properties[3].value = "English";
@@ -365,7 +365,7 @@ static void test_idchain_listvc(void)
     provalue = Credential_GetProperty(vc, "gender");
     CU_ASSERT_STRING_EQUAL(provalue, "Male");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "nation");
+    provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "language");

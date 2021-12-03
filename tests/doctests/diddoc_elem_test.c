@@ -875,7 +875,7 @@ static void test_diddoc_add_selfclaimed_credential(void)
 
         const char *types[] = {"BasicProfileCredential", "SelfProclaimedCredential"};
         Property props[2];
-        props[0].key = "nation";
+        props[0].key = "nationality";
         props[0].value = "Singapore";
         props[1].key = "passport";
         props[1].value = "S653258Z07";
@@ -892,7 +892,7 @@ static void test_diddoc_add_selfclaimed_credential(void)
         vc = DIDDocument_GetCredential(sealeddoc, credid);
         CU_ASSERT_PTR_NOT_NULL(vc);
         CU_ASSERT_TRUE(Credential_IsSelfProclaimed(vc));
-        CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
+        CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
         CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 2);
         provalue = Credential_GetProperty(vc, "passport");
         CU_ASSERT_STRING_EQUAL(provalue, "S653258Z07");

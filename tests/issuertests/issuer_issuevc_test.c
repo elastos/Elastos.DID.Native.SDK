@@ -58,7 +58,7 @@ static void test_issuer_issuevc(void)
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
-    props[2].key = "nation";
+    props[2].key = "nationality";
     props[2].value = "Singapore";
     props[3].key = "language";
     props[3].value = "English";
@@ -81,12 +81,13 @@ static void test_issuer_issuevc(void)
     CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), did));
     CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
-    const char *tmptypes[2];
-    size = Credential_GetTypes(vc, tmptypes, 2);
-    CU_ASSERT_EQUAL(size, 2);
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "PhoneCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
+    const char *tmptypes[3];
+    size = Credential_GetTypes(vc, tmptypes, 3);
+    CU_ASSERT_EQUAL(size, 3);
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "PhoneCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
 
     CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 7);
     provalue = Credential_GetProperty(vc, "name");
@@ -95,7 +96,7 @@ static void test_issuer_issuevc(void)
     provalue = Credential_GetProperty(vc, "gender");
     CU_ASSERT_STRING_EQUAL(provalue, "Male");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "nation");
+    provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "language");
@@ -141,7 +142,7 @@ static void test_issuer_issueselfvc(void)
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
-    props[2].key = "nation";
+    props[2].key = "nationality";
     props[2].value = "Singapore";
     props[3].key = "language";
     props[3].value = "English";
@@ -164,13 +165,14 @@ static void test_issuer_issueselfvc(void)
     CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), issuerid));
     CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
-    const char *tmptypes[3];
-    size = Credential_GetTypes(vc, tmptypes, 3);
-    CU_ASSERT_EQUAL(size, 3);
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "PhoneCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 4);
+    const char *tmptypes[4];
+    size = Credential_GetTypes(vc, tmptypes, 4);
+    CU_ASSERT_EQUAL(size, 4);
+    CU_ASSERT_TRUE(has_type(tmptypes, 4, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 4, "PhoneCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 4, "SelfProclaimedCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 4, "VerifiableCredential"));
 
     CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 7);
     provalue = Credential_GetProperty(vc, "name");
@@ -179,7 +181,7 @@ static void test_issuer_issueselfvc(void)
     provalue = Credential_GetProperty(vc, "gender");
     CU_ASSERT_STRING_EQUAL(provalue, "Male");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "nation");
+    provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "language");
@@ -236,13 +238,14 @@ static void test_issuer_issuerbystring(void)
     CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), issuerid));
     CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
-    const char *tmptypes[2];
-    size = Credential_GetTypes(vc, tmptypes, 2);
-    CU_ASSERT_EQUAL(size, 2);
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
-    CU_ASSERT_FALSE(has_type(tmptypes, 2, "PhoneCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
+    const char *tmptypes[3];
+    size = Credential_GetTypes(vc, tmptypes, 3);
+    CU_ASSERT_EQUAL(size, 3);
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 3, "PhoneCredential"));
 
     provalue = Credential_GetProperty(vc, "Description");
     CU_ASSERT_STRING_EQUAL(provalue, "Technologist");
@@ -297,12 +300,13 @@ static void test_issuer_issuerbystring_with_ctrl_chars(void)
     CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), issuerid));
     CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
-    const char *tmptypes[2];
-    size = Credential_GetTypes(vc, tmptypes, 2);
-    CU_ASSERT_EQUAL(size, 2);
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
+    const char *tmptypes[3];
+    size = Credential_GetTypes(vc, tmptypes, 3);
+    CU_ASSERT_EQUAL(size, 3);
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 2, "PhoneCredential"));
 
     provalue = Credential_GetProperty(vc, "editTime");
@@ -360,7 +364,7 @@ static void test_cidissuer_issue_kycvc(void)
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
-    props[2].key = "nation";
+    props[2].key = "nationality";
     props[2].value = "Singapore";
     props[3].key = "language";
     props[3].value = "English";
@@ -378,13 +382,14 @@ static void test_cidissuer_issue_kycvc(void)
     CU_ASSERT_TRUE(Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
-    const char *tmptypes[2];
-    size = Credential_GetTypes(vc, tmptypes, 2);
-    CU_ASSERT_EQUAL(size, 2);
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "InternetAccountCredential"));
-    CU_ASSERT_FALSE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
+    const char *tmptypes[3];
+    size = Credential_GetTypes(vc, tmptypes, 3);
+    CU_ASSERT_EQUAL(size, 3);
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "InternetAccountCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
     CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
 
@@ -394,7 +399,7 @@ static void test_cidissuer_issue_kycvc(void)
     provalue = Credential_GetProperty(vc, "gender");
     CU_ASSERT_STRING_EQUAL(provalue, "Male");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "nation");
+    provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "language");
@@ -445,7 +450,7 @@ static void test_issuer_issue_cidvc(void)
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
-    props[2].key = "nation";
+    props[2].key = "nationality";
     props[2].value = "Singapore";
     props[3].key = "language";
     props[3].value = "English";
@@ -463,13 +468,14 @@ static void test_issuer_issue_cidvc(void)
     CU_ASSERT_TRUE(Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
-    const char *tmptypes[2];
-    size = Credential_GetTypes(vc, tmptypes, 2);
-    CU_ASSERT_EQUAL(size, 2);
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "InternetAccountCredential"));
-    CU_ASSERT_FALSE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
+    const char *tmptypes[3];
+    size = Credential_GetTypes(vc, tmptypes, 3);
+    CU_ASSERT_EQUAL(size, 3);
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "InternetAccountCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
     CU_ASSERT_TRUE(DID_Equals(issuerid, Credential_GetIssuer(vc)));
 
@@ -479,7 +485,7 @@ static void test_issuer_issue_cidvc(void)
     provalue = Credential_GetProperty(vc, "gender");
     CU_ASSERT_STRING_EQUAL(provalue, "Male");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "nation");
+    provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "language");
@@ -527,7 +533,7 @@ static void test_cidissuer_issue_selfvc(void)
     Property props[4];
     props[0].key = "name";
     props[0].value = "Testing Issuer";
-    props[1].key = "nation";
+    props[1].key = "nationality";
     props[1].value = "Singapore";
     props[2].key = "language";
     props[2].value = "English";
@@ -543,20 +549,21 @@ static void test_cidissuer_issue_selfvc(void)
     CU_ASSERT_TRUE(Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
-    const char *tmptypes[2];
-    size = Credential_GetTypes(vc, tmptypes, 2);
-    CU_ASSERT_EQUAL(size, 2);
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
-    CU_ASSERT_FALSE(has_type(tmptypes, 2, "InternetAccountCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
+    const char *tmptypes[3];
+    size = Credential_GetTypes(vc, tmptypes, 3);
+    CU_ASSERT_EQUAL(size, 3);
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 3, "InternetAccountCredential"));
 
     CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
 
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "Testing Issuer");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "nation");
+    provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "language");
@@ -606,7 +613,7 @@ static void test_issuer_issue_multicidvc(void)
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
-    props[2].key = "nation";
+    props[2].key = "nationality";
     props[2].value = "Singapore";
     props[3].key = "language";
     props[3].value = "English";
@@ -624,13 +631,14 @@ static void test_issuer_issue_multicidvc(void)
     CU_ASSERT_TRUE(Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
-    const char *tmptypes[2];
-    size = Credential_GetTypes(vc, tmptypes, 2);
-    CU_ASSERT_EQUAL(size, 2);
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "InternetAccountCredential"));
-    CU_ASSERT_FALSE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
+    const char *tmptypes[3];
+    size = Credential_GetTypes(vc, tmptypes, 3);
+    CU_ASSERT_EQUAL(size, 3);
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "InternetAccountCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
     CU_ASSERT_TRUE(DID_Equals(issuerid, Credential_GetIssuer(vc)));
 
@@ -640,7 +648,7 @@ static void test_issuer_issue_multicidvc(void)
     provalue = Credential_GetProperty(vc, "gender");
     CU_ASSERT_STRING_EQUAL(provalue, "Male");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "nation");
+    provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "language");
@@ -696,7 +704,7 @@ static void test_multicidissuer_issue_kycvc(void)
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
-    props[2].key = "nation";
+    props[2].key = "nationality";
     props[2].value = "Singapore";
     props[3].key = "language";
     props[3].value = "English";
@@ -714,13 +722,14 @@ static void test_multicidissuer_issue_kycvc(void)
     CU_ASSERT_TRUE(Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
-    const char *tmptypes[2];
-    size = Credential_GetTypes(vc, tmptypes, 2);
-    CU_ASSERT_EQUAL(size, 2);
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "InternetAccountCredential"));
-    CU_ASSERT_FALSE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
+    const char *tmptypes[3];
+    size = Credential_GetTypes(vc, tmptypes, 3);
+    CU_ASSERT_EQUAL(size, 3);
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "InternetAccountCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
     CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
 
@@ -730,7 +739,7 @@ static void test_multicidissuer_issue_kycvc(void)
     provalue = Credential_GetProperty(vc, "gender");
     CU_ASSERT_STRING_EQUAL(provalue, "Male");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "nation");
+    provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "language");
@@ -786,7 +795,7 @@ static void test_multicidissuer_issue_kycvc2(void)
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
-    props[2].key = "nation";
+    props[2].key = "nationality";
     props[2].value = "Singapore";
     props[3].key = "language";
     props[3].value = "English";
@@ -804,13 +813,14 @@ static void test_multicidissuer_issue_kycvc2(void)
     CU_ASSERT_TRUE(Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
-    const char *tmptypes[2];
-    size = Credential_GetTypes(vc, tmptypes, 2);
-    CU_ASSERT_EQUAL(size, 2);
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "InternetAccountCredential"));
-    CU_ASSERT_FALSE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
+    const char *tmptypes[3];
+    size = Credential_GetTypes(vc, tmptypes, 3);
+    CU_ASSERT_EQUAL(size, 3);
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "InternetAccountCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
     CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
 
@@ -820,7 +830,7 @@ static void test_multicidissuer_issue_kycvc2(void)
     provalue = Credential_GetProperty(vc, "gender");
     CU_ASSERT_STRING_EQUAL(provalue, "Male");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "nation");
+    provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "language");
@@ -873,7 +883,7 @@ static void test_multicidissuer_issue_selfvc(void)
     Property props[4];
     props[0].key = "name";
     props[0].value = "Testing Issuer";
-    props[1].key = "nation";
+    props[1].key = "nationality";
     props[1].value = "Singapore";
     props[2].key = "language";
     props[2].value = "English";
@@ -889,20 +899,21 @@ static void test_multicidissuer_issue_selfvc(void)
     CU_ASSERT_TRUE(Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
-    const char *tmptypes[2];
-    size = Credential_GetTypes(vc, tmptypes, 2);
-    CU_ASSERT_EQUAL(size, 2);
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
-    CU_ASSERT_FALSE(has_type(tmptypes, 2, "InternetAccountCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
+    const char *tmptypes[3];
+    size = Credential_GetTypes(vc, tmptypes, 3);
+    CU_ASSERT_EQUAL(size, 3);
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 3, "InternetAccountCredential"));
 
     CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
 
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "Testing Issuer");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "nation");
+    provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "language");
@@ -952,7 +963,7 @@ static void test_multicidissuer_issue_selfvc2(void)
     Property props[4];
     props[0].key = "name";
     props[0].value = "Testing Issuer";
-    props[1].key = "nation";
+    props[1].key = "nationality";
     props[1].value = "Singapore";
     props[2].key = "language";
     props[2].value = "English";
@@ -968,20 +979,21 @@ static void test_multicidissuer_issue_selfvc2(void)
     CU_ASSERT_TRUE(Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
-    const char *tmptypes[2];
-    size = Credential_GetTypes(vc, tmptypes, 2);
-    CU_ASSERT_EQUAL(size, 2);
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 2, "SelfProclaimedCredential"));
-    CU_ASSERT_FALSE(has_type(tmptypes, 2, "InternetAccountCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
+    const char *tmptypes[3];
+    size = Credential_GetTypes(vc, tmptypes, 3);
+    CU_ASSERT_EQUAL(size, 3);
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 3, "InternetAccountCredential"));
 
     CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
 
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "Testing Issuer");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "nation");
+    provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "language");

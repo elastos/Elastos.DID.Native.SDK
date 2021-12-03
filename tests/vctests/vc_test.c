@@ -45,8 +45,13 @@ static void test_vc_kycvc(void)
 
         for (i = 0; i < size; i++) {
             const char *type = types[i];
-            CU_ASSERT_TRUE(!strcmp(type, "InternetAccountCredential") ||
-                    !strcmp(type, "TwitterCredential"));
+            if (version == 1) {
+                CU_ASSERT_TRUE(!strcmp(type, "TwitterCredential") ||
+                        !strcmp(type, "InternetAccountCredential"));
+            } else {
+                CU_ASSERT_TRUE(!strcmp(type, "SocialCredential") ||
+                        !strcmp(type, "VerifiableCredential"));
+            }
         }
 
         CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
@@ -96,14 +101,24 @@ static void test_vc_selfclaimvc(void)
 
         for (i = 0; i < size; i++) {
             const char *type = types[i];
-            CU_ASSERT_TRUE(!strcmp(type, "BasicProfileCredential") ||
-                    !strcmp(type, "SelfProclaimedCredential"));
+            if (version == 1) {
+                CU_ASSERT_TRUE(!strcmp(type, "SelfProclaimedCredential") ||
+                        !strcmp(type, "BasicProfileCredential"));
+            } else {
+                CU_ASSERT_TRUE(!strcmp(type, "SelfProclaimedCredential") ||
+                        !strcmp(type, "VerifiableCredential"));
+            }
         }
 
         CU_ASSERT_TRUE(DID_Equals(did, Credential_GetIssuer(cred)));
         CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
 
-        prop = Credential_GetProperty(cred, "nation");
+        if (version == 1) {
+            prop = Credential_GetProperty(cred, "nation");
+        } else {
+            prop = Credential_GetProperty(cred, "nationality");
+        }
+
         CU_ASSERT_STRING_EQUAL("Singapore", prop);
         free((void*)prop);
         prop = Credential_GetProperty(cred, "passport");
@@ -264,10 +279,11 @@ static void test_vc_keycvc_tocid(void)
     DIDURL_Destroy(id);
 
     size = Credential_GetTypes(cred, types, sizeof(types));
-    CU_ASSERT_EQUAL(1, size);
+    CU_ASSERT_EQUAL(2, size);
 
     for (i = 0; i < size; i++)
-        CU_ASSERT_STRING_EQUAL("InternetAccountCredential", types[i]);
+        CU_ASSERT_TRUE(!strcmp(types[i], "EmailCredential") ||
+                    !strcmp(types[i], "VerifiableCredential"));
 
     CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
     CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
@@ -317,10 +333,11 @@ static void test_vc_kycvc_fromcid(void)
     DIDURL_Destroy(id);
 
     size = Credential_GetTypes(cred, types, sizeof(types));
-    CU_ASSERT_EQUAL(1, size);
+    CU_ASSERT_EQUAL(2, size);
 
     for (i = 0; i < size; i++)
-        CU_ASSERT_STRING_EQUAL("LicenseCredential", types[i]);
+        CU_ASSERT_TRUE(!strcmp(types[i], "LicenseCredential") ||
+                !strcmp(types[i], "VerifiableCredential"));
 
     CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
     CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
@@ -375,7 +392,7 @@ static void test_vc_selfclaimvc_fromcid(void)
     for (i = 0; i < size; i++) {
         const char *type = types[i];
         CU_ASSERT_TRUE(!strcmp(type, "SelfProclaimedCredential") ||
-                !strcmp(type, "BasicProfileCredential"));
+                !strcmp(type, "VerifiableCredential"));
     }
 
     CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(foobardoc), Credential_GetIssuer(cred)));

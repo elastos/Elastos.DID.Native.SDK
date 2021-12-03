@@ -63,7 +63,7 @@ static void test_vc_local_verify(void)
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
-    props[2].key = "nation";
+    props[2].key = "nationality";
     props[2].value = "Singapore";
     props[3].key = "language";
     props[3].value = "English";
