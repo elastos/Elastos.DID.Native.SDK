@@ -75,6 +75,7 @@ set(SRC
     issuer.c
     ticket.c
     rootidentity.c
+    features.c
     ${utility-SOURCES}
     ${backend-SOURCES}
     ${meta-SOURCES})

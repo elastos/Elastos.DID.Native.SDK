@@ -1645,7 +1645,6 @@ DID_API DIDDocument *DIDDocument_FromJson(const char* json);
  */
 DID_API const char *DIDDocument_ToJson(DIDDocument *document, bool normalized);
 
-
 /**
  * \~English
  * Get json formatted context from DID Document.
@@ -1799,6 +1798,7 @@ DID_API void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder);
  *      Notice that user need to release the handle of returned instance to destroy it's memory.
  */
 DID_API DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *storepass);
+
 /**
  * \~English
  * Get subject of DID Document.
@@ -1810,6 +1810,34 @@ DID_API DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const 
  *      Otherwise, return NULL.
  */
 DID_API DID *DIDDocumentBuilder_GetSubject(DIDDocumentBuilder *builder);
+
+/**
+ * \~English
+ * Add context to document.
+ *
+ * @param
+ *      builder              [in] A handle to DIDDocument Builder.
+ * @param
+ *      context              [in] context string.
+ * @return
+ *      If no error occurs, return 0.
+ *      Otherwise, return -1.
+ */
+DID_API int DIDDocumentBuilder_AddContext(DIDDocumentBuilder *builder, const char *context);
+
+/**
+ * \~English
+ * Add three default contexts to document. Three default contexts are "https://www.w3.org/ns/did/v1",
+ * "https://elastos.org/did/v1" and "https://w3id.org/security/v1".
+ *
+ * @param
+ *      builder              [in] A handle to DIDDocument Builder.
+ * @return
+ *      If no error occurs, return 0.
+ *      Otherwise, return -1.
+ */
+DID_API int DIDDocumentBuilder_AddDefaultContext(DIDDocumentBuilder *builder);
+
 /**
  * \~English
  * Add controller for DIDDocument.
@@ -4849,6 +4877,24 @@ DID_API void DIDBackend_SetTTL(long ttl);
  *      handle            [in] The pointer to DIDLocalResovleHandle function.
  */
 DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
+
+/******************************************************************************
+ * Feature
+ *****************************************************************************/
+/**
+ * \~English
+ * Enable JSON-LD context support.
+ *
+ * @param
+ *      enable            [in] enable flag.
+ */
+void Features_EnableJsonLdContext(bool enable);
+
+/**
+ * \~English
+ * Check if JSON-LD context support enabled or not.
+ */
+bool Features_IsEnabledJsonLdContext(void);
 
 /******************************************************************************
  * Error handling

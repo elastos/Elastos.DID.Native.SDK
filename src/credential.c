@@ -39,9 +39,7 @@
 #include "didbackend.h"
 #include "credentialbiography.h"
 
-static const char *PresentationsType = "VerifiablePresentation";
-extern const char *ProofType;
-
+static const char *CONTEXT = "@context";
 static const char *ID = "id";
 static const char *TYPE = "type";
 static const char *ISSUER = "issuer";
@@ -52,6 +50,10 @@ static const char *PROOF = "proof";
 static const char *VERIFICATION_METHOD = "verificationMethod";
 static const char *CREATED = "created";
 static const char *SIGNATURE = "signature";
+
+const char *W3C_CREDENTIAL_CONTEXT = "https://www.w3.org/2018/credentials/v1";;
+const char *ELASTOS_CREDENTIAL_CONTEXT = "https://ns.elastos.org/credentials/v1";
+extern const char *ProofType;
 
 static void free_subject(Credential *credential)
 {
@@ -206,10 +208,15 @@ int Credential_ToJson_Internal(JsonGenerator *gen, Credential *credential, DID *
     assert(gen->buffer);
     assert(credential);
 
-    DIDURL_ToString_Internal(&credential->id, buf, sizeof(buf), compact);
-
     CHECK(DIDJG_WriteStartObject(gen));
+    if (credential->context.size > 0) {
+        CHECK(DIDJG_WriteFieldName(gen, CONTEXT));
+        CHECK(ContextArray_ToJson(gen, credential->context.contexts, credential->context.size));
+    }
+
+    DIDURL_ToString_Internal(&credential->id, buf, sizeof(buf), compact);
     CHECK(DIDJG_WriteStringField(gen, ID, buf));
+
     CHECK(DIDJG_WriteFieldName(gen, TYPE));
     CHECK(types_toJson(gen, credential));
 
@@ -237,10 +244,22 @@ int Credential_ToJson_Internal(JsonGenerator *gen, Credential *credential, DID *
 ///////////////////////////////////////////////////////////////////////////
 void Credential_Destroy(Credential *credential)
 {
+    int i;
+
     DIDERROR_INITIALIZE();
 
     if (!credential)
         return;
+
+    if (credential->context.size) {
+        if (credential->context.contexts) {
+            for (i = 0; i < credential->context.size; i++) {
+                if (credential->context.contexts[i])
+                    free((void*)credential->context.contexts[i]);
+            }
+            free((void*)credential->context.contexts);
+        }
+    }
 
     free_types(credential);
     if (credential->subject.properties)
@@ -487,6 +506,35 @@ const char *Credential_GetProofSignture(Credential *credential)
     DIDERROR_FINALIZE();
 }
 
+static int Parse_Contexts(Credential *credential, json_t *json)
+{
+    json_t *field;
+    int i, size;
+
+    assert(credential);
+    assert(json);
+
+    size = json_array_size(json);
+
+    credential->context.contexts = (char**)calloc(size, sizeof(char*));
+    if (!credential->context.contexts) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for contexts failed.");
+        return -1;
+    }
+
+    for (i = 0; i < size; i++) {
+        field = json_array_get(json, i);
+        if (!field || !json_is_string(field)) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Wrong context.");
+            return -1;
+        }
+
+        credential->context.contexts[credential->context.size++] = strdup(json_string_value(field));
+    }
+
+    return 0;
+}
+
 Credential *Credential_From_Internal(json_t *json, DID *did)
 {
     Credential *credential;
@@ -498,6 +546,16 @@ Credential *Credential_From_Internal(json_t *json, DID *did)
     if (!credential) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for credential failed.");
         return NULL;
+    }
+
+    item = json_object_get(json, CONTEXT);
+    if (item) {
+        if (!json_is_array(item)) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid context.");
+            goto errorExit;
+        }
+        if (Parse_Contexts(credential, item) == -1)
+            goto errorExit;
     }
 
     item = json_object_get(json, CREDENTIAL_SUBJECT);
@@ -1035,6 +1093,17 @@ int Credential_Copy(Credential *dest, Credential *src)
 
     assert(dest);
     assert(src);
+
+    if (src->context.size > 0) {
+        dest->context.contexts = (char**)calloc(src->context.size, sizeof(char*));
+        if (!dest->context.contexts) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for contexts failed.");
+            return -1;
+        }
+
+        for (i = 0; i < src->context.size; i++)
+            dest->context.contexts[dest->context.size++] = strdup(src->context.contexts[i]);
+    }
 
     DIDURL_Copy(&dest->id, &src->id);
 

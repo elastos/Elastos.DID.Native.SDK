@@ -51,6 +51,7 @@
 
 const char *ProofType = "ECDSAsecp256r1";
 
+static const char *CONTEXT = "@context";
 static const char *ID = "id";
 static const char *PUBLICKEY = "publicKey";
 static const char *TYPE = "type";
@@ -67,6 +68,10 @@ static const char *PROOF = "proof";
 static const char *CREATOR = "creator";
 static const char *CREATED = "created";
 static const char *SIGNATURE_VALUE = "signatureValue";
+
+const char *W3C_DID_CONTEXT = "https://www.w3.org/ns/did/v1";
+const char *ELASTOS_DID_CONTEXT = "https://elastos.org/did/v1";
+const char *W3ID_SECURITY_CONTEXT = "https://w3id.org/security/v1";
 
 typedef enum KeyType {
     KeyType_PublicKey,
@@ -178,6 +183,24 @@ static int ControllerArray_ToJson(JsonGenerator *gen, DIDDocument **docs, size_t
     if (size != 1)
         CHECK(DIDJG_WriteEndArray(gen));
 
+    return 0;
+}
+
+int ContextArray_ToJson(JsonGenerator *gen, char **contexts, size_t size)
+{
+    int i;
+
+    assert(gen);
+    assert(gen->buffer);
+    assert(contexts);
+    assert(size > 0);
+
+    CHECK(DIDJG_WriteStartArray(gen));
+
+    for (i = 0; i < size; i++)
+        CHECK(DIDJG_WriteString(gen, contexts[i]));
+
+    CHECK(DIDJG_WriteEndArray(gen));
     return 0;
 }
 
@@ -410,6 +433,35 @@ static int Parse_PublicKey(DID *did, json_t *json, PublicKey **publickey)
     }
 
     *publickey = pk;
+    return 0;
+}
+
+static int Parse_Contexts(DIDDocument *document, json_t *json)
+{
+    json_t *field;
+    int i, size;
+
+    assert(document);
+    assert(json);
+
+    size = json_array_size(json);
+
+    document->context.contexts = (char**)calloc(size, sizeof(char*));
+    if (!document->context.contexts) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for contexts failed.");
+        return -1;
+    }
+
+    for (i = 0; i < size; i++) {
+        field = json_array_get(json, i);
+        if (!field || !json_is_string(field)) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Wrong context.");
+            return -1;
+        }
+
+        document->context.contexts[document->context.size++] = strdup(json_string_value(field));
+    }
+
     return 0;
 }
 
@@ -968,6 +1020,16 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root, bool resolve)
         return NULL;
     }
 
+    item = json_object_get(root, CONTEXT);
+    if (item) {
+        if (!json_is_array(item)) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid context.");
+            goto errorExit;
+        }
+        if (Parse_Contexts(doc, item) == -1)
+            goto errorExit;
+    }
+
     item = json_object_get(root, ID);
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Missing document subject.");
@@ -1161,8 +1223,15 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
     assert(doc);
 
     CHECK(DIDJG_WriteStartObject(gen));
+
+    if (doc->context.size > 0) {
+        CHECK(DIDJG_WriteFieldName(gen, CONTEXT));
+        CHECK(ContextArray_ToJson(gen, doc->context.contexts, doc->context.size));
+    }
+
     CHECK(DIDJG_WriteStringField(gen, ID,
             DID_ToString(&doc->did, id, sizeof(id))));
+
     if (doc->controllers.size > 0) {
         CHECK(DIDJG_WriteFieldName(gen, CONTROLLER));
         CHECK(ControllerArray_ToJson(gen, doc->controllers.docs, doc->controllers.size));
@@ -1278,6 +1347,9 @@ void DIDDocument_Destroy(DIDDocument *document)
     if (!document)
         return;
 
+    for (i = 0; i < document->context.size; i++)
+        free((void*)document->context.contexts[i]);
+
     for (i = 0; i < document->controllers.size; i++)
         DIDDocument_Destroy(document->controllers.docs[i]);
 
@@ -1289,6 +1361,9 @@ void DIDDocument_Destroy(DIDDocument *document)
 
     for (i = 0; i < document->credentials.size; i++)
         Credential_Destroy(document->credentials.credentials[i]);
+
+    if (document->context.contexts)
+        free((void*)document->context.contexts);
 
     if (document->controllers.docs)
         free((void*)document->controllers.docs);
@@ -1719,10 +1794,32 @@ errorExit:
     return -1;
 }
 
+static int contexts_copy(DIDDocument *document, char **contexts, size_t size)
+{
+    int i;
+
+    assert(document);
+    assert(contexts && size > 0);
+
+    document->context.contexts = (char**)calloc(size, sizeof(char*));
+    if (!document->context.contexts)
+        return -1;
+
+
+    for (i = 0; i < size; i++)
+        document->context.contexts[i] = strdup(contexts[i]);
+
+    return 0;
+}
+
 int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc)
 {
     assert(destdoc);
     assert(srcdoc);
+
+    if (srcdoc->context.size > 0 && srcdoc->context.contexts &&
+            contexts_copy(destdoc, srcdoc->context.contexts, srcdoc->context.size) == -1)
+        return -1;
 
     DID_Copy(&destdoc->did, &srcdoc->did);
 
@@ -2036,6 +2133,83 @@ static void clean_proofs(DIDDocument *document)
         document->proofs.proofs = NULL;
     }
     document->proofs.size = 0;
+}
+
+int DIDDocumentBuilder_AddContext(DIDDocumentBuilder *builder, const char *context)
+{
+    DIDDocument *document;
+    char **contexts;
+    int i;
+
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!Features_IsEnabledJsonLdContext(), "JSON-LD context support not enabled", -1);
+    CHECK_ARG(!builder || !builder->document, "Invalid document builder argument.", -1);
+    CHECK_ARG(!context || !*context, "Invalid context argument.", -1);
+
+    document = builder->document;
+    assert(document);
+
+    if (document->context.size > 0) {
+        if (contains_content(document->context.contexts, document->context.size, context)) {
+            DIDError_Set(DIDERR_ALREADY_EXISTS, "Context already exists.");
+            return -1;
+        }
+    }
+
+    contexts = (char**)realloc(document->context.contexts,
+            (document->context.size + 1) * sizeof(char*));
+    if (!contexts) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for contexts failed.");
+        return -1;
+    }
+
+    contexts[document->context.size++] = strdup(context);
+    document->context.contexts = contexts;
+    return 0;
+
+    DIDERROR_FINALIZE();
+}
+
+int DIDDocumentBuilder_AddDefaultContext(DIDDocumentBuilder *builder)
+{
+    DIDDocument *document;
+    const char *defaults[3] = {0};
+    char **contexts;
+    int i, size = 0;
+
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!Features_IsEnabledJsonLdContext(), "JSON-LD context support not enabled", -1);
+    CHECK_ARG(!builder || !builder->document, "Invalid document builder argument.", -1);
+
+    document = builder->document;
+    if (document->context.size > 0) {
+        if (!contains_content(document->context.contexts, document->context.size, W3C_DID_CONTEXT))
+            defaults[size++] = W3C_DID_CONTEXT;
+        if (!contains_content(document->context.contexts, document->context.size, ELASTOS_DID_CONTEXT))
+            defaults[size++] = ELASTOS_DID_CONTEXT;
+        if (!contains_content(document->context.contexts, document->context.size, W3ID_SECURITY_CONTEXT))
+            defaults[size++] = W3ID_SECURITY_CONTEXT;
+    }
+
+    if (size == 0)
+        return 0;
+
+    contexts = (char**)realloc(document->context.contexts,
+            (document->context.size + size) * sizeof(char*));
+    if (!contexts) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for contexts failed.");
+        return -1;
+    }
+
+    for (i = 0; i < size; i++)
+        contexts[document->context.size++] = strdup(defaults[i]);
+
+    document->context.contexts = contexts;
+    return 0;
+
+    DIDERROR_FINALIZE();
 }
 
 int DIDDocumentBuilder_AddPublicKey(DIDDocumentBuilder *builder, DIDURL *keyid,
@@ -4891,6 +5065,9 @@ DIDDocumentBuilder* DIDDocument_CreateBuilder(DID *did, DIDDocument *controllerd
     }
 
     if (!DID_Copy(&builder->document->did, did))
+        goto errorExit;
+
+    if (Features_IsEnabledJsonLdContext() && DIDDocumentBuilder_AddDefaultContext(builder) == -1)
         goto errorExit;
 
     if (controllerdoc) {

@@ -528,3 +528,21 @@ const char *json_astext(json_t *item)
     return strdup(value);
 }
 
+bool contains_content(char **contents, size_t size, const char *content)
+{
+    int i;
+
+    assert(contents);
+    assert(size >= 0);
+
+    for (i = 0; i < size; i++) {
+        if (!contents[i])
+            continue;
+
+        if(!strcmp(content, contents[i]))
+            return true;
+    }
+
+    return false;
+}
+
