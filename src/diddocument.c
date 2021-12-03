@@ -1805,7 +1805,6 @@ static int contexts_copy(DIDDocument *document, char **contexts, size_t size)
     if (!document->context.contexts)
         return -1;
 
-
     for (i = 0; i < size; i++)
         document->context.contexts[document->context.size++] = strdup(contexts[i]);
 
@@ -2165,6 +2164,7 @@ int DIDDocumentBuilder_AddContext(DIDDocumentBuilder *builder, const char *conte
 
     contexts[document->context.size++] = strdup(context);
     document->context.contexts = contexts;
+
     clean_proofs(document);
     return 0;
 
