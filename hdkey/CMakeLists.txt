@@ -30,6 +30,14 @@ set(HEADERS
 set(LIBS
     crypto)
 
+if (ENABLE_UNICODE_NORMALIZE)
+    add_definitions(-DENABLE_UNICODE_NORMALIZE=1)
+
+    set(LIBS
+        ${LIBS}
+        utf8proc)
+endif()
+
 include_directories(
     BEFORE
     .

@@ -123,6 +123,12 @@ set(LIBS
     zip
     z)
 
+if (ENABLE_UNICODE_NORMALIZE)
+    set(LIBS
+        ${LIBS}
+        utf8proc)
+endif()
+
 set(ELADID_DEPENDS libressl libcurl hdkey libjansson ${JWT_DEPENDS} libzip)
 
 if(WIN32)

@@ -12,6 +12,11 @@ if (ENABLE_TESTS)
     add_submodule(nodejs)
 endif()
 
+if (ENABLE_UNICODE_NORMALIZE)
+    add_submodule(libutf8proc
+        DEPENDS platform-specific)    
+endif()
+
 if(NOT HDKEY_ONLY)
     add_submodule(zlib
         DEPENDS platform-specific)

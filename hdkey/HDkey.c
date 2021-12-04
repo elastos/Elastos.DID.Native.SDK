@@ -25,6 +25,10 @@
 #include <assert.h>
 #include <openssl/rand.h>
 
+#ifdef ENABLE_UNICODE_NORMALIZE
+#include <utf8proc.h>
+#endif
+
 #include "HDkey.h"
 #include "BRBIP39Mnemonic.h"
 #include "BRBIP39WordsEn.h"
@@ -46,6 +50,22 @@ static unsigned char PADDING_STANDARD = 0xAD;
 
 static uint32_t PrvVersionCode = 0x0488ade4;
 static uint32_t PubVersionCode = 0x0488b21e;
+
+#ifdef ENABLE_UNICODE_NORMALIZE
+static const char *normalize_mnemonic(const char *mnemonic)
+{
+    return (const char *)utf8proc_NFD((unsigned char *)mnemonic);
+}
+
+static void normalize_free(const char *normalized)
+{
+    if (normalized)
+        free((char *)normalized);
+}
+#else
+#define normalize_mnemonic(mnemonic)    mnemonic
+#define normalize_free(normalized)      (void)0
+#endif
 
 static const char **get_word_list(const char* language)
 {
@@ -121,7 +141,11 @@ bool HDKey_MnemonicIsValid(const char *mnemonic, const char *language)
     if (!word_list)
         return false;
 
-    return (BRBIP39PhraseIsValid(word_list, mnemonic) != 0);
+    const char *normalized = normalize_mnemonic(mnemonic);
+    bool rc = (BRBIP39PhraseIsValid(word_list, normalized) != 0);
+    normalize_free(normalized);
+
+    return rc;
 }
 
 static ssize_t generate_extendedkey(uint8_t *extendedkey, size_t size, HDKey *hdkey, bool bpublic)
@@ -205,7 +229,10 @@ HDKey *HDKey_FromMnemonic(const char *mnemonic, const char *passphrase,
     if (!BRBIP39PhraseIsValid(word_list, mnemonic))
         return NULL;
 
-    BRBIP39DeriveKey((UInt512 *)seed, mnemonic, passphrase);
+    const char *normalized = normalize_mnemonic(mnemonic);    
+    BRBIP39DeriveKey((UInt512 *)seed, normalized, passphrase);
+    normalize_free(normalized);
+
     return HDKey_FromSeed(seed, SEED_BYTES, hdkey);
 }
 
