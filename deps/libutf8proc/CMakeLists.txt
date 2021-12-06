@@ -21,3 +21,12 @@ ExternalProject_Add(
 if(ENABLE_STATIC)
     export_static_library(utf8proc)
 endif()
+
+if(WIN32)
+    ExternalProject_Add_Step(
+        libutf8proc post-install
+        DEPENDEES install
+        WORKING_DIRECTORY "${PROJECT_INT_DIST_DIR}/lib"
+        COMMAND copy utf8proc_static.lib utf8proc.lib /y
+    )
+endif()

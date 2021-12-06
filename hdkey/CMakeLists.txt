@@ -31,7 +31,9 @@ set(LIBS
     crypto)
 
 if (ENABLE_UNICODE_NORMALIZATION)
-    add_definitions(-DENABLE_UNICODE_NORMALIZATION=1)
+    add_definitions(
+        -DENABLE_UNICODE_NORMALIZATION=1
+        -DUTF8PROC_STATIC)
 
     set(LIBS
         ${LIBS}
