@@ -1,4 +1,8 @@
-﻿12/01/2021 Chen Yu chenyu_kaola@126.com Version 2.1.4, new version of DID SDK has main change as follow:
+﻿12/06/2021 Chen Yu chenyu_kaola@126.com Version 2.1.5, new version of DID SDK has main change as follow:
+- Normalize the wordlist files.
+- Add optional unicode normalization support.
+
+12/01/2021 Chen Yu chenyu_kaola@126.com Version 2.1.4, new version of DID SDK has main change as follow:
 - Add the method to synchnorize for DIDStore.
 - Modify the id chain request.
 - Fix some bugs.
