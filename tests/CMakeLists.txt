@@ -112,6 +112,12 @@ set(STATIC_LIBS
     zip
     z)
 
+if (ENABLE_UNICODE_NORMALIZATION)
+    set(STATIC_LIBS
+        ${STATIC_LIBS}
+        utf8proc)
+endif()
+
 set(LIBS
     eladid-static
     hdkey-static
