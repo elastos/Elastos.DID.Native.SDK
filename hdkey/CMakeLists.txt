@@ -30,8 +30,8 @@ set(HEADERS
 set(LIBS
     crypto)
 
-if (ENABLE_UNICODE_NORMALIZE)
-    add_definitions(-DENABLE_UNICODE_NORMALIZE=1)
+if (ENABLE_UNICODE_NORMALIZATION)
+    add_definitions(-DENABLE_UNICODE_NORMALIZATION=1)
 
     set(LIBS
         ${LIBS}

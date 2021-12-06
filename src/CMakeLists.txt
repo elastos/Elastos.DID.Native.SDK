@@ -123,7 +123,7 @@ set(LIBS
     zip
     z)
 
-if (ENABLE_UNICODE_NORMALIZE)
+if (ENABLE_UNICODE_NORMALIZATION)
     set(LIBS
         ${LIBS}
         utf8proc)

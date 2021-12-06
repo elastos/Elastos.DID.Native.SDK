@@ -25,7 +25,7 @@
 #include <assert.h>
 #include <openssl/rand.h>
 
-#ifdef ENABLE_UNICODE_NORMALIZE
+#ifdef ENABLE_UNICODE_NORMALIZATION
 #include <utf8proc.h>
 #endif
 
@@ -51,7 +51,7 @@ static unsigned char PADDING_STANDARD = 0xAD;
 static uint32_t PrvVersionCode = 0x0488ade4;
 static uint32_t PubVersionCode = 0x0488b21e;
 
-#ifdef ENABLE_UNICODE_NORMALIZE
+#ifdef ENABLE_UNICODE_NORMALIZATION
 static const char *normalize_string(const char *str)
 {
     return (const char *)utf8proc_NFKD((unsigned char *)str);

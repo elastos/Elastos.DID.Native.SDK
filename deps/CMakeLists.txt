@@ -12,7 +12,7 @@ if (ENABLE_TESTS)
     add_submodule(nodejs)
 endif()
 
-if (ENABLE_UNICODE_NORMALIZE)
+if (ENABLE_UNICODE_NORMALIZATION)
     add_submodule(libutf8proc
         DEPENDS platform-specific)    
 endif()
