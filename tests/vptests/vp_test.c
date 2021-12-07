@@ -283,6 +283,7 @@ static void test_vp_parse_ctmid(void)
         CU_ASSERT_PTR_NOT_NULL(vp);
         CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
         CU_ASSERT_TRUE(Presentation_IsValid(vp));
+<<<<<<< HEAD
 
         normJson = TestData_GetPresentationJson("foobar", "nonempty", "normalized", version);
         CU_ASSERT_PTR_NOT_NULL(normJson);
@@ -300,6 +301,25 @@ static void test_vp_parse_ctmid(void)
         CU_ASSERT_STRING_EQUAL(normJson, data);
         free((void*)data);
 
+=======
+
+        normJson = TestData_GetPresentationJson("foobar", "nonempty", "normalized", version);
+        CU_ASSERT_PTR_NOT_NULL(normJson);
+        normvp = Presentation_FromJson(normJson);
+        CU_ASSERT_PTR_NOT_NULL(normvp);
+        CU_ASSERT_TRUE(Presentation_IsGenuine(normvp));
+        CU_ASSERT_TRUE(Presentation_IsValid(normvp));
+
+        data = Presentation_ToJson(normvp, true);
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL(normJson, data);
+        free((void*)data);
+        data = Presentation_ToJson(vp, true);
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL(normJson, data);
+        free((void*)data);
+
+>>>>>>> b8ceaca (Update the created timstamp for presentation according to the W3C spec and update test case.)
         Presentation_Destroy(normvp);
     }
 }
@@ -362,6 +382,7 @@ static void test_vp_parse_withemptyvp_ctmid(void)
         CU_ASSERT_PTR_NOT_NULL(normvp);
         CU_ASSERT_TRUE(Presentation_IsGenuine(normvp));
         CU_ASSERT_TRUE(Presentation_IsValid(normvp));
+<<<<<<< HEAD
 
         data = Presentation_ToJson(normvp, true);
         CU_ASSERT_PTR_NOT_NULL(data);
@@ -372,6 +393,18 @@ static void test_vp_parse_withemptyvp_ctmid(void)
         CU_ASSERT_STRING_EQUAL(normJson, data);
         free((void*)data);
 
+=======
+
+        data = Presentation_ToJson(normvp, true);
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL(normJson, data);
+        free((void*)data);
+        data = Presentation_ToJson(vp, true);
+        CU_ASSERT_PTR_NOT_NULL(data);
+        CU_ASSERT_STRING_EQUAL(normJson, data);
+        free((void*)data);
+
+>>>>>>> b8ceaca (Update the created timstamp for presentation according to the W3C spec and update test case.)
         Presentation_Destroy(normvp);
     }
 }
@@ -382,6 +415,10 @@ static void test_vp_create(void)
     Presentation *vp;
     DID *holder;
     Credential *creds[4], **cred;
+<<<<<<< HEAD
+=======
+    const char *types[2] = {"Trail", "TestPresentation"};
+>>>>>>> b8ceaca (Update the created timstamp for presentation according to the W3C spec and update test case.)
     const char *_types[3] = {0};
     ssize_t size;
     DIDURL *id;
@@ -411,8 +448,13 @@ static void test_vp_create(void)
     CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
     CU_ASSERT_EQUAL(3, Presentation_GetTypes(vp, _types, 3));
     for (i = 0; i < 3; i++)
+<<<<<<< HEAD
         CU_ASSERT_TRUE(!strcmp("TestPresentation", _types[i]) ||
                 !strcmp("SessionPresentation", _types[i]) ||
+=======
+        CU_ASSERT_TRUE(!strcmp("Trail", _types[i]) ||
+                !strcmp("TestPresentation", _types[i]) ||
+>>>>>>> b8ceaca (Update the created timstamp for presentation according to the W3C spec and update test case.)
                 !strcmp("VerifiablePresentation", _types[i]));
 
     CU_ASSERT_TRUE(DID_Equals(&doc->did, Presentation_GetHolder(vp)));
@@ -473,9 +515,10 @@ static void test_vp_create_ctmid(void)
     DID *did;
     DIDURL *signkey, *credid1, *credid2, *id;
     Credential *creds[4], **cred;
+
     const char *_types[3] = {0};
     ssize_t size;
-    int i;
+    int i, version;
 
     const char *types[2] = {
                 "https://example.com/credential/v1#TestPresentation",
@@ -675,9 +718,10 @@ static void test_vp_create_by_credarray_ctmid(void)
     DID *did;
     Credential *creds[4], **cred, *vcs[4] = {0};
     DIDURL *id, *credid1, *credid2, *signkey;
+
     const char *_types[3] = {0};
     ssize_t size;
-    int i;
+    int i, version;
 
     const char *types[2] = {
                 "https://example.com/credential/v1#TestPresentation",
@@ -789,6 +833,7 @@ static void test_vp_create_without_creds(void)
     DIDURL *id;
     DID *did;
     Credential *creds[4];
+
     const char *_types[3] = {0};
     int i;
 

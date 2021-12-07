@@ -425,7 +425,6 @@ static Presentation *parse_presentation(json_t *json)
     if (parse_types(presentation, item) < 0)
         goto errorExit;
 
-    //todo: check
     item = json_object_get(json, CREATED);
     if (item) {
         if (!json_is_string(item) || parse_time(&presentation->created, json_string_value(item)) == -1) {
