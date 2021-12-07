@@ -35,7 +35,7 @@ extern "C" {
 
 typedef struct PresentationProof {
     char type[MAX_TYPE_LEN];
-    //time_t created;
+    time_t created;
     DIDURL verificationMethod;
     char nonce[MAX_NONCE];
     char realm[MAX_REALM];

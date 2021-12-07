@@ -16,7 +16,7 @@
 
 static DataParam params[] = {
     { 0, "document", NULL, NULL },    { 1, "user1", NULL, NULL },
-    { 2, "user1", NULL, NULL }
+    { 2, "user1", NULL, NULL },       { 3, "user1", NULL, NULL }
 };
 
 static void test_diddoc_get_publickey(void)
@@ -30,7 +30,7 @@ static void test_diddoc_get_publickey(void)
     int i, j;
     bool equal;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -118,7 +118,7 @@ static void test_diddoc_add_publickey(void)
     const char *keybase;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -174,7 +174,7 @@ static void test_diddoc_remove_publickey(void)
     DIDURL *recoveryid, *keyid;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -234,7 +234,7 @@ static void test_diddoc_get_authentication_key(void)
     DIDURL *keyid, *id;
     int i, j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -310,7 +310,7 @@ static void test_diddoc_add_authentication_key(void)
     const char *keybase;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -404,7 +404,7 @@ static void test_diddoc_remove_authentication_key(void)
     const char *keybase;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -480,7 +480,7 @@ static void test_diddoc_get_authorization_key(void)
     DIDURL *keyid, *id;
     int i, j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -542,7 +542,7 @@ static void test_diddoc_add_authorization_key(void)
     DID controller;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -655,7 +655,7 @@ static void test_diddoc_remove_authorization_key(void)
     DID controller;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -737,7 +737,7 @@ static void test_diddoc_get_credential(void)
     DIDURL *id;
     int i, j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -804,7 +804,7 @@ static void test_diddoc_add_credential(void)
     Credential *vc;
     int j;
 
-    for (j = 1; j < 3; j++) {
+    for (j = 1; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -860,7 +860,7 @@ static void test_diddoc_add_selfclaimed_credential(void)
     int i, j;
     const char *provalue;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -921,7 +921,7 @@ static void test_diddoc_remove_credential(void)
     Credential *vc;
     int j;
 
-    for (j = 1; j < 3; j++) {
+    for (j = 1; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -979,7 +979,7 @@ static void test_diddoc_get_service(void)
     Service *service;
     int i, j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -1068,7 +1068,7 @@ static void test_diddoc_add_service(void)
 
     props2 = "{\"name\":\"Jay Holtslander\",\"alternateName\":\"Jason Holtslander\",\"booleanValue\":true,\"numberValue\":1234,\"doubleValue\":9.5,\"nationality\":\"Canadian\",\"Description\":\"Technologist\",\"disambiguatingDescription\":\"Co-founder of CodeCore Bootcamp\",\"jobTitle\":\"Technical Director\",\"worksFor\":[{\"type\":\"Organization\",\"name\":\"Skunkworks Creative Group Inc.\",\"sameAs\":[\"https://twitter.com/skunkworks_ca\",\"https://www.facebook.com/skunkworks.ca\"]}],\"url\":\"https://jay.holtslander.ca\",\"image\":\"https://s.gravatar.com/avatar/961997eb7fd5c22b3e12fb3c8ca14e11?s=512&r=g\"}";
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -1176,7 +1176,7 @@ static void test_diddoc_remove_service(void)
     DIDDocumentBuilder *builder;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -1229,7 +1229,7 @@ static void test_diddoc_add_controller(void)
     DIDDocumentBuilder *builder;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -1259,7 +1259,7 @@ static void test_diddoc_remove_proof(void)
     DIDURL *creater;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);

@@ -57,7 +57,7 @@ extern const char *W3C_CREDENTIAL_CONTEXT;
 
 static int proof_toJson(JsonGenerator *gen, Presentation *presentation, int compact)
 {
-    char id[ELA_MAX_DIDURL_LEN];
+    char id[ELA_MAX_DIDURL_LEN], _timestring[DOC_BUFFER_LEN];
 
     assert(gen);
     assert(gen->buffer);
@@ -66,6 +66,9 @@ static int proof_toJson(JsonGenerator *gen, Presentation *presentation, int comp
     CHECK(DIDJG_WriteStartObject(gen));
     if (!compact)
         CHECK(DIDJG_WriteStringField(gen, TYPE, presentation->proof.type));
+    if (presentation->proof.created > 0)
+        CHECK(DIDJG_WriteStringField(gen, CREATED,
+                get_time_string(_timestring, sizeof(_timestring), &presentation->proof.created)));
     CHECK(DIDJG_WriteStringField(gen, VERIFICATION_METHOD,
         DIDURL_ToString_Internal(&presentation->proof.verificationMethod, id, sizeof(id), compact)));
     CHECK(DIDJG_WriteStringField(gen, REALM, presentation->proof.realm));
@@ -129,9 +132,9 @@ static int presentation_tojson_internal(JsonGenerator *gen, Presentation *presen
         CHECK(DIDJG_WriteStringField(gen, HOLDER,
                 DID_ToString(&presentation->holder, idstring, sizeof(idstring))));
 
-    //todo: check
-    CHECK(DIDJG_WriteStringField(gen, CREATED,
-            get_time_string(_timestring, sizeof(_timestring), &presentation->created)));
+    if (presentation->created > 0)
+        CHECK(DIDJG_WriteStringField(gen, CREATED,
+                get_time_string(_timestring, sizeof(_timestring), &presentation->created)));
 
     CHECK(DIDJG_WriteFieldName(gen, VERIFIABLE_CREDENTIAL));
     CredentialArray_ToJson(gen, presentation->credentials.credentials,
@@ -255,6 +258,14 @@ static int parse_proof(Presentation *presentation, json_t *json)
     assert(json);
 
     strcpy(presentation->proof.type, ProofType);
+
+    item = json_object_get(json, CREATED);
+    if (item) {
+        if (!json_is_string(item) || parse_time(&presentation->proof.created, json_string_value(item)) == -1) {
+            DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid time created presentation.");
+            return -1;
+        }
+    }
 
     item = json_object_get(json, VERIFICATION_METHOD);
     if (!item) {
@@ -409,15 +420,12 @@ static Presentation *parse_presentation(json_t *json)
     if (parse_types(presentation, item) < 0)
         goto errorExit;
 
-    //todo: check
     item = json_object_get(json, CREATED);
-    if (!item) {
-        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing time created presentation.");
-        goto errorExit;
-    }
-    if (!json_is_string(item) || parse_time(&presentation->created, json_string_value(item)) == -1) {
-        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid time created presentation.");
-        goto errorExit;
+    if (item) {
+        if (!json_is_string(item) || parse_time(&presentation->created, json_string_value(item)) == -1) {
+            DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid time created presentation.");
+            goto errorExit;
+        }
     }
 
     item = json_object_get(json, PROOF);
@@ -583,8 +591,6 @@ static int seal_presentation(Presentation *presentation, DIDDocument *doc, DIDUR
     assert(nonce && *nonce);
     assert(realm && *realm);
 
-    time(&presentation->created);
-
     data = presentation_tojson_forsign(presentation, false, true);
     if (!data)
         return -1;
@@ -615,6 +621,7 @@ static int seal_presentation(Presentation *presentation, DIDDocument *doc, DIDUR
         return -1;
     }
 
+    time(&presentation->proof.created);
     strcpy(presentation->proof.type, ProofType);
     DIDURL_Copy(&presentation->proof.verificationMethod, signkey);
     strcpy(presentation->proof.nonce, nonce);

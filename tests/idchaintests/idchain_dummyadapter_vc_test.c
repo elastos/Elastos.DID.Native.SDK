@@ -37,17 +37,23 @@ static void test_idchain_declarevc(void)
     DataParam params2[] = {
         { 2, "user1", "twitter", NULL   }, { 2, "user1", "passport", NULL },
         { 2, "user1", "json", NULL      }, { 2, "foobar", "license", NULL },
-        { 2, "foobar", "services", NULL }, { 2, "foo", "email", NULL}
+        { 2, "foobar", "services", NULL }, { 2, "foo", "email", NULL      },
     };
 
-    DataParam *params[] = { params1, params2 };
+    DataParam params3[] = {
+        { 3, "user1", "twitter", NULL   }, { 3, "user1", "passport", NULL },
+        { 3, "user1", "json", NULL      }, { 3, "foobar", "license", NULL },
+        { 3, "foobar", "services", NULL }, { 3, "foo", "email", NULL}
+    };
+
+    DataParam *params[] = { params1, params2, params3 };
 
     repealerdoc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(repealerdoc);
     signkey3 = DIDDocument_GetDefaultPublicKey(repealerdoc);
     CU_ASSERT_PTR_NOT_NULL(signkey3);
 
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < 3; i++) {
         TestData_Reset(2);
 
         size = (i == 0 ? 3 : 6);
@@ -173,17 +179,23 @@ static void test_idchain_revokevc(void)
     DataParam params2[] = {
         { 2, "user1", "twitter", NULL   }, { 2, "user1", "passport", NULL },
         { 2, "user1", "json", NULL      }, { 2, "foobar", "license", NULL },
-        { 2, "foobar", "services", NULL }, { 2, "foo", "email", NULL      }
+        { 2, "foobar", "services", NULL }, { 2, "foo", "email", NULL      },
     };
 
-    DataParam *params[] = { params1, params2 };
+    DataParam params3[] = {
+        { 3, "user1", "twitter", NULL   }, { 3, "user1", "passport", NULL },
+        { 3, "user1", "json", NULL      }, { 3, "foobar", "license", NULL },
+        { 3, "foobar", "services", NULL }, { 3, "foo", "email", NULL}
+    };
+
+    DataParam *params[] = { params1, params2, params3 };
 
     repealerdoc = TestData_GetDocument("controller", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(repealerdoc);
     signkey3 = DIDDocument_GetDefaultPublicKey(repealerdoc);
     CU_ASSERT_PTR_NOT_NULL(signkey3);
 
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < 3; i++) {
         TestData_Reset(2);
 
         size = (i == 0 ? 3 : 6);
@@ -431,12 +443,15 @@ static void test_idchain_listvc2(void)
     DataParam params[] = {
         { 2, "user1", "twitter", NULL   },   { 2, "user1", "passport", NULL  },
         { 2, "user1", "json", NULL      },   { 2, "foobar", "license", NULL  },
-        { 2, "foobar", "services", NULL },   { 2, "foo", "email", NULL       }
+        { 2, "foobar", "services", NULL },   { 2, "foo", "email", NULL       },
+        { 3, "user1", "twitter", NULL   },   { 3, "user1", "passport", NULL  },
+        { 3, "user1", "json", NULL      },   { 3, "foobar", "license", NULL  },
+        { 3, "foobar", "services", NULL },   { 3, "foo", "email", NULL       }
     };
 
     TestData_Reset(2);
 
-    for (i = 0; i < 6; i++) {
+    for (i = 0; i < 12; i++) {
         param = &params[i];
         signkey1 = NULL;
 

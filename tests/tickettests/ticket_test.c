@@ -137,27 +137,30 @@ static void test_multi_signature_ticket(void)
     DID *owner, *receiver;
     DIDStore *store;
     DIDDocument *doc;
+    int version;
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    doc = TestData_GetDocument("foobar", NULL, 2);
-    CU_ASSERT_PTR_NOT_NULL(doc);
+    for (version = 2; version < 4; version++) {
+        doc = TestData_GetDocument("foobar", NULL, version);
+        CU_ASSERT_PTR_NOT_NULL(doc);
 
-    ticket = TestData_GetTransferTicket("foobar");
-    CU_ASSERT_PTR_NOT_NULL(ticket);
+        ticket = TestData_GetTransferTicket("foobar");
+        CU_ASSERT_PTR_NOT_NULL(ticket);
 
-    owner = TransferTicket_GetOwner(ticket);
-    CU_ASSERT_PTR_NOT_NULL(owner);
-    CU_ASSERT_STRING_EQUAL("foobar", DID_GetMethodSpecificId(owner));
+        owner = TransferTicket_GetOwner(ticket);
+        CU_ASSERT_PTR_NOT_NULL(owner);
+        CU_ASSERT_STRING_EQUAL("foobar", DID_GetMethodSpecificId(owner));
 
-    receiver = TransferTicket_GetRecipient(ticket);
-    CU_ASSERT_PTR_NOT_NULL(receiver);
-    CU_ASSERT_STRING_EQUAL("igHbSCez6H3gTuVPzwNZRrdj92GCJ6hD5d", DID_GetMethodSpecificId(receiver));
+        receiver = TransferTicket_GetRecipient(ticket);
+        CU_ASSERT_PTR_NOT_NULL(receiver);
+        CU_ASSERT_STRING_EQUAL("igHbSCez6H3gTuVPzwNZRrdj92GCJ6hD5d", DID_GetMethodSpecificId(receiver));
 
-    CU_ASSERT_STRING_EQUAL("8b98fa486d0ce78e1e676484f5826825", TransferTicket_GetTransactionId(ticket));
-    CU_ASSERT_EQUAL(2, TransferTicket_GetProofCount(ticket));
-    CU_ASSERT_TRUE(TransferTicket_IsGenuine(ticket));
+        CU_ASSERT_STRING_EQUAL("8b98fa486d0ce78e1e676484f5826825", TransferTicket_GetTransactionId(ticket));
+        CU_ASSERT_EQUAL(2, TransferTicket_GetProofCount(ticket));
+        CU_ASSERT_TRUE(TransferTicket_IsGenuine(ticket));
+    }
 
     TestData_Free();
 }
@@ -168,27 +171,30 @@ static void test_ticket2(void)
     DID *owner, *receiver;
     DIDStore *store;
     DIDDocument *doc;
+    int version;
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
-    doc = TestData_GetDocument("baz", NULL, 2);
-    CU_ASSERT_PTR_NOT_NULL(doc);
+    for (version = 2; version < 4; version++) {
+        doc = TestData_GetDocument("baz", NULL, version);
+        CU_ASSERT_PTR_NOT_NULL(doc);
 
-    ticket = TestData_GetTransferTicket("baz");
-    CU_ASSERT_PTR_NOT_NULL(ticket);
+        ticket = TestData_GetTransferTicket("baz");
+        CU_ASSERT_PTR_NOT_NULL(ticket);
 
-    owner = TransferTicket_GetOwner(ticket);
-    CU_ASSERT_PTR_NOT_NULL(owner);
-    CU_ASSERT_STRING_EQUAL("baz", DID_GetMethodSpecificId(owner));
+        owner = TransferTicket_GetOwner(ticket);
+        CU_ASSERT_PTR_NOT_NULL(owner);
+        CU_ASSERT_STRING_EQUAL("baz", DID_GetMethodSpecificId(owner));
 
-    receiver = TransferTicket_GetRecipient(ticket);
-    CU_ASSERT_PTR_NOT_NULL(receiver);
-    CU_ASSERT_STRING_EQUAL("igHbSCez6H3gTuVPzwNZRrdj92GCJ6hD5d", DID_GetMethodSpecificId(receiver));
+        receiver = TransferTicket_GetRecipient(ticket);
+        CU_ASSERT_PTR_NOT_NULL(receiver);
+        CU_ASSERT_STRING_EQUAL("igHbSCez6H3gTuVPzwNZRrdj92GCJ6hD5d", DID_GetMethodSpecificId(receiver));
 
-    CU_ASSERT_STRING_EQUAL("f9b2284b4525d5382ee8d0942c42442e", TransferTicket_GetTransactionId(ticket));
-    CU_ASSERT_EQUAL(1, TransferTicket_GetProofCount(ticket));
-    CU_ASSERT_TRUE(TransferTicket_IsGenuine(ticket));
+        CU_ASSERT_STRING_EQUAL("f9b2284b4525d5382ee8d0942c42442e", TransferTicket_GetTransactionId(ticket));
+        CU_ASSERT_EQUAL(1, TransferTicket_GetProofCount(ticket));
+        CU_ASSERT_TRUE(TransferTicket_IsGenuine(ticket));
+    }
 
     TestData_Free();
 }
