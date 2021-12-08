@@ -780,14 +780,14 @@ static void test_diddoc_get_credential(void)
 
         // Credential selector.
         CU_ASSERT_EQUAL(1, DIDDocument_SelectCredentials(doc, "SelfProclaimedCredential",
-                profileid, vcs, sizeof(vcs)));
+                profileid, vcs, sizeof(vcs)/sizeof(Credential*)));
         CU_ASSERT_TRUE(DIDURL_Equals(Credential_GetId(vcs[0]), profileid));
 
         CU_ASSERT_EQUAL(1, DIDDocument_SelectCredentials(doc, NULL, profileid, vcs, 2));
         CU_ASSERT_TRUE(DIDURL_Equals(Credential_GetId(vcs[0]), profileid));
 
         CU_ASSERT_EQUAL(1, DIDDocument_SelectCredentials(doc, "SelfProclaimedCredential",
-                NULL, vcs, sizeof(vcs)));
+                NULL, vcs, sizeof(vcs)/sizeof(Credential*)));
         CU_ASSERT_TRUE(DIDURL_Equals(Credential_GetId(vcs[0]), profileid));
         DIDURL_Destroy(profileid);
 
@@ -895,16 +895,18 @@ static void test_diddoc_add_selfclaimed_credential(void)
         CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
         CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 2);
         provalue = Credential_GetProperty(vc, "passport");
+        CU_ASSERT_PTR_NOT_NULL(provalue);
         CU_ASSERT_STRING_EQUAL(provalue, "S653258Z07");
         free((void*)provalue);
 
-        const char *types1[2];
-        CU_ASSERT_NOT_EQUAL(-1, Credential_GetTypes(vc, types1, sizeof(types1)));
+        const char *types1[3];
+        CU_ASSERT_NOT_EQUAL(-1, Credential_GetTypes(vc, types1, 3));
 
-        for (i = 0; i < 2; i++) {
+        for (i = 0; i < 3; i++) {
             const char *type = types1[i];
             CU_ASSERT_TRUE(!strcmp(type, "BasicProfileCredential") ||
-                    !strcmp(type, "SelfProclaimedCredential"));
+                    !strcmp(type, "SelfProclaimedCredential") ||
+                    !strcmp(type, "VerifiableCredential"));
         }
 
         DIDURL_Destroy(credid);
@@ -987,7 +989,7 @@ static void test_diddoc_get_service(void)
 
         CU_ASSERT_EQUAL(3, DIDDocument_GetServiceCount(doc));
 
-        size = DIDDocument_GetServices(doc, services, sizeof(services));
+        size = DIDDocument_GetServices(doc, services, sizeof(services)/sizeof(Service*));
         CU_ASSERT_EQUAL(3, size);
 
         for (i = 0; i < size; i++) {
@@ -1023,17 +1025,17 @@ static void test_diddoc_get_service(void)
 
         // Service selector.
         CU_ASSERT_EQUAL(1, DIDDocument_SelectServices(doc, "CredentialRepositoryService", vcrid,
-                services, sizeof(services)));
+                services, sizeof(services)/sizeof(Service*)));
         CU_ASSERT_TRUE(DIDURL_Equals(Service_GetId(services[0]), vcrid));
         DIDURL_Destroy(vcrid);
 
-        CU_ASSERT_EQUAL(1, DIDDocument_SelectServices(doc, NULL, openid, services, sizeof(services)));
+        CU_ASSERT_EQUAL(1, DIDDocument_SelectServices(doc, NULL, openid, services, sizeof(services)/sizeof(Service*)));
         CU_ASSERT_TRUE(DIDURL_Equals(Service_GetId(services[0]), openid));
         DIDURL_Destroy(openid);
 
         DIDURL *id = DIDURL_NewFromDid(did, "carrier");
         CU_ASSERT_PTR_NOT_NULL(id);
-        CU_ASSERT_EQUAL(1, DIDDocument_SelectServices(doc, "CarrierAddress", NULL, services, sizeof(services)));
+        CU_ASSERT_EQUAL(1, DIDDocument_SelectServices(doc, "CarrierAddress", NULL, services, sizeof(services)/sizeof(Service*)));
         CU_ASSERT_TRUE(DIDURL_Equals(Service_GetId(services[0]), id));
         DIDURL_Destroy(id);
 
@@ -1042,7 +1044,7 @@ static void test_diddoc_get_service(void)
                 notexistid, services, sizeof(services)));
         DIDURL_Destroy(notexistid);
 
-        CU_ASSERT_EQUAL(0, DIDDocument_SelectServices(doc, "notExistType", NULL, services, sizeof(services)));
+        CU_ASSERT_EQUAL(0, DIDDocument_SelectServices(doc, "notExistType", NULL, services, sizeof(services)/sizeof(Service*)));
     }
 }
 
