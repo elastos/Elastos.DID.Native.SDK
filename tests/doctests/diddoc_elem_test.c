@@ -1281,6 +1281,47 @@ static void test_diddoc_remove_proof(void)
     }
 }
 
+static void test_diddoc_add_context(void)
+{
+    DIDDocument *doc;
+    DID *did;
+    DIDDocument *document;
+    DIDDocumentBuilder *builder;
+    DIDURL *creater;
+    int j;
+
+    const char *context1 = "https://ns.elastos.org/did/v1";
+    const char *context2 = "https://ns.elastos.org/did/v2";
+
+    for (j = 0; j < 4; j++) {
+        doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
+        CU_ASSERT_PTR_NOT_NULL(doc);
+        did = DIDDocument_GetSubject(doc);
+        CU_ASSERT_PTR_NOT_NULL(did);
+
+        builder = DIDDocument_Edit(doc, NULL);
+        CU_ASSERT_PTR_NOT_NULL(builder);
+        CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddContext(builder, context2));
+        CU_ASSERT_STRING_EQUAL("JSON-LD context support not enabled", DIDError_GetLastErrorMessage());
+
+        Features_EnableJsonLdContext(true);
+        if (j < 3)
+            CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddDefaultContext(builder));
+
+        CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddContext(builder, context1));
+        CU_ASSERT_STRING_EQUAL("Context already exists.", DIDError_GetLastErrorMessage());
+        CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddContext(builder, context2));
+
+        document = DIDDocumentBuilder_Seal(builder, storepass);
+        DIDDocumentBuilder_Destroy(builder);
+        CU_ASSERT_PTR_NOT_NULL(document);
+        CU_ASSERT_TRUE(DIDDocument_IsValid(document));
+
+        DIDDocument_Destroy(document);
+        Features_EnableJsonLdContext(false);
+    }
+}
+
 static int diddoc_elem_test_suite_init(void)
 {
     DIDStore *store = TestData_SetupStore(true);
@@ -1319,6 +1360,7 @@ static CU_TestInfo cases[] = {
     { "test_diddoc_get_service",                   test_diddoc_get_service               },
     { "test_diddoc_add_service",                   test_diddoc_add_service               },
     { "test_diddoc_remove_service",                test_diddoc_remove_service            },
+    { "test_diddoc_add_context",                   test_diddoc_add_context               },
     { "test_diddoc_add_controller",                test_diddoc_add_controller            },
     { "test_diddoc_remove_proof",                  test_diddoc_remove_proof              },
     { NULL,                                        NULL                                  }

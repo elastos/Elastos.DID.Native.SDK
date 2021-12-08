@@ -382,11 +382,14 @@ static void test_vp_create(void)
     Presentation *vp;
     DID *holder;
     Credential *creds[4], **cred;
-    const char *types[2] = {"Trail", "TestPresentation"};
     const char *_types[3] = {0};
     ssize_t size;
     DIDURL *id;
     int i;
+
+    const char *types[2] = {
+                "https://example.com/credential/v1#TestPresentation",
+                "https://session.com/credential/v1#SessionPresentation"};
 
     doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(doc);
@@ -408,8 +411,8 @@ static void test_vp_create(void)
     CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
     CU_ASSERT_EQUAL(3, Presentation_GetTypes(vp, _types, 3));
     for (i = 0; i < 3; i++)
-        CU_ASSERT_TRUE(!strcmp("Trail", _types[i]) ||
-                !strcmp("TestPresentation", _types[i]) ||
+        CU_ASSERT_TRUE(!strcmp("TestPresentation", _types[i]) ||
+                !strcmp("SessionPresentation", _types[i]) ||
                 !strcmp("VerifiablePresentation", _types[i]));
 
     CU_ASSERT_TRUE(DID_Equals(&doc->did, Presentation_GetHolder(vp)));
@@ -470,21 +473,26 @@ static void test_vp_create_ctmid(void)
     DID *did;
     DIDURL *signkey, *credid1, *credid2, *id;
     Credential *creds[4], **cred;
-    const char *types[2] = { "Trail", "TestPresentation"};
     const char *_types[3] = {0};
     ssize_t size;
     int i, version;
 
-    for (version = 2; version < 4; version++) {
-        user1doc = TestData_GetDocument("user1", NULL, version);
+    const char *types[2] = {
+                "https://example.com/credential/v1#TestPresentation",
+                "https://session.com/credential/v1#SessionPresentation"};
+
+    for (i = 0; i <= 1; i++) {
+        Features_EnableJsonLdContext((bool)i);
+
+        user1doc = TestData_GetDocument("user1", NULL, 3);
         CU_ASSERT_PTR_NOT_NULL(user1doc);
 
-        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, version));
-        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, version));
-        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, version));
-        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("examplecorp", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 3));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 3));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 3));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("examplecorp", NULL, 3));
 
-        doc = TestData_GetDocument("foobar", NULL, version);
+        doc = TestData_GetDocument("foobar", NULL, 3);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
         did = DIDDocument_GetSubject(doc);
@@ -504,8 +512,8 @@ static void test_vp_create_ctmid(void)
 
         vp = Presentation_Create(id, did, types, 2, "873172f58701a9ee686f0630204fee59",
                 "https://example.com/", signkey, store, storepass, 4,
-                TestData_GetCredential("foobar", "license", NULL, 2),
-                TestData_GetCredential("foobar", "services", NULL, 2),
+                TestData_GetCredential("foobar", "license", NULL, 3),
+                TestData_GetCredential("foobar", "services", NULL, 3),
                 DIDDocument_GetCredential(doc, credid1),
                 DIDDocument_GetCredential(doc, credid2));
         DIDURL_Destroy(signkey);
@@ -517,7 +525,7 @@ static void test_vp_create_ctmid(void)
         CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
         CU_ASSERT_EQUAL(3, Presentation_GetTypes(vp, _types, 3));
         for (i = 0; i < 3; i++)
-            CU_ASSERT_TRUE(!strcmp("Trail", _types[i]) ||
+            CU_ASSERT_TRUE(!strcmp("SessionPresentation", _types[i]) ||
                     !strcmp("TestPresentation", _types[i]) ||
                     !strcmp("VerifiablePresentation", _types[i]));
 
@@ -564,6 +572,8 @@ static void test_vp_create_ctmid(void)
 
         Presentation_Destroy(vp);
     }
+
+    Features_EnableJsonLdContext(false);
 }
 
 static void test_vp_create_by_credarray(void)
@@ -573,10 +583,12 @@ static void test_vp_create_by_credarray(void)
     DID *did, *holder;
     DIDURL *id;
     Credential *creds[4], **cred, *vcs[4] = {0};
-    const char *types[2] = {"Trail", "TestPresentation"};
     const char *_types[3] = {0};
     ssize_t size;
     int i;
+    const char *types[2] = {
+                "https://example.com/credential/v1#TestPresentation",
+                "https://session.com/credential/v1#SessionPresentation"};
 
     doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(doc);
@@ -601,7 +613,7 @@ static void test_vp_create_by_credarray(void)
     CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
     CU_ASSERT_EQUAL(3, Presentation_GetTypes(vp, _types, 3));
     for (i = 0; i < 3; i++)
-        CU_ASSERT_TRUE(!strcmp("Trail", _types[i]) ||
+        CU_ASSERT_TRUE(!strcmp("SessionPresentation", _types[i]) ||
                 !strcmp("TestPresentation", _types[i]) ||
                 !strcmp("VerifiablePresentation", _types[i]));
 
@@ -663,19 +675,24 @@ static void test_vp_create_by_credarray_ctmid(void)
     DID *did;
     Credential *creds[4], **cred, *vcs[4] = {0};
     DIDURL *id, *credid1, *credid2, *signkey;
-    const char *types[2] = {"Trail", "TestPresentation"};
     const char *_types[3] = {0};
     ssize_t size;
     int i, version;
 
-    for (version = 2; version < 4; version++) {
-        user1doc = TestData_GetDocument("user1", NULL, version);
+    const char *types[2] = {
+                "https://example.com/credential/v1#TestPresentation",
+                "https://session.com/credential/v1#SessionPresentation"};
+
+    for (i = 0; i <= 1; i++) {
+        Features_EnableJsonLdContext((bool)i);
+
+        user1doc = TestData_GetDocument("user1", NULL, 3);
         CU_ASSERT_PTR_NOT_NULL(user1doc);
 
-        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, version));
-        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 3));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 3));
 
-        doc = TestData_GetDocument("foobar", NULL, version);
+        doc = TestData_GetDocument("foobar", NULL, 3);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
         did = DIDDocument_GetSubject(doc);
@@ -693,16 +710,18 @@ static void test_vp_create_by_credarray_ctmid(void)
         id = DIDURL_NewFromDid(&doc->did, "vp4");
         CU_ASSERT_PTR_NOT_NULL(id);
 
-        vcs[0] = TestData_GetCredential("foobar", "license", NULL, version);
-        vcs[1] = TestData_GetCredential("foobar", "services", NULL, version);
+        vcs[0] = TestData_GetCredential("foobar", "license", NULL, 3);
+        vcs[1] = TestData_GetCredential("foobar", "services", NULL, 3);
         vcs[2] = DIDDocument_GetCredential(doc, credid1);
         vcs[3] = DIDDocument_GetCredential(doc, credid2);
         vp = Presentation_CreateByCredentials(id, did, types, 2,
-                "873172f58701a9ee686f0630204fee59", "https://example.com/", vcs, 4, NULL, store, storepass);
+                "873172f58701a9ee686f0630204fee59", "https://example.com/",
+                vcs, 4, NULL, store, storepass);
         CU_ASSERT_PTR_NULL(vp);
 
         vp = Presentation_CreateByCredentials(id, did, types, 2,
-                "873172f58701a9ee686f0630204fee59", "https://example.com/", vcs, 4, signkey, store, storepass);
+                "873172f58701a9ee686f0630204fee59", "https://example.com/",
+                vcs, 4, signkey, store, storepass);
         DIDURL_Destroy(signkey);
         CU_ASSERT_PTR_NOT_NULL(vp);
 
@@ -713,7 +732,7 @@ static void test_vp_create_by_credarray_ctmid(void)
         CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
         CU_ASSERT_EQUAL(3, Presentation_GetTypes(vp, _types, 3));
         for (i = 0; i < 3; i++)
-            CU_ASSERT_TRUE(!strcmp("Trail", _types[i]) ||
+            CU_ASSERT_TRUE(!strcmp("SessionPresentation", _types[i]) ||
                     !strcmp("TestPresentation", _types[i]) ||
                     !strcmp("VerifiablePresentation", _types[i]));
 
@@ -759,6 +778,8 @@ static void test_vp_create_by_credarray_ctmid(void)
 
         Presentation_Destroy(vp);
     }
+
+    Features_EnableJsonLdContext(false);
 }
 
 static void test_vp_create_without_creds(void)
@@ -768,41 +789,43 @@ static void test_vp_create_without_creds(void)
     DIDURL *id;
     DID *did;
     Credential *creds[4];
-    const char *types[2] = {"Trail", "TestPresentation"};
     const char *_types[3] = {0};
     int i;
 
-    doc = TestData_GetDocument("document", NULL, 0);
-    CU_ASSERT_PTR_NOT_NULL(doc);
+    for (i = 0; i <= 1; i++) {
+        Features_EnableJsonLdContext((bool)i);
 
-    did = DIDDocument_GetSubject(doc);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        doc = TestData_GetDocument("user1", NULL, 3);
+        CU_ASSERT_PTR_NOT_NULL(doc);
 
-    id = DIDURL_NewFromDid(&doc->did, "vp5");
-    CU_ASSERT_PTR_NOT_NULL(id);
+        did = DIDDocument_GetSubject(doc);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    vp = Presentation_Create(id, did, types, 2, "873172f58701a9ee686f0630204fee59",
-            "https://example.com/", NULL, store, storepass, 0);
-    CU_ASSERT_PTR_NOT_NULL(vp);
+        id = DIDURL_NewFromDid(&doc->did, "vp5");
+        CU_ASSERT_PTR_NOT_NULL(id);
 
-    CU_ASSERT_TRUE(DID_Equals(did, Presentation_GetHolder(vp)));
-    CU_ASSERT_TRUE(DIDURL_Equals(id, Presentation_GetId(vp)));
-    DIDURL_Destroy(id);
+        vp = Presentation_Create(id, did, NULL, 0, "873172f58701a9ee686f0630204fee59",
+                "https://example.com/", NULL, store, storepass, 0);
+        CU_ASSERT_PTR_NOT_NULL(vp);
 
-    CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
-    CU_ASSERT_EQUAL(3, Presentation_GetTypes(vp, _types, 3));
-    for (i = 0; i < 3; i++)
-        CU_ASSERT_TRUE(!strcmp("Trail", _types[i]) ||
-                !strcmp("TestPresentation", _types[i]) ||
-                !strcmp("VerifiablePresentation", _types[i]));
+        CU_ASSERT_TRUE(DID_Equals(did, Presentation_GetHolder(vp)));
+        CU_ASSERT_TRUE(DIDURL_Equals(id, Presentation_GetId(vp)));
+        DIDURL_Destroy(id);
 
-    CU_ASSERT_EQUAL(0, Presentation_GetCredentialCount(vp));
-    CU_ASSERT_EQUAL(0, Presentation_GetCredentials(vp, creds, sizeof(creds)));
+        CU_ASSERT_EQUAL(1, Presentation_GetTypeCount(vp));
+        CU_ASSERT_EQUAL(1, Presentation_GetTypes(vp, _types, 1));
+        CU_ASSERT_TRUE(!strcmp("VerifiablePresentation", _types[0]));
 
-    CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
-    CU_ASSERT_TRUE(Presentation_IsValid(vp));
+        CU_ASSERT_EQUAL(0, Presentation_GetCredentialCount(vp));
+        CU_ASSERT_EQUAL(0, Presentation_GetCredentials(vp, creds, sizeof(creds)));
 
-    Presentation_Destroy(vp);
+        CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
+        CU_ASSERT_TRUE(Presentation_IsValid(vp));
+
+        Presentation_Destroy(vp);
+    }
+
+    Features_EnableJsonLdContext(false);
 }
 
 static int vp_test_suite_init(void)

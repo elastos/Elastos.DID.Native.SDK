@@ -52,24 +52,23 @@ static void test_issuer_issuevc(void)
     credid = DIDURL_NewFromDid(did, "kyccredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
-    const char *types[] = {"BasicProfileCredential", "PhoneCredential"};
-    Property props[7];
+    const char *types[] = {"https://elastos.org/credentials/v1#SelfProclaimedCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential",
+            "https://elastos.org/credentials/email/v1#EmailCredential",
+            "https://elastos.org/credentials/social/v1#SocialCredential"};
+    Property props[5];
     props[0].key = "name";
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
     props[2].key = "nationality";
     props[2].value = "Singapore";
-    props[3].key = "language";
-    props[3].value = "English";
-    props[4].key = "email";
-    props[4].value = "john@example.com";
-    props[5].key = "twitter";
-    props[5].value = "@john";
-    props[6].key = "phone";
-    props[6].value = "132780456";
+    props[3].key = "email";
+    props[3].value = "john@example.com";
+    props[4].key = "twitter";
+    props[4].value = "@john";
 
-    vc = Issuer_CreateCredential(issuer, did, credid, types, 2, props, 7,
+    vc = Issuer_CreateCredential(issuer, did, credid, types, 4, props, 5,
             expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
     CU_ASSERT_FALSE(Credential_IsExpired(vc));
@@ -81,15 +80,17 @@ static void test_issuer_issuevc(void)
     CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), did));
     CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
-    const char *tmptypes[3];
-    size = Credential_GetTypes(vc, tmptypes, 3);
-    CU_ASSERT_EQUAL(size, 3);
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "PhoneCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 5);
+    const char *tmptypes[5];
+    size = Credential_GetTypes(vc, tmptypes, 5);
+    CU_ASSERT_EQUAL(size, 5);
+    CU_ASSERT_TRUE(has_type(tmptypes, 5, "EmailCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 5, "SocialCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 5, "VerifiableCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 5, "ProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 5, "SelfProclaimedCredential"));
 
-    CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 7);
+    CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 5);
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "John");
     free((void*)provalue);
@@ -99,17 +100,11 @@ static void test_issuer_issuevc(void)
     provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "language");
-    CU_ASSERT_STRING_EQUAL(provalue, "English");
-    free((void*)provalue);
     provalue = Credential_GetProperty(vc, "email");
     CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "twitter");
     CU_ASSERT_STRING_EQUAL(provalue, "@john");
-    free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "phone");
-    CU_ASSERT_STRING_EQUAL(provalue, "132780456");
     free((void*)provalue);
 
     DIDURL_Destroy(credid);
@@ -135,26 +130,24 @@ static void test_issuer_issueselfvc(void)
     credid = DIDURL_NewFromDid(issuerid, "mycredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
-    const char *types[] = {"BasicProfileCredential", "PhoneCredential",
-            "SelfProclaimedCredential"};
-    Property props[7];
+    const char *types[] = {"https://elastos.org/credentials/v1#SelfProclaimedCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential",
+            "https://elastos.org/credentials/email/v1#EmailCredential",
+            "https://elastos.org/credentials/social/v1#SocialCredential"};
+    Property props[5];
     props[0].key = "name";
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
     props[2].key = "nationality";
     props[2].value = "Singapore";
-    props[3].key = "language";
-    props[3].value = "English";
-    props[4].key = "email";
-    props[4].value = "john@example.com";
-    props[5].key = "twitter";
-    props[5].value = "@john";
-    props[6].key = "phone";
-    props[6].value = "132780456";
+    props[3].key = "email";
+    props[3].value = "john@example.com";
+    props[4].key = "twitter";
+    props[4].value = "@john";
 
-    vc = Issuer_CreateCredential(issuer, issuerid, credid, types, 3,
-            props, 7, expires, storepass);
+    vc = Issuer_CreateCredential(issuer, issuerid, credid, types, 4,
+            props, 5, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
     CU_ASSERT_FALSE(Credential_IsExpired(vc));
     CU_ASSERT_TRUE(Credential_IsGenuine(vc));
@@ -165,16 +158,17 @@ static void test_issuer_issueselfvc(void)
     CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), issuerid));
     CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
 
-    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 4);
-    const char *tmptypes[4];
-    size = Credential_GetTypes(vc, tmptypes, 4);
-    CU_ASSERT_EQUAL(size, 4);
-    CU_ASSERT_TRUE(has_type(tmptypes, 4, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 4, "PhoneCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 4, "SelfProclaimedCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 4, "VerifiableCredential"));
+    CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 5);
+    const char *tmptypes[5];
+    size = Credential_GetTypes(vc, tmptypes, 5);
+    CU_ASSERT_EQUAL(size, 5);
+    CU_ASSERT_TRUE(has_type(tmptypes, 5, "ProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 5, "EmailCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 5, "SelfProclaimedCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 5, "SocialCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 5, "VerifiableCredential"));
 
-    CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 7);
+    CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 5);
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "John");
     free((void*)provalue);
@@ -184,17 +178,11 @@ static void test_issuer_issueselfvc(void)
     provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "language");
-    CU_ASSERT_STRING_EQUAL(provalue, "English");
-    free((void*)provalue);
     provalue = Credential_GetProperty(vc, "email");
     CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "twitter");
     CU_ASSERT_STRING_EQUAL(provalue, "@john");
-    free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "phone");
-    CU_ASSERT_STRING_EQUAL(provalue, "132780456");
     free((void*)provalue);
 
     DIDURL_Destroy(credid);
@@ -220,8 +208,8 @@ static void test_issuer_issuerbystring(void)
     credid = DIDURL_NewFromDid(issuerid, "mycredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
-    const char *types[] = {"BasicProfileCredential",
-            "SelfProclaimedCredential"};
+    const char *types[] = {"https://elastos.org/credentials/v1#SelfProclaimedCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential"};
 
     const char *propdata = "{\"name\":\"Jay Holtslander\",\"alternateName\":\"Jason Holtslander\",\"booleanValue\":true,\"numberValue\":1234,\"doubleValue\":9.5,\"nationality\":\"Canadian\",\"birthPlace\":{\"type\":\"Place\",\"address\":{\"type\":\"PostalAddress\",\"addressLocality\":\"Vancouver\",\"addressRegion\":\"BC\",\"addressCountry\":\"Canada\"}},\"affiliation\":[{\"type\":\"Organization\",\"name\":\"Futurpreneur\",\"sameAs\":[\"https://twitter.com/futurpreneur\",\"https://www.facebook.com/futurpreneur/\",\"https://www.linkedin.com/company-beta/100369/\",\"https://www.youtube.com/user/CYBF\"]}],\"alumniOf\":[{\"type\":\"CollegeOrUniversity\",\"name\":\"Vancouver Film School\",\"sameAs\":\"https://en.wikipedia.org/wiki/Vancouver_Film_School\",\"year\":2000},{\"type\":\"CollegeOrUniversity\",\"name\":\"CodeCore Bootcamp\"}],\"gender\":\"Male\",\"Description\":\"Technologist\",\"disambiguatingDescription\":\"Co-founder of CodeCore Bootcamp\",\"jobTitle\":\"Technical Director\",\"worksFor\":[{\"type\":\"Organization\",\"name\":\"Skunkworks Creative Group Inc.\",\"sameAs\":[\"https://twitter.com/skunkworks_ca\",\"https://www.facebook.com/skunkworks.ca\",\"https://www.linkedin.com/company/skunkworks-creative-group-inc-\",\"https://plus.google.com/+SkunkworksCa\"]}],\"url\":\"https://jay.holtslander.ca\",\"image\":\"https://s.gravatar.com/avatar/961997eb7fd5c22b3e12fb3c8ca14e11?s=512&r=g\",\"address\":{\"type\":\"PostalAddress\",\"addressLocality\":\"Vancouver\",\"addressRegion\":\"BC\",\"addressCountry\":\"Canada\"},\"sameAs\":[\"https://twitter.com/j_holtslander\",\"https://pinterest.com/j_holtslander\",\"https://instagram.com/j_holtslander\",\"https://www.facebook.com/jay.holtslander\",\"https://ca.linkedin.com/in/holtslander/en\",\"https://plus.google.com/+JayHoltslander\",\"https://www.youtube.com/user/jasonh1234\",\"https://github.com/JayHoltslander\",\"https://profiles.wordpress.org/jasonh1234\",\"https://angel.co/j_holtslander\",\"https://www.foursquare.com/user/184843\",\"https://jholtslander.yelp.ca\",\"https://codepen.io/j_holtslander/\",\"https://stackoverflow.com/users/751570/jay\",\"https://dribbble.com/j_holtslander\",\"http://jasonh1234.deviantart.com/\",\"https://www.behance.net/j_holtslander\",\"https://www.flickr.com/people/jasonh1234/\",\"https://medium.com/@j_holtslander\"]}";
 
@@ -242,7 +230,7 @@ static void test_issuer_issuerbystring(void)
     const char *tmptypes[3];
     size = Credential_GetTypes(vc, tmptypes, 3);
     CU_ASSERT_EQUAL(size, 3);
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "ProfileCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "PhoneCredential"));
@@ -282,8 +270,8 @@ static void test_issuer_issuerbystring_with_ctrl_chars(void)
     issuer = Issuer_Create(issuerid, NULL, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
 
-    const char *types[] = {"BasicProfileCredential",
-            "SelfProclaimedCredential"};
+    const char *types[] = {"https://elastos.org/credentials/v1#SelfProclaimedCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential"};
 
     const char *propdata = "{\"editTime\":\"1602998098\",\"customInfos\":\"\",\"didName\":\"cr03-did\",\"email\":\"\",\"nickname\":\"macdev\",\"gender\":\"\",\"did\":\"did:elastos:imnP8SJsFJfFb5mUrc6qLe9qyf18KAGH1X\",\"introduction\":\"Hello I\'m \\\"MacDev\\\"\\nThis is the \\\"MacDev\\\"\\nWhat\'s the matter?\"}";
 
@@ -304,10 +292,10 @@ static void test_issuer_issuerbystring_with_ctrl_chars(void)
     const char *tmptypes[3];
     size = Credential_GetTypes(vc, tmptypes, 3);
     CU_ASSERT_EQUAL(size, 3);
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "ProfileCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
-    CU_ASSERT_FALSE(has_type(tmptypes, 2, "PhoneCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 3, "PhoneCredential"));
 
     provalue = Credential_GetProperty(vc, "editTime");
     CU_ASSERT_STRING_EQUAL(provalue, "1602998098");
@@ -359,22 +347,20 @@ static void test_cidissuer_issue_kycvc(void)
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "InternetAccountCredential"};
-    Property props[6];
+    Property props[5];
     props[0].key = "name";
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
     props[2].key = "nationality";
     props[2].value = "Singapore";
-    props[3].key = "language";
-    props[3].value = "English";
-    props[4].key = "email";
-    props[4].value = "john@example.com";
-    props[5].key = "twitter";
-    props[5].value = "@john";
+    props[3].key = "email";
+    props[3].value = "john@example.com";
+    props[4].key = "twitter";
+    props[4].value = "@john";
 
     vc = Issuer_CreateCredential(issuer, did, credid, types, 2,
-            props, 6, expires, storepass);
+            props, 5, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
     CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
     CU_ASSERT_FALSE(Credential_IsExpired(vc));
@@ -401,9 +387,6 @@ static void test_cidissuer_issue_kycvc(void)
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
-    free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "language");
-    CU_ASSERT_STRING_EQUAL(provalue, "English");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "email");
     CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
@@ -444,23 +427,23 @@ static void test_issuer_issue_cidvc(void)
     credid = DIDURL_NewFromDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
-    const char *types[] = {"BasicProfileCredential", "InternetAccountCredential"};
-    Property props[6];
+    const char *types[] = {"https://elastos.org/credentials/social/v1#SocialCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential"};
+
+    Property props[5];
     props[0].key = "name";
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
     props[2].key = "nationality";
     props[2].value = "Singapore";
-    props[3].key = "language";
-    props[3].value = "English";
-    props[4].key = "email";
-    props[4].value = "john@example.com";
-    props[5].key = "twitter";
-    props[5].value = "@john";
+    props[3].key = "email";
+    props[3].value = "john@example.com";
+    props[4].key = "twitter";
+    props[4].value = "@john";
 
     vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
-            props, 6, expires, storepass);
+            props, 5, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
     CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
     CU_ASSERT_FALSE(Credential_IsExpired(vc));
@@ -472,8 +455,8 @@ static void test_issuer_issue_cidvc(void)
     const char *tmptypes[3];
     size = Credential_GetTypes(vc, tmptypes, 3);
     CU_ASSERT_EQUAL(size, 3);
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "InternetAccountCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "ProfileCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SocialCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
@@ -487,9 +470,6 @@ static void test_issuer_issue_cidvc(void)
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
-    free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "language");
-    CU_ASSERT_STRING_EQUAL(provalue, "English");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "email");
     CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
@@ -529,19 +509,19 @@ static void test_cidissuer_issue_selfvc(void)
     credid = DIDURL_NewFromDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
-    const char *types[] = {"BasicProfileCredential", "SelfProclaimedCredential"};
-    Property props[4];
+    const char *types[] = {"https://elastos.org/credentials/social/v1#SocialCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential"};
+
+    Property props[3];
     props[0].key = "name";
     props[0].value = "Testing Issuer";
     props[1].key = "nationality";
     props[1].value = "Singapore";
-    props[2].key = "language";
-    props[2].value = "English";
-    props[3].key = "email";
-    props[3].value = "john@example.com";
+    props[2].key = "email";
+    props[2].value = "john@example.com";
 
     vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
-            props, 4, expires, storepass);
+            props, 3, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
     CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
     CU_ASSERT_FALSE(Credential_IsExpired(vc));
@@ -553,8 +533,8 @@ static void test_cidissuer_issue_selfvc(void)
     const char *tmptypes[3];
     size = Credential_GetTypes(vc, tmptypes, 3);
     CU_ASSERT_EQUAL(size, 3);
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SocialCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "ProfileCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "InternetAccountCredential"));
 
@@ -565,9 +545,6 @@ static void test_cidissuer_issue_selfvc(void)
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
-    free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "language");
-    CU_ASSERT_STRING_EQUAL(provalue, "English");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "email");
     CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
@@ -607,23 +584,23 @@ static void test_issuer_issue_multicidvc(void)
     credid = DIDURL_NewFromDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
-    const char *types[] = {"BasicProfileCredential", "InternetAccountCredential"};
-    Property props[6];
+    const char *types[] = {"https://elastos.org/credentials/social/v1#SocialCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential"};
+
+    Property props[5];
     props[0].key = "name";
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
     props[2].key = "nationality";
     props[2].value = "Singapore";
-    props[3].key = "language";
-    props[3].value = "English";
-    props[4].key = "email";
-    props[4].value = "john@example.com";
-    props[5].key = "twitter";
-    props[5].value = "@john";
+    props[3].key = "email";
+    props[3].value = "john@example.com";
+    props[4].key = "twitter";
+    props[4].value = "@john";
 
     vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
-            props, 6, expires, storepass);
+            props, 5, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
     CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
     CU_ASSERT_FALSE(Credential_IsExpired(vc));
@@ -635,8 +612,8 @@ static void test_issuer_issue_multicidvc(void)
     const char *tmptypes[3];
     size = Credential_GetTypes(vc, tmptypes, 3);
     CU_ASSERT_EQUAL(size, 3);
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "InternetAccountCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SocialCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "ProfileCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
@@ -650,9 +627,6 @@ static void test_issuer_issue_multicidvc(void)
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
-    free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "language");
-    CU_ASSERT_STRING_EQUAL(provalue, "English");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "email");
     CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
@@ -698,23 +672,23 @@ static void test_multicidissuer_issue_kycvc(void)
     credid = DIDURL_NewFromDid(did, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
-    const char *types[] = {"BasicProfileCredential", "InternetAccountCredential"};
-    Property props[6];
+    const char *types[] = {"https://elastos.org/credentials/social/v1#SocialCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential"};
+
+    Property props[5];
     props[0].key = "name";
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
     props[2].key = "nationality";
     props[2].value = "Singapore";
-    props[3].key = "language";
-    props[3].value = "English";
-    props[4].key = "email";
-    props[4].value = "john@example.com";
-    props[5].key = "twitter";
-    props[5].value = "@john";
+    props[3].key = "email";
+    props[3].value = "john@example.com";
+    props[4].key = "twitter";
+    props[4].value = "@john";
 
     vc = Issuer_CreateCredential(issuer, did, credid, types, 2,
-            props, 6, expires, storepass);
+            props, 5, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
     CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
     CU_ASSERT_FALSE(Credential_IsExpired(vc));
@@ -726,8 +700,8 @@ static void test_multicidissuer_issue_kycvc(void)
     const char *tmptypes[3];
     size = Credential_GetTypes(vc, tmptypes, 3);
     CU_ASSERT_EQUAL(size, 3);
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "InternetAccountCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SocialCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "ProfileCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
@@ -741,9 +715,6 @@ static void test_multicidissuer_issue_kycvc(void)
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
-    free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "language");
-    CU_ASSERT_STRING_EQUAL(provalue, "English");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "email");
     CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
@@ -789,23 +760,23 @@ static void test_multicidissuer_issue_kycvc2(void)
     credid = DIDURL_NewFromDid(issuerid, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
-    const char *types[] = {"BasicProfileCredential", "InternetAccountCredential"};
-    Property props[6];
+    const char *types[] = {"https://elastos.org/credentials/social/v1#SocialCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential"};
+
+    Property props[5];
     props[0].key = "name";
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
     props[2].key = "nationality";
     props[2].value = "Singapore";
-    props[3].key = "language";
-    props[3].value = "English";
-    props[4].key = "email";
-    props[4].value = "john@example.com";
-    props[5].key = "twitter";
-    props[5].value = "@john";
+    props[3].key = "email";
+    props[3].value = "john@example.com";
+    props[4].key = "twitter";
+    props[4].value = "@john";
 
     vc = Issuer_CreateCredential(issuer, issuerid, credid, types, 2,
-            props, 6, expires, storepass);
+            props, 5, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL(vc);
     CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
     CU_ASSERT_FALSE(Credential_IsExpired(vc));
@@ -817,8 +788,8 @@ static void test_multicidissuer_issue_kycvc2(void)
     const char *tmptypes[3];
     size = Credential_GetTypes(vc, tmptypes, 3);
     CU_ASSERT_EQUAL(size, 3);
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "InternetAccountCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SocialCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "ProfileCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
@@ -832,9 +803,6 @@ static void test_multicidissuer_issue_kycvc2(void)
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
-    free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "language");
-    CU_ASSERT_STRING_EQUAL(provalue, "English");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "email");
     CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
@@ -879,19 +847,19 @@ static void test_multicidissuer_issue_selfvc(void)
     credid = DIDURL_NewFromDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
-    const char *types[] = {"BasicProfileCredential", "SelfProclaimedCredential"};
-    Property props[4];
+    const char *types[] = {"https://elastos.org/credentials/social/v1#SocialCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential"};
+
+    Property props[3];
     props[0].key = "name";
     props[0].value = "Testing Issuer";
     props[1].key = "nationality";
     props[1].value = "Singapore";
-    props[2].key = "language";
-    props[2].value = "English";
-    props[3].key = "email";
-    props[3].value = "john@example.com";
+    props[2].key = "email";
+    props[2].value = "john@example.com";
 
     vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
-            props, 4, expires, storepass);
+            props, 3, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
     CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
     CU_ASSERT_FALSE(Credential_IsExpired(vc));
@@ -903,10 +871,10 @@ static void test_multicidissuer_issue_selfvc(void)
     const char *tmptypes[3];
     size = Credential_GetTypes(vc, tmptypes, 3);
     CU_ASSERT_EQUAL(size, 3);
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SocialCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "ProfileCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
-    CU_ASSERT_FALSE(has_type(tmptypes, 3, "InternetAccountCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
     CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
 
@@ -915,9 +883,6 @@ static void test_multicidissuer_issue_selfvc(void)
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
-    free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "language");
-    CU_ASSERT_STRING_EQUAL(provalue, "English");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "email");
     CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
@@ -959,19 +924,19 @@ static void test_multicidissuer_issue_selfvc2(void)
     credid = DIDURL_NewFromDid(subject, "testcredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
-    const char *types[] = {"BasicProfileCredential", "SelfProclaimedCredential"};
-    Property props[4];
+    const char *types[] = {"https://elastos.org/credentials/social/v1#SocialCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential"};
+
+    Property props[3];
     props[0].key = "name";
     props[0].value = "Testing Issuer";
     props[1].key = "nationality";
     props[1].value = "Singapore";
-    props[2].key = "language";
-    props[2].value = "English";
-    props[3].key = "email";
-    props[3].value = "john@example.com";
+    props[2].key = "email";
+    props[2].value = "john@example.com";
 
     vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
-            props, 4, expires, storepass);
+            props, 3, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL(vc);
     CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
     CU_ASSERT_FALSE(Credential_IsExpired(vc));
@@ -983,10 +948,10 @@ static void test_multicidissuer_issue_selfvc2(void)
     const char *tmptypes[3];
     size = Credential_GetTypes(vc, tmptypes, 3);
     CU_ASSERT_EQUAL(size, 3);
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "BasicProfileCredential"));
-    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "SocialCredential"));
+    CU_ASSERT_TRUE(has_type(tmptypes, 3, "ProfileCredential"));
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
-    CU_ASSERT_FALSE(has_type(tmptypes, 3, "InternetAccountCredential"));
+    CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
     CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
 
@@ -995,9 +960,6 @@ static void test_multicidissuer_issue_selfvc2(void)
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
-    free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "language");
-    CU_ASSERT_STRING_EQUAL(provalue, "English");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "email");
     CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");

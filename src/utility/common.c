@@ -531,15 +531,14 @@ const char *json_astext(json_t *item)
 bool contains_content(char **contents, size_t size, const char *content)
 {
     int i;
+    char *_content;
 
-    assert(contents);
-    assert(size >= 0);
+    if (size == 0 || !contents)
+        return false;
 
     for (i = 0; i < size; i++) {
-        if (!contents[i])
-            continue;
-
-        if(!strcmp(content, contents[i]))
+        _content = contents[i];
+        if(_content && !strcmp(_content, content))
             return true;
     }
 

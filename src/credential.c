@@ -51,7 +51,7 @@ static const char *VERIFICATION_METHOD = "verificationMethod";
 static const char *CREATED = "created";
 static const char *SIGNATURE = "signature";
 
-const char *W3C_CREDENTIAL_CONTEXT = "https://www.w3.org/2018/credentials/v1";;
+const char *W3C_CREDENTIAL_CONTEXT = "https://www.w3.org/2018/credentials/v1";
 const char *ELASTOS_CREDENTIAL_CONTEXT = "https://ns.elastos.org/credentials/v1";
 extern const char *ProofType;
 

@@ -299,26 +299,23 @@ static void test_idchain_listvc(void)
     credid1 = DIDURL_NewFromDid(&did, "kyccredential");
     CU_ASSERT_PTR_NOT_NULL(credid1);
 
-    const char *types[2];
-    types[0] = "BasicProfileCredential";
-    types[1] = "PhoneCredential";
-    Property properties[7];
+    const char *types[4] = {"https://elastos.org/credentials/v1#SelfProclaimedCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential",
+            "https://elastos.org/credentials/email/v1#EmailCredential",
+            "https://elastos.org/credentials/social/v1#SocialCredential"};
+    Property properties[5];
     properties[0].key = "name";
     properties[0].value = "jack";
     properties[1].key = "gender";
     properties[1].value = "Male";
     properties[2].key = "nationality";
     properties[2].value = "Singapore";
-    properties[3].key = "language";
-    properties[3].value = "English";
-    properties[4].key = "email";
-    properties[4].value = "john@example.com";
-    properties[5].key = "twitter";
-    properties[5].value = "@john";
-    properties[6].key = "phone";
-    properties[6].value = "132780456";
+    properties[3].key = "email";
+    properties[3].value = "john@example.com";
+    properties[4].key = "twitter";
+    properties[4].value = "@john";
 
-    vc = Issuer_CreateCredential(issuer, &did, credid1, types, 2, properties, 7,
+    vc = Issuer_CreateCredential(issuer, &did, credid1, types, 4, properties, 5,
             expires, storepass);
     CU_ASSERT_PTR_NOT_NULL(vc);
     Issuer_Destroy(issuer);
@@ -330,8 +327,9 @@ static void test_idchain_listvc(void)
     credid2 = DIDURL_NewFromDid(&did, "selfvc");
     CU_ASSERT_PTR_NOT_NULL(credid2);
 
-    types[0] = "BasicProfileCredential";
-    types[1] = "SelfClaimedCredential";
+    memset(types, 0, sizeof(types));
+    types[0] = "https://elastos.org/credentials/profile/v1#ProfileCredential";
+    types[1] = "https://elastos.org/credentials/v1#SelfProclaimedCredential";
 
     Property props[1];
     props[0].key = "name";
@@ -370,7 +368,7 @@ static void test_idchain_listvc(void)
     //check credid1
     vc = DIDDocument_GetCredential(resolvedoc, credid1);
     CU_ASSERT_PTR_NOT_NULL(vc);
-    CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 7);
+    CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 5);
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "jack");
     free((void*)provalue);
@@ -380,17 +378,11 @@ static void test_idchain_listvc(void)
     provalue = Credential_GetProperty(vc, "nationality");
     CU_ASSERT_STRING_EQUAL(provalue, "Singapore");
     free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "language");
-    CU_ASSERT_STRING_EQUAL(provalue, "English");
-    free((void*)provalue);
     provalue = Credential_GetProperty(vc, "email");
     CU_ASSERT_STRING_EQUAL(provalue, "john@example.com");
     free((void*)provalue);
     provalue = Credential_GetProperty(vc, "twitter");
     CU_ASSERT_STRING_EQUAL(provalue, "@john");
-    free((void*)provalue);
-    provalue = Credential_GetProperty(vc, "phone");
-    CU_ASSERT_STRING_EQUAL(provalue, "132780456");
     free((void*)provalue);
 
     CU_ASSERT_NOT_EQUAL(1, Credential_WasDeclared(credid1));
@@ -437,7 +429,7 @@ static void test_idchain_listvc2(void)
     DIDURL *buffer[3];
     DID *did;
     DataParam *param;
-    int i, status = 0;
+    int i, j, status = 0;
     ssize_t size;
 
     DataParam params[] = {
@@ -449,76 +441,85 @@ static void test_idchain_listvc2(void)
         { 3, "foobar", "services", NULL },   { 3, "foo", "email", NULL       }
     };
 
-    TestData_Reset(2);
+    for (j = 0; j <= 1; j++) {
+        printf("\n------------------------------------------------------------\n%s Json-LD Context, please wait...\n", j == 0 ? "diable" : "enable");
+        Features_EnableJsonLdContext((bool)j);
 
-    for (i = 0; i < 12; i++) {
-        param = &params[i];
-        signkey1 = NULL;
+        TestData_Reset(2);
 
-        issuerdoc = TestData_GetDocument("issuer", NULL, param->version);
-        CU_ASSERT_PTR_NOT_NULL(issuerdoc);
-        signkey2 = DIDDocument_GetDefaultPublicKey(issuerdoc);
-        CU_ASSERT_PTR_NOT_NULL(signkey2);
+        for (i = 0; i < 12; i++) {
+            param = &params[i];
+            signkey1 = NULL;
 
-        if (!strcmp("license", param->param))
-            CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("examplecorp", NULL, param->version));
+            issuerdoc = TestData_GetDocument("issuer", NULL, param->version);
+            CU_ASSERT_PTR_NOT_NULL(issuerdoc);
+            signkey2 = DIDDocument_GetDefaultPublicKey(issuerdoc);
+            CU_ASSERT_PTR_NOT_NULL(signkey2);
 
-        if (!strcmp("foobar", param->did) || !strcmp("foo", param->did)) {
-            user1doc = TestData_GetDocument("user1", NULL, param->version);
-            CU_ASSERT_PTR_NOT_NULL(user1doc);
-            CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, param->version));
-            CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, param->version));
-            signkey1 = DIDDocument_GetDefaultPublicKey(user1doc);
-            CU_ASSERT_PTR_NOT_NULL(signkey1);
-            signkey = DIDURL_NewFromDid(&user1doc->did, "key2");
-            CU_ASSERT_PTR_NOT_NULL(signkey);
+            if (!strcmp("license", param->param))
+                CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("examplecorp", NULL, param->version));
 
-            doc = TestData_GetDocument(param->did, NULL, param->version);
-            CU_ASSERT_PTR_NOT_NULL(doc);
-        } else {
-            doc = TestData_GetDocument(param->did, NULL, param->version);
-            CU_ASSERT_PTR_NOT_NULL(doc);
+            if (!strcmp("foobar", param->did) || !strcmp("foo", param->did)) {
+                user1doc = TestData_GetDocument("user1", NULL, param->version);
+                CU_ASSERT_PTR_NOT_NULL(user1doc);
+                CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, param->version));
+                CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, param->version));
+                signkey1 = DIDDocument_GetDefaultPublicKey(user1doc);
+                CU_ASSERT_PTR_NOT_NULL(signkey1);
+                signkey = DIDURL_NewFromDid(&user1doc->did, "key2");
+                CU_ASSERT_PTR_NOT_NULL(signkey);
 
-            signkey = DIDURL_NewFromDid(&doc->did, "key2");
-            CU_ASSERT_PTR_NOT_NULL(signkey);
+                doc = TestData_GetDocument(param->did, NULL, param->version);
+                CU_ASSERT_PTR_NOT_NULL(doc);
+            } else {
+                doc = TestData_GetDocument(param->did, NULL, param->version);
+                CU_ASSERT_PTR_NOT_NULL(doc);
+
+                signkey = DIDURL_NewFromDid(&doc->did, "key2");
+                CU_ASSERT_PTR_NOT_NULL(signkey);
+            }
+
+            vc = TestData_GetCredential(param->did, param->param, param->type, param->version);
+            CU_ASSERT_PTR_NOT_NULL(vc);
+
+            CU_ASSERT_TRUE(Credential_Declare(vc, signkey, storepass));
+
+            resolvevc = Credential_Resolve(&vc->id, &status, true);
+            CU_ASSERT_PTR_NOT_NULL(resolvevc);
+            CU_ASSERT_EQUAL(status, CredentialStatus_Valid);
+
+            Credential_Destroy(resolvevc);
+            DIDURL_Destroy(signkey);
         }
 
-        vc = TestData_GetCredential(param->did, param->param, param->type, param->version);
-        CU_ASSERT_PTR_NOT_NULL(vc);
+        printf("---- list credentials, begin......\n");
+        size = Credential_List(&user1doc->did, buffer, 3, 0, 4);
+        CU_ASSERT_NOT_EQUAL(3, size);
+        for (i = 0; i < size; i++)
+            CU_ASSERT_TRUE(!strcmp("twitter", buffer[i]->fragment) ||
+                    !strcmp("passport", buffer[i]->fragment) ||
+                    !strcmp("json", buffer[i]->fragment));
 
-        CU_ASSERT_TRUE(Credential_Declare(vc, signkey, storepass));
+        did = DID_New("foobar");
+        CU_ASSERT_PTR_NOT_NULL(did);
+        size = Credential_List(did, buffer, 3, 0, 4);
+        CU_ASSERT_NOT_EQUAL(2, size);
+        for (i = 0; i < size; i++)
+            CU_ASSERT_TRUE(!strcmp("license", buffer[i]->fragment) ||
+                    !strcmp("services", buffer[i]->fragment));
+        DID_Destroy(did);
 
-        resolvevc = Credential_Resolve(&vc->id, &status, true);
-        CU_ASSERT_PTR_NOT_NULL(resolvevc);
-        CU_ASSERT_EQUAL(status, CredentialStatus_Valid);
-
-        Credential_Destroy(resolvevc);
-        DIDURL_Destroy(signkey);
+        did = DID_New("foo");
+        CU_ASSERT_PTR_NOT_NULL(did);
+        size = Credential_List(did, buffer, 3, 0, 4);
+        CU_ASSERT_NOT_EQUAL(1, size);
+        for (i = 0; i < size; i++)
+            CU_ASSERT_TRUE(!strcmp("email", buffer[i]->fragment));
+        DID_Destroy(did);
+        printf("---- list credentials, end.\n");
     }
 
-    size = Credential_List(&user1doc->did, buffer, 3, 0, 4);
-    CU_ASSERT_NOT_EQUAL(3, size);
-    for (i = 0; i < size; i++)
-        CU_ASSERT_TRUE(!strcmp("twitter", buffer[i]->fragment) ||
-                !strcmp("passport", buffer[i]->fragment) ||
-                !strcmp("json", buffer[i]->fragment));
-
-    did = DID_New("foobar");
-    CU_ASSERT_PTR_NOT_NULL(did);
-    size = Credential_List(did, buffer, 3, 0, 4);
-    CU_ASSERT_NOT_EQUAL(2, size);
-    for (i = 0; i < size; i++)
-        CU_ASSERT_TRUE(!strcmp("license", buffer[i]->fragment) ||
-                !strcmp("services", buffer[i]->fragment));
-    DID_Destroy(did);
-
-    did = DID_New("foo");
-    CU_ASSERT_PTR_NOT_NULL(did);
-    size = Credential_List(did, buffer, 3, 0, 4);
-    CU_ASSERT_NOT_EQUAL(1, size);
-    for (i = 0; i < size; i++)
-        CU_ASSERT_TRUE(!strcmp("email", buffer[i]->fragment));
-    DID_Destroy(did);
+    Features_EnableJsonLdContext(false);
 }
 
 static void test_idchain_listvc_pagination(void)
@@ -566,13 +567,13 @@ static void test_idchain_listvc_pagination(void)
         credid = DIDURL_NewFromDid(&did, fragment);
         CU_ASSERT_PTR_NOT_NULL(credid);
 
-        const char *types[1];
-        types[0] = "BasicProfileCredential";
+        const char *types[2] = {"https://elastos.org/credentials/v1#SelfProclaimedCredential",
+                "https://elastos.org/credentials/profile/v1#ProfileCredential"};
         Property properties[1];
         properties[0].key = "name";
         properties[0].value = "jack";
 
-        vc = Issuer_CreateCredential(issuer, &did, credid, types, 1, properties, 1,
+        vc = Issuer_CreateCredential(issuer, &did, credid, types, 2, properties, 1,
                 expires, storepass);
         CU_ASSERT_PTR_NOT_NULL(vc);
         CredentialMetadata_SetStore(&vc->metadata, store);

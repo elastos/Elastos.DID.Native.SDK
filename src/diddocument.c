@@ -70,7 +70,7 @@ static const char *CREATED = "created";
 static const char *SIGNATURE_VALUE = "signatureValue";
 
 const char *W3C_DID_CONTEXT = "https://www.w3.org/ns/did/v1";
-const char *ELASTOS_DID_CONTEXT = "https://elastos.org/did/v1";
+const char *ELASTOS_DID_CONTEXT = "https://ns.elastos.org/did/v1";
 const char *W3ID_SECURITY_CONTEXT = "https://w3id.org/security/v1";
 
 typedef enum KeyType {
@@ -1807,7 +1807,7 @@ static int contexts_copy(DIDDocument *document, char **contexts, size_t size)
 
 
     for (i = 0; i < size; i++)
-        document->context.contexts[i] = strdup(contexts[i]);
+        document->context.contexts[document->context.size++] = strdup(contexts[i]);
 
     return 0;
 }
@@ -2166,6 +2166,7 @@ int DIDDocumentBuilder_AddContext(DIDDocumentBuilder *builder, const char *conte
 
     contexts[document->context.size++] = strdup(context);
     document->context.contexts = contexts;
+    clean_proofs(document);
     return 0;
 
     DIDERROR_FINALIZE();
@@ -2184,14 +2185,12 @@ int DIDDocumentBuilder_AddDefaultContext(DIDDocumentBuilder *builder)
     CHECK_ARG(!builder || !builder->document, "Invalid document builder argument.", -1);
 
     document = builder->document;
-    if (document->context.size > 0) {
-        if (!contains_content(document->context.contexts, document->context.size, W3C_DID_CONTEXT))
-            defaults[size++] = W3C_DID_CONTEXT;
-        if (!contains_content(document->context.contexts, document->context.size, ELASTOS_DID_CONTEXT))
-            defaults[size++] = ELASTOS_DID_CONTEXT;
-        if (!contains_content(document->context.contexts, document->context.size, W3ID_SECURITY_CONTEXT))
-            defaults[size++] = W3ID_SECURITY_CONTEXT;
-    }
+    if (!contains_content(document->context.contexts, document->context.size, W3C_DID_CONTEXT))
+        defaults[size++] = W3C_DID_CONTEXT;
+    if (!contains_content(document->context.contexts, document->context.size, ELASTOS_DID_CONTEXT))
+        defaults[size++] = ELASTOS_DID_CONTEXT;
+    if (!contains_content(document->context.contexts, document->context.size, W3ID_SECURITY_CONTEXT))
+        defaults[size++] = W3ID_SECURITY_CONTEXT;
 
     if (size == 0)
         return 0;
@@ -2204,9 +2203,11 @@ int DIDDocumentBuilder_AddDefaultContext(DIDDocumentBuilder *builder)
     }
 
     for (i = 0; i < size; i++)
-        contexts[document->context.size++] = strdup(defaults[i]);
+        contexts[i] = strdup(defaults[i]);
 
     document->context.contexts = contexts;
+    document->context.size = i;
+    clean_proofs(document);
     return 0;
 
     DIDERROR_FINALIZE();

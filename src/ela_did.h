@@ -3669,24 +3669,28 @@ DID_API void Issuer_Destroy(Issuer *issuer);
  * An issuer issues a verifiable credential to a holder with subject object.
  *
  * @param
- *      issuer               [in] An issuer issues this credential.
+ *      issuer     [in] An issuer issues this credential.
  * @param
- *      owner                [in] A handle to DID.
- *                               The holder of this Credential.
+ *      owner      [in] A handle to DID.
+ *                      The holder of this Credential.
  * @param
- *      credid               [in] The handle to DIDURL.
+ *      credid     [in] The handle to DIDURL.
  * @param
- *      types                [in] The array of credential types.
+ *      types      [in] The array of credential types.
+ *                  eg.If enabled the JSON-LD feature, the type should be a full type URI:
+ *                  [scheme:]scheme-specific-part#fragment,
+ *                  [scheme:]scheme-specific-part should be the context URL,
+ *                  the fragment should be the type name.
  * @param
- *      typesize             [in] The size of credential types.
+ *      typesize   [in] The size of credential types.
  * @param
- *      subject              [in] The array of credential subject property.
+ *      subject    [in] The array of credential subject property.
  * @param
- *      size                 [in] The size of credential subject property.
+ *      size       [in] The size of credential subject property.
  * @param
- *      expires              [in] The time to credential be expired.
+ *      expires    [in] The time to credential be expired.
  * @param
- *      storepass            [in] The password for DIDStore.
+ *      storepass  [in] The password for DIDStore.
  * @return
  *      If no error occurs, return the handle to Credential issued.
  *      Otherwise, return NULL.
@@ -4367,25 +4371,31 @@ DID_API const char *Mnemonic_GetLanguage(const char *mnemonic);
  * Create a presentation including some credentials.
  *
  * @param
- *      id                       [in] The Id of Presentation.
+ *      id         [in] The Id of Presentation.
  * @param
- *      holder                   [in] The handle to holder.
+ *      holder     [in] The handle to holder.
  * @param
- *      types                    [in] The type array.
+ *      types      [in] The array of types.
+ *                  eg: 1. If no type, types specifies NULL.
+ *                      2. If enabled the JSON-LD feature, the type should be a full type URI:
+ *                  [scheme:]scheme-specific-part#fragment,
+ *                  [scheme:]scheme-specific-part should be the context URL,
+ *                  the fragment should be the type name.
  * @param
- *      size                     [in] The size of types.
+ *      size        [in] The size of types.
+ *                  eg: If no type, type size specifies 0.
  * @param
- *      nonce                    [in] Indicate the usage of Presentation.
+ *      nonce       [in] Indicate the usage of Presentation.
   * @param
- *      realm                    [in] Indicate where the Presentation is use.
+ *      realm       [in] Indicate where the Presentation is use.
  * @param
- *      signkey                  [in] The key id to sign.
+ *      signkey     [in] The key id to sign.
  * @param
- *      store                    [in] The handle to DIDStore.
+ *      store       [in] The handle to DIDStore.
  * @param
- *      storepass                [in] The password of DIDStore.
+ *      storepass   [in] The password of DIDStore.
  * @param
- *      count                    [in] The count of Credentials.
+ *      count       [in] The count of Credentials.
  * @return
  *      If no error occurs, return the handle to Presentataion.
  *      Otherwise, return NULL.
@@ -4400,27 +4410,33 @@ DID_API Presentation *Presentation_Create(DIDURL *id, DID *holder,
  * Create a presentation including some credentials.
  *
  * @param
- *      id                       [in] The Id of Presentation.
+ *      id         [in] The Id of Presentation.
  * @param
- *      holder                   [in] The handle to holder.
+ *      holder     [in] The handle to holder.
  * @param
- *      types                    [in] The type array.
+ *      types      [in] The array of types.
+ *                  eg: 1. If no type, types specifies NULL.
+ *                      2. If enabled the JSON-LD feature, the type should be a full type URI:
+ *                  [scheme:]scheme-specific-part#fragment,
+ *                  [scheme:]scheme-specific-part should be the context URL,
+ *                  the fragment should be the type name.
  * @param
- *      size                     [in] The size of types.
+ *      size        [in] The size of types.
+ *                  eg: If no type, type size specifies 0.
  * @param
- *      nonce                    [in] Indicate the usage of Presentation.
+ *      nonce       [in] Indicate the usage of Presentation.
  * @param
- *      realm                    [in] Indicate where the Presentation is use.
+ *      realm       [in] Indicate where the Presentation is use.
  * @param
- *      creds                    [in] The credential array.
+ *      creds       [in] The credential array.
  * @param
- *      count                    [in] The count of Credentials.
+ *      count       [in] The count of Credentials.
  * @param
- *      signkey                  [in] The key id to sign.
+ *      signkey     [in] The key id to sign.
  * @param
- *      store                    [in] The handle to DIDStore.
+ *      store       [in] The handle to DIDStore.
  * @param
- *      storepass                [in] The password of DIDStore.
+ *      storepass   [in] The password of DIDStore.
  * @return
  *      If no error occurs, return the handle to Presentataion.
  *      Otherwise, return NULL.

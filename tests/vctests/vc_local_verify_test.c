@@ -57,24 +57,23 @@ static void test_vc_local_verify(void)
     DIDURL *credid = DIDURL_NewFromDid(&owner, "kyccredential");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
-    const char *types[] = {"BasicProfileCredential", "PhoneCredential"};
-    Property props[7];
+    const char *types[] = {"https://elastos.org/credentials/v1#SelfProclaimedCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential",
+            "https://elastos.org/credentials/email/v1#EmailCredential",
+            "https://elastos.org/credentials/social/v1#SocialCredential"};
+    Property props[5];
     props[0].key = "name";
     props[0].value = "John";
     props[1].key = "gender";
     props[1].value = "Male";
     props[2].key = "nationality";
     props[2].value = "Singapore";
-    props[3].key = "language";
-    props[3].value = "English";
-    props[4].key = "email";
-    props[4].value = "john@example.com";
-    props[5].key = "twitter";
-    props[5].value = "@john";
-    props[6].key = "phone";
-    props[6].value = "132780456";
+    props[3].key = "email";
+    props[3].value = "john@example.com";
+    props[4].key = "twitter";
+    props[4].value = "@john";
 
-    Credential *vc = Issuer_CreateCredential(issuer, &owner, credid, types, 2, props, 7,
+    Credential *vc = Issuer_CreateCredential(issuer, &owner, credid, types, 4, props, 5,
             expires, storepass);
     Issuer_Destroy(issuer);
     DIDURL_Destroy(credid);

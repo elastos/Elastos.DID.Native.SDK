@@ -640,10 +640,11 @@ static void add_type(Presentation *presentation, const char *type)
 
     pos = strstr(type, "#");
     if (pos) {
-        copy = alloca(pos - type + 1);
+        copy = (char*)alloca(pos - type + 1);
         strncpy(copy, type, pos - type);
-        if (!contains_content(presentation->context.contexts, presentation->context.size, pos + 1))
-            presentation->context.contexts[presentation->context.size++] = strdup(pos + 1);
+        if (Features_IsEnabledJsonLdContext() && !contains_content(presentation->context.contexts, presentation->context.size, copy))
+            presentation->context.contexts[presentation->context.size++] = strdup(copy);
+        copy = pos + 1;
     } else {
         copy = (char*)type;
     }
@@ -702,7 +703,7 @@ static Presentation *create_presentation(DIDURL *id, DID *holder,
     assert(storepass && *storepass);
 
     //check type
-    if (!check_types(types, size)) {
+    if (types && !check_types(types, size)) {
         DIDError_Set(DIDERR_INVALID_ARGS, "The type must has context.");
         goto errorExit;
     }
@@ -1032,7 +1033,7 @@ time_t Presentation_GetCreatedTime(Presentation *presentation)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!presentation, "No persentation argument.", 0);
-    return presentation->created;
+    return presentation->proof.created != 0 ? presentation->proof.created: presentation->created;
 
     DIDERROR_FINALIZE();
 }
