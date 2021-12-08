@@ -114,7 +114,7 @@ static void test_rootidentity_newdid(void)
 static void test_rootidentitybyrootkey_newdid(void)
 {
     DIDStore *store;
-    RootIdentity *rootidentity, *_rootidentity;
+    RootIdentity *rootidentity;
     DIDDocument *doc;
     DID *did;
     int i;

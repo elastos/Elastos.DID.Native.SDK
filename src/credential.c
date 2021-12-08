@@ -39,7 +39,7 @@
 #include "didbackend.h"
 #include "credentialbiography.h"
 
-static const char *CONTEXT = "@context";
+static const char *DID_CONTEXT = "@context";
 static const char *ID = "id";
 static const char *TYPE = "type";
 static const char *ISSUER = "issuer";
@@ -210,7 +210,7 @@ int Credential_ToJson_Internal(JsonGenerator *gen, Credential *credential, DID *
 
     CHECK(DIDJG_WriteStartObject(gen));
     if (credential->context.size > 0) {
-        CHECK(DIDJG_WriteFieldName(gen, CONTEXT));
+        CHECK(DIDJG_WriteFieldName(gen, DID_CONTEXT));
         CHECK(ContextArray_ToJson(gen, credential->context.contexts, credential->context.size));
     }
 
@@ -548,7 +548,7 @@ Credential *Credential_From_Internal(json_t *json, DID *did)
         return NULL;
     }
 
-    item = json_object_get(json, CONTEXT);
+    item = json_object_get(json, DID_CONTEXT);
     if (item) {
         if (!json_is_array(item)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid context.");

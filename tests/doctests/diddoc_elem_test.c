@@ -1287,7 +1287,6 @@ static void test_diddoc_add_context(void)
     DID *did;
     DIDDocument *document;
     DIDDocumentBuilder *builder;
-    DIDURL *creater;
     int j;
 
     const char *context1 = "https://ns.elastos.org/did/v1";

@@ -87,7 +87,6 @@ static void test_didurl(void)
     DIDURL *url, *refURL, *difURL;
     DID *did, *test_did;
     const char *queryString, *value, *fragment;
-    int pos;
 
     for (int i = 0; i < 30; i++) {
         Provider *provider = &provideDIDURLs[i];
@@ -344,7 +343,7 @@ static void test_didurl_withcontext(void)
 static void test_compatible_with_plainfragment(void)
 {
     char testURL[ELA_MAX_DIDURL_LEN], id[ELA_MAX_DIDURL_LEN];
-    DIDURL *url1, *url2, *url;
+    DIDURL *url1, *url2;
     const char *fragment;
     DID *test_did;
 

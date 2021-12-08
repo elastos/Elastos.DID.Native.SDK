@@ -51,7 +51,7 @@
 
 const char *ProofType = "ECDSAsecp256r1";
 
-static const char *CONTEXT = "@context";
+static const char *DID_CONTEXT = "@context";
 static const char *ID = "id";
 static const char *PUBLICKEY = "publicKey";
 static const char *TYPE = "type";
@@ -590,7 +590,7 @@ static int Parse_Auth_PublicKeys(DIDDocument *document, json_t *json, KeyType ty
 
     for (i = 0; i < pk_size; i++) {
         DIDURL id;
-        json_t *pk_item, *id_field;
+        json_t *pk_item;
 
         pk_item = json_array_get(json, i);
         if (!pk_item)
@@ -1020,7 +1020,7 @@ DIDDocument *DIDDocument_FromJson_Internal(json_t *root, bool resolve)
         return NULL;
     }
 
-    item = json_object_get(root, CONTEXT);
+    item = json_object_get(root, DID_CONTEXT);
     if (item) {
         if (!json_is_array(item)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid context.");
@@ -1225,7 +1225,7 @@ int DIDDocument_ToJson_Internal(JsonGenerator *gen, DIDDocument *doc,
     CHECK(DIDJG_WriteStartObject(gen));
 
     if (doc->context.size > 0) {
-        CHECK(DIDJG_WriteFieldName(gen, CONTEXT));
+        CHECK(DIDJG_WriteFieldName(gen, DID_CONTEXT));
         CHECK(ContextArray_ToJson(gen, doc->context.contexts, doc->context.size));
     }
 
@@ -2139,7 +2139,6 @@ int DIDDocumentBuilder_AddContext(DIDDocumentBuilder *builder, const char *conte
 {
     DIDDocument *document;
     char **contexts;
-    int i;
 
     DIDERROR_INITIALIZE();
 

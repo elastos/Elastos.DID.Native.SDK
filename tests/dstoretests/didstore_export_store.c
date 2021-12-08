@@ -354,7 +354,7 @@ static void testImportCompatible(void)
 {
     char path[PATH_MAX], _storepath[PATH_MAX];
     const char *storepath;
-    DIDStore *store2, *store;
+    DIDStore *store2;
     DIDMetadata *metadata;
     DIDDocument *doc, *user1Doc;
     List_Helper helper;

@@ -40,7 +40,7 @@
 static const char *DEFAULT_PRESENTATION_TYPE = "VerifiablePresentation";
 extern const char *ProofType;
 
-static const char *CONTEXT = "@context";
+static const char *DID_CONTEXT = "@context";
 static const char *ID = "id";
 static const char *TYPE = "type";
 static const char *HOLDER = "holder";
@@ -113,7 +113,7 @@ static int presentation_tojson_internal(JsonGenerator *gen, Presentation *presen
     CHECK(DIDJG_WriteStartObject(gen));
 
     if (presentation->context.size > 0) {
-        CHECK(DIDJG_WriteFieldName(gen, CONTEXT));
+        CHECK(DIDJG_WriteFieldName(gen, DID_CONTEXT));
         CHECK(ContextArray_ToJson(gen, presentation->context.contexts, presentation->context.size));
     }
 
@@ -370,7 +370,7 @@ static Presentation *parse_presentation(json_t *json)
         return NULL;
     }
 
-    item = json_object_get(json, CONTEXT);
+    item = json_object_get(json, DID_CONTEXT);
     if (item) {
         if (!json_is_array(item)) {
             DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid context.");
