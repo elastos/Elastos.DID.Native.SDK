@@ -475,7 +475,7 @@ static void test_vp_create_ctmid(void)
     Credential *creds[4], **cred;
     const char *_types[3] = {0};
     ssize_t size;
-    int i, version;
+    int i;
 
     const char *types[2] = {
                 "https://example.com/credential/v1#TestPresentation",
@@ -677,7 +677,7 @@ static void test_vp_create_by_credarray_ctmid(void)
     DIDURL *id, *credid1, *credid2, *signkey;
     const char *_types[3] = {0};
     ssize_t size;
-    int i, version;
+    int i;
 
     const char *types[2] = {
                 "https://example.com/credential/v1#TestPresentation",
