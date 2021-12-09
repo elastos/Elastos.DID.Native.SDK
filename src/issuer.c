@@ -35,6 +35,10 @@
 #include "diddocument.h"
 
 extern const char *ProofType;
+static const char *DEFAULT_CREDENTIAL_TYPE = "VerifiableCredential";
+
+extern const char *W3C_CREDENTIAL_CONTEXT;
+extern const char *ELASTOS_CREDENTIAL_CONTEXT;
 
 Issuer *Issuer_Create(DID *did, DIDURL *signkey, DIDStore *store)
 {
@@ -122,6 +126,61 @@ DIDURL *Issuer_GetSignKey(Issuer *issuer)
     DIDERROR_FINALIZE();
 }
 
+static void add_type(Credential *credential, const char *type)
+{
+    char *pos, *copy;
+
+    assert(credential);
+    assert(type && *type);
+
+    pos = strstr(type, "#");
+    if (pos) {
+        if (Features_IsEnabledJsonLdContext() &&
+                !contains_content(credential->context.contexts, credential->context.size, copy)) {
+            credential->context.contexts[credential->context.size++] = (char*)calloc(1, pos - type + 1);
+            strncpy(credential->context.contexts[credential->context.size++], type, pos - type);
+        }
+        copy = pos + 1;
+    } else {
+        copy = (char*)type;
+    }
+
+    if (!contains_content(credential->type.types, credential->type.size, copy))
+        credential->type.types[credential->type.size++] = strdup(copy);
+}
+
+static int add_default_type(Credential *credential)
+{
+    const char *defaults[2] = { W3C_CREDENTIAL_CONTEXT, ELASTOS_CREDENTIAL_CONTEXT };
+    assert(credential);
+
+    if (Features_IsEnabledJsonLdContext()) {
+        credential->context.contexts[0] = strdup(defaults[0]);
+        credential->context.contexts[1] = strdup(defaults[1]);
+        credential->context.size = 2;
+    }
+
+    credential->type.types[credential->type.size++] = strdup(DEFAULT_CREDENTIAL_TYPE);
+    return 0;
+}
+
+static bool check_types(const char **types, size_t size)
+{
+    int i;
+
+    assert(types);
+    assert(size > 0);
+
+    for (i = 0; i < size; i++) {
+        if (Features_IsEnabledJsonLdContext()) {
+            if (!strstr(types[i], "#")) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
         DIDURL *credid, const char **types, size_t typesize, json_t *json,
         time_t expires, const char *storepass)
@@ -144,6 +203,12 @@ Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
         goto errorExit;
     }
 
+    //check types
+    if (!check_types(types, typesize)) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "The type must has context.");
+        goto errorExit;
+    }
+
     cred = (Credential*)calloc(1, sizeof(Credential));
     if (!cred) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for credential failed.");
@@ -157,15 +222,26 @@ Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
     DID_Copy(&cred->subject.id, owner);
     cred->subject.properties = json_deep_copy(json);
 
-    //set type
-    cred->type.size = typesize;
-    cred->type.types = (char**)calloc(typesize, sizeof(char*));
+    //add types
+    if (Features_IsEnabledJsonLdContext()) {
+        cred->context.contexts = (char**)calloc(typesize + 2, sizeof(char*));
+        if (!cred->context.contexts) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for contexts failed.");
+            goto errorExit;
+        }
+    }
+
+    cred->type.types = (char**)calloc(typesize + 1, sizeof(char*));
     if (!cred->type.types) {
-        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for credential types failed.");
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for types failed.");
         goto errorExit;
     }
+
+    if (add_default_type(cred) == -1)
+        goto errorExit;
+
     for (i = 0; i < typesize; i++)
-        cred->type.types[i] = strdup(types[i]);
+        add_type(cred, types[i]);
 
     //set issuer
     DID_Copy(&cred->issuer, &issuer->signer->did);

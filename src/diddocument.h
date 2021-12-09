@@ -46,6 +46,11 @@ typedef struct DocumentProof {
 } DocumentProof;
 
 struct DIDDocument {
+    struct {               //optional
+        size_t size;
+        char **contexts;
+    } context;
+
     DID did;
 
     struct {                  //optional
@@ -122,6 +127,8 @@ int DIDDocument_Copy(DIDDocument *destdoc, DIDDocument *srcdoc);
 const char *DIDDocument_Merge(DIDDocument **documents, size_t size);
 
 ssize_t DIDDocument_GetDigest(DIDDocument *document, uint8_t *digest, size_t size);
+
+int ContextArray_ToJson(JsonGenerator *gen, char **contexts, size_t size);
 
 #ifdef __cplusplus
 }

@@ -1738,6 +1738,44 @@ extern "Python" const char* MyResolve(const char *request);
  */
 /* DID_API */ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder,
             const char *storepass);
+/**
+ * \~English
+ * Get subject of DID Document.
+ *
+ * @param
+ *      builder              [in] A handle to DIDDocument Builder.
+ * @return
+ *      If no error occurs, return a handle to DID.
+ *      Otherwise, return NULL.
+ */
+/* DID_API */ DID *DIDDocumentBuilder_GetSubject(DIDDocumentBuilder *builder);
+
+/**
+ * \~English
+ * Add context to document.
+ *
+ * @param
+ *      builder              [in] A handle to DIDDocument Builder.
+ * @param
+ *      context              [in] context string.
+ * @return
+ *      If no error occurs, return 0.
+ *      Otherwise, return -1.
+ */
+/* DID_API */ int DIDDocumentBuilder_AddContext(DIDDocumentBuilder *builder, const char *context);
+
+/**
+ * \~English
+ * Add three default contexts to document. Three default contexts are "https://www.w3.org/ns/did/v1",
+ * "https://elastos.org/did/v1" and "https://w3id.org/security/v1".
+ *
+ * @param
+ *      builder              [in] A handle to DIDDocument Builder.
+ * @return
+ *      If no error occurs, return 0.
+ *      Otherwise, return -1.
+ */
+/* DID_API */ int DIDDocumentBuilder_AddDefaultContext(DIDDocumentBuilder *builder);
 
 /**
  * \~English
@@ -3556,24 +3594,28 @@ extern "Python" const char* MyResolve(const char *request);
  * An issuer issues a verifiable credential to a holder with subject object.
  *
  * @param
- *      issuer               [in] An issuer issues this credential.
+ *      issuer     [in] An issuer issues this credential.
  * @param
- *      owner                [in] A handle to DID.
- *                               The holder of this Credential.
+ *      owner      [in] A handle to DID.
+ *                      The holder of this Credential.
  * @param
- *      credid               [in] The handle to DIDURL.
+ *      credid     [in] The handle to DIDURL.
  * @param
- *      types                [in] The array of credential types.
+ *      types      [in] The array of credential types.
+ *                  eg.If enabled the JSON-LD feature, the type should be a full type URI:
+ *                  [scheme:]scheme-specific-part#fragment,
+ *                  [scheme:]scheme-specific-part should be the context URL,
+ *                  the fragment should be the type name.
  * @param
- *      typesize             [in] The size of credential types.
+ *      typesize   [in] The size of credential types.
  * @param
- *      subject              [in] The array of credential subject property.
+ *      subject    [in] The array of credential subject property.
  * @param
- *      size                 [in] The size of credential subject property.
+ *      size       [in] The size of credential subject property.
  * @param
- *      expires              [in] The time to credential be expired.
+ *      expires    [in] The time to credential be expired.
  * @param
- *      storepass            [in] The password for DIDStore.
+ *      storepass  [in] The password for DIDStore.
  * @return
  *      If no error occurs, return the handle to Credential issued.
  *      Otherwise, return NULL.
@@ -3588,22 +3630,26 @@ extern "Python" const char* MyResolve(const char *request);
  * An issuer issues a verifiable credential to a holder with subject string.
  *
  * @param
- *      issuer               [in] An issuer issues this credential.
+ *      issuer      [in] An issuer issues this credential.
  * @param
- *      owner                [in] A handle to DID.
+ *      holder      [in] A handle to DID.
  *                               The holder of this Credential.
  * @param
- *      credid               [in] The handle to DIDURL.
+ *      credid      [in] The handle to DIDURL.
  * @param
- *      types                [in] The array of credential types.
+ *      types      [in] The array of credential types.
+ *                  eg.If enabled the JSON-LD feature, the type should be a full type URI:
+ *                  [scheme:]scheme-specific-part#fragment,
+ *                  [scheme:]scheme-specific-part should be the context URL,
+ *                  the fragment should be the type name.
  * @param
- *      typesize             [in] The size of credential types.
+ *      typesize    [in] The size of credential types.
  * @param
- *      subject              [in] The array of credential subject property.
+ *      subject     [in] The array of credential subject property.
  * @param
- *      expires              [in] The time to credential be expired.
+ *      expires     [in] The time to credential be expired.
  * @param
- *      storepass            [in] The password for DIDStore.
+ *      storepass   [in] The password for DIDStore.
  * @return
  *      If no error occurs, return the handle to Credential issued.
  *      Otherwise, return NULL.
@@ -4249,25 +4295,31 @@ extern "Python" const char* MyResolve(const char *request);
  * Create a presentation including some credentials.
  *
  * @param
- *      id                       [in] The Id of Presentation.
+ *      id         [in] The Id of Presentation.
  * @param
- *      holder                   [in] The handle to holder.
+ *      holder     [in] The handle to holder.
  * @param
- *      types                    [in] The type array.
+ *      types      [in] The array of types.
+ *                  eg: 1. If no type, types specifies NULL.
+ *                      2. If enabled the JSON-LD feature, the type should be a full type URI:
+ *                  [scheme:]scheme-specific-part#fragment,
+ *                  [scheme:]scheme-specific-part should be the context URL,
+ *                  the fragment should be the type name.
  * @param
- *      size                     [in] The size of types.
+ *      size        [in] The size of types.
+ *                  eg: If no type, type size specifies 0.
  * @param
- *      nonce                    [in] Indicate the usage of Presentation.
+ *      nonce       [in] Indicate the usage of Presentation.
   * @param
- *      realm                    [in] Indicate where the Presentation is use.
+ *      realm       [in] Indicate where the Presentation is use.
  * @param
- *      signkey                  [in] The key id to sign.
+ *      signkey     [in] The key id to sign.
  * @param
- *      store                    [in] The handle to DIDStore.
+ *      store       [in] The handle to DIDStore.
  * @param
- *      storepass                [in] The password of DIDStore.
+ *      storepass   [in] The password of DIDStore.
  * @param
- *      count                    [in] The count of Credentials.
+ *      count       [in] The count of Credentials.
  * @return
  *      If no error occurs, return the handle to Presentataion.
  *      Otherwise, return NULL.
@@ -4282,27 +4334,33 @@ extern "Python" const char* MyResolve(const char *request);
  * Create a presentation including some credentials.
  *
  * @param
- *      id                       [in] The Id of Presentation.
+ *      id         [in] The Id of Presentation.
  * @param
- *      holder                   [in] The handle to holder.
+ *      holder     [in] The handle to holder.
  * @param
- *      types                    [in] The type array.
+ *      types      [in] The array of types.
+ *                  eg: 1. If no type, types specifies NULL.
+ *                      2. If enabled the JSON-LD feature, the type should be a full type URI:
+ *                  [scheme:]scheme-specific-part#fragment,
+ *                  [scheme:]scheme-specific-part should be the context URL,
+ *                  the fragment should be the type name.
  * @param
- *      size                     [in] The size of types.
+ *      size        [in] The size of types.
+ *                  eg: If no type, type size specifies 0.
  * @param
- *      nonce                    [in] Indicate the usage of Presentation.
+ *      nonce       [in] Indicate the usage of Presentation.
  * @param
- *      realm                    [in] Indicate where the Presentation is use.
+ *      realm       [in] Indicate where the Presentation is use.
  * @param
- *      creds                    [in] The credential array.
+ *      creds       [in] The credential array.
  * @param
- *      count                    [in] The count of Credentials.
+ *      count       [in] The count of Credentials.
  * @param
- *      signkey                  [in] The key id to sign.
+ *      signkey     [in] The key id to sign.
  * @param
- *      store                    [in] The handle to DIDStore.
+ *      store       [in] The handle to DIDStore.
  * @param
- *      storepass                [in] The password of DIDStore.
+ *      storepass   [in] The password of DIDStore.
  * @return
  *      If no error occurs, return the handle to Presentataion.
  *      Otherwise, return NULL.
@@ -4759,6 +4817,24 @@ extern "Python" const char* MyResolve(const char *request);
  *      handle            [in] The pointer to DIDLocalResovleHandle function.
  */
 /* DID_API */ void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
+
+/******************************************************************************
+ * Feature
+ *****************************************************************************/
+/**
+ * \~English
+ * Enable JSON-LD context support.
+ *
+ * @param
+ *      enable            [in] enable flag.
+ */
+/* DID_API */ void Features_EnableJsonLdContext(bool enable);
+
+/**
+ * \~English
+ * Check if JSON-LD context support enabled or not.
+ */
+/* DID_API */ bool Features_IsEnabledJsonLdContext(void);
 
 /******************************************************************************
  * Error handling

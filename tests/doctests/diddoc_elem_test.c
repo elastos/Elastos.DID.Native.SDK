@@ -16,7 +16,7 @@
 
 static DataParam params[] = {
     { 0, "document", NULL, NULL },    { 1, "user1", NULL, NULL },
-    { 2, "user1", NULL, NULL }
+    { 2, "user1", NULL, NULL },       { 3, "user1", NULL, NULL }
 };
 
 static void test_diddoc_get_publickey(void)
@@ -30,7 +30,7 @@ static void test_diddoc_get_publickey(void)
     int i, j;
     bool equal;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -118,7 +118,7 @@ static void test_diddoc_add_publickey(void)
     const char *keybase;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -174,7 +174,7 @@ static void test_diddoc_remove_publickey(void)
     DIDURL *recoveryid, *keyid;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -234,7 +234,7 @@ static void test_diddoc_get_authentication_key(void)
     DIDURL *keyid, *id;
     int i, j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -310,7 +310,7 @@ static void test_diddoc_add_authentication_key(void)
     const char *keybase;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -404,7 +404,7 @@ static void test_diddoc_remove_authentication_key(void)
     const char *keybase;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -480,7 +480,7 @@ static void test_diddoc_get_authorization_key(void)
     DIDURL *keyid, *id;
     int i, j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -542,7 +542,7 @@ static void test_diddoc_add_authorization_key(void)
     DID controller;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -655,7 +655,7 @@ static void test_diddoc_remove_authorization_key(void)
     DID controller;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -737,7 +737,7 @@ static void test_diddoc_get_credential(void)
     DIDURL *id;
     int i, j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -780,14 +780,14 @@ static void test_diddoc_get_credential(void)
 
         // Credential selector.
         CU_ASSERT_EQUAL(1, DIDDocument_SelectCredentials(doc, "SelfProclaimedCredential",
-                profileid, vcs, sizeof(vcs)));
+                profileid, vcs, sizeof(vcs)/sizeof(Credential*)));
         CU_ASSERT_TRUE(DIDURL_Equals(Credential_GetId(vcs[0]), profileid));
 
         CU_ASSERT_EQUAL(1, DIDDocument_SelectCredentials(doc, NULL, profileid, vcs, 2));
         CU_ASSERT_TRUE(DIDURL_Equals(Credential_GetId(vcs[0]), profileid));
 
         CU_ASSERT_EQUAL(1, DIDDocument_SelectCredentials(doc, "SelfProclaimedCredential",
-                NULL, vcs, sizeof(vcs)));
+                NULL, vcs, sizeof(vcs)/sizeof(Credential*)));
         CU_ASSERT_TRUE(DIDURL_Equals(Credential_GetId(vcs[0]), profileid));
         DIDURL_Destroy(profileid);
 
@@ -804,7 +804,7 @@ static void test_diddoc_add_credential(void)
     Credential *vc;
     int j;
 
-    for (j = 1; j < 3; j++) {
+    for (j = 1; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -860,7 +860,7 @@ static void test_diddoc_add_selfclaimed_credential(void)
     int i, j;
     const char *provalue;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -875,7 +875,7 @@ static void test_diddoc_add_selfclaimed_credential(void)
 
         const char *types[] = {"BasicProfileCredential", "SelfProclaimedCredential"};
         Property props[2];
-        props[0].key = "nation";
+        props[0].key = "nationality";
         props[0].value = "Singapore";
         props[1].key = "passport";
         props[1].value = "S653258Z07";
@@ -892,19 +892,21 @@ static void test_diddoc_add_selfclaimed_credential(void)
         vc = DIDDocument_GetCredential(sealeddoc, credid);
         CU_ASSERT_PTR_NOT_NULL(vc);
         CU_ASSERT_TRUE(Credential_IsSelfProclaimed(vc));
-        CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 2);
+        CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
         CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 2);
         provalue = Credential_GetProperty(vc, "passport");
+        CU_ASSERT_PTR_NOT_NULL(provalue);
         CU_ASSERT_STRING_EQUAL(provalue, "S653258Z07");
         free((void*)provalue);
 
-        const char *types1[2];
-        CU_ASSERT_NOT_EQUAL(-1, Credential_GetTypes(vc, types1, sizeof(types1)));
+        const char *types1[3];
+        CU_ASSERT_NOT_EQUAL(-1, Credential_GetTypes(vc, types1, 3));
 
-        for (i = 0; i < 2; i++) {
+        for (i = 0; i < 3; i++) {
             const char *type = types1[i];
             CU_ASSERT_TRUE(!strcmp(type, "BasicProfileCredential") ||
-                    !strcmp(type, "SelfProclaimedCredential"));
+                    !strcmp(type, "SelfProclaimedCredential") ||
+                    !strcmp(type, "VerifiableCredential"));
         }
 
         DIDURL_Destroy(credid);
@@ -921,7 +923,7 @@ static void test_diddoc_remove_credential(void)
     Credential *vc;
     int j;
 
-    for (j = 1; j < 3; j++) {
+    for (j = 1; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -979,7 +981,7 @@ static void test_diddoc_get_service(void)
     Service *service;
     int i, j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -987,7 +989,7 @@ static void test_diddoc_get_service(void)
 
         CU_ASSERT_EQUAL(3, DIDDocument_GetServiceCount(doc));
 
-        size = DIDDocument_GetServices(doc, services, sizeof(services));
+        size = DIDDocument_GetServices(doc, services, sizeof(services)/sizeof(Service*));
         CU_ASSERT_EQUAL(3, size);
 
         for (i = 0; i < size; i++) {
@@ -1023,17 +1025,17 @@ static void test_diddoc_get_service(void)
 
         // Service selector.
         CU_ASSERT_EQUAL(1, DIDDocument_SelectServices(doc, "CredentialRepositoryService", vcrid,
-                services, sizeof(services)));
+                services, sizeof(services)/sizeof(Service*)));
         CU_ASSERT_TRUE(DIDURL_Equals(Service_GetId(services[0]), vcrid));
         DIDURL_Destroy(vcrid);
 
-        CU_ASSERT_EQUAL(1, DIDDocument_SelectServices(doc, NULL, openid, services, sizeof(services)));
+        CU_ASSERT_EQUAL(1, DIDDocument_SelectServices(doc, NULL, openid, services, sizeof(services)/sizeof(Service*)));
         CU_ASSERT_TRUE(DIDURL_Equals(Service_GetId(services[0]), openid));
         DIDURL_Destroy(openid);
 
         DIDURL *id = DIDURL_NewFromDid(did, "carrier");
         CU_ASSERT_PTR_NOT_NULL(id);
-        CU_ASSERT_EQUAL(1, DIDDocument_SelectServices(doc, "CarrierAddress", NULL, services, sizeof(services)));
+        CU_ASSERT_EQUAL(1, DIDDocument_SelectServices(doc, "CarrierAddress", NULL, services, sizeof(services)/sizeof(Service*)));
         CU_ASSERT_TRUE(DIDURL_Equals(Service_GetId(services[0]), id));
         DIDURL_Destroy(id);
 
@@ -1042,7 +1044,7 @@ static void test_diddoc_get_service(void)
                 notexistid, services, sizeof(services)));
         DIDURL_Destroy(notexistid);
 
-        CU_ASSERT_EQUAL(0, DIDDocument_SelectServices(doc, "notExistType", NULL, services, sizeof(services)));
+        CU_ASSERT_EQUAL(0, DIDDocument_SelectServices(doc, "notExistType", NULL, services, sizeof(services)/sizeof(Service*)));
     }
 }
 
@@ -1068,7 +1070,7 @@ static void test_diddoc_add_service(void)
 
     props2 = "{\"name\":\"Jay Holtslander\",\"alternateName\":\"Jason Holtslander\",\"booleanValue\":true,\"numberValue\":1234,\"doubleValue\":9.5,\"nationality\":\"Canadian\",\"Description\":\"Technologist\",\"disambiguatingDescription\":\"Co-founder of CodeCore Bootcamp\",\"jobTitle\":\"Technical Director\",\"worksFor\":[{\"type\":\"Organization\",\"name\":\"Skunkworks Creative Group Inc.\",\"sameAs\":[\"https://twitter.com/skunkworks_ca\",\"https://www.facebook.com/skunkworks.ca\"]}],\"url\":\"https://jay.holtslander.ca\",\"image\":\"https://s.gravatar.com/avatar/961997eb7fd5c22b3e12fb3c8ca14e11?s=512&r=g\"}";
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -1176,7 +1178,7 @@ static void test_diddoc_remove_service(void)
     DIDDocumentBuilder *builder;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -1229,7 +1231,7 @@ static void test_diddoc_add_controller(void)
     DIDDocumentBuilder *builder;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -1259,7 +1261,7 @@ static void test_diddoc_remove_proof(void)
     DIDURL *creater;
     int j;
 
-    for (j = 0; j < 3; j++) {
+    for (j = 0; j < 4; j++) {
         doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
         did = DIDDocument_GetSubject(doc);
@@ -1278,6 +1280,46 @@ static void test_diddoc_remove_proof(void)
         CU_ASSERT_TRUE(DIDDocument_IsValid(document));
         CU_ASSERT_TRUE(DIDURL_Equals(creater, DIDDocument_GetProofCreater(document, 0)));
         DIDDocument_Destroy(document);
+    }
+}
+
+static void test_diddoc_add_context(void)
+{
+    DIDDocument *doc;
+    DID *did;
+    DIDDocument *document;
+    DIDDocumentBuilder *builder;
+    int j;
+
+    const char *context1 = "https://ns.elastos.org/did/v1";
+    const char *context2 = "https://ns.elastos.org/did/v2";
+
+    for (j = 0; j < 4; j++) {
+        doc = TestData_GetDocument(params[j].did, params[j].type, params[j].version);
+        CU_ASSERT_PTR_NOT_NULL(doc);
+        did = DIDDocument_GetSubject(doc);
+        CU_ASSERT_PTR_NOT_NULL(did);
+
+        builder = DIDDocument_Edit(doc, NULL);
+        CU_ASSERT_PTR_NOT_NULL(builder);
+        CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddContext(builder, context2));
+        CU_ASSERT_STRING_EQUAL("JSON-LD context support not enabled", DIDError_GetLastErrorMessage());
+
+        Features_EnableJsonLdContext(true);
+        if (j < 3)
+            CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddDefaultContext(builder));
+
+        CU_ASSERT_EQUAL(-1, DIDDocumentBuilder_AddContext(builder, context1));
+        CU_ASSERT_STRING_EQUAL("Context already exists.", DIDError_GetLastErrorMessage());
+        CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddContext(builder, context2));
+
+        document = DIDDocumentBuilder_Seal(builder, storepass);
+        DIDDocumentBuilder_Destroy(builder);
+        CU_ASSERT_PTR_NOT_NULL(document);
+        CU_ASSERT_TRUE(DIDDocument_IsValid(document));
+
+        DIDDocument_Destroy(document);
+        Features_EnableJsonLdContext(false);
     }
 }
 
@@ -1319,6 +1361,7 @@ static CU_TestInfo cases[] = {
     { "test_diddoc_get_service",                   test_diddoc_get_service               },
     { "test_diddoc_add_service",                   test_diddoc_add_service               },
     { "test_diddoc_remove_service",                test_diddoc_remove_service            },
+    { "test_diddoc_add_context",                   test_diddoc_add_context               },
     { "test_diddoc_add_controller",                test_diddoc_add_controller            },
     { "test_diddoc_remove_proof",                  test_diddoc_remove_proof              },
     { NULL,                                        NULL                                  }
