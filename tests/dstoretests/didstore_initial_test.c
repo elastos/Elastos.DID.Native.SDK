@@ -49,7 +49,6 @@ static void test_didstore_newdid(void)
     CU_ASSERT_PTR_NOT_NULL(id);
     CU_ASSERT_TRUE(DIDStore_ContainsRootIdentity(store, id));
 
-    //doc = DIDStore_NewDID(store, storepass, alias);
     doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
     CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));

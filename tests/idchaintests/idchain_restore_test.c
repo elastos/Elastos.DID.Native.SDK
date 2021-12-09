@@ -99,7 +99,8 @@ static void test_idchain_restore(void)
     CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&redids));
     CU_ASSERT_EQUAL(5, redids.index);
 
-    const char *types[] = {"BasicProfileCredential"};
+    const char *types[] = {"https://elastos.org/credentials/v1#SelfProclaimedCredential",
+            "https://elastos.org/credentials/profile/v1#ProfileCredential"};
     Property props[2];
     props[0].key = "name";
     props[0].value = "John";
@@ -122,7 +123,7 @@ static void test_idchain_restore(void)
         Issuer *issuer = Issuer_Create(did, NULL, cleanstore);
         CU_ASSERT_PTR_NOT_NULL(issuer);
 
-        Credential *vc = Issuer_CreateCredential(issuer, did, credid, types, 1,
+        Credential *vc = Issuer_CreateCredential(issuer, did, credid, types, 2,
             props, 2, expires, storepass);
         Issuer_Destroy(issuer);
         DIDURL_Destroy(credid);

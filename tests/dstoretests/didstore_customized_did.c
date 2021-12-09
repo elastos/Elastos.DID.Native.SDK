@@ -470,7 +470,7 @@ static void test_new_customizedid_with_existcontrollers2(void)
 
     const char *types[] = {"BasicProfileCredential", "SelfProclaimedCredential"};
     Property props[2];
-    props[0].key = "nation";
+    props[0].key = "nationality";
     props[0].value = "Singapore";
     props[1].key = "passport";
     props[1].value = "S653258Z07";

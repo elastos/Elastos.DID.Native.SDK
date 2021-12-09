@@ -190,52 +190,55 @@ static void test_didstore_export_import_did(void)
     char current[PATH_MAX], *_current;
     char *path, *path2, *file;
     DID did;
+    int version;
 
     _current = get_current_path(current);
 
-    store = TestData_SetupTestStore(true, 2);
-    CU_ASSERT_PTR_NOT_NULL(store);
+    for (version = 2; version < 4; version++) {
+        store = TestData_SetupTestStore(true, version);
+        CU_ASSERT_PTR_NOT_NULL(store);
 
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
 
-    memset(&did, 0, sizeof(did));
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&did));
+        memset(&did, 0, sizeof(did));
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&did));
 
-    file = get_tmp_file(_path, "didexport.json");
-    CU_ASSERT_PTR_NOT_NULL(file);
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ExportDID(store, password, &did, file, "1234"));
+        file = get_tmp_file(_path, "didexport.json");
+        CU_ASSERT_PTR_NOT_NULL(file);
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ExportDID(store, password, &did, file, "1234"));
 
-    //create new store
-    path = get_store_path(_path2, "restore");
-    CU_ASSERT_PTR_NOT_NULL(path);
-    delete_file(path);
+        //create new store
+        path = get_store_path(_path2, "restore");
+        CU_ASSERT_PTR_NOT_NULL(path);
+        delete_file(path);
 
-    store2 = DIDStore_Open(path);
-    CU_ASSERT_PTR_NOT_NULL(store2);
+        store2 = DIDStore_Open(path);
+        CU_ASSERT_PTR_NOT_NULL(store2);
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ImportDID(store2, password, file, "1234"));
-    delete_file(file);
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ImportDID(store2, password, file, "1234"));
+        delete_file(file);
 
-    path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP, DATA_DIR,
-            PATH_STEP, IDS_DIR, PATH_STEP, did.idstring);
-    CU_ASSERT_TRUE_FATAL(dir_exist(path));
+        path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP, DATA_DIR,
+                PATH_STEP, IDS_DIR, PATH_STEP, did.idstring);
+        CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
-    path2 = get_file_path(_path2, PATH_MAX, 7, store2->root, PATH_STEP, DATA_DIR,
-            PATH_STEP, IDS_DIR, PATH_STEP, did.idstring);
-    CU_ASSERT_TRUE_FATAL(dir_exist(path));
+        path2 = get_file_path(_path2, PATH_MAX, 7, store2->root, PATH_STEP, DATA_DIR,
+                PATH_STEP, IDS_DIR, PATH_STEP, did.idstring);
+        CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
-    // to diff directory
-#if defined(_WIN32) || defined(_WIN64)
-    sprintf(command, "set PATH=%s/../../host/usr/bin;%%windir%%;%%windir%%/SYSTEM32 && diff -r %s %s", _current, path, path2);
-#else
-    sprintf(command, "diff -r %s %s", path, path2);
-#endif
-    CU_ASSERT_EQUAL(system(command), 0);
+        // to diff directory
+    #if defined(_WIN32) || defined(_WIN64)
+        sprintf(command, "set PATH=%s/../../host/usr/bin;%%windir%%;%%windir%%/SYSTEM32 && diff -r %s %s", _current, path, path2);
+    #else
+        sprintf(command, "diff -r %s %s", path, path2);
+    #endif
+        CU_ASSERT_EQUAL(system(command), 0);
 
-    DIDStore_Close(store2);
-    TestData_Free();
+        DIDStore_Close(store2);
+        TestData_Free();
+    }
 }
 
 static void test_didstore_export_import_rootidentity(void)
@@ -245,50 +248,53 @@ static void test_didstore_export_import_rootidentity(void)
     char current[PATH_MAX], *_current;
     char *path, *path2, *file;
     const char *defaultidentity;
+    int version;
 
     _current = get_current_path(current);
 
-    store = TestData_SetupTestStore(true, 2);
-    CU_ASSERT_PTR_NOT_NULL(store);
+    for (version = 2; version < 4; version++) {
+        store = TestData_SetupTestStore(true, version);
+        CU_ASSERT_PTR_NOT_NULL(store);
 
-    defaultidentity = DIDStore_GetDefaultRootIdentity(store);
-    CU_ASSERT_PTR_NOT_NULL(defaultidentity);
+        defaultidentity = DIDStore_GetDefaultRootIdentity(store);
+        CU_ASSERT_PTR_NOT_NULL(defaultidentity);
 
-    file = get_tmp_file(_path, "idexport.json");
-    CU_ASSERT_PTR_NOT_NULL(file);
+        file = get_tmp_file(_path, "idexport.json");
+        CU_ASSERT_PTR_NOT_NULL(file);
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ExportRootIdentity(store, password, defaultidentity, file, "1234"));
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ExportRootIdentity(store, password, defaultidentity, file, "1234"));
 
-    //create new store
-    path = get_store_path(_path2, "restore");
-    CU_ASSERT_PTR_NOT_NULL(path);
-    delete_file(path);
+        //create new store
+        path = get_store_path(_path2, "restore");
+        CU_ASSERT_PTR_NOT_NULL(path);
+        delete_file(path);
 
-    store2 = DIDStore_Open(path);
-    CU_ASSERT_PTR_NOT_NULL(store2);
+        store2 = DIDStore_Open(path);
+        CU_ASSERT_PTR_NOT_NULL(store2);
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ImportRootIdentity(store2, password, file, "1234"));
-    delete_file(file);
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ImportRootIdentity(store2, password, file, "1234"));
+        delete_file(file);
 
-    path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP, DATA_DIR,
-            PATH_STEP, ROOTS_DIR, PATH_STEP, defaultidentity);
-    CU_ASSERT_TRUE_FATAL(dir_exist(path));
+        path = get_file_path(_path, PATH_MAX, 7, store->root, PATH_STEP, DATA_DIR,
+                PATH_STEP, ROOTS_DIR, PATH_STEP, defaultidentity);
+        CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
-    path2 = get_file_path(_path2, PATH_MAX, 7, store2->root, PATH_STEP, DATA_DIR,
-            PATH_STEP, ROOTS_DIR, PATH_STEP, defaultidentity);
-    CU_ASSERT_TRUE_FATAL(dir_exist(path));
+        path2 = get_file_path(_path2, PATH_MAX, 7, store2->root, PATH_STEP, DATA_DIR,
+                PATH_STEP, ROOTS_DIR, PATH_STEP, defaultidentity);
+        CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
-    // to diff directory
-#if defined(_WIN32) || defined(_WIN64)
-    sprintf(command, "set PATH=%s/../../host/usr/bin;%%windir%%;%%windir%%/SYSTEM32 && diff -r %s %s", _current, path, path2);
-#else
-    sprintf(command, "diff -r %s %s", path, path2);
-#endif
-    CU_ASSERT_EQUAL(system(command), 0);
+        // to diff directory
+    #if defined(_WIN32) || defined(_WIN64)
+        sprintf(command, "set PATH=%s/../../host/usr/bin;%%windir%%;%%windir%%/SYSTEM32 && diff -r %s %s", _current, path, path2);
+    #else
+        sprintf(command, "diff -r %s %s", path, path2);
+    #endif
+        CU_ASSERT_EQUAL(system(command), 0);
 
-    free((void*)defaultidentity);
-    DIDStore_Close(store2);
-    TestData_Free();
+        free((void*)defaultidentity);
+        DIDStore_Close(store2);
+        TestData_Free();
+    }
 }
 
 static void test_didstore_export_import_store(void)
@@ -297,272 +303,278 @@ static void test_didstore_export_import_store(void)
     char _path[PATH_MAX], _path2[PATH_MAX], command[512];
     char current[PATH_MAX], *_current;
     char *path, *path2, *file;
+    int version;
 
     _current = get_current_path(current);
 
-    store = TestData_SetupTestStore(true, 2);
-    CU_ASSERT_PTR_NOT_NULL(store);
+    for (version = 2; version < 4; version++) {
+        store = TestData_SetupTestStore(true, version);
+        CU_ASSERT_PTR_NOT_NULL(store);
 
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 2));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 2));
 
-    file = get_tmp_file(_path, "storeexport.zip");
-    CU_ASSERT_PTR_NOT_NULL(file);
+        file = get_tmp_file(_path, "storeexport.zip");
+        CU_ASSERT_PTR_NOT_NULL(file);
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ExportStore(store, password, file, "1234"));
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ExportStore(store, password, file, "1234"));
 
-    //create new store
-    path = get_store_path(_path2, "restore");
-    CU_ASSERT_PTR_NOT_NULL(path);
-    delete_file(path);
+        //create new store
+        path = get_store_path(_path2, "restore");
+        CU_ASSERT_PTR_NOT_NULL(path);
+        delete_file(path);
 
-    store2 = DIDStore_Open(path);
-    CU_ASSERT_PTR_NOT_NULL(store2);
+        store2 = DIDStore_Open(path);
+        CU_ASSERT_PTR_NOT_NULL(store2);
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ImportStore(store2, password, file, "1234"));
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ImportStore(store2, password, file, "1234"));
 
-    path = get_file_path(_path, PATH_MAX, 3, store->root, PATH_STEP, DATA_DIR);
-    CU_ASSERT_TRUE_FATAL(dir_exist(path));
+        path = get_file_path(_path, PATH_MAX, 3, store->root, PATH_STEP, DATA_DIR);
+        CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
-    path2 = get_file_path(_path2, PATH_MAX, 3, store2->root, PATH_STEP, DATA_DIR);
-    CU_ASSERT_TRUE_FATAL(dir_exist(path));
+        path2 = get_file_path(_path2, PATH_MAX, 3, store2->root, PATH_STEP, DATA_DIR);
+        CU_ASSERT_TRUE_FATAL(dir_exist(path));
 
-    // to diff directory
-#if defined(_WIN32) || defined(_WIN64)
-    sprintf(command, "set PATH=%s/../../host/usr/bin;%%windir%%;%%windir%%/SYSTEM32 && diff -r %s %s", _current, path, path2);
-#else
-    sprintf(command, "diff -r %s %s", path, path2);
-#endif
-    CU_ASSERT_EQUAL(system(command), 0);
+        // to diff directory
+    #if defined(_WIN32) || defined(_WIN64)
+        sprintf(command, "set PATH=%s/../../host/usr/bin;%%windir%%;%%windir%%/SYSTEM32 && diff -r %s %s", _current, path, path2);
+    #else
+        sprintf(command, "diff -r %s %s", path, path2);
+    #endif
+        CU_ASSERT_EQUAL(system(command), 0);
 
-    DIDStore_Close(store2);
-    TestData_Free();
+        DIDStore_Close(store2);
+        TestData_Free();
+    }
 }
 
 static void testImportCompatible(void)
 {
     char path[PATH_MAX], _storepath[PATH_MAX];
     const char *storepath;
-    DIDStore *store2, *store;
+    DIDStore *store2;
     DIDMetadata *metadata;
     DIDDocument *doc, *user1Doc;
     List_Helper helper;
     DID *did;
-    int count = 0;
+    int count = 0, version;
 
     TestData_SetupStore(true);
 
-    get_testdata_path(path, "store-export.zip", 2);
+    for (version = 2; version < 4; version++) {
+        get_testdata_path(path, "store-export.zip", version);
 
-    //create new store
-    storepath = get_store_path(_storepath, "imported-store");
-    CU_ASSERT_PTR_NOT_NULL(storepath);
-    delete_file(storepath);
+        //create new store
+        storepath = get_store_path(_storepath, "imported-store");
+        CU_ASSERT_PTR_NOT_NULL(storepath);
+        delete_file(storepath);
 
-    store2 = DIDStore_Open(storepath);
-    CU_ASSERT_PTR_NOT_NULL(store2);
+        store2 = DIDStore_Open(storepath);
+        CU_ASSERT_PTR_NOT_NULL(store2);
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ImportStore(store2, storepass, path, "password"));
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ImportStore(store2, storepass, path, "password"));
 
-    // Root identity
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store2, get_rootidentity, (void*)&count));
-    CU_ASSERT_EQUAL(1, count);
+        // Root identity
+        count = 0;
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store2, get_rootidentity, (void*)&count));
+        CU_ASSERT_EQUAL(1, count);
 
-    // DIDs
-    count = 0;
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store2, 0, get_dids, (void*)&count));
-    CU_ASSERT_EQUAL(10, count);
+        // DIDs
+        count = 0;
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store2, 0, get_dids, (void*)&count));
+        CU_ASSERT_EQUAL(10, count);
 
-    // DID: User1
-    did = DID_New(user1Did);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        // DID: User1
+        did = DID_New(user1Did);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    user1Doc = DIDStore_LoadDID(store2, did);
-    CU_ASSERT_PTR_NOT_NULL(user1Doc);
+        user1Doc = DIDStore_LoadDID(store2, did);
+        CU_ASSERT_PTR_NOT_NULL(user1Doc);
 
-    metadata = DIDDocument_GetMetadata(user1Doc);
-    CU_ASSERT_PTR_NOT_NULL(metadata);
-    CU_ASSERT_STRING_EQUAL("User1", DIDMetadata_GetAlias(metadata));
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(user1Doc, NULL, true, storepass));
+        metadata = DIDDocument_GetMetadata(user1Doc);
+        CU_ASSERT_PTR_NOT_NULL(metadata);
+        CU_ASSERT_STRING_EQUAL("User1", DIDMetadata_GetAlias(metadata));
+        CU_ASSERT_TRUE(DIDDocument_PublishDID(user1Doc, NULL, true, storepass));
 
-    helper.store = store2;
-    helper.count = 0;
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
-        get_user1vcs, (void*)&helper));
-    CU_ASSERT_EQUAL(5, helper.count);
-    DID_Destroy(did);
+        helper.store = store2;
+        helper.count = 0;
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+            get_user1vcs, (void*)&helper));
+        CU_ASSERT_EQUAL(5, helper.count);
+        DID_Destroy(did);
 
-    // DID: User2
-    did = DID_New(user2Did);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        // DID: User2
+        did = DID_New(user2Did);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    doc = DIDStore_LoadDID(store2, did);
-    CU_ASSERT_PTR_NOT_NULL(doc);
+        doc = DIDStore_LoadDID(store2, did);
+        CU_ASSERT_PTR_NOT_NULL(doc);
 
-    metadata = DIDDocument_GetMetadata(doc);
-    CU_ASSERT_PTR_NOT_NULL(metadata);
-    CU_ASSERT_STRING_EQUAL("User2", DIDMetadata_GetAlias(metadata));
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
-    DIDDocument_Destroy(doc);
+        metadata = DIDDocument_GetMetadata(doc);
+        CU_ASSERT_PTR_NOT_NULL(metadata);
+        CU_ASSERT_STRING_EQUAL("User2", DIDMetadata_GetAlias(metadata));
+        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+        DIDDocument_Destroy(doc);
 
-    helper.store = store2;
-    helper.count = 0;
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
-        get_user2vcs, (void*)&helper));
-    CU_ASSERT_EQUAL(1, helper.count);
-    DID_Destroy(did);
+        helper.store = store2;
+        helper.count = 0;
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+            get_user2vcs, (void*)&helper));
+        CU_ASSERT_EQUAL(1, helper.count);
+        DID_Destroy(did);
 
-    // DID: User3
-    did = DID_New(user3Did);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        // DID: User3
+        did = DID_New(user3Did);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    doc = DIDStore_LoadDID(store2, did);
-    CU_ASSERT_PTR_NOT_NULL(doc);
+        doc = DIDStore_LoadDID(store2, did);
+        CU_ASSERT_PTR_NOT_NULL(doc);
 
-    metadata = DIDDocument_GetMetadata(doc);
-    CU_ASSERT_PTR_NOT_NULL(metadata);
-    CU_ASSERT_STRING_EQUAL("User3", DIDMetadata_GetAlias(metadata));
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
-    DIDDocument_Destroy(doc);
+        metadata = DIDDocument_GetMetadata(doc);
+        CU_ASSERT_PTR_NOT_NULL(metadata);
+        CU_ASSERT_STRING_EQUAL("User3", DIDMetadata_GetAlias(metadata));
+        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+        DIDDocument_Destroy(doc);
 
-    helper.store = store2;
-    helper.count = 0;
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
-        get_user2vcs, (void*)&helper));
-    CU_ASSERT_EQUAL(0, helper.count);
-    DID_Destroy(did);
+        helper.store = store2;
+        helper.count = 0;
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+            get_user2vcs, (void*)&helper));
+        CU_ASSERT_EQUAL(0, helper.count);
+        DID_Destroy(did);
 
-    // DID: User4
-    did = DID_New(user4Did);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        // DID: User4
+        did = DID_New(user4Did);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    doc = DIDStore_LoadDID(store2, did);
-    CU_ASSERT_PTR_NOT_NULL(doc);
+        doc = DIDStore_LoadDID(store2, did);
+        CU_ASSERT_PTR_NOT_NULL(doc);
 
-    metadata = DIDDocument_GetMetadata(doc);
-    CU_ASSERT_PTR_NOT_NULL(metadata);
-    CU_ASSERT_STRING_EQUAL("User4", DIDMetadata_GetAlias(metadata));
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
-    DIDDocument_Destroy(doc);
+        metadata = DIDDocument_GetMetadata(doc);
+        CU_ASSERT_PTR_NOT_NULL(metadata);
+        CU_ASSERT_STRING_EQUAL("User4", DIDMetadata_GetAlias(metadata));
+        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+        DIDDocument_Destroy(doc);
 
-    helper.store = store2;
-    helper.count = 0;
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
-        get_user2vcs, (void*)&helper));
-    CU_ASSERT_EQUAL(0, helper.count);
-    DID_Destroy(did);
+        helper.store = store2;
+        helper.count = 0;
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+            get_user2vcs, (void*)&helper));
+        CU_ASSERT_EQUAL(0, helper.count);
+        DID_Destroy(did);
 
-    // DID: Issuer
-    did = DID_New(issuerDid);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        // DID: Issuer
+        did = DID_New(issuerDid);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    doc = DIDStore_LoadDID(store2, did);
-    CU_ASSERT_PTR_NOT_NULL(doc);
+        doc = DIDStore_LoadDID(store2, did);
+        CU_ASSERT_PTR_NOT_NULL(doc);
 
-    metadata = DIDDocument_GetMetadata(doc);
-    CU_ASSERT_PTR_NOT_NULL(metadata);
-    CU_ASSERT_STRING_EQUAL("Issuer", DIDMetadata_GetAlias(metadata));
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
-    DIDDocument_Destroy(doc);
+        metadata = DIDDocument_GetMetadata(doc);
+        CU_ASSERT_PTR_NOT_NULL(metadata);
+        CU_ASSERT_STRING_EQUAL("Issuer", DIDMetadata_GetAlias(metadata));
+        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+        DIDDocument_Destroy(doc);
 
-    helper.store = store2;
-    helper.count = 0;
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
-        get_user2vcs, (void*)&helper));
-    CU_ASSERT_EQUAL(1, helper.count);
-    DID_Destroy(did);
+        helper.store = store2;
+        helper.count = 0;
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+            get_user2vcs, (void*)&helper));
+        CU_ASSERT_EQUAL(1, helper.count);
+        DID_Destroy(did);
 
-    // DID: Example
-    did = DID_New(exampleDid);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        // DID: Example
+        did = DID_New(exampleDid);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    doc = DIDStore_LoadDID(store2, did);
-    CU_ASSERT_PTR_NOT_NULL(doc);
+        doc = DIDStore_LoadDID(store2, did);
+        CU_ASSERT_PTR_NOT_NULL(doc);
 
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
-    DIDDocument_Destroy(doc);
+        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+        DIDDocument_Destroy(doc);
 
-    helper.store = store2;
-    helper.count = 0;
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
-        get_user2vcs, (void*)&helper));
-    CU_ASSERT_EQUAL(1, helper.count);
-    DID_Destroy(did);
+        helper.store = store2;
+        helper.count = 0;
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+            get_user2vcs, (void*)&helper));
+        CU_ASSERT_EQUAL(1, helper.count);
+        DID_Destroy(did);
 
-    // DID: Foo
-    did = DID_New(fooDid);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        // DID: Foo
+        did = DID_New(fooDid);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    doc = DIDStore_LoadDID(store2, did);
-    CU_ASSERT_PTR_NOT_NULL(doc);
+        doc = DIDStore_LoadDID(store2, did);
+        CU_ASSERT_PTR_NOT_NULL(doc);
 
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
-    DIDDocument_Destroy(doc);
+        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
+        DIDDocument_Destroy(doc);
 
-    helper.store = store2;
-    helper.count = 0;
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
-        get_user3vcs, (void*)&helper));
-    CU_ASSERT_EQUAL(1, helper.count);
-    DID_Destroy(did);
+        helper.store = store2;
+        helper.count = 0;
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+            get_user3vcs, (void*)&helper));
+        CU_ASSERT_EQUAL(1, helper.count);
+        DID_Destroy(did);
 
-    // DID: FooBar
-    did = DID_New(foobarDid);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        // DID: FooBar
+        did = DID_New(foobarDid);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    doc = DIDStore_LoadDID(store2, did);
-    CU_ASSERT_PTR_NOT_NULL(doc);
+        doc = DIDStore_LoadDID(store2, did);
+        CU_ASSERT_PTR_NOT_NULL(doc);
 
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
-    DIDDocument_Destroy(doc);
+        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
+        DIDDocument_Destroy(doc);
 
-    helper.store = store2;
-    helper.count = 0;
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
-        get_user4vcs, (void*)&helper));
-    CU_ASSERT_EQUAL(4, helper.count);
-    DID_Destroy(did);
+        helper.store = store2;
+        helper.count = 0;
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+            get_user4vcs, (void*)&helper));
+        CU_ASSERT_EQUAL(4, helper.count);
+        DID_Destroy(did);
 
-    // DID: Bar
-    did = DID_New(barDid);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        // DID: Bar
+        did = DID_New(barDid);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    doc = DIDStore_LoadDID(store2, did);
-    CU_ASSERT_PTR_NOT_NULL(doc);
+        doc = DIDStore_LoadDID(store2, did);
+        CU_ASSERT_PTR_NOT_NULL(doc);
 
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
-    DIDDocument_Destroy(doc);
+        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
+        DIDDocument_Destroy(doc);
 
-    helper.store = store2;
-    helper.count = 0;
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
-        get_user4vcs, (void*)&helper));
-    CU_ASSERT_EQUAL(0, helper.count);
-    DID_Destroy(did);
+        helper.store = store2;
+        helper.count = 0;
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+            get_user4vcs, (void*)&helper));
+        CU_ASSERT_EQUAL(0, helper.count);
+        DID_Destroy(did);
 
-    // DID: Baz
-    did = DID_New(bazDid);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        // DID: Baz
+        did = DID_New(bazDid);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    doc = DIDStore_LoadDID(store2, did);
-    CU_ASSERT_PTR_NOT_NULL(doc);
+        doc = DIDStore_LoadDID(store2, did);
+        CU_ASSERT_PTR_NOT_NULL(doc);
 
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
-    DIDDocument_Destroy(doc);
+        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
+        DIDDocument_Destroy(doc);
 
-    helper.store = store2;
-    helper.count = 0;
-    CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
-        get_user4vcs, (void*)&helper));
-    CU_ASSERT_EQUAL(0, helper.count);
-    DID_Destroy(did);
+        helper.store = store2;
+        helper.count = 0;
+        CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListCredentials(store2, did,
+            get_user4vcs, (void*)&helper));
+        CU_ASSERT_EQUAL(0, helper.count);
+        DID_Destroy(did);
 
-    DIDDocument_Destroy(user1Doc);
-    DIDStore_Close(store2);
+        DIDDocument_Destroy(user1Doc);
+        DIDStore_Close(store2);
 
-    TestData_Free();
+        TestData_Free();
+    }
 }
 
 static int didstore_export_store_test_suite_init(void)

@@ -1660,7 +1660,7 @@ static void test_multictmdoc_get_credential(void)
 
     // Credential selector.
     CU_ASSERT_EQUAL(1, DIDDocument_SelectCredentials(customized_doc, "SelfProclaimedCredential",
-            NULL, vcs, sizeof(vcs)));
+            NULL, vcs, sizeof(vcs)/sizeof(Credential*)));
 
     TestData_Free();
 }

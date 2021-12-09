@@ -595,7 +595,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     DIDDocumentBuilder_Destroy(builder);
     CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(targetdoc));
 
-    CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationKeys(targetdoc, pks, sizeof(pks)));
+    CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationKeys(targetdoc, pks, sizeof(pks)/sizeof(PublicKey*)));
     CU_ASSERT_TRUE(DID_Equals(&did, &pks[0]->id.did));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, targetdoc));

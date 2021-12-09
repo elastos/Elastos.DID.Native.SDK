@@ -1,17 +1,17 @@
 {
   "id" : "did:elastos:foo#email",
-  "type" : [ "InternetAccountCredential" ],
+  "type" : [ "EmailCredential", "VerifiableCredential" ],
+  "issuer" : "did:elastos:imUUPBfrZ1yZx6nWXe6LNN59VeX2E6PPKj",
+  "issuanceDate" : "2021-11-20T09:54:10Z",
+  "expirationDate" : "2026-11-20T09:54:10Z",
   "credentialSubject" : {
-    "email" : "foo@example.com",
-    "id" : "did:elastos:foo"
-  },
-  "proof" : {
-    "signature" : "IKbe-VHu1U57rxKAz7p11Ck62182t-FWZsF_S58gqmiJfD2csmpBsDLUenY390oqCyI7vQeoLwjnf00qC5Aaqw",
-    "created" : "2021-07-13T04:35:58Z",
-    "verificationMethod" : "did:elastos:imUUPBfrZ1yZx6nWXe6LNN59VeX2E6PPKj#primary",
+    "id" : "did:elastos:foo",
     "email" : "foo@example.com"
   },
-  "issuanceDate" : "2021-07-13T04:35:58Z",
-  "issuer" : "did:elastos:imUUPBfrZ1yZx6nWXe6LNN59VeX2E6PPKj",
-  "expirationDate" : "2026-07-13T04:35:58Z"
+  "proof" : {
+    "type" : "ECDSAsecp256r1",
+    "created" : "2021-11-20T09:54:10Z",
+    "verificationMethod" : "did:elastos:imUUPBfrZ1yZx6nWXe6LNN59VeX2E6PPKj#primary",
+    "signature" : "M2GGNNFbjL95h-tc_qoneMION52nb3Ta_TD_KVhb7OMKJiAHpIioNc2RKxhInk-EFyXPNQtmqZohPPPEuayWOw"
+  }
 }
