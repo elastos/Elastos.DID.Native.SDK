@@ -703,8 +703,26 @@ DIDDocumentBuilder_Seal
 .. doxygenfunction:: DIDDocumentBuilder_Seal
    :project: DIDAPI
 
-DIDDocumentBuilder_AddController
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DIDDocumentBuilder_GetSubject
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocumentBuilder_GetSubject
+   :project: DIDAPI
+
+DIDDocumentBuilder_RemoveController
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocumentBuilder_AddContext
+   :project: DIDAPI
+
+DIDDocumentBuilder_AddContext
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDDocumentBuilder_AddDefaultContext
+   :project: DIDAPI
+
+DIDDocumentBuilder_AddDefaultContext
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: DIDDocumentBuilder_AddController
    :project: DIDAPI
@@ -1438,6 +1456,12 @@ DIDStore_DeletePrivateKey
 .. doxygenfunction:: DIDStore_DeletePrivateKey
    :project: DIDAPI
 
+DIDStore_Synchronize
+~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: DIDStore_Synchronize
+   :project: DIDAPI
+
 Mnemonic Functions
 ##################
 
@@ -1647,4 +1671,19 @@ DIDBackend_SetLocalResolveHandle
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: DIDBackend_SetLocalResolveHandle
+   :project: DIDAPI
+
+Feature Functions
+####################
+
+Features_EnableJsonLdContext
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: Features_EnableJsonLdContext
+   :project: DIDAPI
+
+Features_IsEnabledJsonLdContext
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: Features_IsEnabledJsonLdContext
    :project: DIDAPI

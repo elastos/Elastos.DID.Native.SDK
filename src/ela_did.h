@@ -3705,22 +3705,26 @@ DID_API Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *
  * An issuer issues a verifiable credential to a holder with subject string.
  *
  * @param
- *      issuer               [in] An issuer issues this credential.
+ *      issuer      [in] An issuer issues this credential.
  * @param
- *      holder                [in] A handle to DID.
+ *      holder      [in] A handle to DID.
  *                               The holder of this Credential.
  * @param
- *      credid               [in] The handle to DIDURL.
+ *      credid      [in] The handle to DIDURL.
  * @param
- *      types                [in] The array of credential types.
+ *      types      [in] The array of credential types.
+ *                  eg.If enabled the JSON-LD feature, the type should be a full type URI:
+ *                  [scheme:]scheme-specific-part#fragment,
+ *                  [scheme:]scheme-specific-part should be the context URL,
+ *                  the fragment should be the type name.
  * @param
- *      typesize             [in] The size of credential types.
+ *      typesize    [in] The size of credential types.
  * @param
- *      subject              [in] The array of credential subject property.
+ *      subject     [in] The array of credential subject property.
  * @param
- *      expires              [in] The time to credential be expired.
+ *      expires     [in] The time to credential be expired.
  * @param
- *      storepass            [in] The password for DIDStore.
+ *      storepass   [in] The password for DIDStore.
  * @return
  *      If no error occurs, return the handle to Credential issued.
  *      Otherwise, return NULL.
@@ -4904,13 +4908,13 @@ DID_API void DIDBackend_SetLocalResolveHandle(DIDLocalResovleHandle *handle);
  * @param
  *      enable            [in] enable flag.
  */
-void Features_EnableJsonLdContext(bool enable);
+DID_API void Features_EnableJsonLdContext(bool enable);
 
 /**
  * \~English
  * Check if JSON-LD context support enabled or not.
  */
-bool Features_IsEnabledJsonLdContext(void);
+DID_API bool Features_IsEnabledJsonLdContext(void);
 
 /******************************************************************************
  * Error handling
