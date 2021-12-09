@@ -23,7 +23,7 @@ static void test_vc_kycvc(void)
     const char *types[2], *data;
     int i, version;
 
-    for (version = 1; version <= 2; version++) {
+    for (version = 1; version <= 3; version++) {
         issuerdoc = TestData_GetDocument("issuer", NULL, version);
         CU_ASSERT_PTR_NOT_NULL(issuerdoc);
         doc = TestData_GetDocument("user1", NULL, version);
@@ -45,8 +45,13 @@ static void test_vc_kycvc(void)
 
         for (i = 0; i < size; i++) {
             const char *type = types[i];
-            CU_ASSERT_TRUE(!strcmp(type, "InternetAccountCredential") ||
-                    !strcmp(type, "TwitterCredential"));
+            if (version == 1) {
+                CU_ASSERT_TRUE(!strcmp(type, "TwitterCredential") ||
+                        !strcmp(type, "InternetAccountCredential"));
+            } else {
+                CU_ASSERT_TRUE(!strcmp(type, "SocialCredential") ||
+                        !strcmp(type, "VerifiableCredential"));
+            }
         }
 
         CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
@@ -76,7 +81,7 @@ static void test_vc_selfclaimvc(void)
     const char *types[2], *prop;
     int i, version;
 
-    for (version = 1; version <= 2; version++) {
+    for (version = 1; version <= 3; version++) {
         doc = TestData_GetDocument("user1", NULL, version);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -96,14 +101,24 @@ static void test_vc_selfclaimvc(void)
 
         for (i = 0; i < size; i++) {
             const char *type = types[i];
-            CU_ASSERT_TRUE(!strcmp(type, "BasicProfileCredential") ||
-                    !strcmp(type, "SelfProclaimedCredential"));
+            if (version == 1) {
+                CU_ASSERT_TRUE(!strcmp(type, "SelfProclaimedCredential") ||
+                        !strcmp(type, "BasicProfileCredential"));
+            } else {
+                CU_ASSERT_TRUE(!strcmp(type, "SelfProclaimedCredential") ||
+                        !strcmp(type, "VerifiableCredential"));
+            }
         }
 
         CU_ASSERT_TRUE(DID_Equals(did, Credential_GetIssuer(cred)));
         CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
 
-        prop = Credential_GetProperty(cred, "nation");
+        if (version == 1) {
+            prop = Credential_GetProperty(cred, "nation");
+        } else {
+            prop = Credential_GetProperty(cred, "nationality");
+        }
+
         CU_ASSERT_STRING_EQUAL("Singapore", prop);
         free((void*)prop);
         prop = Credential_GetProperty(cred, "passport");
@@ -128,7 +143,7 @@ static void test_vc_parse_selfclaimvc(void)
     DID *did;
     int version;
 
-    for (version = 1; version <= 2; version++) {
+    for (version = 1; version <= 3; version++) {
         issuerdoc = TestData_GetDocument("issuer", NULL, version);
         CU_ASSERT_PTR_NOT_NULL(issuerdoc);
         doc = TestData_GetDocument("user1", NULL, version);
@@ -184,7 +199,7 @@ static void test_vc_parse_kycvc(void)
     DID *did;
     int version;
 
-    for (version = 1; version <= 2; version++) {
+    for (version = 1; version <= 3; version++) {
         CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, version));
 
         doc = TestData_GetDocument("user1", NULL, version);
@@ -241,48 +256,51 @@ static void test_vc_keycvc_tocid(void)
     DIDURL *id;
     const char *types[2], *data;
     size_t size;
-    int i;
+    int i, version;
 
-    issuerdoc = TestData_GetDocument("issuer", NULL, 2);
-    CU_ASSERT_PTR_NOT_NULL(issuerdoc);
+    for (version = 2; version < 4; version++) {
+        issuerdoc = TestData_GetDocument("issuer", NULL, version);
+        CU_ASSERT_PTR_NOT_NULL(issuerdoc);
 
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, version));
 
-    foodoc = TestData_GetDocument("foo", NULL, 2);
-    CU_ASSERT_PTR_NOT_NULL(foodoc);
+        foodoc = TestData_GetDocument("foo", NULL, version);
+        CU_ASSERT_PTR_NOT_NULL(foodoc);
 
-    did = DIDDocument_GetSubject(foodoc);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        did = DIDDocument_GetSubject(foodoc);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    cred = TestData_GetCredential("foo", "email", NULL, 2);
-    CU_ASSERT_PTR_NOT_NULL(cred);
+        cred = TestData_GetCredential("foo", "email", NULL, version);
+        CU_ASSERT_PTR_NOT_NULL(cred);
 
-    id = DIDURL_NewFromDid(did, "email");
-    CU_ASSERT_PTR_NOT_NULL(id);
-    CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
-    DIDURL_Destroy(id);
+        id = DIDURL_NewFromDid(did, "email");
+        CU_ASSERT_PTR_NOT_NULL(id);
+        CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
+        DIDURL_Destroy(id);
 
-    size = Credential_GetTypes(cred, types, sizeof(types));
-    CU_ASSERT_EQUAL(1, size);
+        size = Credential_GetTypes(cred, types, sizeof(types));
+        CU_ASSERT_EQUAL(2, size);
 
-    for (i = 0; i < size; i++)
-        CU_ASSERT_STRING_EQUAL("InternetAccountCredential", types[i]);
+        for (i = 0; i < size; i++)
+            CU_ASSERT_TRUE(!strcmp(types[i], "EmailCredential") ||
+                        !strcmp(types[i], "VerifiableCredential"));
 
-    CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
-    CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
+        CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
+        CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
 
-    data = Credential_GetProperty(cred, "email");
-    CU_ASSERT_STRING_EQUAL("foo@example.com", data);
-    free((void*)data);
+        data = Credential_GetProperty(cred, "email");
+        CU_ASSERT_STRING_EQUAL("foo@example.com", data);
+        free((void*)data);
 
-    CU_ASSERT_NOT_EQUAL(0, Credential_GetIssuanceDate(cred));
-    CU_ASSERT_NOT_EQUAL(0, Credential_GetExpirationDate(cred));
+        CU_ASSERT_NOT_EQUAL(0, Credential_GetIssuanceDate(cred));
+        CU_ASSERT_NOT_EQUAL(0, Credential_GetExpirationDate(cred));
 
-    CU_ASSERT_FALSE(Credential_IsSelfProclaimed(cred));
-    CU_ASSERT_FALSE(Credential_IsExpired(cred));
-    CU_ASSERT_TRUE(Credential_IsGenuine(cred));
-    CU_ASSERT_TRUE(Credential_IsValid(cred));
+        CU_ASSERT_FALSE(Credential_IsSelfProclaimed(cred));
+        CU_ASSERT_FALSE(Credential_IsExpired(cred));
+        CU_ASSERT_TRUE(Credential_IsGenuine(cred));
+        CU_ASSERT_TRUE(Credential_IsValid(cred));
+    }
 }
 
 static void test_vc_kycvc_fromcid(void)
@@ -293,52 +311,55 @@ static void test_vc_kycvc_fromcid(void)
     Credential *cred;
     const char *types[2], *data;
     size_t size;
-    int i;
+    int i, version;
 
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 2));
+    for (version = 2; version < 4; version++) {
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, version));
 
-    issuerdoc = TestData_GetDocument("examplecorp", NULL, 2);
-    CU_ASSERT_PTR_NOT_NULL(issuerdoc);
-    foobardoc = TestData_GetDocument("foobar", NULL, 2);
-    CU_ASSERT_PTR_NOT_NULL(foobardoc);
+        issuerdoc = TestData_GetDocument("examplecorp", NULL, version);
+        CU_ASSERT_PTR_NOT_NULL(issuerdoc);
+        foobardoc = TestData_GetDocument("foobar", NULL, version);
+        CU_ASSERT_PTR_NOT_NULL(foobardoc);
 
-    did = DIDDocument_GetSubject(foobardoc);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        did = DIDDocument_GetSubject(foobardoc);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    cred = TestData_GetCredential("foobar", "license", NULL, 2);
-    CU_ASSERT_PTR_NOT_NULL(cred);
+        cred = TestData_GetCredential("foobar", "license", NULL, version);
+        CU_ASSERT_PTR_NOT_NULL(cred);
 
-    id = DIDURL_NewFromDid(did, "license");
-    CU_ASSERT_PTR_NOT_NULL(id);
-    CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
-    DIDURL_Destroy(id);
+        id = DIDURL_NewFromDid(did, "license");
+        CU_ASSERT_PTR_NOT_NULL(id);
+        CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
+        DIDURL_Destroy(id);
 
-    size = Credential_GetTypes(cred, types, sizeof(types));
-    CU_ASSERT_EQUAL(1, size);
+        size = Credential_GetTypes(cred, types, sizeof(types));
+        CU_ASSERT_EQUAL(2, size);
 
-    for (i = 0; i < size; i++)
-        CU_ASSERT_STRING_EQUAL("LicenseCredential", types[i]);
+        for (i = 0; i < size; i++)
+            CU_ASSERT_TRUE(!strcmp(types[i], "LicenseCredential") ||
+                    !strcmp(types[i], "VerifiableCredential"));
 
-    CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
-    CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
+        CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
+        CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
 
-    data = Credential_GetProperty(cred, "license-id");
-    CU_ASSERT_STRING_EQUAL("20201021C889", data);
-    free((void*)data);
-    data = Credential_GetProperty(cred, "scope");
-    CU_ASSERT_STRING_EQUAL("Consulting", data);
-    free((void*)data);
+        data = Credential_GetProperty(cred, "license-id");
+        CU_ASSERT_STRING_EQUAL("20201021C889", data);
+        free((void*)data);
+        data = Credential_GetProperty(cred, "scope");
+        CU_ASSERT_STRING_EQUAL("Consulting", data);
+        free((void*)data);
 
-    CU_ASSERT_NOT_EQUAL(0, Credential_GetIssuanceDate(cred));
-    CU_ASSERT_NOT_EQUAL(0, Credential_GetExpirationDate(cred));
+        CU_ASSERT_NOT_EQUAL(0, Credential_GetIssuanceDate(cred));
+        CU_ASSERT_NOT_EQUAL(0, Credential_GetExpirationDate(cred));
 
-    CU_ASSERT_FALSE(Credential_IsSelfProclaimed(cred));
-    CU_ASSERT_FALSE(Credential_IsExpired(cred));
-    CU_ASSERT_TRUE(Credential_IsGenuine(cred));
-    CU_ASSERT_TRUE(Credential_IsValid(cred));
+        CU_ASSERT_FALSE(Credential_IsSelfProclaimed(cred));
+        CU_ASSERT_FALSE(Credential_IsExpired(cred));
+        CU_ASSERT_TRUE(Credential_IsGenuine(cred));
+        CU_ASSERT_TRUE(Credential_IsValid(cred));
+    }
 }
 
 static void test_vc_selfclaimvc_fromcid(void)
@@ -349,52 +370,54 @@ static void test_vc_selfclaimvc_fromcid(void)
     Credential *cred;
     const char *types[2], *data;
     size_t size;
-    int i;
+    int i, version;
 
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
+    for (version = 2; version < 4; version++) {
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, version));
 
-    foobardoc = TestData_GetDocument("foobar", NULL, 2);
-    CU_ASSERT_PTR_NOT_NULL(foobardoc);
+        foobardoc = TestData_GetDocument("foobar", NULL, version);
+        CU_ASSERT_PTR_NOT_NULL(foobardoc);
 
-    did = DIDDocument_GetSubject(foobardoc);
-    CU_ASSERT_PTR_NOT_NULL(did);
+        did = DIDDocument_GetSubject(foobardoc);
+        CU_ASSERT_PTR_NOT_NULL(did);
 
-    cred = TestData_GetCredential("foobar", "services", NULL, 2);
-    CU_ASSERT_PTR_NOT_NULL(cred);
+        cred = TestData_GetCredential("foobar", "services", NULL, version);
+        CU_ASSERT_PTR_NOT_NULL(cred);
 
-    id = DIDURL_NewFromDid(did, "services");
-    CU_ASSERT_PTR_NOT_NULL(id);
-    CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
-    DIDURL_Destroy(id);
+        id = DIDURL_NewFromDid(did, "services");
+        CU_ASSERT_PTR_NOT_NULL(id);
+        CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
+        DIDURL_Destroy(id);
 
-    size = Credential_GetTypes(cred, types, sizeof(types));
-    CU_ASSERT_EQUAL(size, 2);
+        size = Credential_GetTypes(cred, types, sizeof(types));
+        CU_ASSERT_EQUAL(size, 2);
 
-    for (i = 0; i < size; i++) {
-        const char *type = types[i];
-        CU_ASSERT_TRUE(!strcmp(type, "SelfProclaimedCredential") ||
-                !strcmp(type, "BasicProfileCredential"));
+        for (i = 0; i < size; i++) {
+            const char *type = types[i];
+            CU_ASSERT_TRUE(!strcmp(type, "SelfProclaimedCredential") ||
+                    !strcmp(type, "VerifiableCredential"));
+        }
+
+        CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(foobardoc), Credential_GetIssuer(cred)));
+        CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
+
+        data = Credential_GetProperty(cred, "Outsourceing");
+        CU_ASSERT_STRING_EQUAL("https://foobar.com/outsourcing", data);
+        free((void*)data);
+        data = Credential_GetProperty(cred, "consultation");
+        CU_ASSERT_STRING_EQUAL("https://foobar.com/consultation", data);
+        free((void*)data);
+
+        CU_ASSERT_NOT_EQUAL(0, Credential_GetIssuanceDate(cred));
+        CU_ASSERT_NOT_EQUAL(0, Credential_GetExpirationDate(cred));
+
+        CU_ASSERT_TRUE(Credential_IsSelfProclaimed(cred));
+        CU_ASSERT_FALSE(Credential_IsExpired(cred));
+        CU_ASSERT_TRUE(Credential_IsGenuine(cred));
+        CU_ASSERT_TRUE(Credential_IsValid(cred));
     }
-
-    CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(foobardoc), Credential_GetIssuer(cred)));
-    CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
-
-    data = Credential_GetProperty(cred, "Outsourceing");
-    CU_ASSERT_STRING_EQUAL("https://foobar.com/outsourcing", data);
-    free((void*)data);
-    data = Credential_GetProperty(cred, "consultation");
-    CU_ASSERT_STRING_EQUAL("https://foobar.com/consultation", data);
-    free((void*)data);
-
-    CU_ASSERT_NOT_EQUAL(0, Credential_GetIssuanceDate(cred));
-    CU_ASSERT_NOT_EQUAL(0, Credential_GetExpirationDate(cred));
-
-    CU_ASSERT_TRUE(Credential_IsSelfProclaimed(cred));
-    CU_ASSERT_FALSE(Credential_IsExpired(cred));
-    CU_ASSERT_TRUE(Credential_IsGenuine(cred));
-    CU_ASSERT_TRUE(Credential_IsValid(cred));
 }
 
 static void test_vc_parse_vcs(void)
@@ -404,14 +427,17 @@ static void test_vc_parse_vcs(void)
         { 1, "user1", "json", NULL     }, { 2, "user1", "twitter", NULL   },
         { 2, "user1", "passport", NULL }, { 2, "user1", "json", NULL      },
         { 2, "foobar", "license", NULL }, { 2, "foobar", "services", NULL },
-        { 2, "foo", "email", NULL }
+        { 2, "foo", "email", NULL },      { 3, "user1", "twitter", NULL   },
+        { 3, "user1", "passport", NULL }, { 3, "user1", "json", NULL      },
+        { 3, "foobar", "license", NULL }, { 3, "foobar", "services", NULL },
+        { 3, "foo", "email", NULL }
     };
     const char *normJson, *compactJson, *data;
     Credential *normvc, *compactvc, *cred;
     DataParam *param;
     int i;
 
-    for (i = 0; i < 9; i++) {
+    for (i = 0; i < 15; i++) {
         param = &params[i];
         normJson = TestData_GetCredentialJson(param->did, param->param, "normalized", param->version);
         CU_ASSERT_PTR_NOT_NULL(normJson);

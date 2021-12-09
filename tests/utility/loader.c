@@ -39,7 +39,7 @@
 
 #define HARDENED                       0x80000000
 
-const char *VERSION[3] = {"v1-backup", "v1", "v2"};
+const char *VERSION[] = {"v1-backup", "v1", "v2", "v2.2"};
 
 typedef struct TestData {
     char dkey[128];
@@ -94,6 +94,10 @@ char *get_testdata_path(char *path, char *file, int version)
             break;
         case 2:
             len = snprintf(path, PATH_MAX, "..%setc%sdid%sresources%sv2%stestdata%s%s",
+                PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, file);
+            break;
+        case 3:
+            len = snprintf(path, PATH_MAX, "..%setc%sdid%sresources%sv2.2%stestdata%s%s",
                 PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, PATH_STEP, file);
             break;
         default:

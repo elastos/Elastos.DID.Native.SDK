@@ -49,6 +49,11 @@ typedef struct CredentialProof {
 } CredentialProof;
 
 struct Credential {
+    struct {                    //optional
+        size_t size;
+        char **contexts;
+    } context;
+
     DIDURL id;
 
     struct {

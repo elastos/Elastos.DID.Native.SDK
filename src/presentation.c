@@ -37,9 +37,10 @@
 #include "presentation.h"
 #include "didmeta.h"
 
-static const char *PresentationType = "VerifiablePresentation";
+static const char *DEFAULT_PRESENTATION_TYPE = "VerifiablePresentation";
 extern const char *ProofType;
 
+static const char *DID_CONTEXT = "@context";
 static const char *ID = "id";
 static const char *TYPE = "type";
 static const char *HOLDER = "holder";
@@ -51,9 +52,12 @@ static const char *REALM = "realm";
 static const char *VERIFICATION_METHOD = "verificationMethod";
 static const char *SIGNATURE = "signature";
 
+extern const char *ELASTOS_CREDENTIAL_CONTEXT;
+extern const char *W3C_CREDENTIAL_CONTEXT;
+
 static int proof_toJson(JsonGenerator *gen, Presentation *presentation, int compact)
 {
-    char id[ELA_MAX_DIDURL_LEN];
+    char id[ELA_MAX_DIDURL_LEN], _timestring[DOC_BUFFER_LEN];
 
     assert(gen);
     assert(gen->buffer);
@@ -62,6 +66,9 @@ static int proof_toJson(JsonGenerator *gen, Presentation *presentation, int comp
     CHECK(DIDJG_WriteStartObject(gen));
     if (!compact)
         CHECK(DIDJG_WriteStringField(gen, TYPE, presentation->proof.type));
+    if (presentation->proof.created > 0)
+        CHECK(DIDJG_WriteStringField(gen, CREATED,
+                get_time_string(_timestring, sizeof(_timestring), &presentation->proof.created)));
     CHECK(DIDJG_WriteStringField(gen, VERIFICATION_METHOD,
         DIDURL_ToString_Internal(&presentation->proof.verificationMethod, id, sizeof(id), compact)));
     CHECK(DIDJG_WriteStringField(gen, REALM, presentation->proof.realm));
@@ -104,6 +111,12 @@ static int presentation_tojson_internal(JsonGenerator *gen, Presentation *presen
     assert(presentation);
 
     CHECK(DIDJG_WriteStartObject(gen));
+
+    if (presentation->context.size > 0) {
+        CHECK(DIDJG_WriteFieldName(gen, DID_CONTEXT));
+        CHECK(ContextArray_ToJson(gen, presentation->context.contexts, presentation->context.size));
+    }
+
     if (*presentation->id.did.idstring) {
         id = DIDURL_ToString_Internal(&presentation->id, idstring, sizeof(idstring), false);
         CHECK(DIDJG_WriteStringField(gen, ID, id));
@@ -112,15 +125,16 @@ static int presentation_tojson_internal(JsonGenerator *gen, Presentation *presen
         CHECK(DIDJG_WriteFieldName(gen, TYPE));
         CHECK(types_toJson(gen, presentation));
     } else {
-        CHECK(DIDJG_WriteStringField(gen, TYPE, PresentationType));
+        CHECK(DIDJG_WriteStringField(gen, TYPE, DEFAULT_PRESENTATION_TYPE));
     }
 
     if (*presentation->holder.idstring)
         CHECK(DIDJG_WriteStringField(gen, HOLDER,
                 DID_ToString(&presentation->holder, idstring, sizeof(idstring))));
 
-    CHECK(DIDJG_WriteStringField(gen, CREATED,
-            get_time_string(_timestring, sizeof(_timestring), &presentation->created)));
+    if (presentation->created > 0)
+        CHECK(DIDJG_WriteStringField(gen, CREATED,
+                get_time_string(_timestring, sizeof(_timestring), &presentation->created)));
 
     CHECK(DIDJG_WriteFieldName(gen, VERIFIABLE_CREDENTIAL));
     CredentialArray_ToJson(gen, presentation->credentials.credentials,
@@ -245,6 +259,19 @@ static int parse_proof(Presentation *presentation, json_t *json)
 
     strcpy(presentation->proof.type, ProofType);
 
+    item = json_object_get(json, CREATED);
+    if (!item && presentation->created == 0) {
+        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing time created presentation.");
+        return -1;
+    }
+
+    if (item) {
+        if (!json_is_string(item) || parse_time(&presentation->proof.created, json_string_value(item)) == -1) {
+            DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid time created presentation.");
+            return -1;
+        }
+    }
+
     item = json_object_get(json, VERIFICATION_METHOD);
     if (!item) {
         DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing signkey for presentation.");
@@ -304,6 +331,35 @@ static int parse_proof(Presentation *presentation, json_t *json)
     return 0;
 }
 
+static int Parse_Contexts(Presentation *presentation, json_t *json)
+{
+    json_t *field;
+    int i, size;
+
+    assert(presentation);
+    assert(json);
+
+    size = json_array_size(json);
+
+    presentation->context.contexts = (char**)calloc(size, sizeof(char*));
+    if (!presentation->context.contexts) {
+        DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for contexts failed.");
+        return -1;
+    }
+
+    for (i = 0; i < size; i++) {
+        field = json_array_get(json, i);
+        if (!field || !json_is_string(field)) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Wrong context.");
+            return -1;
+        }
+
+        presentation->context.contexts[presentation->context.size++] = strdup(json_string_value(field));
+    }
+
+    return 0;
+}
+
 static Presentation *parse_presentation(json_t *json)
 {
     json_t *item;
@@ -317,6 +373,16 @@ static Presentation *parse_presentation(json_t *json)
     if (!presentation) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for presentation failed.");
         return NULL;
+    }
+
+    item = json_object_get(json, DID_CONTEXT);
+    if (item) {
+        if (!json_is_array(item)) {
+            DIDError_Set(DIDERR_MALFORMED_DOCUMENT, "Invalid context.");
+            goto errorExit;
+        }
+        if (Parse_Contexts(presentation, item) == -1)
+            goto errorExit;
     }
 
     item = json_object_get(json, HOLDER);
@@ -360,13 +426,11 @@ static Presentation *parse_presentation(json_t *json)
         goto errorExit;
 
     item = json_object_get(json, CREATED);
-    if (!item) {
-        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing time created presentation.");
-        goto errorExit;
-    }
-    if (!json_is_string(item) || parse_time(&presentation->created, json_string_value(item)) == -1) {
-        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid time created presentation.");
-        goto errorExit;
+    if (item) {
+        if (!json_is_string(item) || parse_time(&presentation->created, json_string_value(item)) == -1) {
+            DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid time created presentation.");
+            goto errorExit;
+        }
     }
 
     item = json_object_get(json, PROOF);
@@ -523,6 +587,7 @@ static int seal_presentation(Presentation *presentation, DIDDocument *doc, DIDUR
     DIDDocument *signerdoc;
     const char *data;
     char signature[SIGNATURE_BYTES * 2 + 16];
+    time_t created;
     int rc;
 
     assert(presentation);
@@ -531,8 +596,6 @@ static int seal_presentation(Presentation *presentation, DIDDocument *doc, DIDUR
     assert(storepass && *storepass);
     assert(nonce && *nonce);
     assert(realm && *realm);
-
-    time(&presentation->created);
 
     data = presentation_tojson_forsign(presentation, false, true);
     if (!data)
@@ -564,6 +627,10 @@ static int seal_presentation(Presentation *presentation, DIDDocument *doc, DIDUR
         return -1;
     }
 
+    time(&created);
+    presentation->created = created;
+    presentation->proof.created = created;
+
     strcpy(presentation->proof.type, ProofType);
     DIDURL_Copy(&presentation->proof.verificationMethod, signkey);
     strcpy(presentation->proof.nonce, nonce);
@@ -571,6 +638,61 @@ static int seal_presentation(Presentation *presentation, DIDDocument *doc, DIDUR
     strcpy(presentation->proof.signatureValue, signature);
 
     return 0;
+}
+
+static void add_type(Presentation *presentation, const char *type)
+{
+    char *pos, *copy;
+
+    assert(presentation);
+    assert(type && *type);
+
+    pos = strstr(type, "#");
+    if (pos) {
+        if (Features_IsEnabledJsonLdContext() &&
+                !contains_content(presentation->context.contexts, presentation->context.size, copy)) {
+            presentation->context.contexts[presentation->context.size++] = (char*)calloc(1, pos - type + 1);
+            strncpy(presentation->context.contexts[presentation->context.size++], type, pos - type);
+        }
+        copy = pos + 1;
+    } else {
+        copy = (char*)type;
+    }
+
+    if (!contains_content(presentation->type.types, presentation->type.size, copy))
+        presentation->type.types[presentation->type.size++] = strdup(copy);
+}
+
+static int add_default_type(Presentation *presentation)
+{
+    const char *defaults[2] = { W3C_CREDENTIAL_CONTEXT, ELASTOS_CREDENTIAL_CONTEXT };
+    assert(presentation);
+
+    if (Features_IsEnabledJsonLdContext()) {
+        presentation->context.contexts[0] = strdup(defaults[0]);
+        presentation->context.contexts[1] = strdup(defaults[1]);
+        presentation->context.size = 2;
+    }
+
+    presentation->type.types[presentation->type.size++] = strdup(DEFAULT_PRESENTATION_TYPE);
+    return 0;
+}
+
+static bool check_types(const char **types, size_t size)
+{
+    int i;
+
+    assert(types);
+    assert(size > 0);
+
+    for (i = 0; i < size; i++) {
+        if (Features_IsEnabledJsonLdContext()) {
+            if (!strstr(types[i], "#")) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -589,6 +711,12 @@ static Presentation *create_presentation(DIDURL *id, DID *holder,
     assert(realm);
     assert(store);
     assert(storepass && *storepass);
+
+    //check type
+    if (types && !check_types(types, size)) {
+        DIDError_Set(DIDERR_INVALID_ARGS, "The type must has context.");
+        goto errorExit;
+    }
 
     if (!DID_Equals(&id->did, holder)) {
         DIDError_Set(DIDERR_INVALID_ARGS, "The id mismatch with holder.");
@@ -625,25 +753,28 @@ static Presentation *create_presentation(DIDURL *id, DID *holder,
         goto errorExit;
     }
 
-    DIDURL_Copy(&presentation->id, id);
-    DID_Copy(&presentation->holder, holder);
+    if (Features_IsEnabledJsonLdContext()) {
+        presentation->context.contexts = (char**)calloc(size + 2, sizeof(char*));
+        if (!presentation->context.contexts) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for contexts failed.");
+            goto errorExit;
+        }
+    }
 
-    if (!types)
-        size = 1;
-
-    presentation->type.types = (char **)calloc(size, sizeof(char *));
+    presentation->type.types = (char**)calloc(size + 1, sizeof(char*));
     if (!presentation->type.types) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for types failed.");
         goto errorExit;
     }
 
-    if (!types) {
-        presentation->type.types[0] = strdup(PresentationType);
-    } else {
-        for (i = 0; i < size; i++)
-            presentation->type.types[i] = strdup(types[i]);
-    }
-    presentation->type.size = size;
+    if (add_default_type(presentation) == -1)
+        goto errorExit;
+
+    for (i = 0; i < size; i++)
+        add_type(presentation, types[i]);
+
+    DIDURL_Copy(&presentation->id, id);
+    DID_Copy(&presentation->holder, holder);
 
     if (creds && add_credentialarray_to_presentation(presentation, count, creds) < 0)
         goto errorExit;
@@ -729,6 +860,12 @@ void Presentation_Destroy(Presentation *presentation)
 
     if (!presentation)
         return;
+
+    if (presentation->context.size > 0) {
+        for (i = 0; i < presentation->context.size; i++)
+            free((void*)presentation->context.contexts[i]);
+        free((void*)presentation->context.contexts);
+    }
 
     if (presentation->type.size > 0) {
         for (i = 0; i < presentation->type.size; i++)
@@ -906,7 +1043,7 @@ time_t Presentation_GetCreatedTime(Presentation *presentation)
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!presentation, "No persentation argument.", 0);
-    return presentation->created;
+    return presentation->proof.created != 0 ? presentation->proof.created: presentation->created;
 
     DIDERROR_FINALIZE();
 }

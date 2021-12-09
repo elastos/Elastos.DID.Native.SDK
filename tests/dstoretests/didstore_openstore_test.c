@@ -193,7 +193,7 @@ static void test_openstore_compatibility(void)
     int count = 0, version;
     DID *did;
 
-    for(version = 1; version <= 2; version++) {
+    for(version = 1; version <= 3; version++) {
         store = TestData_SetupTestStore(true, version);
         CU_ASSERT_PTR_NOT_NULL(store);
 
@@ -202,7 +202,8 @@ static void test_openstore_compatibility(void)
         CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, version));
         CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, version));
 
-        if (version == 2) {
+        if (version >= 2) {
+            count = 0;
             CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListRootIdentities(store, get_identity, (void*)&count));
             CU_ASSERT_EQUAL(1, count);
         }
@@ -212,7 +213,7 @@ static void test_openstore_compatibility(void)
         helper.version = version;
 
         CU_ASSERT_NOT_EQUAL(-1, DIDStore_ListDIDs(store, 0, get_did, (void*)&helper));
-        if (version == 2) {
+        if (version >= 2) {
             CU_ASSERT_EQUAL(10, helper.count);
         } else {
             CU_ASSERT_EQUAL(4, helper.count);
@@ -248,28 +249,31 @@ static void test_openstore_newdid_with_wrongpw(void)
     DIDStore *store;
     DIDDocument *doc;
     const char *id;
+    int version;
 
-    store = TestData_SetupTestStore(true, 2);
-    CU_ASSERT_PTR_NOT_NULL(store);
+    for (version = 2; version <= 3; version++) {
+        store = TestData_SetupTestStore(true, version);
+        CU_ASSERT_PTR_NOT_NULL(store);
 
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, 2));
-    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 2));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, version));
 
-    id = DIDStore_GetDefaultRootIdentity(store);
-    CU_ASSERT_PTR_NOT_NULL(id);
+        id = DIDStore_GetDefaultRootIdentity(store);
+        CU_ASSERT_PTR_NOT_NULL(id);
 
-    rootidentity = DIDStore_LoadRootIdentity(store, id);
-    free((void*)id);
-    CU_ASSERT_PTR_NOT_NULL(rootidentity);
+        rootidentity = DIDStore_LoadRootIdentity(store, id);
+        free((void*)id);
+        CU_ASSERT_PTR_NOT_NULL(rootidentity);
 
-    doc = RootIdentity_NewDID(rootidentity, "1234", "", false);
-    RootIdentity_Destroy(rootidentity);
-    CU_ASSERT_PTR_NULL(doc);
-    DIDDocument_Destroy(doc);
+        doc = RootIdentity_NewDID(rootidentity, "1234", "", false);
+        RootIdentity_Destroy(rootidentity);
+        CU_ASSERT_PTR_NULL(doc);
+        DIDDocument_Destroy(doc);
 
-    TestData_Free();
+        TestData_Free();
+    }
 }
 
 static void didstore_openstore_emptyfolder(void)
