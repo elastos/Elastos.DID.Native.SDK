@@ -2202,10 +2202,10 @@ int DIDDocumentBuilder_AddDefaultContext(DIDDocumentBuilder *builder)
     }
 
     for (i = 0; i < size; i++)
-        contexts[i] = strdup(defaults[i]);
+        contexts[document->context.size + i] = strdup(defaults[i]);
 
     document->context.contexts = contexts;
-    document->context.size = i;
+    document->context.size = document->context.size + size;
     clean_proofs(document);
     return 0;
 

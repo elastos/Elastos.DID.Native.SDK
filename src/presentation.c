@@ -260,6 +260,11 @@ static int parse_proof(Presentation *presentation, json_t *json)
     strcpy(presentation->proof.type, ProofType);
 
     item = json_object_get(json, CREATED);
+    if (!item && presentation->created == 0) {
+        DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Missing time created presentation.");
+        return -1;
+    }
+
     if (item) {
         if (!json_is_string(item) || parse_time(&presentation->proof.created, json_string_value(item)) == -1) {
             DIDError_Set(DIDERR_MALFORMED_PRESENTATION, "Invalid time created presentation.");
@@ -582,6 +587,7 @@ static int seal_presentation(Presentation *presentation, DIDDocument *doc, DIDUR
     DIDDocument *signerdoc;
     const char *data;
     char signature[SIGNATURE_BYTES * 2 + 16];
+    time_t created;
     int rc;
 
     assert(presentation);
@@ -621,7 +627,10 @@ static int seal_presentation(Presentation *presentation, DIDDocument *doc, DIDUR
         return -1;
     }
 
-    time(&presentation->proof.created);
+    time(&created);
+    presentation->created = created;
+    presentation->proof.created = created;
+
     strcpy(presentation->proof.type, ProofType);
     DIDURL_Copy(&presentation->proof.verificationMethod, signkey);
     strcpy(presentation->proof.nonce, nonce);
@@ -640,10 +649,11 @@ static void add_type(Presentation *presentation, const char *type)
 
     pos = strstr(type, "#");
     if (pos) {
-        copy = (char*)alloca(pos - type + 1);
-        strncpy(copy, type, pos - type);
-        if (Features_IsEnabledJsonLdContext() && !contains_content(presentation->context.contexts, presentation->context.size, copy))
-            presentation->context.contexts[presentation->context.size++] = strdup(copy);
+        if (Features_IsEnabledJsonLdContext() &&
+                !contains_content(presentation->context.contexts, presentation->context.size, copy)) {
+            presentation->context.contexts[presentation->context.size++] = (char*)calloc(1, pos - type + 1);
+            strncpy(presentation->context.contexts[presentation->context.size++], type, pos - type);
+        }
         copy = pos + 1;
     } else {
         copy = (char*)type;

@@ -135,11 +135,11 @@ static void add_type(Credential *credential, const char *type)
 
     pos = strstr(type, "#");
     if (pos) {
-        copy = (char*)alloca(pos - type + 1);
-        strncpy(copy, type, pos - type);
-        copy[pos - type] = 0;
-        if (Features_IsEnabledJsonLdContext() && !contains_content(credential->context.contexts, credential->context.size, copy))
-            credential->context.contexts[credential->context.size++] = strdup(copy);
+        if (Features_IsEnabledJsonLdContext() &&
+                !contains_content(credential->context.contexts, credential->context.size, copy)) {
+            credential->context.contexts[credential->context.size++] = (char*)calloc(1, pos - type + 1);
+            strncpy(credential->context.contexts[credential->context.size++], type, pos - type);
+        }
         copy = pos + 1;
     } else {
         copy = (char*)type;
