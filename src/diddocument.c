@@ -2149,7 +2149,7 @@ int DIDDocumentBuilder_AddContext(DIDDocumentBuilder *builder, const char *conte
     assert(document);
 
     if (document->context.size > 0) {
-        if (contains_content(document->context.contexts, document->context.size, context)) {
+        if (contains_content(document->context.contexts, document->context.size, context, strlen(context))) {
             DIDError_Set(DIDERR_ALREADY_EXISTS, "Context already exists.");
             return -1;
         }
@@ -2184,11 +2184,11 @@ int DIDDocumentBuilder_AddDefaultContext(DIDDocumentBuilder *builder)
     CHECK_ARG(!builder || !builder->document, "Invalid document builder argument.", -1);
 
     document = builder->document;
-    if (!contains_content(document->context.contexts, document->context.size, W3C_DID_CONTEXT))
+    if (!contains_content(document->context.contexts, document->context.size, W3C_DID_CONTEXT, strlen(W3C_DID_CONTEXT)))
         defaults[size++] = W3C_DID_CONTEXT;
-    if (!contains_content(document->context.contexts, document->context.size, ELASTOS_DID_CONTEXT))
+    if (!contains_content(document->context.contexts, document->context.size, ELASTOS_DID_CONTEXT, strlen(ELASTOS_DID_CONTEXT)))
         defaults[size++] = ELASTOS_DID_CONTEXT;
-    if (!contains_content(document->context.contexts, document->context.size, W3ID_SECURITY_CONTEXT))
+    if (!contains_content(document->context.contexts, document->context.size, W3ID_SECURITY_CONTEXT, strlen(W3ID_SECURITY_CONTEXT)))
         defaults[size++] = W3ID_SECURITY_CONTEXT;
 
     if (size == 0)
@@ -2882,8 +2882,7 @@ int DIDDocumentBuilder_RenewSelfProclaimedCredential(DIDDocumentBuilder *builder
         DID *controller, DIDURL *signkey, const char *storepass)
 {
     DIDDocument *document;
-    Credential *cred;
-    Issuer *issuer = NULL;
+    Credential *cred, *copy = NULL;
     int i, rc = -1;
 
     DIDERROR_INITIALIZE();
@@ -2900,33 +2899,45 @@ int DIDDocumentBuilder_RenewSelfProclaimedCredential(DIDDocumentBuilder *builder
         return -1;
     }
 
-    if (!issuer) {
-        issuer = Issuer_Create(&document->did, signkey, document->metadata.base.store);
-        if (!issuer)
-            return -1;
-    }
-
     for (i = 0; i < document->credentials.size; i++) {
         cred = document->credentials.credentials[i];
         assert(cred);
-        if (!Credential_IsSelfProclaimed(cred) ||
-                !DID_Equals(controller, &cred->proof.verificationMethod.did))
+        if (Credential_IsSelfProclaimed(cred) != 1 ||
+                DID_Equals(controller, &cred->proof.verificationMethod.did) != 1)
             continue;
 
-        cred = Issuer_Generate_Credential(issuer, &document->did, &cred->id,
-                (const char**)cred->type.types, cred->type.size, cred->subject.properties,
-                cred->expirationDate, storepass);
-        if (!cred)
+        copy = (Credential*)calloc(1, sizeof(Credential));
+        if (!copy) {
+            DIDError_Set(DIDERR_OUT_OF_MEMORY, "Malloc buffer for credential failed.");
+            goto pointexit;
+        }
+
+        if (Credential_Copy(copy, cred) == -1)
             goto pointexit;
 
-        Credential_Destroy(document->credentials.credentials[i]);
-        document->credentials.credentials[i] = cred;
+        const char *data = Credential_ToJson_ForSign(cred, false, true);
+        if (!data)
+            goto pointexit;
+
+        rc = DIDDocument_Sign(document, signkey, storepass, copy->proof.signatureValue,
+                1, (unsigned char*)data, strlen(data));
+        free((void*)data);
+        if (rc) {
+            DIDError_Set(DIDERR_SIGN_ERROR, "Sign credential failed.");
+            goto pointexit;
+        }
+
+        DIDURL_Copy(&copy->proof.verificationMethod, signkey);
+
+        Credential_Destroy(cred);
+        document->credentials.credentials[i] = copy;
+        copy = NULL;
     }
 
     rc = 0;
 
 pointexit:
-    Issuer_Destroy(issuer);
+    Credential_Destroy(copy);
     return rc;
 
     DIDERROR_FINALIZE();
@@ -3394,7 +3405,7 @@ ssize_t DIDDocument_GetPublicKeyCount(DIDDocument *document)
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             if (doc)
-                count += doc->publickeys.size;
+                count += DIDDocument_GetAuthenticationCount(doc);
         }
     }
 

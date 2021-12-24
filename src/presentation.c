@@ -650,8 +650,8 @@ static void add_type(Presentation *presentation, const char *type)
     pos = strstr(type, "#");
     if (pos) {
         if (Features_IsEnabledJsonLdContext() &&
-                !contains_content(presentation->context.contexts, presentation->context.size, copy)) {
-            presentation->context.contexts[presentation->context.size++] = (char*)calloc(1, pos - type + 1);
+                !contains_content(presentation->context.contexts, presentation->context.size, type, pos - type)) {
+            presentation->context.contexts[presentation->context.size] = (char*)calloc(1, pos - type + 1);
             strncpy(presentation->context.contexts[presentation->context.size++], type, pos - type);
         }
         copy = pos + 1;
@@ -659,7 +659,7 @@ static void add_type(Presentation *presentation, const char *type)
         copy = (char*)type;
     }
 
-    if (!contains_content(presentation->type.types, presentation->type.size, copy))
+    if (!contains_content(presentation->type.types, presentation->type.size, copy, strlen(copy)))
         presentation->type.types[presentation->type.size++] = strdup(copy);
 }
 
