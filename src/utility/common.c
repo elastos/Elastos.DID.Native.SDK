@@ -528,7 +528,7 @@ const char *json_astext(json_t *item)
     return strdup(value);
 }
 
-bool contains_content(char **contents, size_t size, const char *content)
+bool contains_content(char **contents, size_t size, const char *content, size_t len)
 {
     int i;
     char *_content;
@@ -538,7 +538,7 @@ bool contains_content(char **contents, size_t size, const char *content)
 
     for (i = 0; i < size; i++) {
         _content = contents[i];
-        if(_content && !strcmp(_content, content))
+        if(_content && (strlen(_content) == len) && !strncmp(_content, content, len))
             return true;
     }
 

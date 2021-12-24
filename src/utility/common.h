@@ -101,7 +101,7 @@ char *last_strstr(const char *haystack, const char *needle);
 
 const char *json_astext(json_t *item);
 
-bool contains_content(char **contents, size_t size, const char *content);
+bool contains_content(char **contents, size_t size, const char *content, size_t len);
 
 #ifdef __cplusplus
 }
