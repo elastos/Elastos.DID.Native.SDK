@@ -445,18 +445,7 @@ static void test_idchain_listvc2(void)
         printf("\n------------------------------------------------------------\n%s Json-LD Context, please wait...\n", j == 0 ? "diable" : "enable");
         Features_EnableJsonLdContext((bool)j);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
         TestData_Reset(2);
-=======
-    for (i = 0; i < 12; i++) {
-        param = &params[i];
-        signkey1 = NULL;
->>>>>>> b8ceaca (Update the created timstamp for presentation according to the W3C spec and update test case.)
-=======
-        TestData_Reset(2);
->>>>>>> 1ffc420 (Fix bugs for test case.)
-
         for (i = 0; i < 12; i++) {
             param = &params[i];
             signkey1 = NULL;
