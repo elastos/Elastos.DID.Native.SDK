@@ -136,8 +136,8 @@ static void add_type(Credential *credential, const char *type)
     pos = strstr(type, "#");
     if (pos) {
         if (Features_IsEnabledJsonLdContext() &&
-                !contains_content(credential->context.contexts, credential->context.size, copy)) {
-            credential->context.contexts[credential->context.size++] = (char*)calloc(1, pos - type + 1);
+                !contains_content(credential->context.contexts, credential->context.size, type, pos - type)) {
+            credential->context.contexts[credential->context.size] = (char*)calloc(1, pos - type + 1);
             strncpy(credential->context.contexts[credential->context.size++], type, pos - type);
         }
         copy = pos + 1;
@@ -145,7 +145,7 @@ static void add_type(Credential *credential, const char *type)
         copy = (char*)type;
     }
 
-    if (!contains_content(credential->type.types, credential->type.size, copy))
+    if (!contains_content(credential->type.types, credential->type.size, copy, strlen(copy)))
         credential->type.types[credential->type.size++] = strdup(copy);
 }
 
@@ -198,7 +198,7 @@ Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
     assert(expires > 0);
     assert(storepass && *storepass);
 
-    if (!DID_Equals(owner, &credid->did)) {
+    if (DID_Equals(owner, &credid->did) != 1) {
         DIDError_Set(DIDERR_INVALID_ARGS, "Credential owner isn't match with credential did.");
         goto errorExit;
     }

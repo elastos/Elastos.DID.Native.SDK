@@ -536,7 +536,8 @@ int Metadata_Copy(Metadata *dest, Metadata *src)
         }
     }
 
-    json_decref(dest->data);
+    if (dest->data)
+        json_decref(dest->data);
 
     dest->store = src->store;
     dest->data  = data;

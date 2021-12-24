@@ -203,6 +203,7 @@ int Credential_ToJson_Internal(JsonGenerator *gen, Credential *credential, DID *
         bool compact, bool forsign)
 {
     char buf[MAX(DOC_BUFFER_LEN, ELA_MAX_DIDURL_LEN)];
+    DID *owner;
 
     assert(gen);
     assert(gen->buffer);
@@ -216,6 +217,11 @@ int Credential_ToJson_Internal(JsonGenerator *gen, Credential *credential, DID *
 
     DIDURL_ToString_Internal(&credential->id, buf, sizeof(buf), compact);
     CHECK(DIDJG_WriteStringField(gen, ID, buf));
+
+    if (did)
+        owner = did;
+    else
+        owner = &credential->id.did;
 
     CHECK(DIDJG_WriteFieldName(gen, TYPE));
     CHECK(types_toJson(gen, credential));
@@ -231,7 +237,7 @@ int Credential_ToJson_Internal(JsonGenerator *gen, Credential *credential, DID *
         CHECK(DIDJG_WriteStringField(gen, EXPIRATION_DATE,
                 get_time_string(buf, sizeof(buf), &credential->expirationDate)));
     CHECK(DIDJG_WriteFieldName(gen, CREDENTIAL_SUBJECT));
-    CHECK(subject_toJson(gen, credential, did, compact));
+    CHECK(subject_toJson(gen, credential, owner, compact));
     if (!forsign) {
         CHECK(DIDJG_WriteFieldName(gen, PROOF));
         CHECK(proof_toJson(gen, credential, compact));
@@ -1114,9 +1120,7 @@ int Credential_Copy(Credential *dest, Credential *src)
     }
 
     for (i = 0; i < src->type.size; i++)
-        dest->type.types[i] = strdup(src->type.types[i]);
-
-    dest->type.size = src->type.size;
+        dest->type.types[dest->type.size++] = strdup(src->type.types[i]);
 
     DID_Copy(&dest->issuer, &src->issuer);
 
@@ -1278,58 +1282,57 @@ errorExit:
     DIDERROR_FINALIZE();
 }
 
-int Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
+int Credential_RevokeById(DIDURL *id, DIDDocument *signer, DIDURL *signkey,
         const char *storepass)
 {
     DIDDocument *doc = NULL;
     DIDStore *store;
-    Credential *local_vc;
+    CredentialBiography *biography;
     int brevoked, check;
 
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!id, "No credential id to be revoked.", -1);
-    CHECK_ARG(!document, "No document argument.", -1);
+    CHECK_ARG(!signer, "No signer argument.", -1);
     CHECK_PASSWORD(storepass, -1);
 
-    if (!DIDMetadata_AttachedStore(&document->metadata)) {
+    if (!DIDMetadata_AttachedStore(&signer->metadata)) {
         DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
         return -1;
     }
 
-    store = document->metadata.base.store;
-    local_vc = DIDStore_LoadCredential(store, &id->did, id);
-    if (local_vc) {
-        brevoked = Credential_IsRevoked(local_vc);
-        Credential_Destroy(local_vc);
-        if (brevoked != 0) {
-            if (brevoked == 1)
-                DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "Credential is revoked.");
-            return -1;
-        }
-    }
-
-    check = Credential_ResolveRevocation(id, &document->did);
-    if (check != 0) {
-        if (check == 1)
+    biography = DIDBackend_ResolveCredentialBiography(id, &signer->did);
+    if (biography) {
+        if (biography->status == CredentialStatus_Revoked) {
             DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "Credential is revoked.");
-        return -1;
+            CredentialBiography_Destroy(biography);
+            return -1;
+        } else if (biography->status == CredentialStatus_Valid) {
+            Credential *vc = biography->txs.txs[0].request.vc;
+            if (DID_Equals(&signer->did, &vc->id.did) != 1 && DID_Equals(&signer->did, &vc->issuer) != 1) {
+                DIDError_Set(DIDERR_UNSUPPORTED, "Signer must be signer or issuer for credential.");
+                CredentialBiography_Destroy(biography);
+                return -1;
+            }
+        }
+
+        CredentialBiography_Destroy(biography);
     }
 
     if (!signkey) {
-        signkey = DIDDocument_GetDefaultPublicKey(document);
+        signkey = DIDDocument_GetDefaultPublicKey(signer);
         if (!signkey) {
             DIDError_Set(DIDERR_INVALID_KEY, "Please specify signkey.");
             return -1;
         }
     } else {
-        if (!DIDDocument_IsAuthenticationKey(document, signkey)) {
+        if (!DIDDocument_IsAuthenticationKey(signer, signkey)) {
             DIDError_Set(DIDERR_INVALID_KEY, "Please specify an authentication key.");
             return -1;
         }
     }
 
-    return DIDBackend_RevokeCredential(id, signkey, document, storepass);
+    return DIDBackend_RevokeCredential(id, signkey, signer, storepass);
 
     DIDERROR_FINALIZE();
 }
