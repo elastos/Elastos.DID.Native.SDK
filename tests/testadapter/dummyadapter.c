@@ -716,9 +716,9 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, DID *issuer)
                         return -1;
                 }
 
-                if (!DIDDocument_IsAuthenticationKey(ownerdoc, signkey) &&
-                           !DIDDocument_IsAuthenticationKey(issuerdoc, signkey))
-                    break;
+                if (DIDDocument_IsAuthenticationKey(ownerdoc, signkey) != 1 &&
+                           DIDDocument_IsAuthenticationKey(issuerdoc, signkey) != 1)
+                    continue;
 
                 infos[size++] = info;
                 status = CredentialStatus_Revoked;

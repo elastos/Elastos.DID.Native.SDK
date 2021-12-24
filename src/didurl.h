@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-#define MAX_FRAGMENT_LEN                    48
+#define MAX_FRAGMENT_LEN                    128
 #define MAX_PATH_LEN                        128
 #define MAX_QUERY_LEN                       128
 

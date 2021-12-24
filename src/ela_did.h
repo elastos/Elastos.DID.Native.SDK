@@ -3511,7 +3511,7 @@ DID_API int Credential_Revoke(Credential *credential, DIDURL *signkey, const cha
  * @param
  *      id                       [in] The id of Credential.
   * @param
- *      document                 [in] The document of DID to revoke credential.
+ *      signer                   [in] The document of DID to revoke credential.
  * @param
  *      signkey                  [in] The public key of document.
  * @param
@@ -3521,7 +3521,7 @@ DID_API int Credential_Revoke(Credential *credential, DIDURL *signkey, const cha
  *      return value = 0, revoke credential failed;
  *      return value = 1, revoke credential successfully.
  */
-DID_API int Credential_RevokeById(DIDURL *id, DIDDocument *document, DIDURL *signkey,
+DID_API int Credential_RevokeById(DIDURL *id, DIDDocument *signer, DIDURL *signkey,
         const char *storepass);
 
 /**
