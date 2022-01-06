@@ -6,21 +6,10 @@
 
 #include "ela_did.h"
 #include "samples.h"
+#include "common.h"
+#include "assistadapter.h"
 
 static const char *STORE_PASS = "secret";
-
-RootIdentity *createNewRootIdentity(DIDStore *store)
-{
-    // Create a mnemonic use default language(English).
-    mnemonic = Mnemonic_Generate("english");
-    if (!mnemonic)
-        return NULL;
-
-    printf("Please write down your mnemonic:\n  %s\n", mnemonic);
-
-    // Initialize the root identity.
-    return RootIdentity_Create(mnemonic, NULL, store, STORE_PASS);
-}
 
 static int get_identities(RootIdentity *rootidentity, void *context)
 {
@@ -31,108 +20,110 @@ static int get_identities(RootIdentity *rootidentity, void *context)
     return 0;
 }
 
-void listRootIdentity(DIDStore *store)
+void list_rootidentity(DIDStore *store)
 {
     if (DIDStore_ListRootIdentities(store, get_identities, NULL) == -1)
-        printf("listRootIdentity failed.\n");
+        printf("[error] list_rootidentity failed.\n");
 }
 
-void createDid(RootIdentity *identity)
+void create_did(RootIdentity *identity)
 {
     DIDDocument *doc;
     DID *did;
     char id[ELA_MAX_DID_LEN] = {0};
     int rc;
 
-    doc = RootIdentity_NewDID(rootidentity, STORE_PASS, NULL, false);
+    doc = RootIdentity_NewDID(identity, STORE_PASS, NULL, false);
     if (!doc) {
-        printf("createDid failed.\n");
+        printf("[error] create_did failed.\n");
         return;
     }
 
     did = DIDDocument_GetSubject(doc);
     if (!did) {
         DIDDocument_Destroy(doc);
-        printf("createDid failed.\n");
+        printf("[error] create_did failed.\n");
         return;
     }
 
-    printf("Created DID: \n", DID_ToString(did, id, sizeof(id)));
+    printf("Created DID: %s\n", DID_ToString(did, id, sizeof(id)));
 
     rc = DIDDocument_PublishDID(doc, NULL, false, STORE_PASS);
     DIDDocument_Destroy(doc);
     if (rc != 1)
-        printf("createDid failed.\n");
+        printf("[error] create_did failed.\n");
     else
         printf("Published DID: %s\n", id);
 }
 
-void createDidByIndex(RootIdentity *identity, int index)
+void create_did_by_index(RootIdentity *identity, int index)
 {
     DIDDocument *doc;
     DID *did;
     char id[ELA_MAX_DID_LEN] = {0};
     int rc;
 
-    doc = RootIdentity_NewDIDByIndex(rootidentity, index, STORE_PASS, NULL, false);
+    doc = RootIdentity_NewDIDByIndex(identity, index, STORE_PASS, NULL, false);
     if (!doc) {
-        printf("createDidByIndex failed.\n");
+        printf("[error] create_did_by_index failed.\n");
         return;
     }
 
     did = DIDDocument_GetSubject(doc);
     if (!did) {
         DIDDocument_Destroy(doc);
-        printf("createDidByIndex failed.\n");
+        printf("[error] create_did_by_index failed.\n");
         return;
     }
 
-    printf("Created DID: \n", DID_ToString(did, id, sizeof(id)));
+    printf("Created DID: %s\n", DID_ToString(did, id, sizeof(id)));
 
     rc = DIDDocument_PublishDID(doc, NULL, false, STORE_PASS);
     DIDDocument_Destroy(doc);
     if (rc != 1)
-        printf("createDidByIndex failed.\n");
+        printf("[error] create_did_by_index failed.\n");
     else
         printf("Published DID: %s\n", id);
 }
 
-void createAnotherStoreAndSyncRootIdentity()
+void create_another_store_and_sync_rootidentity(const char *mnemonic)
 {
     RootIdentity *id;
 
     const char *storePath = "/tmp/RootIdentitySample_new.store";
-    deletefile(storePath);
+    delete_file(storePath);
 
     DIDStore *newStore = DIDStore_Open(storePath);
     if (!newStore) {
-        printf("createAnotherStoreAndSyncRootIdentity failed.\n");
+        printf("[error] create_another_store_and_sync_rootidentity failed.\n");
         return;
     }
 
     // Re-create the root identity with user's mnemonic.
-    id = RootIdentity_Create(mnemonic, NULL, newStore, STORE_PASS);
-    Mnemonic_Free(mnemonic);
+    id = RootIdentity_Create(mnemonic, NULL, false, newStore, STORE_PASS);
     if (!id) {
         DIDStore_Close(newStore);
-        printf("createAnotherStoreAndSyncRootIdentity failed.\n");
+        printf("[error] create_another_store_and_sync_rootidentity failed.\n");
         return;
     }
 
     // Synchronize the existing(published) DIDs that created by this identity
-    RootIdentity_Synchronize(id);
+    RootIdentity_Synchronize(id, NULL);
     // now the new store has the same contexts with the previous sample store
 
     DIDStore_Close(newStore);
 }
 
-void initRootIdentity(void)
+void InitRootIdentity(void)
 {
     RootIdentity *identity;
     const char *mnemonic;
+    DIDStore *store;
+
+    printf("-----------------------------------------\nBeginning, initialize root identity ...\n");
 
     if (AssistAdapter_Init("mainnet") == -1) {
-        printf("initRootIdentity failed.\n");
+        printf("[error] InitRootIdentity failed.\n");
         return;
     }
 
@@ -140,7 +131,7 @@ void initRootIdentity(void)
     const char* storePath = "/tmp/RootIdentitySample.store";
     store = DIDStore_Open(storePath);
     if (!store) {
-        printf("initRootIdentity failed.\n");
+        printf("[error] InitRootIdentity failed.\n");
         return;
     }
 
@@ -148,31 +139,33 @@ void initRootIdentity(void)
     mnemonic = Mnemonic_Generate("english");
     if (!mnemonic) {
         DIDStore_Close(store);
-        printf("initRootIdentity failed.\n");
+        printf("[error] InitRootIdentity failed.\n");
         return;
     }
     printf("Please write down your mnemonic:\n  %s\n", mnemonic);
 
     // Initialize the root identity.
-    identity = RootIdentity_Create(mnemonic, NULL, store, STORE_PASS);
+    identity = RootIdentity_Create(mnemonic, NULL, false, store, STORE_PASS);
     if (!identity) {
         DIDStore_Close(store);
-        printf("initRootIdentity failed.\n");
+        printf("[error] InitRootIdentity failed.\n");
         return;
     }
 
     // The new created root identities in the store
-    listRootIdentity(store);
+    list_rootidentity(store);
 
     // Create DID using next available index
-    createDid(identity);
+    create_did(identity);
 
     // Create DID with specified index
-    createDidByIndex(identity, 1234);
-
-    DIDStore_Close(store);
+    create_did_by_index(identity, 1234);
 
     // you can do this on the other device restore same identity and store
-    createAnotherStoreAndSyncRootIdentity(mnemonic);
-    Mnemonic_Free(mnemonic);
+    create_another_store_and_sync_rootidentity(mnemonic);
+
+    DIDStore_Close(store);
+    Mnemonic_Free((void*)mnemonic);
+    RootIdentity_Destroy(identity);
+    printf("Initialize rootidentity, end.\n");
 }

@@ -23,14 +23,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include <curl/curl.h>
 #include <assert.h>
 #include <jansson.h>
 
 #include "ela_did.h"
-#include "common.h"
+#include "didrequest.h"
 #include "diderror.h"
-#include "didresolver.h"
 
 static const char *gEndpoint;
 
@@ -43,7 +45,7 @@ static const char *MAINNET_RPC_ENDPOINT = "https://assist-restapi.tuum.tech/v2";
 static const char *TESTNET_RPC_ENDPOINT = "https://assist-restapi-testnet.tuum.tech/v2";
 static const char *API_KEY = "IdSFtQosmCwCB9NOLltkZrFy5VqtQn8QbxBKQoHPw7zp3w0hDOyOYjgL53DO3MDH";
 
-#define ASSIST_REQUEST "{\"did\":\"%s\",\"memo\":\"%s\", \"requestFrom\":\"DID command line utils\", \"requestFrom\": %s}"
+#define ASSIST_REQUEST "{\"did\":\"%s\",\"memo\":\"%s\", \"requestFrom\":\"DID command line utils\", \"didRequest\":%s}"
 
 typedef struct HttpResponseBody {
     size_t used;
@@ -154,10 +156,10 @@ static const char *perform_request(const char *url, const char *request_content,
 #endif
 
     struct curl_slist *headers = NULL;
+    headers = curl_slist_append(headers, header);
     headers = curl_slist_append(headers, "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
     headers = curl_slist_append(headers, "Content-Type: application/json");
     headers = curl_slist_append(headers, "Accept: application/json");
-    headers = curl_slist_append(headers, header);
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
     memset(&response, 0, sizeof(response));
@@ -193,10 +195,6 @@ static const char *get_request(const char *url, const char *header)
 
     CURL *curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_URL, url);
-
-    curl_easy_setopt(curl, CURLOPT_GET, 1L);
-    curl_easy_setopt(curl, CURLOPT_READFUNCTION, HttpRequestBodyReadCallback);
-
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, HttpResponseBodyWriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 
@@ -234,11 +232,12 @@ static const char *get_request(const char *url, const char *header)
     return (const char *)response.data;
 }
 
-static int assist_request(char *request, const char *payload, const char *memo)
+static int generate_assist_request(char *request, const char *payload, const char *memo)
 {
     json_t *item;
     DIDRequest didRequest;
     DID *did;
+    json_error_t error;
     char idstring[ELA_MAX_DID_LEN] = {0};
 
     assert(payload);
@@ -253,13 +252,13 @@ static int assist_request(char *request, const char *payload, const char *memo)
         return -1;
     }
 
-    did = &didRequest->did;
+    did = &didRequest.did;
     DID_ToString(did, idstring, sizeof(idstring));
     DIDRequest_Destroy(&didRequest);
     return sprintf(request, ASSIST_REQUEST, idstring, memo == NULL ? "" : memo, payload) == -1 ? -1 : 0;
 }
 
-static int assist_url(char *url, size_t size, int count, ...)
+static int generate_assist_url(char *url, size_t size, int count, ...)
 {
     va_list list;
     int i, totalsize = 0;
@@ -277,7 +276,7 @@ static int assist_url(char *url, size_t size, int count, ...)
         if (totalsize > size)
             return -1;
 
-        strncat(path, suffix, len + 1);
+        strncat(url, suffix, len + 1);
     }
     va_end(list);
 
@@ -286,14 +285,14 @@ static int assist_url(char *url, size_t size, int count, ...)
 
 static int parse_assist_response(const char *data, char *confirm_id)
 {
-    json_t *root = NULL, *item, *filed;
+    json_t *root = NULL, *item, *field;
     json_error_t error;
     long code;
-    char *message;
+    const char *message;
 
     assert(data);
 
-    root = json_loads(data, CONTRACT, &error);
+    root = json_loads(data, JSON_COMPACT, &error);
     if (!root) {
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESPONSE, "Invalid assist responese.");
         return -1;
@@ -307,7 +306,7 @@ static int parse_assist_response(const char *data, char *confirm_id)
     }
 
     field = json_object_get(item, "code");
-    if (!filed || !json_is_number(field)) {
+    if (!field || !json_is_number(field)) {
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESPONSE, "Invalid 'code' of assist responese.");
         json_decref(root);
         return -1;
@@ -315,7 +314,7 @@ static int parse_assist_response(const char *data, char *confirm_id)
     code = json_integer_value(field);
 
     field = json_object_get(item, "message");
-    if (!filed || !json_is_string(field)) {
+    if (!field || !json_is_string(field)) {
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESPONSE, "Invalid 'message' of assist responese.");
         json_decref(root);
         return -1;
@@ -330,7 +329,7 @@ static int parse_assist_response(const char *data, char *confirm_id)
     }
 
     field = json_object_get(item, "confirmation_id");
-    if (!field || json_is_string(field) || code != 200) {
+    if (!field || !json_is_string(field) || code != 200) {
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESPONSE, "Asssit API error: %ld, message: %s", code, message);
         json_decref(root);
         return -1;
@@ -338,7 +337,7 @@ static int parse_assist_response(const char *data, char *confirm_id)
     strcpy(confirm_id, json_string_value(field));
 
     field = json_object_get(item, "service_count");
-    if (!field || !json_is_string(field)) {
+    if (!field || !json_is_number(field)) {
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESPONSE, "Invalid 'service count' of assist response.");
         json_decref(root);
         return -1;
@@ -357,15 +356,14 @@ static int parse_assist_response(const char *data, char *confirm_id)
 
 static int parse_assist_txstatus(const char *data, char *s)
 {
-    json_t *root = NULL, *item, *filed;
+    json_t *root = NULL, *item, *field;
     json_error_t error;
     long code;
-    char *message, *stauts;
+    const char *message, *status;
 
     assert(data);
 
-    root = json_loads(data, CONTRACT, &error);
-    free((void*)data);
+    root = json_loads(data, JSON_COMPACT, &error);
     if (!root) {
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESPONSE, "Invalid assist tx status.");
         return -1;
@@ -379,7 +377,7 @@ static int parse_assist_txstatus(const char *data, char *s)
     }
 
     field = json_object_get(item, "code");
-    if (!filed || !json_is_number(field)) {
+    if (!field || !json_is_number(field)) {
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESPONSE, "Invalid 'code' of assist tx status.");
         json_decref(root);
         return -1;
@@ -387,7 +385,7 @@ static int parse_assist_txstatus(const char *data, char *s)
     code = json_integer_value(field);
 
     field = json_object_get(item, "message");
-    if (!filed || !json_is_string(field)) {
+    if (!field || !json_is_string(field)) {
         DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESPONSE, "Invalid 'message' of assist tx status.");
         json_decref(root);
         return -1;
@@ -410,7 +408,7 @@ static int parse_assist_txstatus(const char *data, char *s)
 
     status = json_string_value(field);
 
-    if (!strcpm(status, "Quarantined") || !strcmp(status, "Error")) {
+    if (!strcmp(status, "Quarantined") || !strcmp(status, "Error")) {
         field = json_object_get(item, "blockchainTxId");
         if (!field || !json_is_string(field)) {
             DIDError_Set(DIDERR_MALFORMED_RESOLVE_RESPONSE, "Invalid 'blockchainTxId' of assist tx status.");
@@ -423,14 +421,14 @@ static int parse_assist_txstatus(const char *data, char *s)
         return -1;
     }
 
-    strcpy(*s, status);
+    strcpy(s, status);
     json_decref(root);
     return 0;
 }
 
 bool AssistAdapter_CreateTransaction(const char *payload, const char *memo)
 {
-    char request[256] = {0}, url[256] = {0}, header[256] = {0}, error[256] = {0};
+    char request[2048] = {0}, url[256] = {0}, header[256] = {0}, error[256] = {0};
     char confirm_id[256] = {0}, s[256] = {0};
     const char *data;
     bool completed = false;
@@ -439,13 +437,13 @@ bool AssistAdapter_CreateTransaction(const char *payload, const char *memo)
     if (!payload)
         return false;
 
-    if (assist_request(request, payload, memo) == -1)
+    if (generate_assist_request(request, payload, memo) == -1)
         return false;
 
-    if (assist_url(url, sizeof(url), 2, gEndpoint, "/didtx/create") == -1)
+    if (generate_assist_url(url, sizeof(url), 2, gEndpoint, "/didtx/create") == -1)
         return false;
 
-    if (sprintf(header, "Authorization:%s", API_KEY) == -1)
+    if (sprintf(header, "Authorization: %s", API_KEY) == -1)
         return false;
 
     data = perform_request(url, request, header);
@@ -457,7 +455,7 @@ bool AssistAdapter_CreateTransaction(const char *payload, const char *memo)
     if (rc == -1)
         return false;
 
-    if (assist_url(url, sizeof(url), 3, gEndpoint, "/didtx/confirmation_id/", confirm_id) == -1)
+    if (generate_assist_url(url, sizeof(url), 3, gEndpoint, "/didtx/confirmation_id/", confirm_id) == -1)
         return false;
 
     while (completed == false) {
@@ -483,7 +481,6 @@ bool AssistAdapter_CreateTransaction(const char *payload, const char *memo)
 
 int AssistAdapter_Init(const char *url)
 {
-    const char *url;
     char cachedir[PATH_MAX];
     CURLUcode rc;
 
@@ -498,6 +495,6 @@ int AssistAdapter_Init(const char *url)
         gEndpoint = TESTNET_RPC_ENDPOINT;
     }
 
-    return DIDBackend_InitializeDefault(create_transaction,
+    return DIDBackend_InitializeDefault(AssistAdapter_CreateTransaction,
             url, cachedir);
 }

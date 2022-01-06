@@ -22,210 +22,19 @@
 #include "ela_did.h"
 #include "samples.h"
 
-static void clean(char *input)
-{
-    char *p = input;
+static int which = 9;
 
-    while (*p != '\0') {
-        if (*p == '\n')
-            *p = '\0';
-        else
-            p++;
-    }
-}
+typedef void (*Func)(void);
 
-static void initdid(int argc, char *argv[])
-{
-    initDid();
-}
-
-static void didurl(int argc, char *argv[])
-{
-    initDidurl();
-}
-
-static void issue(int argc, char *argv[])
-{
-    issueCredential();
-}
-
-static void createvp(int argc, char *argv[])
-{
-    createPresentation();
-}
-
-static void parsejwt(int argc, char *argv[])
-{
-    parseJWT();
-}
-
-static void vpinjwt(int argc, char *argv[])
-{
-    presentationInJWT();
-}
-
-static void restore(int argc, char *argv[])
-{
-    restoreFromMnemonic();
-}
-
-static void rootidentity(int argc, char *argv[])
-{
-    initRootIdentity();
-}
-
-static void clear_screen(int argc, char *argv[])
-{
-    (void)ctx;
-
-    if (argc != 1) {
-        printf("Error: invalid command syntax\n");
-        return;
-    }
-
-    system(argv[0]);
-}
-
-static void help(int argc, char *argv[]);
-
-struct command {
-    const char *cmd;
-    void (*func)(int argc, char *argv[]);
-    const char *args;
-    const char *help;
-} commands[] = {
-    { "initdid",      initdid,            NULL,   "initailize did"      },
-    { "didurl",       didurl,             NULL,   "didurl sample"       },
-    { "issue",        issue,              NULL,   "issue credential"    },
-    { "createvp",     createvp,           NULL,   "create presentation" },
-    { "parsejwt",     parsejwt,           NULL,   "parse jwt"           },
-    { "vpinjwt",      vpinjwt,            NULL,   "presentation in jwt" },
-    { "restore",      restore,            NULL,   "restore from mnemonic"},
-    { "rootidentity", rootidentity,       NULL,   "rootidentity sample"  },
-    { "clear",        clear_screen,       NULL,   "Clear the command screen"},
-    { "help",         help,               NULL,   "Show all commands"    },
-    { "exit",         NULL,               NULL,   "Quit from agent"      },
-    { "quit",         NULL,               NULL,   "quit from agent"      },
-    { NULL,           NULL,               NULL,   NULL                   }
-};
-
-static void help(int argc, char *argv[])
-{
-    struct command *p;
-
-    if (argc == 1) {
-        fprintf(stdout, "Available commands listed:\n");
-
-        for (p = commands; p->cmd; p++) {
-            if (strlen(p->cmd) >= 6)
-                printf("  %s\t%s\n", p->cmd, p->help);
-            else
-                printf("  %s\t\t%s\n", p->cmd, p->help);
-        }
-        fprintf(stdout, "\n");
-   } else {
-        for (p = commands; p->cmd; p++) {
-            if (strcmp(argv[1], p->cmd) == 0) {
-                fprintf(stdout, "Syntax: %s %s\n\n", p->cmd, p->args ? p->args: "");
-                return;
-            }
-        }
-
-        fprintf(stderr, "Unknown command: %s\n", argv[1]);
-    }
-}
-
-int run_cmd(int argc, char *argv[])
-{
-    struct command *p;
-
-    for (p = commands; p->cmd; p++) {
-        if (strcmp(argv[0], p->cmd) == 0) {
-            p->func(argc, argv);
-            return 0;
-        }
-    }
-
-    fprintf(stderr, "Unknown command: %s\n", argv[0]);
-    return -1;
-}
-
-static int parse_cmd(char *cmdLine, char *argv[])
-{
-    char *p;
-    int arg = 0;
-    int count = 0;
-
-    for (p = cmdLine; *p != 0; p++) {
-        if (isspace(*p)) {
-            *p = 0;
-            arg = 0;
-        } else {
-            if (arg == 0) {
-                argv[count] = p;
-                count++;
-            }
-
-            arg = 1;
-        }
-    }
-
-    return count;
-}
-
-static int mkdir_internal(const char *path, mode_t mode) {
-    struct stat st;
-    int rc = 0;
-
-    if (stat(path, &st) != 0) {
-        /* Directory does not exist. EEXIST for race condition */
-        if (mkdir(path, mode) != 0 && errno != EEXIST)
-            rc = -1;
-    } else if (!S_ISDIR(st.st_mode)) {
-        errno = ENOTDIR;
-        rc = -1;
-    }
-
-    return rc;
-}
-
-static int mkdirs(const char *path, mode_t mode)
-{
-    int rc = 0;
-    char *pp;
-    char *sp;
-    char copypath[PATH_MAX];
-
-    strncpy(copypath, path, sizeof(copypath));
-    copypath[sizeof(copypath) - 1] = 0;
-
-    pp = copypath;
-    while (rc == 0 && (sp = strchr(pp, '/')) != 0) {
-        if (sp != pp) {
-            /* Neither root nor double slash in path */
-            *sp = '\0';
-            rc = mkdir_internal(copypath, mode);
-            *sp = '/';
-        }
-        pp = sp + 1;
-    }
-
-    if (rc == 0)
-        rc = mkdir_internal(path, mode);
-
-    return rc;
-}
-
-static char *get_datadir(const char *dir)
-{
-    static char path[PATH_MAX];
-
-    if (!dir) {
-        sprintf(path, "%s/.didstore", getenv("HOME"));
-    }
-
-    return path;
-}
+Func funcs[] = { NULL,
+                 InitalizeDid,
+                 InitalizeDidurl,
+                 IssueCredential,
+                 CreatePresentation,
+                 ParseJWT,
+                 PresentationInJWT,
+                 RestoreFromMnemonic,
+                 InitRootIdentity };
 
 #ifdef HAVE_SYS_RESOURCE_H
 
@@ -252,55 +61,39 @@ static void usage(void)
     fprintf(stdout, "DID CLI agent\n");
     fprintf(stdout, "Usage agent [OPTION]\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  -d, --data=PATH              DIDStore directory\n");
-    fprintf(stdout, "      --debug                  Wait for debugger to attach\n");
+    fprintf(stdout, "  --initdid            Initailize DID\n");
+    fprintf(stdout, "  --didurl             DIDURL sample\n");
+    fprintf(stdout, "  --issue              Issue credential\n");
+    fprintf(stdout, "  --createvp           Create presentation\n");
+    fprintf(stdout, "  --parsejwt           Parse JWT\n");
+    fprintf(stdout, "  --vpinjwt            Presentation in JWT\n");
+    fprintf(stdout, "  --restore            Restore from mnemonic\n");
+    fprintf(stdout, "  --rootidentity       Rootidentity sample\n");
+    fprintf(stdout, "  --all                Run all samples\n");
+    fprintf(stdout, "  --debug              Wait for debugger to attach\n");
     fprintf(stdout, "\n");
-}
-
-static int gen_priv_identity(struct AgentCtx *ctx)
-{
-    char passphrase[64] = {0};
-    const char *mnemonic;
-
-    mnemonic = Mnemonic_Generate(ctx->lang);
-    if (!mnemonic) {
-        printf("Error: generate mnemonic failed.\n");
-        return -1;
-    }
-
-    printf(" Input your storepass:\n");
-    fgets(ctx->storepass, sizeof(ctx->storepass), stdin);
-    clean(ctx->storepass);
-
-    printf(" Input your phrasepass:\n");
-    fgets(passphrase, sizeof(passphrase), stdin);
-    clean(passphrase);
-
-    ctx->rootidentity = RootIdentity_Create(mnemonic, passphrase, false, ctx->store, ctx->storepass);
-    if (!ctx->rootidentity) {
-        printf("Error: initialize private identity failed.\n");
-        return -1;
-    }
-
-    printf("Grats! Private identiy generated in this DID store.\n");
-    return 0;
 }
 
 int main(int argc, char *argv[])
 {
     int wait_for_attach = 0;
-    char *datadir = NULL;
-
-    DIDStore *store;
     int rc;
 
     int opt;
     int idx;
     struct option options[] = {
-        { "data",           required_argument,  NULL, 'd' },
-        { "debug",          no_argument,        NULL,  1  },
-        { "help",           no_argument,        NULL, 'h' },
-        { NULL,             0,                  NULL,  0  }
+        { "initdid",       no_argument,  NULL,  1  },
+        { "didurl",        no_argument,  NULL,  2  },
+        { "issue",         no_argument,  NULL,  3  },
+        { "createvp",      no_argument,  NULL,  4  },
+        { "parsejwt",      no_argument,  NULL,  5  },
+        { "vpinjwt",       no_argument,  NULL,  6  },
+        { "restore",       no_argument,  NULL,  7  },
+        { "rootidentity",  no_argument,  NULL,  8  },
+        { "all",           no_argument,  NULL,  9  },
+        { "debug",         no_argument,  NULL, 'd' },
+        { "help",          no_argument,  NULL, 'h' },
+        { NULL,            0,            NULL,  0  }
     };
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -309,11 +102,19 @@ int main(int argc, char *argv[])
 
     while ((opt = getopt_long(argc, argv, "d:h?", options, &idx)) != -1) {
         switch (opt) {
-        case 'd':
-            datadir = optarg;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+            which = opt;
             break;
 
-        case 1:
+        case 'd':
             wait_for_attach = 1;
             break;
 
@@ -330,6 +131,8 @@ int main(int argc, char *argv[])
 #ifndef _MSC_VER
         printf("After debugger attached, press any key to continue......");
         getchar();
+        printf("Attached, press any key to continue......");
+        getchar();
 #else
         DebugBreak();
 #endif
@@ -344,88 +147,18 @@ int main(int argc, char *argv[])
     signal(SIGHUP, signal_handler);
 #endif
 
-    datadir = get_datadir(datadir);
-
-    rc = mkdirs(datadir, S_IRWXU);
-    if (rc < 0) {
-        printf("Error: create DID store home directory at '%s' failed.\n", datadir);
-        return -1;
+    if (which < 1 || which > 9) {
+        printf("error case");
+        return 0;
     }
 
-    printf("DID store home directory at '%s'\n", datadir);
-
-    store = DIDStore_Open(datadir);
-    if (!store) {
-        printf("Error: open DID store at '%s' failed.\n", datadir );
-        return -1;
-    }
-
-    memset(&ctx, 0, sizeof(ctx));
-    ctx.store = store;
-    ctx.lang  = "english";
-
-    if (!DIDStore_GetDefaultRootIdentity(store)) {
-        char input[32] = {0};
-        int which;
-
-        printf("Oops, empty DID store. Have to choose one of the ways listed below:\n"
-               " 1) Initialize from scratch;\n"
-               " 2) Import mnemonic\n"
-               " 3) Import root key\n"
-               "to carry out the initialization of DID store.\n");
-
-        fgets(input, sizeof(input), stdin);
-        sscanf(input, "%d\n", &which);
-
-        if (which <= 0 || which > 3) {
-            printf("Error: invalid way. Please choose 1/2/3.\n");
-            return -1;
-        }
-
-        switch (which) {
-        case 1:
-            rc = gen_priv_identity(&ctx);
-            if (rc < 0) {
-                printf("Error: generate private identity failed\n");
-                return -1;
-            }
-
-            break;
-
-        case 2:
-        case 3:
-        default:
-            printf("Not supported yet, but comming soon\n");
-            return 0;
-        }
+    if (which != 9) {
+        funcs[which]();
     } else {
-        printf("Need to input your storepass: \n");
-        fgets(ctx.storepass, sizeof(ctx.storepass), stdin);
-        clean(ctx.storepass);
+        for (int i = 1; i < 9; i++)
+            funcs[i]();
     }
 
-    while (1) {
-        char buff[4096];
-        char *argv[256];
-        int argc;
-
-        fprintf(stdout, "$ ");
-        fgets(buff, sizeof(buff), stdin);
-
-        argc = parse_cmd(buff, argv);
-        if (argc == 0)
-            continue;
-
-        if (strcmp(argv[0], "quit") == 0 ||
-            strcmp(argv[0], "exit") == 0)
-            break;
-
-        run_cmd(argc, argv);
-    }
-
-    if (ctx.rootidentity)
-        RootIdentity_Destroy(ctx.rootidentity);
-
-    DIDStore_Close(store);
+    return 0;
 }
 

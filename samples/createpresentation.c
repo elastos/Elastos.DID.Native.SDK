@@ -7,8 +7,9 @@
 #include "ela_did.h"
 #include "entity.h"
 #include "samples.h"
+#include "assistadapter.h"
 
-void createPresentation(void)
+void CreatePresentation(void)
 {
     University *university = NULL;
     Student *student = NULL;
@@ -16,32 +17,34 @@ void createPresentation(void)
     const char *data = NULL;
     Presentation *vp = NULL;
 
+    printf("-----------------------------------------\nBeginning, create presentation ...\n");
+
     if (AssistAdapter_Init("mainnet") == -1) {
-        printf("createPresentation failed.\n");
+        printf("[error] CreatePresentation failed.\n");
         return;
     }
 
     university = University_Init("Elastos");
     if(!university) {
-        printf("createPresentation failed.\n");
+        printf("[error] CreatePresentation failed.\n");
         return;
     }
 
     student = Student_Init("John Smith", "Male", "johnsmith@example.org");
     if(!student) {
-        printf("createPresentation failed.\n");
+        printf("[error] CreatePresentation failed.\n");
         goto exit;
     }
 
     vc = University_IssuerDiplomaFor(university, student);
     if(!vc) {
-        printf("createPresentation failed.\n");
+        printf("[error] CreatePresentation failed.\n");
         goto exit;
     }
 
     data = Credential_ToJson(vc, true);
     if(!data) {
-        printf("createPresentation failed.\n");
+        printf("[error] CreatePresentation failed.\n");
         goto exit;
     }
 
@@ -52,20 +55,20 @@ void createPresentation(void)
     printf("  Expired: %s\n", Credential_IsExpired(vc) == 1 ? "true" : "false");
     printf("  Valid: %s\n", Credential_IsValid(vc) == 1 ? "true" : "false");
 
-    if(Student_AddCredential(vc) == -1) {
-        printf("createPresentation failed.\n");
+    if(Student_AddCredential(student, vc) == -1) {
+        printf("CreatePresentation failed.\n");
         goto exit;
     }
 
     vc = Student_CreateSelfProclaimedCredential(student);
     if (!vc) {
-        printf("createPresentation failed.\n");
+        printf("[error] CreatePresentation failed.\n");
         goto exit;
     }
 
     data = Credential_ToJson(vc, true);
     if(!data) {
-        printf("createPresentation failed.\n");
+        printf("[error] CreatePresentation failed.\n");
         goto exit;
     }
 
@@ -76,21 +79,21 @@ void createPresentation(void)
     printf("  Expired: %s\n", Credential_IsExpired(vc) == 1 ? "true" : "false");
     printf("  Valid: %s\n", Credential_IsValid(vc) == 1 ? "true" : "false");
 
-    if(Student_AddCredential(vc) == -1) {
-        printf("createPresentation failed.\n");
+    if(Student_AddCredential(student, vc) == -1) {
+        printf("[error] CreatePresentation failed.\n");
         goto exit;
     }
 
     vc = NULL;
     vp = Student_CreatePresentation(student, "test", "873172f58701a9ee686f0630204fee59");
     if (!vp) {
-        printf("createPresentation failed.\n");
+        printf("[error] CreatePresentation failed.\n");
         goto exit;
     }
 
     data = Presentation_ToJson(vp, true);
     if (!data) {
-        printf("createPresentation failed.\n");
+        printf("[error] CreatePresentation failed.\n");
         goto exit;
     }
 
@@ -110,5 +113,6 @@ exit:
     if(vp)
         Presentation_Destroy(vp);
 
+    printf("Create presentation, end.\n");
     return;
 }

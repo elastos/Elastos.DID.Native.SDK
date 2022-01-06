@@ -7,12 +7,11 @@
 #include "ela_did.h"
 
 typedef struct Entity {
-    const char *passphrase = "mypassphrase";
-    const char *storepass = "mypassword";
-
+    char passphrase[30];
+    char storepass[30];
     char name[256];
     DIDStore *store;
-    DID did;
+    DID *did;
 } Entity;
 
 typedef struct University {

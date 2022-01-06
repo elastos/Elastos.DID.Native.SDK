@@ -7,32 +7,32 @@
 #include "ela_did.h"
 #include "samples.h"
 
-static void createFromString(void)
+static void create_from_string(void)
 {
     const char *urlString = "did:elastos:iXyYFboFAd2d9VmfqSvppqg1XQxBtX9ea2#test";
-    DIDURL *url = DIDURL_FromString(urlString);
+    DIDURL *url = DIDURL_FromString(urlString, NULL);
     if (!url) {
-        printf("createFromString failed.\n");
+        printf("[error] create_from_string failed.\n");
         return;
     }
 
     DIDURL_Destroy(url);
 }
 
-static void createFromParts()
+static void create_from_parts()
 {
     char urlstr[ELA_MAX_DIDURL_LEN] = {0};
 
     DID *did = DID_New("did:elastos:iXyYFboFAd2d9VmfqSvppqg1XQxBtX9ea2");
     if (!did) {
-        printf("createFromParts failed.\n", );
+        printf("[error] create_from_parts failed.\n");
         return;
     }
 
     // create a url from a DID object and a relative url
     DIDURL *url = DIDURL_FromString("/vcs/abc?opt=false&value=1#test", did);
     if (!url) {
-        printf("createFromParts failed.\n", );
+        printf("[error] create_from_parts failed.\n");
         DID_Destroy(did);
         return;
     }
@@ -53,9 +53,11 @@ static void createFromParts()
     DIDURL_Destroy(url);
 }
 
-void initDidurl(void)
+void InitalizeDidurl(void)
 {
-    createFromString();
-    createFromParts();
+    printf("-----------------------------------------\nBeginning, initalize didurl ...\n");
+    create_from_string();
+    create_from_parts();
+    printf("Initalize didurl, end.\n");
 
 }

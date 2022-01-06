@@ -1,14 +1,14 @@
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <limits.h>
-#include <CUnit/Basic.h>
+#include <assert.h>
 
 #include "ela_did.h"
 #include "entity.h"
-#include "diddocument.h"
 
 #define DIPLOMA_SUBJECT "{\"name\":\"%s\",\"degree\":\"bachelor\", \"institute\":\"Computer Science\", \"university\":\"%s\"}"
 
@@ -19,17 +19,22 @@ static int init_rootIdentity(Entity *entity)
 {
     const char *mnemonic;
     RootIdentity *identity;
+    char path[PATH_MAX] = {0};
+    size_t size;
 
     assert(entity);
 
-    const char *path = "/tmp/" + this.name + ".store";
+    size = snprintf(path, sizeof(path), "/tmp/%s.store", entity->name);
+    if (size < 0 || size > sizeof(path))
+        return -1;
+
     entity->store = DIDStore_Open(path);
     if (!entity->store)
         return -1;
 
     // Check the store whether contains the root private identity.
     if (DIDStore_ContainsRootIdentities(entity->store))
-        return -1; // Already exists
+        return 0; // Already exists
 
     // Create a mnemonic use default language(English).
     mnemonic = Mnemonic_Generate("english");
@@ -44,7 +49,7 @@ static int init_rootIdentity(Entity *entity)
     // Initialize the root identity.
     identity = RootIdentity_Create(mnemonic, entity->passphrase,
             true, entity->store, entity->storepass);
-    Mnemonic_Free(mnemonic);
+    Mnemonic_Free((void*)mnemonic);
     if (!identity)
         return -1;
 
@@ -55,17 +60,20 @@ static int init_rootIdentity(Entity *entity)
 static int get_did(DID *did, void *context)
 {
     Entity *entity = (Entity*)context;
+    char id[ELA_MAX_DID_LEN];
 
     if (!did)
         return 0;
 
-    DIDDocument *doc = DIDStore_LoadDid(entity->store, did);
+    DIDDocument *doc = DIDStore_LoadDID(entity->store, did);
     if (!doc)
         return 0;
 
-    const char *alias = DIDMetadata_GetAlias(&doc->metadata);
-    if (alias && !strcmp(alias, "me"))
-        DID_Copy(&entity->did, &doc->did);
+    const char *alias = DIDMetadata_GetAlias(DIDDocument_GetMetadata(doc));
+    if (alias && !strcmp(alias, "me")) {
+        DID_ToString(did, id, sizeof(id));
+        entity->did = DID_FromString(id);
+    }
 
     DIDDocument_Destroy(doc);
     return 0;
@@ -76,7 +84,9 @@ static int init_did(Entity *entity)
     const char *id;
     RootIdentity *identity;
     DIDDocument *doc;
-    int rc;
+    DID *did;
+    char idstring[ELA_MAX_DID_LEN];
+    int rc, status;
 
     assert(entity);
     assert(entity->store);
@@ -84,26 +94,40 @@ static int init_did(Entity *entity)
     if (DIDStore_ListDIDs(entity->store, 1, get_did, (void*)entity) == -1)
         return -1;
 
-    if (entity->did)
-        return 0;    // Already create my DID.
+    if (entity->did) {
+        doc = DID_Resolve(entity->did, &status, true);
+        if (doc) {
+            DIDDocument_Destroy(doc);
+            return 0;    // Already create my DID.
+        }
+    } else {
+        id = DIDStore_GetDefaultRootIdentity(entity->store);
+        if (!id)
+            return -1;
 
-    id = DIDStore_GetDefaultRootIdentity(entity->store);
-    if (!id)
-        return -1;
+        identity = DIDStore_LoadRootIdentity(entity->store, id);
+        free((void*)id);
+        if (!identity)
+            return -1;
 
-    identity = DIDStore_LoadRootIdentity(entity->store, id);
-    free((void*)id);
-    if (!identity)
-        return -1;
+        doc = RootIdentity_NewDID(identity, entity->storepass, "me", false);
+        RootIdentity_Destroy(identity);
+        if (!doc)
+            return -1;
 
-    doc = RootIdentity_NewDID(identity, entity->storepass, "me", false);
-    RootIdentity_Destroy(identity);
-    if (!doc)
-        return -1;
+        DID_ToString(DIDDocument_GetSubject(doc), idstring, sizeof(idstring));
+        entity->did = DID_FromString(idstring);
+        printf("My new DID created: %s\n", idstring);
+    }
 
-    printf("My new DID created: %s\n", &doc->did);
     rc = DIDDocument_PublishDID(doc, NULL, false, entity->storepass);
     DIDDocument_Destroy(doc);
+    if (rc != 1) {
+        DIDStore_DeleteDID(entity->store, entity->did);
+        DID_Destroy(entity->did);
+        entity->did = NULL;
+    }
+
     return rc;
 }
 
@@ -119,6 +143,8 @@ Entity *Entity_Init(const char *name)
         return NULL;
 
     strcpy(entity->name, name);
+    strcpy(entity->passphrase, "mypassphrase");
+    strcpy(entity->storepass, "mypassword");
 
     if (init_rootIdentity(entity) == -1 || init_did(entity) == -1) {
         Entity_Deinit(entity);
@@ -130,10 +156,14 @@ Entity *Entity_Init(const char *name)
 
 void Entity_Deinit(Entity *entity)
 {
-    if (entity && entity.store) {
-        DIDStore_Close(entity.store);
-        free((void*)entity);
-    }
+    if (!entity)
+        return;
+
+    if (entity->store)
+        DIDStore_Close(entity->store);
+    if (entity->did)
+        DID_Destroy(entity->did);
+    free((void*)entity);
 }
 
 DID *Entity_GetDid(Entity *entity)
@@ -141,7 +171,7 @@ DID *Entity_GetDid(Entity *entity)
     if (!entity)
         return NULL;
 
-    return &entity->did;
+    return entity->did;
 }
 
 DIDDocument *Entity_GetDocument(Entity *entity)
@@ -149,7 +179,7 @@ DIDDocument *Entity_GetDocument(Entity *entity)
     if (!entity)
         return NULL;
 
-    return DIDStore_LoadDid(entity->store, &entity->did);
+    return DIDStore_LoadDID(entity->store, entity->did);
 }
 
 /******************************************************************************
@@ -172,7 +202,7 @@ University *University_Init(const char *name)
         return NULL;
     }
 
-    university->issuer = Issuer_Create(university->issuer, NULL, entity->store);
+    university->issuer = Issuer_Create(university->base->did, NULL, university->base->store);
     if (!university->issuer) {
         University_Deinit(university);
         return NULL;
@@ -187,7 +217,7 @@ void University_Deinit(University *university)
         return;
 
     Entity_Deinit(university->base);
-    Issuer_Destory(university->issuer);
+    Issuer_Destroy(university->issuer);
     free((void*)university);
 }
 
@@ -202,10 +232,10 @@ Credential *University_IssuerDiplomaFor(University *university, Student *student
     if (!university || !student)
         return NULL;
 
-    if (sprintf(subject, CREDENTIAL_SUBJECT, student->base->name, university->base->name) == -1)
+    if (sprintf(subject, DIPLOMA_SUBJECT, student->base->name, university->base->name) == -1)
         return NULL;
 
-    id = DIDURL_NewFromDid(&student->base->did, "diploma");
+    id = DIDURL_NewFromDid(student->base->did, "diploma");
     if (!id)
         return NULL;
 
@@ -216,7 +246,7 @@ Credential *University_IssuerDiplomaFor(University *university, Student *student
     tm->tm_year += 5;
     max_expires = timegm(tm);
 
-    vc = Issuer_CreateCredentialByString(university->issuer, &student->base->did, id,
+    vc = Issuer_CreateCredentialByString(university->issuer, student->base->did, id,
             types, 1, subject, max_expires, university->base->storepass);
     DIDURL_Destroy(id);
     return vc;
@@ -270,8 +300,8 @@ void Student_Deinit(Student *student)
 
     Entity_Deinit(student->base);
     for (int i = 0; i < student->credentials.size; i++) {
-        if (student->credentials->creds[i])
-            Credential_Destroy(student->credentials->creds[i]);
+        if (student->credentials.creds[i])
+            Credential_Destroy(student->credentials.creds[i]);
     }
 
     free((void*)student);
@@ -306,20 +336,20 @@ Credential *Student_CreateSelfProclaimedCredential(Student *student)
                 "https://elastos.org/credentials/profile/v1#ProfileCredential",
                 "https://elastos.org/credentials/email/v1#EmailCredential" };
 
-    issuer = Issuer_Create(&student->base->did, NULL, student->store);
+    issuer = Issuer_Create(student->base->did, NULL, student->base->store);
     if (!issuer)
         return NULL;
 
-    id = DIDURL_NewFromDid(&student->base->did, "profile");
+    id = DIDURL_NewFromDid(student->base->did, "profile");
     if (!id) {
-        Issuer_Destory(issuer);
+        Issuer_Destroy(issuer);
         return NULL;
     }
 
-    vc = Issuer_CreateCredential(issuer, &student->base->did, id,
+    vc = Issuer_CreateCredential(issuer, student->base->did, id,
             types, 3, props, 3, max_expires, student->base->storepass);
     DIDURL_Destroy(id);
-    Issuer_Destory(issuer);
+    Issuer_Destroy(issuer);
     return vc;
 }
 
@@ -344,15 +374,15 @@ Presentation *Student_CreatePresentation(Student *student, const char *realm, co
     if (!student || !realm || !nonce)
         return NULL;
 
-    id = DIDURL_NewFromDid(&student->base->did, student->base->name);
+    id = DIDURL_NewFromDid(student->base->did, student->base->name);
     if (!id)
         return NULL;
 
-    vp = Presentation_CreateByCredentials(id, &student->base->did,
+    vp = Presentation_CreateByCredentials(id, student->base->did,
             NULL, 0, nonce, realm, student->credentials.creds, student->credentials.size,
             NULL, student->base->store, student->base->storepass);
     DIDURL_Destroy(id);
-    return vc;
+    return vp;
 }
 
 DIDDocument *Student_GetDocument(Student *student)

@@ -39,11 +39,11 @@ static const char *MAINNET = "mainnet";
 static const char *TESTNET = "testnet";
 static const char *MAINNET_RESOLVERS[] = {
     "https://api.elastos.io/eid",
-    "https://api.trinity-tech.cn/eid"
+    "https://api.trinity-tech.io/eid"
 };
 static const char *TESTNET_RESOLVERS[] = {
     "https://api-testnet.elastos.io/eid",
-    "https://api-testnet.trinity-tech.cn/eid",
+    "https://api-testnet.trinity-tech.io/eid",
 };
 
 #define CHECK_NETWORK_REQUEST "{\"id\": %ld,\"jsonrpc\":\"2.0\", \"method\":\"eth_blockNumber\"}"

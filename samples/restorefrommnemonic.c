@@ -8,6 +8,7 @@
 #include "ela_did.h"
 #include "common.h"
 #include "samples.h"
+#include "assistadapter.h"
 
 static int get_did(DID *did, void *context)
 {
@@ -18,21 +19,23 @@ static int get_did(DID *did, void *context)
     if (!did)
         return 0;
 
-    printf("%s\n", DID_ToSting(did, id, sizeof(id)));
+    printf("%s\n", DID_ToString(did, id, sizeof(id)));
     (*count)++;
     return 0;
 }
 
-void restoreFromMnemonic(void)
+void RestoreFromMnemonic(void)
 {
     const char *mnemonic = "advance duty suspect finish space matter squeeze elephant twenty over stick shield";
     const char *passphrase = "secret";
     const char *storepass = "passwd";
     int count = 0;
 
+    printf("-----------------------------------------\nBeginning, restore from mnemonic ...\n");
+
     // Initializa the DID backend globally.
     if (AssistAdapter_Init("mainnet") == -1) {
-        printf("restoreFromMnemonic failed.\n");
+        printf("[error] RestoreFromMnemonic failed.\n");
         return;
     }
 
@@ -41,15 +44,15 @@ void restoreFromMnemonic(void)
 
     DIDStore *store = DIDStore_Open(storePath);
     if (!store) {
-        printf("restoreFromMnemonic failed.\n");
+        printf("[error] RestoreFromMnemonic failed.\n");
         return;
     }
 
     RootIdentity *identity = RootIdentity_Create(mnemonic, passphrase,
             false, store, storepass);
     if (!identity) {
-        DIDStore_close(store);
-        printf("restoreFromMnemonic failed.\n");
+        DIDStore_Close(store);
+        printf("[error] RestoreFromMnemonic failed.\n");
         return;
     }
 
@@ -59,13 +62,14 @@ void restoreFromMnemonic(void)
 
     if (DIDStore_ListDIDs(store, 1, get_did, (void*)&count) == -1) {
         RootIdentity_Destroy(identity);
-        DIDStore_close(store);
-        printf("restoreFromMnemonic failed.\n");
+        DIDStore_Close(store);
+        printf("[error] RestoreFromMnemonic failed.\n");
         return;
     }
 
     if (count == 0)
         printf("No dids restored.");
 
-    DIDStore_close(store);
+    DIDStore_Close(store);
+    printf("Restore from mnemonic, end.\n");
 }

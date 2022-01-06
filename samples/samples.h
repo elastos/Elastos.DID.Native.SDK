@@ -4,18 +4,18 @@
 #include <unistd.h>
 #endif
 
-void createPresentation(void);
+void CreatePresentation(void);
 
-void initDidurl(void);
+void InitalizeDidurl(void);
 
-void initDid(void);
+void InitalizeDid(void);
 
-void issueCredential(void);
+void IssueCredential(void);
 
-void parseJWT(void);
+void ParseJWT(void);
 
-void presentationInJWT(void);
+void PresentationInJWT(void);
 
-void restoreFromMnemonic(void);
+void RestoreFromMnemonic(void);
 
-void initRootIdentity(void);
+void InitRootIdentity(void);

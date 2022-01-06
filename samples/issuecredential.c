@@ -7,41 +7,44 @@
 #include "ela_did.h"
 #include "entity.h"
 #include "samples.h"
+#include "assistadapter.h"
 
-void issueCredential()
+void IssueCredential()
 {
     University *university = NULL;
     Student *student = NULL;
     Credential *vc = NULL;
     const char *data;
 
+    printf("-----------------------------------------\nBeginning, issue credential ...\n");
+
     // Initializa the DID backend globally.
     if (AssistAdapter_Init("mainnet") == -1) {
-        printf("issueCredential failed.\n");
+        printf("[error] IssueCredential failed.\n");
         return;
     }
 
     university = University_Init("Elastos");
     if(!university) {
-        printf("issueCredential failed.\n");
+        printf("[error] IssueCredential failed.\n");
         return;
     }
 
     student = Student_Init("John Smith", "Male", "johnsmith@example.org");
     if(!student) {
-        printf("issueCredential failed.\n");
+        printf("[error] IssueCredential failed.\n");
         goto exit;
     }
 
     vc = University_IssuerDiplomaFor(university, student);
     if(!vc) {
-        printf("issueCredential failed.\n");
+        printf("[error] IssueCredential failed.\n");
         goto exit;
     }
 
     data = Credential_ToJson(vc, true);
     if(!data) {
-        printf("issueCredential failed.\n");
+        printf("[error] IssueCredential failed.\n");
         goto exit;
     }
 
@@ -59,5 +62,7 @@ exit:
         Student_Deinit(student);
     if(vc)
         Credential_Destroy(vc);
+
+    printf("Issue credential, end.\n");
     return;
 }

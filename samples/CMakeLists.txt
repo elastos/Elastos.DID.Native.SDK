@@ -31,7 +31,6 @@ endif()
 
 set(SRC
     assistadapter.c
-    common.c
     createpresentation.c
     didurlsample.c
     entity.c
@@ -47,25 +46,39 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(SYSTEM_LIBS pthread dl)
 endif()
 
-include_directories(
-    ../../src
+set(LIBS
+    eladid-static
+    hdkey-static
+    cjose
+    jansson
+    curl
+    ssl
+    crypto
+    zip
+    z)
+
+set(DEPS
+    ela-did
+    libcurl
+    hdkey)
+
+set(INCLUDE
+    .
+    ../src
+    ../src/utility
+    ../src/jwt
+    ../src/meta
+    ../src/backend
+    ../hdkey
     ${PROJECT_INT_DIST_DIR}/include)
 
+include_directories(${INCLUDE})
 link_directories(
-    ${PROJECT_INT_DIST_DIR}/lib
-    ${CMAKE_CURRENT_BINARY_DIR}/../../src)
-
-set(LIBS
-    eladid)
-
-if(WIN32)
-    set(LIBS
-        ${LIBS}
-        crystal)
-endif()
+    ${CMAKE_CURRENT_BINARY_DIR}/../src
+    ${PROJECT_INT_DIST_DIR}/lib)
 
 add_executable(samples ${SRC})
-target_compile_definitions(samples PRIVATE CRYSTAL_DYNAMIC)
+add_dependencies(samples ${DEPS})
 target_link_libraries(samples ${LIBS} ${SYSTEM_LIBS})
 
 install(TARGETS samples

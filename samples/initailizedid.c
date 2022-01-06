@@ -1,3 +1,4 @@
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H
@@ -6,6 +7,7 @@
 
 #include "ela_did.h"
 #include "samples.h"
+#include "assistadapter.h"
 
 static const char *passphrase = "mypassphrase";
 static const char *storepass = "mypassword";
@@ -13,22 +15,20 @@ static DIDStore *store;
 
 typedef struct List_Helper {
     DIDStore *store;
-    DID did;
+    DID *did;
 } List_Helper;
 
-static void initRootIdentity()
+static void init_identity()
 {
     RootIdentity *identity;
     // Check the store whether contains the root private identity.
-    if (DIDStore_ContainsRootIdentities(store) != 1) {
-        printf("initRootIdentity failed.\n");
+    if (DIDStore_ContainsRootIdentities(store) == 1)
         return; // Already exists
-    }
 
     // Create a mnemonic use default language(English).
     const char *mnemonic = Mnemonic_Generate("english");
     if (!mnemonic){
-        printf("initRootIdentity failed.\n");
+        printf("[error] initRootIdentity failed.\n");
         return;
     }
 
@@ -39,9 +39,9 @@ static void initRootIdentity()
 
     // Initialize the root identity.
     identity = RootIdentity_Create(mnemonic, passphrase, false, store, storepass);
-    Mnemonic_Free(mnemonic);
+    Mnemonic_Free((void*)mnemonic);
     if (!identity) {
-        printf("initRootIdentity failed.\n");
+        printf("[error] initRootIdentity failed.\n");
         return;
     }
     RootIdentity_Destroy(identity);
@@ -50,76 +50,103 @@ static void initRootIdentity()
 static int get_did(DID *did, void *context)
 {
     List_Helper *helper = (List_Helper*)context;
+    char id[ELA_MAX_DID_LEN];
 
     if (!did)
         return 0;
 
-    DIDDocument *doc = DIDStore_LoadDid(helper->store, did);
+    DIDDocument *doc = DIDStore_LoadDID(helper->store, did);
     if (!doc)
         return 0;
 
-    const char *alias = DIDMetadata_GetAlias(&doc->metadata);
-    if (alias && !strcmp(alias, "me"))
-        DID_Copy(&helper->did, &doc->did);
+    const char *alias = DIDMetadata_GetAlias(DIDDocument_GetMetadata(doc));
+    if (alias && !strcmp(alias, "me")) {
+        if (helper->did)
+            DID_Destroy(helper->did);
+
+        DID_ToString(did, id, sizeof(id));
+        helper->did = DID_FromString(id);
+    }
 
     DIDDocument_Destroy(doc);
     return 0;
 }
 
-static int init_did()
+static void init_did()
 {
     const char *id;
     RootIdentity *identity;
     DIDDocument *doc;
+    DID *did;
+    char idstring[ELA_MAX_DID_LEN];
     int rc;
 
     List_Helper helper;
-    helper->store = store;
-    memset(&helper->did, 0, sizeof(DID));
+    helper.store = store;
+    helper.did = NULL;
 
-    if (DIDStore_ListDIDs(store, 1, get_did, (void*)&helper) == -1)
-        return -1;
+    if (DIDStore_ListDIDs(store, 1, get_did, (void*)&helper) == -1) {
+        printf("[error] init did failed.\n");
+        return;
+    }
 
-    if (helper->did)
-        return 0;    // Already create my DID.
+    if (helper.did) {
+        DID_Destroy(helper.did);
+        return;    // Already create my DID.
+    }
 
-    id = DIDStore_GetDefaultRootIdentity(entity->store);
-    if (!id)
-        return -1;
+    id = DIDStore_GetDefaultRootIdentity(store);
+    if (!id) {
+        printf("[error] init did failed.\n");
+        return;
+    }
 
-    identity = DIDStore_LoadRootIdentity(entity->store, id);
+    identity = DIDStore_LoadRootIdentity(store, id);
     free((void*)id);
-    if (!identity)
-        return -1;
+    if (!identity) {
+        printf("[error] init did failed.\n");
+        return;
+    }
 
-    doc = RootIdentity_NewDID(identity, entity->storepass, "me", false);
+    doc = RootIdentity_NewDID(identity, storepass, "me", false);
     RootIdentity_Destroy(identity);
-    if (!doc)
-        return -1;
+    if (!doc) {
+        printf("[error] init did failed.\n");
+        return;
+    }
 
-    printf("My new DID created: %s\n", &doc->did);
-    rc = DIDDocument_PublishDID(doc, NULL, false, entity->storepass);
+    did = DIDDocument_GetSubject(doc);
+
+    printf("My new DID created: %s\n", DID_ToString(did, idstring, sizeof(idstring)));
+    rc = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    return rc;
+    if (rc != 1)
+        printf("[error] init did failed.\n");
+
+    return;
 }
 
-void initDid(void)
+void InitalizeDid(void)
 {
     const char *storePath = "/tmp/InitializeDID.store";
 
-    if (AssistDIDAdapter_Init("mainnet") == -1) {
-        printf("initDid failed.\n");
+    printf("\n-----------------------------------------\nBeginning, initialize did ...\n");
+
+    if (AssistAdapter_Init("mainnet") == -1) {
+        printf("[error] InitalizeDid failed.\n");
         return;
     }
 
     store = DIDStore_Open(storePath);
     if (!store) {
-        printf("initDid failed.\n");
+        printf("[error] InitalizeDid failed.\n");
         return;
     }
 
-    initRootIdentity();
-    initDid();
+    init_identity();
+    init_did();
 
     DIDStore_Close(store);
+
+    printf("Initialize did, end.\n");
 }

@@ -6,19 +6,12 @@
 #include <time.h>
 
 #include "ela_did.h"
+#include "ela_jwt.h"
 #include "samples.h"
+#include "entity.h"
+#include "assistadapter.h"
 
-static void get_time(time_t *date, int n)
-{
-    struct tm *tm = NULL;
-
-    *date = time(NULL);
-    tm = gmtime(date);
-    tm->tm_month += n;
-    *date = mktime(tm);
-}
-
-void presentationInJWT()
+void PresentationInJWT()
 {
     University *university = NULL;
     Student *student = NULL;
@@ -33,34 +26,36 @@ void presentationInJWT()
     JWTBuilder *builder = NULL;
     JWT *jwt = NULL;
 
+    printf("-----------------------------------------\nBeginning, presentation in jwt ...\n");
+
     // Initializa the DID backend globally
     if (AssistAdapter_Init("mainnet") == -1) {
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         return;
     }
 
     university = University_Init("Elastos");
     if(!university) {
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         return;
     }
 
-    student = Student_Init("John Smith", "Male", "johnsmith@example.org");
+    student = Student_Init("JohnSmith", "Male", "johnsmith@example.org");
     if(!student) {
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
     //create diploma vc
     vc = University_IssuerDiplomaFor(university, student);
     if(!vc) {
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
     data = Credential_ToJson(vc, true);
     if(!data) {
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
@@ -71,21 +66,21 @@ void presentationInJWT()
     printf("  Expired: %s\n", Credential_IsExpired(vc) == 1 ? "true" : "false");
     printf("  Valid: %s\n", Credential_IsValid(vc) == 1 ? "true" : "false");
 
-    if(Student_AddCredential(vc) == -1) {
-        printf("presentationInJWT failed.\n");
+    if(Student_AddCredential(student, vc) == -1) {
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
     //create selfclaimed vc
     vc = Student_CreateSelfProclaimedCredential(student);
     if (!vc) {
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
     data = Credential_ToJson(vc, true);
     if(!data) {
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
@@ -96,8 +91,8 @@ void presentationInJWT()
     printf("  Expired: %s\n", Credential_IsExpired(vc) == 1 ? "true" : "false");
     printf("  Valid: %s\n", Credential_IsValid(vc) == 1 ? "true" : "false");
 
-    if(Student_AddCredential(vc) == -1) {
-        printf("presentationInJWT failed.\n");
+    if(Student_AddCredential(student, vc) == -1) {
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
@@ -105,13 +100,13 @@ void presentationInJWT()
     vc = NULL;
     vp = Student_CreatePresentation(student, "test", "873172f58701a9ee686f0630204fee59");
     if (!vp) {
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
     data = Presentation_ToJson(vp, true);
     if (!data) {
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
@@ -126,19 +121,19 @@ void presentationInJWT()
     nbf = iat;
     exp = iat;
     tm = gmtime(&exp);
-    tm->tm_month += 3;
+    tm->tm_mon += 3;
     exp = timegm(tm);
 
     // Create JWT token with presentation.
     doc = Student_GetDocument(student);
     if (!doc) {
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
     builder = DIDDocument_GetJwtBuilder(doc);
     if (!builder) {
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
@@ -148,24 +143,24 @@ void presentationInJWT()
             JWTBuilder_SetIssuedAt(builder, iat) &&
             JWTBuilder_SetExpiration(builder, exp) &&
             JWTBuilder_SetNotBefore(builder, nbf) &&
-            JWTBuilder_SetClaim(builder, "presentation", data);
+            JWTBuilder_SetClaimWithJson(builder, "presentation", data);
     free((void*)data);
     if (!success) {
         JWTBuilder_Destroy(builder);
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
-    if (JWTBuilder_Sign(builder, NULL, storepass) == -1) {
+    if (JWTBuilder_Sign(builder, NULL, student->base->storepass) == -1) {
         JWTBuilder_Destroy(builder);
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
     const char *token = JWTBuilder_Compact(builder);
     JWTBuilder_Destroy(builder);
     if (!token)  {
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
@@ -175,7 +170,7 @@ void presentationInJWT()
     jwt = DefaultJWSParser_Parse(token);
     if (!jwt) {
         free((void*)token);
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
@@ -184,7 +179,7 @@ void presentationInJWT()
     JWT_Destroy(jwt);
     if (!preJson) {
         free((void*)token);
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
@@ -192,14 +187,14 @@ void presentationInJWT()
     free((void*)preJson);
     if (!vp) {
         free((void*)token);
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
-    data = Presentation_ToJson(vp);
+    data = Presentation_ToJson(vp, true);
     if (!data) {
         free((void*)token);
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
@@ -215,7 +210,7 @@ void presentationInJWT()
     DIDDocument_Destroy(doc);
     if (!jsp) {
         free((void*)token);
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
@@ -223,7 +218,7 @@ void presentationInJWT()
     JWSParser_Destroy(jsp);
     if (!jwt) {
         free((void*)token);
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
     JWT_Destroy(jwt);
@@ -231,7 +226,14 @@ void presentationInJWT()
     doc = University_GetDocument(university);
     if (!doc) {
         free((void*)token);
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
+        goto exit;
+    }
+
+    jsp = DIDDocument_GetJwsParser(doc);
+    if (!jsp) {
+        free((void*)token);
+        printf("[error] PresentationInJWT failed.\n");
         goto exit;
     }
 
@@ -241,7 +243,7 @@ void presentationInJWT()
     JWSParser_Destroy(jsp);
     if (jwt) {
         JWT_Destroy(jwt);
-        printf("presentationInJWT failed.\n");
+        printf("[error] PresentationInJWT failed.\n");
     }
 
 exit:
@@ -255,5 +257,7 @@ exit:
         Presentation_Destroy(vp);
     if (doc)
         DIDDocument_Destroy(doc);
+
+    printf("Presentation in jwt, end.\n");
     return;
 }
