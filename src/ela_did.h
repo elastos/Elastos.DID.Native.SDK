@@ -4376,6 +4376,7 @@ DID_API const char *Mnemonic_GetLanguage(const char *mnemonic);
  *
  * @param
  *      id         [in] The Id of Presentation.
+ *                  eg. optional, support id == NULL.
  * @param
  *      holder     [in] The handle to holder.
  * @param
