@@ -32,6 +32,7 @@ set(ENABLE_JWT TRUE CACHE BOOL "Build JWT")
 set(ENABLE_PYTHON FALSE CACHE BOOL "Build Python cffi module")
 set(ENABLE_TESTS ${ENABLE_TESTS_DEFAULT} CACHE BOOL "Build test cases")
 set(ENABLE_APPS ${ENABLE_APPS_DEFAULT} CACHE BOOL "Build DID utils")
+set(ENABLE_SAMPLES ${ENABLE_APPS_DEFAULT} CACHE BOOL "Build DID Samples")
 set(ENABLE_DOCS FALSE CACHE BOOL "Build APIs documentation")
 
 if(NOT ENABLE_JWT)
@@ -60,6 +61,10 @@ if(NOT HDKEY_ONLY)
 
     if(ENABLE_APPS)
         add_subdirectory(apps)
+    endif()
+
+    if(ENABLE_SAMPLES)
+        add_subdirectory(samples)
     endif()
 endif()
 
