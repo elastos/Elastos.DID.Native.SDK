@@ -127,7 +127,7 @@ const char *CredentialTransaction_ToJson(CredentialTransaction *txinfo)
         return NULL;
     }
 
-    return DIDJG_Finish(gen);
+    return unicode_normalize(DIDJG_Finish(gen));
 }
 
 CredentialRequest *CredentialTransaction_GetRequest(CredentialTransaction *txinfo)

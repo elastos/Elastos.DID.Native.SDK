@@ -18,6 +18,17 @@
 static DIDDocument *document;
 static DIDStore *store;
 
+const char *I18N[] = {
+    "chinese_simplified.txt",
+    "chinese_traditional.txt",
+    "czech.txt",
+    "french.txt",
+    "italian.txt",
+    "japanese.txt",
+    "korean.txt",
+    "spanish.txt"
+};
+
 static void test_idchain_publishdid_and_resolve(void)
 {
     DIDURL *signkey;
@@ -194,11 +205,11 @@ static void test_idchain_publishdid_with_credential(void)
     DIDDocument *resolvedoc = NULL, *doc;
     RootIdentity *rootidentity;
     char previous_txid[ELA_MAX_TXID_LEN];
-    const char *mnemonic, *txid;
+    const char *mnemonic, *txid, *data;
+    int i = 0, status, count = 0;
     Credential *cred;
     bool success;
     DID did;
-    int i = 0, status;
 
     mnemonic = Mnemonic_Generate(language);
     rootidentity = RootIdentity_Create(mnemonic, "", true, store, storepass);
@@ -246,16 +257,27 @@ static void test_idchain_publishdid_with_credential(void)
     CU_ASSERT_PTR_NOT_NULL(builder);
     DIDDocument_Destroy(doc);
 
-    DIDURL *credid = DIDURL_NewFromDid(&did, "cred-1");
+    DIDURL *credid = DIDURL_NewFromDid(&did, "profile");
     CU_ASSERT_PTR_NOT_NULL(credid);
 
     const char *types[] = {"BasicProfileCredential", "SelfClaimedCredential"};
 
-    Property props[1];
-    props[0].key = "name";
-    props[0].value = "John";
+    Property props[8];
+    for (i = 0; i < 8; i++) {
+        data = get_i18n_content(I18N[i]);
+        if (!data)
+            continue;
 
-    CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid, types, 2, props, 1, 0, NULL, storepass));
+        props[i].key = (char*)I18N[i];
+        props[i].value = (char*)data;
+        count++;
+    }
+
+    CU_ASSERT_NOT_EQUAL(-1,
+            DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid, types, 2, props, 8, 0, NULL, storepass));
+
+    for (i = 0; i < count; i++)
+        free((void*)props[i].value);
 
     doc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);

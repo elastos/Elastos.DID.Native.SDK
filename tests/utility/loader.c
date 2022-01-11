@@ -284,6 +284,20 @@ errorExit:
     return rc;
 }
 
+const char *get_i18n_content(const char *name)
+{
+    char _path[PATH_MAX];
+    char *path;
+    const char *data;
+
+    path = get_file_path(_path, PATH_MAX, 11, "..", PATH_STEP, "etc", PATH_STEP,
+        "did", PATH_STEP, "resources", PATH_STEP, "i18n", PATH_STEP, name);
+    if (!path)
+        return NULL;
+
+    return load_file(path);
+}
+
 static int dir_copy(const char *dst, const char *src);
 
 static int dir_copy_helper(const char *path, void *context)

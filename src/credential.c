@@ -806,7 +806,7 @@ const char* Credential_ToJson_ForSign(Credential *credential, bool compact, bool
         return NULL;
     }
 
-    return DIDJG_Finish(gen);
+    return unicode_normalize(DIDJG_Finish(gen));
 }
 
 const char* Credential_ToJson(Credential *credential, bool normalized)

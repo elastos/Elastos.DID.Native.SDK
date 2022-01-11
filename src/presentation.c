@@ -533,7 +533,7 @@ static const char* presentation_tojson_forsign(Presentation *presentation, bool 
         return NULL;
     }
 
-    return DIDJG_Finish(gen);
+    return unicode_normalize(DIDJG_Finish(gen));
 }
 
 static int add_credentialarray_to_presentation(Presentation *presentation, int count, Credential **creds)
