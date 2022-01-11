@@ -705,7 +705,6 @@ static Presentation *create_presentation(DIDURL *id, DID *holder,
     DIDDocument *doc = NULL;
     int rc, i;
 
-    assert(id);
     assert(holder);
     assert(nonce);
     assert(realm);
@@ -718,7 +717,7 @@ static Presentation *create_presentation(DIDURL *id, DID *holder,
         goto errorExit;
     }
 
-    if (!DID_Equals(&id->did, holder)) {
+    if (id && !DID_Equals(&id->did, holder)) {
         DIDError_Set(DIDERR_INVALID_ARGS, "The id mismatch with holder.");
         return NULL;
     }
@@ -773,9 +772,10 @@ static Presentation *create_presentation(DIDURL *id, DID *holder,
     for (i = 0; i < size; i++)
         add_type(presentation, types[i]);
 
-    DIDURL_Copy(&presentation->id, id);
-    DID_Copy(&presentation->holder, holder);
+    if (id)
+        DIDURL_Copy(&presentation->id, id);
 
+    DID_Copy(&presentation->holder, holder);
     if (creds && add_credentialarray_to_presentation(presentation, count, creds) < 0)
         goto errorExit;
 
@@ -802,7 +802,6 @@ Presentation *Presentation_Create(DIDURL *id, DID *holder,
 
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!id, "No presentation id.", NULL);
     CHECK_ARG(!holder, "No holder argument for presentation.", NULL);
     CHECK_ARG(!nonce || !*nonce, "No nonce string.", NULL);
     CHECK_ARG(!realm || !*realm, "No realm string.", NULL);
@@ -839,7 +838,6 @@ Presentation *Presentation_CreateByCredentials(DIDURL *id, DID *holder,
 {
     DIDERROR_INITIALIZE();
 
-    CHECK_ARG(!id, "No presentation id.", NULL);
     CHECK_ARG(!holder, "No holder argument for presentation.", NULL);
     CHECK_ARG(!nonce || !*nonce, "No nonce string.", NULL);
     CHECK_ARG(!realm || !*realm, "No realm string.", NULL);
