@@ -14,6 +14,7 @@
 #include "did.h"
 #include "diddocument.h"
 #include "credential.h"
+#include "didstore.h"
 
 static const char *password = "passwd";
 
@@ -231,7 +232,7 @@ static void test_openstore_compatibility(void)
 
         did = RootIdentity_GetDIDByIndex(rootidentity, 100);
         CU_ASSERT_PTR_NOT_NULL(did);
-        CU_ASSERT_TRUE(DID_Equals(did, &doc->did));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, &doc->did));
 
         CU_ASSERT_TRUE(DIDStore_DeleteDID(store, &doc->did));
 
@@ -352,6 +353,7 @@ static void didstore_openmultistore(void)
     for (i = 0; i < 10; i++) {
         DIDDocument_Destroy(docs[i]);
         DIDStore_Close(stores[i]);
+        delete_file(stores[i]->root);
     }
 }
 

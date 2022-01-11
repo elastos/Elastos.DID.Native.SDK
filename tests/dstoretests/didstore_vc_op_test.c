@@ -91,10 +91,10 @@ static void test_didstore_load_vcs(void)
     alias = CredentialMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(alias);
     CU_ASSERT_STRING_EQUAL("MyProfile", alias);
-    CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(vc)));
-    CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(vc)));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
-    CU_ASSERT_TRUE(DIDStore_ContainsCredential(store, did, id));
+    CU_ASSERT_EQUAL(1, DID_Equals(did, Credential_GetOwner(vc)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Credential_GetId(vc)));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsCredential(store, did, id));
     Credential_Destroy(vc);
     DIDURL_Destroy(id);
 
@@ -107,10 +107,10 @@ static void test_didstore_load_vcs(void)
     alias = CredentialMetadata_GetAlias(metadata);
     CU_ASSERT_PTR_NOT_NULL(alias);
     CU_ASSERT_STRING_EQUAL("Twitter", alias);
-    CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(vc)));
-    CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(vc)));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
-    CU_ASSERT_TRUE(DIDStore_ContainsCredential(store, did, id));
+    CU_ASSERT_EQUAL(1, DID_Equals(did, Credential_GetOwner(vc)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Credential_GetId(vc)));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsCredential(store, did, id));
     Credential_Destroy(vc);
     DIDURL_Destroy(id);
 
@@ -119,7 +119,7 @@ static void test_didstore_load_vcs(void)
 
     vc = DIDStore_LoadCredential(store, did, id);
     CU_ASSERT_PTR_NULL(vc);
-    CU_ASSERT_FALSE(DIDStore_ContainsCredential(store, did, id));
+    CU_ASSERT_EQUAL(0, DIDStore_ContainsCredential(store, did, id));
     DIDURL_Destroy(id);
 
     TestData_Free();
@@ -247,22 +247,22 @@ static void test_didstore_delete_vc(void)
 
     id = DIDURL_NewFromDid(did, "email");
     CU_ASSERT_PTR_NOT_NULL(id);
-    CU_ASSERT_TRUE(DIDStore_ContainsCredential(store, did, id));
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsCredential(store, did, id));
     DIDURL_Destroy(id);
 
     id = DIDURL_NewFromDid(did, "profile");
     CU_ASSERT_PTR_NOT_NULL(id);
-    CU_ASSERT_TRUE(DIDStore_ContainsCredential(store, did, id));
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsCredential(store, did, id));
     DIDURL_Destroy(id);
 
     id = DIDURL_NewFromDid(did, "twitter");
     CU_ASSERT_PTR_NOT_NULL(id);
-    CU_ASSERT_FALSE(DIDStore_ContainsCredential(store, did, id));
+    CU_ASSERT_EQUAL(0, DIDStore_ContainsCredential(store, did, id));
     DIDURL_Destroy(id);
 
     id = DIDURL_NewFromDid(did, "passport");
     CU_ASSERT_PTR_NOT_NULL(id);
-    CU_ASSERT_FALSE(DIDStore_ContainsCredential(store, did, id));
+    CU_ASSERT_EQUAL(0, DIDStore_ContainsCredential(store, did, id));
     DIDURL_Destroy(id);
 
     TestData_Free();

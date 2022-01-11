@@ -396,7 +396,7 @@ static void testImportCompatible(void)
         metadata = DIDDocument_GetMetadata(user1Doc);
         CU_ASSERT_PTR_NOT_NULL(metadata);
         CU_ASSERT_STRING_EQUAL("User1", DIDMetadata_GetAlias(metadata));
-        CU_ASSERT_TRUE(DIDDocument_PublishDID(user1Doc, NULL, true, storepass));
+        CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(user1Doc, NULL, true, storepass));
 
         helper.store = store2;
         helper.count = 0;
@@ -415,7 +415,7 @@ static void testImportCompatible(void)
         metadata = DIDDocument_GetMetadata(doc);
         CU_ASSERT_PTR_NOT_NULL(metadata);
         CU_ASSERT_STRING_EQUAL("User2", DIDMetadata_GetAlias(metadata));
-        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+        CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(doc, NULL, true, storepass));
         DIDDocument_Destroy(doc);
 
         helper.store = store2;
@@ -435,7 +435,7 @@ static void testImportCompatible(void)
         metadata = DIDDocument_GetMetadata(doc);
         CU_ASSERT_PTR_NOT_NULL(metadata);
         CU_ASSERT_STRING_EQUAL("User3", DIDMetadata_GetAlias(metadata));
-        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+        CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(doc, NULL, true, storepass));
         DIDDocument_Destroy(doc);
 
         helper.store = store2;
@@ -455,7 +455,7 @@ static void testImportCompatible(void)
         metadata = DIDDocument_GetMetadata(doc);
         CU_ASSERT_PTR_NOT_NULL(metadata);
         CU_ASSERT_STRING_EQUAL("User4", DIDMetadata_GetAlias(metadata));
-        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+        CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(doc, NULL, true, storepass));
         DIDDocument_Destroy(doc);
 
         helper.store = store2;
@@ -475,7 +475,7 @@ static void testImportCompatible(void)
         metadata = DIDDocument_GetMetadata(doc);
         CU_ASSERT_PTR_NOT_NULL(metadata);
         CU_ASSERT_STRING_EQUAL("Issuer", DIDMetadata_GetAlias(metadata));
-        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+        CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(doc, NULL, true, storepass));
         DIDDocument_Destroy(doc);
 
         helper.store = store2;
@@ -492,7 +492,7 @@ static void testImportCompatible(void)
         doc = DIDStore_LoadDID(store2, did);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
-        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, NULL, true, storepass));
+        CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(doc, NULL, true, storepass));
         DIDDocument_Destroy(doc);
 
         helper.store = store2;
@@ -509,7 +509,7 @@ static void testImportCompatible(void)
         doc = DIDStore_LoadDID(store2, did);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
-        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
+        CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
         DIDDocument_Destroy(doc);
 
         helper.store = store2;
@@ -526,7 +526,7 @@ static void testImportCompatible(void)
         doc = DIDStore_LoadDID(store2, did);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
-        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
+        CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
         DIDDocument_Destroy(doc);
 
         helper.store = store2;
@@ -543,7 +543,7 @@ static void testImportCompatible(void)
         doc = DIDStore_LoadDID(store2, did);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
-        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
+        CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
         DIDDocument_Destroy(doc);
 
         helper.store = store2;
@@ -560,7 +560,7 @@ static void testImportCompatible(void)
         doc = DIDStore_LoadDID(store2, did);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
-        CU_ASSERT_TRUE(DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
+        CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(doc, DIDDocument_GetDefaultPublicKey(user1Doc), true, storepass));
         DIDDocument_Destroy(doc);
 
         helper.store = store2;

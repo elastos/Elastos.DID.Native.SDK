@@ -24,8 +24,8 @@ static void test_issuer_create(void)
     issuer = Issuer_Create(issuerid, signkey, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
 
-    CU_ASSERT_TRUE(DID_Equals(issuerid, Issuer_GetSigner(issuer)));
-    CU_ASSERT_TRUE(DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
+    CU_ASSERT_EQUAL(1, DID_Equals(issuerid, Issuer_GetSigner(issuer)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
 
     Issuer_Destroy(issuer);
 }
@@ -37,8 +37,8 @@ static void test_issuer_create_without_key(void)
     issuer = Issuer_Create(issuerid, NULL, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
 
-    CU_ASSERT_TRUE(DID_Equals(issuerid, Issuer_GetSigner(issuer)));
-    CU_ASSERT_TRUE(DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
+    CU_ASSERT_EQUAL(1, DID_Equals(issuerid, Issuer_GetSigner(issuer)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
 
     Issuer_Destroy(issuer);
 }
@@ -67,7 +67,7 @@ static void test_issuer_create_with_invalidkey1(void)
 
     doc = DIDDocumentBuilder_Seal(builder, storepass);
     CU_ASSERT_PTR_NOT_NULL(doc);
-    CU_ASSERT_TRUE(DIDDocument_IsValid(doc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(doc));
     DIDDocumentBuilder_Destroy(builder);
     DIDDocument_Destroy(doc);
 
@@ -111,8 +111,8 @@ static void test_issuer_create_by_cid(void)
 
     issuer = Issuer_Create(&customized_doc->did, signkey, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
-    CU_ASSERT_TRUE(DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
-    CU_ASSERT_TRUE(DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
+    CU_ASSERT_EQUAL(1, DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
     DIDURL_Destroy(signkey);
     Issuer_Destroy(issuer);
 
@@ -121,8 +121,8 @@ static void test_issuer_create_by_cid(void)
 
     issuer = Issuer_Create(&customized_doc->did, signkey, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
-    CU_ASSERT_TRUE(DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
-    CU_ASSERT_TRUE(DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
+    CU_ASSERT_EQUAL(1, DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
     DIDURL_Destroy(signkey);
     Issuer_Destroy(issuer);
 
@@ -131,8 +131,8 @@ static void test_issuer_create_by_cid(void)
 
     issuer = Issuer_Create(&customized_doc->did, NULL, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
-    CU_ASSERT_TRUE(DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
-    CU_ASSERT_TRUE(DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
+    CU_ASSERT_EQUAL(1, DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
     Issuer_Destroy(issuer);
 }
 
@@ -161,8 +161,8 @@ static void test_issuer_create_by_multicid(void)
 
     issuer = Issuer_Create(&customized_doc->did, signkey, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
-    CU_ASSERT_TRUE(DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
-    CU_ASSERT_TRUE(DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
+    CU_ASSERT_EQUAL(1, DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
     DIDURL_Destroy(signkey);
     Issuer_Destroy(issuer);
 
@@ -171,8 +171,8 @@ static void test_issuer_create_by_multicid(void)
 
     issuer = Issuer_Create(&customized_doc->did, signkey, store);
     CU_ASSERT_PTR_NOT_NULL_FATAL(issuer);
-    CU_ASSERT_TRUE(DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
-    CU_ASSERT_TRUE(DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
+    CU_ASSERT_EQUAL(1, DID_Equals(&customized_doc->did, Issuer_GetSigner(issuer)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(signkey, Issuer_GetSignKey(issuer)));
     DIDURL_Destroy(signkey);
     Issuer_Destroy(issuer);
 

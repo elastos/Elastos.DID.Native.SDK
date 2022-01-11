@@ -693,7 +693,7 @@ int DIDBackend_DeclareCredential(Credential *vc, DIDURL *signkey,
     if (!success)
         DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Create Id transaction(declare) failed.");
 
-    return success;
+    return (int)success;
 }
 
 int DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey, DIDDocument *document,

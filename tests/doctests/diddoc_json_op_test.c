@@ -40,17 +40,17 @@ static void test_diddoc_json_operateion(void)
         CU_ASSERT_PTR_NOT_NULL(compactJson);
         compactdoc = DIDDocument_FromJson(compactJson);
         CU_ASSERT_PTR_NOT_NULL(compactdoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(compactdoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(compactdoc));
 
         normalizedJson = TestData_GetDocumentJson(params[i].did, "normalized", params[i].version);
         CU_ASSERT_PTR_NOT_NULL(normalizedJson);
         normalizedoc = DIDDocument_FromJson(normalizedJson);
         CU_ASSERT_PTR_NOT_NULL(normalizedoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(normalizedoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(normalizedoc));
 
         doc = TestData_GetDocument(params[i].did, NULL, params[i].version);
         CU_ASSERT_PTR_NOT_NULL(doc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(doc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(doc));
 
         data = DIDDocument_ToJson(compactdoc, true);
         CU_ASSERT_PTR_NOT_NULL(data);

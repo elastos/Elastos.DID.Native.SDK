@@ -99,7 +99,7 @@ static void test_ticket(void)
     ticket = DIDDocument_CreateTransferTicket(controller1_doc,
             &customized_doc->did, &controller2_doc->did, storepass);
     CU_ASSERT_PTR_NOT_NULL(ticket);
-    CU_ASSERT_FALSE(TransferTicket_IsValid(ticket));
+    CU_ASSERT_EQUAL(0, TransferTicket_IsValid(ticket));
 
     CU_ASSERT_EQUAL(-1, DIDDocument_SignTransferTicket(controller1_doc,
         ticket, storepass));
@@ -107,13 +107,13 @@ static void test_ticket(void)
         ticket, storepass));
     CU_ASSERT_NOT_EQUAL(-1, DIDDocument_SignTransferTicket(controller3_doc,
         ticket, storepass));
-    CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));
+    CU_ASSERT_EQUAL(1, TransferTicket_IsValid(ticket));
 
     CU_ASSERT_EQUAL(3, TransferTicket_GetProofCount(ticket));
     for (i = 0; i < ticket->proofs.size; i++) {
         key = TransferTicket_GetSignKey(ticket, i);
         CU_ASSERT_PTR_NOT_NULL(key);
-        CU_ASSERT_TRUE(DIDURL_Equals(key, signkey1) || DIDURL_Equals(key, signkey2) ||
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(key, signkey1) || DIDURL_Equals(key, signkey2) ||
                 DIDURL_Equals(key, signkey3));
     }
 
@@ -159,7 +159,7 @@ static void test_multi_signature_ticket(void)
 
         CU_ASSERT_STRING_EQUAL("8b98fa486d0ce78e1e676484f5826825", TransferTicket_GetTransactionId(ticket));
         CU_ASSERT_EQUAL(2, TransferTicket_GetProofCount(ticket));
-        CU_ASSERT_TRUE(TransferTicket_IsGenuine(ticket));
+        CU_ASSERT_EQUAL(1, TransferTicket_IsGenuine(ticket));
     }
 
     TestData_Free();
@@ -193,7 +193,7 @@ static void test_ticket2(void)
 
         CU_ASSERT_STRING_EQUAL("f9b2284b4525d5382ee8d0942c42442e", TransferTicket_GetTransactionId(ticket));
         CU_ASSERT_EQUAL(1, TransferTicket_GetProofCount(ticket));
-        CU_ASSERT_TRUE(TransferTicket_IsGenuine(ticket));
+        CU_ASSERT_EQUAL(1, TransferTicket_IsGenuine(ticket));
     }
 
     TestData_Free();
