@@ -27,7 +27,7 @@ static void test_rootidentity_createid(void)
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL(store);
-    CU_ASSERT_FALSE(DIDStore_ContainsRootIdentities(store));
+    CU_ASSERT_EQUAL(0, DIDStore_ContainsRootIdentities(store));
 
     id1 = RootIdentity_CreateId(nmnemonic, "helloworld");
     CU_ASSERT_PTR_NOT_NULL(id1);
@@ -35,7 +35,7 @@ static void test_rootidentity_createid(void)
     CU_ASSERT_PTR_NOT_NULL(id2);
     CU_ASSERT_STRING_EQUAL(id1, id2);
 
-    CU_ASSERT_FALSE(DIDStore_ContainsRootIdentities(store));
+    CU_ASSERT_EQUAL(0, DIDStore_ContainsRootIdentities(store));
 
     free((void*)id1);
     free((void*)id2);
@@ -57,11 +57,11 @@ static void test_rootidentity_newdid(void)
 
         store = TestData_SetupStore(true);
         CU_ASSERT_PTR_NOT_NULL(store);
-        CU_ASSERT_FALSE(DIDStore_ContainsRootIdentities(store));
+        CU_ASSERT_EQUAL(0, DIDStore_ContainsRootIdentities(store));
 
         rootidentity = RootIdentity_Create(nmnemonic, "helloworld", true, store, storepass);
         CU_ASSERT_PTR_NOT_NULL(rootidentity);
-        CU_ASSERT_TRUE(DIDStore_ContainsRootIdentities(store));
+        CU_ASSERT_EQUAL(1, DIDStore_ContainsRootIdentities(store));
 
         _rootidentity = DIDStore_LoadRootIdentity(store, rootidentity->id);
         CU_ASSERT_PTR_NOT_NULL(_rootidentity);
@@ -73,7 +73,7 @@ static void test_rootidentity_newdid(void)
 
         did = RootIdentity_GetDefaultDID(_rootidentity);
         CU_ASSERT_PTR_NOT_NULL(did);
-        CU_ASSERT_TRUE(DID_Equals(did, &doc1->did));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, &doc1->did));
         CU_ASSERT_STRING_EQUAL(did->idstring, expectedIDString);
         DID_Destroy(did);
 
@@ -88,7 +88,7 @@ static void test_rootidentity_newdid(void)
         //get did by index 1
         did = RootIdentity_GetDIDByIndex(_rootidentity, 1);
         CU_ASSERT_PTR_NOT_NULL(did);
-        CU_ASSERT_TRUE(DID_Equals(did, &doc2->did));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, &doc2->did));
 
         //set did2 to default
         CU_ASSERT_NOT_EQUAL(-1, RootIdentity_SetDefaultDID(_rootidentity, did));
@@ -96,7 +96,7 @@ static void test_rootidentity_newdid(void)
 
         did = RootIdentity_GetDefaultDID(_rootidentity);
         CU_ASSERT_PTR_NOT_NULL(did);
-        CU_ASSERT_TRUE(DID_Equals(did, &doc2->did));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, &doc2->did));
         DID_Destroy(did);
 
         DIDDocument_Destroy(doc1);
@@ -121,7 +121,7 @@ static void test_rootidentitybyrootkey_newdid(void)
 
     store = TestData_SetupStore(true);
     CU_ASSERT_PTR_NOT_NULL(store);
-    CU_ASSERT_FALSE(DIDStore_ContainsRootIdentities(store));
+    CU_ASSERT_EQUAL(0, DIDStore_ContainsRootIdentities(store));
 
     rootidentity = RootIdentity_CreateFromRootKey(ExtendedkeyBase, true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity);
@@ -137,7 +137,7 @@ static void test_rootidentitybyrootkey_newdid(void)
 
         did = RootIdentity_GetDIDByIndex(rootidentity, i);
         CU_ASSERT_PTR_NOT_NULL(did);
-        CU_ASSERT_TRUE(DID_Equals(did, &doc->did));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, &doc->did));
 
         DIDDocument_Destroy(doc);
         DID_Destroy(did);

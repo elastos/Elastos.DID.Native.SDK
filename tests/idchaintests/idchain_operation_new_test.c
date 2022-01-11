@@ -127,7 +127,7 @@ static void test_idchain_controller1(void)
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(controller1_doc, NULL, false, storepass);
     DIDDocument_Destroy(controller1_doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish controller1 result:\n   did = %s\n -- resolve begin(create)", controller1.idstring);
 
     controller1_doc = resolve_doc(&controller1, txid);
@@ -160,7 +160,7 @@ static void test_idchain_controller1(void)
     success = DIDDocument_PublishDID(controller1_doc, keyid, false, storepass);
     DIDURL_Destroy(keyid);
     DIDDocument_Destroy(controller1_doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update)", controller1.idstring);
 
     controller1_doc = resolve_doc(&controller1, txid);
@@ -199,7 +199,7 @@ static void test_idchain_controller1(void)
 
     success = DIDDocument_PublishDID(controller1_doc, NULL, false, storepass);
     DIDDocument_Destroy(controller1_doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update) again", controller1.idstring);
 
     controller1_doc = resolve_doc(&controller1, txid);
@@ -222,7 +222,7 @@ static void test_idchain_controller1(void)
 
     DID *owner = DIDBiography_GetOwner(biography);
     CU_ASSERT_PTR_NOT_NULL_FATAL(owner);
-    CU_ASSERT_TRUE_FATAL(DID_Equals(&controller1, owner));
+    CU_ASSERT_EQUAL_FATAL(1, DID_Equals(&controller1, owner));
 
     for (int i = 0; i < 3; i++) {
         doc = DIDBiography_GetDocumentByIndex(biography, i);
@@ -250,7 +250,7 @@ static void test_idchain_controller2(void)
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(controller2_doc, NULL, false, storepass);
     DIDDocument_Destroy(controller2_doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish controller2 result:\n   did = %s\n -- resolve begin(create)", controller2.idstring);
 
     controller2_doc = resolve_doc(&controller2, txid);
@@ -291,7 +291,7 @@ static void test_idchain_controller2(void)
     //update
     success = DIDDocument_PublishDID(controller2_doc, NULL, true, storepass);
     DIDDocument_Destroy(controller2_doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update)", controller2.idstring);
 
     controller2_doc = resolve_doc(&controller2, txid);
@@ -364,7 +364,7 @@ static void test_idchain_controller3(void)
 
     success = DIDDocument_PublishDID(controller3_doc, keyid2, false, storepass);
     DIDDocument_Destroy(controller3_doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish controller3 result:\n   did = %s\n -- resolve begin(update) again", controller3.idstring);
 
     controller3_doc = resolve_doc(&controller3, txid);
@@ -405,7 +405,7 @@ static void test_idchain_controller3(void)
 
     success = DIDDocument_PublishDID(controller3_doc, keyid1, false, storepass);
     DIDDocument_Destroy(controller3_doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update) again", controller3.idstring);
 
     controller3_doc = resolve_doc(&controller3, txid);
@@ -448,9 +448,9 @@ static void test_idchain_controller3(void)
     Issuer_Destroy(issuer);
     DIDURL_Destroy(credid2);
     CU_ASSERT_PTR_NOT_NULL(vc);
-    CU_ASSERT_FALSE(Credential_IsExpired(vc));
-    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL(0, Credential_IsExpired(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsGenuine(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreCredential(store, vc));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddCredential(builder, vc));
@@ -463,7 +463,7 @@ static void test_idchain_controller3(void)
 
     success = DIDDocument_PublishDID(controller3_doc, keyid1, false, storepass);
     DIDDocument_Destroy(controller3_doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update) again", controller3.idstring);
 
     controller3_doc = resolve_doc(&controller3, txid);
@@ -486,8 +486,8 @@ static void test_idchain_controller3(void)
     CU_ASSERT_PTR_NULL(Credential_Resolve(&vc->id, &status, true));
     CU_ASSERT_EQUAL(status, CredentialStatus_NotFound);
 
-    CU_ASSERT_TRUE(Credential_Declare(vc, signkey, storepass));
-    CU_ASSERT_TRUE(Credential_WasDeclared(&vc->id));
+    CU_ASSERT_EQUAL(1, Credential_Declare(vc, signkey, storepass));
+    CU_ASSERT_EQUAL(1, Credential_WasDeclared(&vc->id));
     CU_ASSERT_NOT_EQUAL(1, Credential_IsRevoked(vc));
 
     Credential *resolve_vc1 = Credential_Resolve(&vc->id, &status, true);
@@ -506,7 +506,7 @@ static void test_idchain_controller3(void)
     CU_ASSERT_NOT_EQUAL(0, CredentialMetadata_GetPublished(&resolve_vc1->metadata));
     CU_ASSERT_PTR_NOT_NULL(CredentialMetadata_GetTxid(&resolve_vc1->metadata));
     CU_ASSERT_NOT_EQUAL(1, Credential_IsRevoked(resolve_vc1));
-    CU_ASSERT_TRUE(Credential_WasDeclared(&resolve_vc1->id));
+    CU_ASSERT_EQUAL(1, Credential_WasDeclared(&resolve_vc1->id));
 
     //declare again, fail.
     CU_ASSERT_NOT_EQUAL(1, Credential_Declare(vc, signkey, storepass));
@@ -516,8 +516,8 @@ static void test_idchain_controller3(void)
     CU_ASSERT_NOT_EQUAL(1, Credential_RevokeById(&vc->id, controller2_doc, NULL, storepass));
     CU_ASSERT_NOT_EQUAL(1, Credential_IsRevoked(vc));
     //revoke by owner again, success.
-    CU_ASSERT_TRUE(Credential_RevokeById(&vc->id, controller3_doc, signkey, storepass));
-    CU_ASSERT_TRUE(Credential_IsRevoked(vc));
+    CU_ASSERT_EQUAL(1, Credential_RevokeById(&vc->id, controller3_doc, signkey, storepass));
+    CU_ASSERT_EQUAL(1, Credential_IsRevoked(vc));
     //revoke by issuer again, fail.
     CU_ASSERT_NOT_EQUAL(1, Credential_RevokeById(&vc->id, controller1_doc, NULL, storepass));
     CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
@@ -546,8 +546,8 @@ static void test_idchain_controller3(void)
 
     CU_ASSERT_STRING_EQUAL("revoke", CredentialBiography_GetOperationByIndex(biography, 0));
     CU_ASSERT_STRING_EQUAL("declare", CredentialBiography_GetOperationByIndex(biography, 1));
-    CU_ASSERT_TRUE(DIDURL_Equals(signkey, CredentialBiography_GetTransactionSignkeyByIndex(biography, 0)));
-    CU_ASSERT_TRUE(DIDURL_Equals(signkey, CredentialBiography_GetTransactionSignkeyByIndex(biography, 1)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(signkey, CredentialBiography_GetTransactionSignkeyByIndex(biography, 0)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(signkey, CredentialBiography_GetTransactionSignkeyByIndex(biography, 1)));
 
     CredentialBiography_Destroy(biography);
     Credential_Destroy(vc);
@@ -609,7 +609,7 @@ static void test_idchain_controller4(void)
 
     success = DIDDocument_PublishDID(controller4_doc, keyid2, false, storepass);
     DIDDocument_Destroy(controller4_doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish controller4 result:\n   did = %s\n -- resolve begin(update) again", controller4.idstring);
 
     controller4_doc = resolve_doc(&controller4, txid);
@@ -642,7 +642,7 @@ static void test_idchain_controller5(void)
 
     success = DIDDocument_PublishDID(controller5_doc, NULL, false, storepass);
     DIDDocument_Destroy(controller5_doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish controller5 result:\n   did = %s\n -- resolve begin(update) again", controller5.idstring);
 
     controller5_doc = resolve_doc(&controller5, txid);
@@ -673,24 +673,24 @@ static void test_idchain_ctmdid_with_onecontroller(void)
     customized_doc = DIDDocument_NewCustomizedDID(controller1_doc, customized_string,
             NULL, 0, 0, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customized_doc));
     DID_Copy(&customized_did, &customized_doc->did);
 
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(customized_doc, NULL, true, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(customized_doc, NULL, true, storepass));
     DIDDocument_Destroy(customized_doc);
 
     customized_doc = resolve_doc(&customized_did, txid);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customized_doc);
 
     CU_ASSERT_EQUAL(1, DIDDocument_GetControllerCount(customized_doc));
-    CU_ASSERT_TRUE(DIDDocument_ContainsController(customized_doc, &controller1));
+    CU_ASSERT_EQUAL(1, DIDDocument_ContainsController(customized_doc, &controller1));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customized_doc));
     DIDDocument_Destroy(customized_doc);
 
     customized_doc = DIDStore_LoadDID(store, &customized_did);
     CU_ASSERT_PTR_NOT_NULL(customized_doc);
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customized_doc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customized_doc));
 
     //update
     builder = DIDDocument_Edit(customized_doc, controller1_doc);
@@ -720,7 +720,7 @@ static void test_idchain_ctmdid_with_onecontroller(void)
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customized_doc));
 
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(customized_doc, keyid1, false, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(customized_doc, keyid1, false, storepass));
     DIDDocument_Destroy(customized_doc);
 
     customized_doc = resolve_doc(&customized_did, txid);
@@ -747,7 +747,7 @@ static void test_idchain_ctmdid_with_onecontroller(void)
     CU_ASSERT_PTR_NOT_NULL(customized_doc);
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customized_doc));
 
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(customized_doc, keyid1, false, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(customized_doc, keyid1, false, storepass));
     DIDDocument_Destroy(customized_doc);
 
     customized_doc = resolve_doc(&customized_did, txid);
@@ -812,15 +812,15 @@ static void test_idchain_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(multicustomized_doc);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, multicustomized_doc));
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(multicustomized_doc, signkey1, true, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(multicustomized_doc, signkey1, true, storepass));
     DIDDocument_Destroy(multicustomized_doc);
 
     multicustomized_doc = resolve_doc(&multicustomized_did, txid);
 
     CU_ASSERT_EQUAL(3, DIDDocument_GetControllerCount(multicustomized_doc));
-    CU_ASSERT_TRUE(DIDDocument_ContainsController(multicustomized_doc, &controller1));
-    CU_ASSERT_TRUE(DIDDocument_ContainsController(multicustomized_doc, &controller2));
-    CU_ASSERT_TRUE(DIDDocument_ContainsController(multicustomized_doc, &controller3));
+    CU_ASSERT_EQUAL(1, DIDDocument_ContainsController(multicustomized_doc, &controller1));
+    CU_ASSERT_EQUAL(1, DIDDocument_ContainsController(multicustomized_doc, &controller2));
+    CU_ASSERT_EQUAL(1, DIDDocument_ContainsController(multicustomized_doc, &controller3));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, multicustomized_doc));
 
@@ -832,7 +832,7 @@ static void test_idchain_ctmdid_with_multicontroller(void)
 
     multicustomized_doc = DIDStore_LoadDID(store, &multicustomized_did);
     CU_ASSERT_PTR_NOT_NULL(multicustomized_doc);
-    CU_ASSERT_TRUE(DIDDocument_IsValid(multicustomized_doc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(multicustomized_doc));
 
     //update
     builder = DIDDocument_Edit(multicustomized_doc, controller2_doc);
@@ -911,7 +911,7 @@ static void test_idchain_ctmdid_with_multicontroller(void)
     CU_ASSERT_NOT_EQUAL(1, DIDDocument_PublishDID(multicustomized_doc, NULL, true, storepass));
     CU_ASSERT_STRING_EQUAL("Multi-controller customized DID must have signkey to publish.",
             DIDError_GetLastErrorMessage());
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(multicustomized_doc, keyid1, true, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(multicustomized_doc, keyid1, true, storepass));
     DIDDocument_Destroy(multicustomized_doc);
 
     multicustomized_doc = resolve_doc(&multicustomized_did, txid);
@@ -955,7 +955,7 @@ static void test_idchain_ctmdid_with_multicontroller(void)
     CU_ASSERT_EQUAL(9, DIDDocument_GetAuthenticationCount(multicustomized_doc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetCredentialCount(multicustomized_doc));
 
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(multicustomized_doc, signkey3, false, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(multicustomized_doc, signkey3, false, storepass));
     DIDDocument_Destroy(multicustomized_doc);
 
     multicustomized_doc = resolve_doc(&multicustomized_did, txid);
@@ -979,7 +979,7 @@ static void test_idchain_ctmdid_with_multicontroller(void)
 
     DID *owner = DIDBiography_GetOwner(biography);
     CU_ASSERT_PTR_NOT_NULL_FATAL(owner);
-    CU_ASSERT_TRUE_FATAL(DID_Equals(&multicustomized_did, owner));
+    CU_ASSERT_EQUAL_FATAL(1, DID_Equals(&multicustomized_did, owner));
 
     for (int i = 0; i < 3; i++) {
         doc = DIDBiography_GetDocumentByIndex(biography, i);
@@ -1023,14 +1023,14 @@ static void test_idchain_ctmdid_with_multicontroller(void)
     CU_ASSERT_EQUAL(1, CredentialBiography_GetTransactionCount(vc_biography));
 
     CU_ASSERT_STRING_EQUAL("revoke", CredentialBiography_GetOperationByIndex(vc_biography, 0));
-    CU_ASSERT_TRUE(DIDURL_Equals(signkey, CredentialBiography_GetTransactionSignkeyByIndex(vc_biography, 0)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(signkey, CredentialBiography_GetTransactionSignkeyByIndex(vc_biography, 0)));
     DIDURL_Destroy(signkey);
     CredentialBiography_Destroy(vc_biography);
 
     //revoke credid2: ------------------------------------------
     vc = DIDStore_LoadCredential(store, &credid2->did, credid2);
     CU_ASSERT_PTR_NOT_NULL(vc);
-    CU_ASSERT_FALSE(Credential_IsRevoked(vc));
+    CU_ASSERT_EQUAL(0, Credential_IsRevoked(vc));
 
     //revoke vc by random did, failed.
     signkey = DIDDocument_GetDefaultPublicKey(controller5_doc);
@@ -1068,7 +1068,7 @@ static void test_idchain_ctmdid_with_multicontroller(void)
     CU_ASSERT_EQUAL(2, CredentialBiography_GetTransactionCount(vc_biography));
 
     CU_ASSERT_STRING_EQUAL("revoke", CredentialBiography_GetOperationByIndex(vc_biography, 0));
-    CU_ASSERT_TRUE(DIDURL_Equals(keyid1, CredentialBiography_GetTransactionSignkeyByIndex(vc_biography, 0)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(keyid1, CredentialBiography_GetTransactionSignkeyByIndex(vc_biography, 0)));
     DIDURL_Destroy(signkey);
 
     CredentialBiography_Destroy(vc_biography);
@@ -1106,7 +1106,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     customizedoc = DIDDocument_NewCustomizedDID(controller1_doc, customized_string,
             controllers, 1, 0, false, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(customizedoc);
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customizedoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customizedoc));
     DID_Copy(&customizedid, &customizedoc->did);
 
     builder = DIDDocument_Edit(customizedoc, NULL);
@@ -1146,13 +1146,13 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     CU_ASSERT_EQUAL(1, DIDDocument_GetCredentialCount(customizedoc));
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customizedoc));
 
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(customizedoc, keyid1, false, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(customizedoc, keyid1, false, storepass));
     DIDDocument_Destroy(customizedoc);
 
     customizedoc = resolve_doc(&customizedid, txid);
 
     CU_ASSERT_EQUAL(1, DIDDocument_GetControllerCount(customizedoc));
-    CU_ASSERT_TRUE(DIDDocument_ContainsController(customizedoc, &controller1));
+    CU_ASSERT_EQUAL(1, DIDDocument_ContainsController(customizedoc, &controller1));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customizedoc, keyid1));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetCredential(customizedoc, credid));
 
@@ -1161,7 +1161,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
 
     customizedoc = DIDStore_LoadDID(store, &customizedid);
     CU_ASSERT_PTR_NOT_NULL(customizedoc);
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customizedoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customizedoc));
 
     //update
     //Not set controller doc, fail.
@@ -1197,7 +1197,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     CU_ASSERT_PTR_NOT_NULL(customizedoc);
 
     //check
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customizedoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customizedoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetControllerCount(customizedoc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetMultisig(customizedoc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetProofCount(customizedoc));
@@ -1219,15 +1219,15 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     ticket = TransferTicket_FromJson(data);
     free((void*)data);
     CU_ASSERT_PTR_NOT_NULL(ticket);
-    CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));
+    CU_ASSERT_EQUAL(1, TransferTicket_IsValid(ticket));
 
-    CU_ASSERT_TRUE(DIDDocument_TransferDID(customizedoc, ticket, signkey1, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_TransferDID(customizedoc, ticket, signkey1, storepass));
     DIDDocument_Destroy(customizedoc);
     TransferTicket_Destroy(ticket);
 
     customizedoc = resolve_doc(&customizedid, txid);
 
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customizedoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customizedoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetControllerCount(customizedoc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetMultisig(customizedoc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetProofCount(customizedoc));
@@ -1254,7 +1254,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     DIDDocumentBuilder_Destroy(builder);
     CU_ASSERT_PTR_NOT_NULL(customizedoc);
 
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customizedoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customizedoc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetControllerCount(customizedoc));
     CU_ASSERT_EQUAL(0, DIDDocument_GetMultisig(customizedoc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetProofCount(customizedoc));
@@ -1275,15 +1275,15 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     ticket = TransferTicket_FromJson(data);
     free((void*)data);
     CU_ASSERT_PTR_NOT_NULL(ticket);
-    CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));
+    CU_ASSERT_EQUAL(1, TransferTicket_IsValid(ticket));
 
-    CU_ASSERT_TRUE(DIDDocument_TransferDID(customizedoc, ticket, signkey2, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_TransferDID(customizedoc, ticket, signkey2, storepass));
     DIDDocument_Destroy(customizedoc);
     TransferTicket_Destroy(ticket);
 
     customizedoc = resolve_doc(&customizedid, txid);
 
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customizedoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customizedoc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetControllerCount(customizedoc));
     CU_ASSERT_EQUAL(0, DIDDocument_GetMultisig(customizedoc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetProofCount(customizedoc));
@@ -1372,14 +1372,14 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     customizedoc = DIDDocument_SignDIDDocument(controller1_doc, data, storepass);
     free((void*)data);
     CU_ASSERT_PTR_NOT_NULL(customizedoc);
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customizedoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customizedoc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetCredentialCount(customizedoc));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetCredential(customizedoc, credid));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customizedoc, keyid1));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customizedoc));
 
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(customizedoc, signkey1, true, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(customizedoc, signkey1, true, storepass));
     DIDDocument_Destroy(customizedoc);
 
     customizedoc = resolve_doc(&customizedid, txid);
@@ -1389,9 +1389,9 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_EQUAL(2, DIDDocument_GetProofCount(customizedoc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetCredentialCount(customizedoc));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetCredential(customizedoc, credid));
-    CU_ASSERT_TRUE(DIDDocument_ContainsController(customizedoc, &controller1));
-    CU_ASSERT_TRUE(DIDDocument_ContainsController(customizedoc, &controller2));
-    CU_ASSERT_TRUE(DIDDocument_ContainsController(customizedoc, &controller3));
+    CU_ASSERT_EQUAL(1, DIDDocument_ContainsController(customizedoc, &controller1));
+    CU_ASSERT_EQUAL(1, DIDDocument_ContainsController(customizedoc, &controller2));
+    CU_ASSERT_EQUAL(1, DIDDocument_ContainsController(customizedoc, &controller3));
 
     size = DIDDocument_GetProofCount(customizedoc);
     CU_ASSERT_EQUAL(2, size);
@@ -1399,7 +1399,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     for (i = 0; i < size; i++) {
         creater = DIDDocument_GetProofCreater(customizedoc, i);
         CU_ASSERT_PTR_NOT_NULL(creater);
-        CU_ASSERT_TRUE(DID_Equals(&creater->did, &controller1) || DID_Equals(&creater->did, &controller2));
+        CU_ASSERT_EQUAL(1, DID_Equals(&creater->did, &controller1) || DID_Equals(&creater->did, &controller2));
     }
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customizedoc));
@@ -1407,7 +1407,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
 
     customizedoc = DIDStore_LoadDID(store, &customizedid);
     CU_ASSERT_PTR_NOT_NULL(customizedoc);
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customizedoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customizedoc));
 
     //update ——-------------------------------------------------
     builder = DIDDocument_Edit(customizedoc, controller2_doc);
@@ -1436,7 +1436,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     free((void*)data);
     CU_ASSERT_PTR_NOT_NULL(customizedoc);
 
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customizedoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customizedoc));
     CU_ASSERT_EQUAL(6, DIDDocument_GetAuthenticationCount(customizedoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetControllerCount(customizedoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetMultisig(customizedoc));
@@ -1444,7 +1444,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_EQUAL(1, DIDDocument_GetCredentialCount(customizedoc));
     cred = DIDDocument_GetCredential(customizedoc, credid);
     CU_ASSERT_PTR_NOT_NULL(cred);
-    CU_ASSERT_TRUE(DIDURL_Equals(signkey2, Credential_GetProofMethod(cred)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(signkey2, Credential_GetProofMethod(cred)));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customizedoc));
 
@@ -1486,7 +1486,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(ticket);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocument_SignTransferTicket(controller3_doc, ticket, storepass));
-    CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));
+    CU_ASSERT_EQUAL(1, TransferTicket_IsValid(ticket));
 
     CU_ASSERT_NOT_EQUAL(1, DIDDocument_TransferDID(customizedoc, ticket, signkey2, storepass));
     CU_ASSERT_STRING_EQUAL("DID to receive ticket isn't document's signer.",
@@ -1506,9 +1506,9 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     free((void*)data);
     CU_ASSERT_PTR_NOT_NULL(ticket);
     CU_ASSERT_NOT_EQUAL(-1, DIDDocument_SignTransferTicket(controller2_doc, ticket, storepass));
-    CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));
+    CU_ASSERT_EQUAL(1, TransferTicket_IsValid(ticket));
 
-    CU_ASSERT_TRUE(DIDDocument_TransferDID(customizedoc, ticket, signkey2, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_TransferDID(customizedoc, ticket, signkey2, storepass));
     DIDDocument_Destroy(customizedoc);
     TransferTicket_Destroy(ticket);
 
@@ -1516,7 +1516,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_PTR_NOT_NULL(customizedoc);
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customizedoc));
 
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customizedoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customizedoc));
     CU_ASSERT_EQUAL(6, DIDDocument_GetAuthenticationCount(customizedoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetControllerCount(customizedoc));
     CU_ASSERT_EQUAL(2, DIDDocument_GetMultisig(customizedoc));
@@ -1524,7 +1524,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_EQUAL(1, DIDDocument_GetCredentialCount(customizedoc));
     cred = DIDDocument_GetCredential(customizedoc, credid);
     CU_ASSERT_PTR_NOT_NULL(cred);
-    CU_ASSERT_TRUE(DIDURL_Equals(signkey2, Credential_GetProofMethod(cred)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(signkey2, Credential_GetProofMethod(cred)));
     DIDDocument_Destroy(customizedoc);
 
     //update again ------------------------------------------------------------
@@ -1551,7 +1551,7 @@ static void test_transfer_ctmdid_with_multicontroller(void)
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, customizedoc));
 
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customizedoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customizedoc));
     CU_ASSERT_EQUAL(4, DIDDocument_GetAuthenticationCount(customizedoc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetControllerCount(customizedoc));
     CU_ASSERT_EQUAL(0, DIDDocument_GetMultisig(customizedoc));
@@ -1579,15 +1579,15 @@ static void test_transfer_ctmdid_with_multicontroller(void)
     CU_ASSERT_STRING_EQUAL("Ticket isn't valid.", DIDError_GetLastErrorMessage());
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocument_SignTransferTicket(controller3_doc, ticket, storepass));
-    CU_ASSERT_TRUE(TransferTicket_IsValid(ticket));
-    CU_ASSERT_TRUE(DIDDocument_TransferDID(customizedoc, ticket, keyid2, storepass));
+    CU_ASSERT_EQUAL(1, TransferTicket_IsValid(ticket));
+    CU_ASSERT_EQUAL(1, DIDDocument_TransferDID(customizedoc, ticket, keyid2, storepass));
     DIDDocument_Destroy(customizedoc);
     TransferTicket_Destroy(ticket);
 
     customizedoc = resolve_doc(&customizedid, txid);
     CU_ASSERT_PTR_NOT_NULL(customizedoc);
 
-    CU_ASSERT_TRUE(DIDDocument_IsValid(customizedoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(customizedoc));
     CU_ASSERT_EQUAL(4, DIDDocument_GetAuthenticationCount(customizedoc));
     CU_ASSERT_EQUAL(1, DIDDocument_GetControllerCount(customizedoc));
     CU_ASSERT_EQUAL(0, DIDDocument_GetMultisig(customizedoc));
@@ -1620,7 +1620,7 @@ static void test_idchain_deactivedid_after_create(void)
 
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     resolvedoc = resolve_doc(&did, txid);
@@ -1635,7 +1635,7 @@ static void test_idchain_deactivedid_after_create(void)
 
     success = DIDDocument_DeactivateDID(doc, NULL, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE(success);
+    CU_ASSERT_EQUAL(1, success);
 
     i = 0;
     while(!resolvedoc || status != DIDStatus_Deactivated) {
@@ -1678,7 +1678,7 @@ static void test_idchain_deactivedid_after_update(void)
 
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, signkey, false, storepass);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     resolvedoc = resolve_doc(&did, txid);
@@ -1713,7 +1713,7 @@ static void test_idchain_deactivedid_after_update(void)
 
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update)", did.idstring);
 
     doc = resolve_doc(&did, txid);
@@ -1724,7 +1724,7 @@ static void test_idchain_deactivedid_after_update(void)
     printf("\n-- resolve result: successfully!\n-- deactive did begin, waiting...\n");
 
     success = DIDDocument_DeactivateDID(doc, NULL, storepass);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     DIDDocument_Destroy(doc);
     doc = NULL;
     printf("-- deactive did result:\n   did = %s\n -- resolve begin(deactive)", did.idstring);
@@ -1769,7 +1769,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     success = DIDDocument_PublishDID(authorizordoc, NULL, false, storepass);
     DIDDocument_Destroy(authorizordoc);
     authorizordoc = NULL;
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", controller.idstring);
 
     authorizordoc = resolve_doc(&controller, txid);
@@ -1798,14 +1798,14 @@ static void test_idchain_deactivedid_with_authorization1(void)
     CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(targetdoc));
 
     CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationKeys(targetdoc, pks, sizeof(pks)/sizeof(PublicKey*)));
-    CU_ASSERT_TRUE(DID_Equals(&did, &pks[0]->id.did));
+    CU_ASSERT_EQUAL(1, DID_Equals(&did, &pks[0]->id.did));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, targetdoc));
 
     printf("-- publish target did begin(create), waiting....\n");
     success = DIDDocument_PublishDID(targetdoc, NULL, false, storepass);
     DIDDocument_Destroy(targetdoc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     *txid = 0;
@@ -1817,7 +1817,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     printf("\n-- resolve authorization result: successfully!\n");
 
     success = DIDDocument_DeactivateDIDByAuthorizor(authorizordoc, &did, NULL, storepass);
-    CU_ASSERT_TRUE(success);
+    CU_ASSERT_EQUAL(1, success);
     DIDDocument_Destroy(authorizordoc);
     printf("-- deactive did result:\n   did = %s\n -- resolve begin(deactive)", did.idstring);
 
@@ -1888,7 +1888,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     success = DIDDocument_PublishDID(authorizordoc, NULL, false, storepass);
     DIDDocument_Destroy(authorizordoc);
     authorizordoc = NULL;
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", controller.idstring);
 
     authorizordoc = resolve_doc(&controller, txid);
@@ -1916,15 +1916,14 @@ static void test_idchain_deactivedid_with_authorization2(void)
 
     size_t size = DIDDocument_GetAuthorizationKeys(targetdoc, pks, sizeof(pks));
     CU_ASSERT_EQUAL(1, size);
-    equal = DID_Equals(&did, &pks[0]->id.did);
-    CU_ASSERT_TRUE(equal);
+    CU_ASSERT_EQUAL(1, DID_Equals(&did, &pks[0]->id.did));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, targetdoc));
 
     printf("-- publish target did begin(create), waiting....\n");
     success = DIDDocument_PublishDID(targetdoc, NULL, false, storepass);
     DIDDocument_Destroy(targetdoc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     *txid = 0;
@@ -1935,7 +1934,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     targetdoc = NULL;
 
     success = DIDDocument_DeactivateDIDByAuthorizor(authorizordoc, &did, signkey, storepass);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- deactive did result:\n   did = %s\n -- resolve begin(deactive)", did.idstring);
 
     i = 0;
@@ -1979,7 +1978,7 @@ static void test_idchain_listvc_pagination(void)
     document = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL(document);
     DID_Copy(&did, &document->did);
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(document, NULL, true, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(document, NULL, true, storepass));
 
     expires = DIDDocument_GetExpires(document);
     DIDDocument_Destroy(document);
@@ -1988,7 +1987,7 @@ static void test_idchain_listvc_pagination(void)
     issuerdoc = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL(issuerdoc);
     DID_Copy(&issuerid, &issuerdoc->did);
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(issuerdoc, NULL, true, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(issuerdoc, NULL, true, storepass));
     DIDDocument_Destroy(issuerdoc);
 
     issuer = Issuer_Create(&issuerid, NULL, store);
@@ -2011,8 +2010,8 @@ static void test_idchain_listvc_pagination(void)
                 expires, storepass);
         CU_ASSERT_PTR_NOT_NULL(vc);
         CredentialMetadata_SetStore(&vc->metadata, store);
-        CU_ASSERT_TRUE(Credential_Declare(vc, NULL, storepass));
-        CU_ASSERT_TRUE(Credential_WasDeclared(credid));
+        CU_ASSERT_EQUAL(1, Credential_Declare(vc, NULL, storepass));
+        CU_ASSERT_EQUAL(1, Credential_WasDeclared(credid));
 
         Credential_Destroy(vc);
         DIDURL_Destroy(credid);
@@ -2026,7 +2025,7 @@ static void test_idchain_listvc_pagination(void)
         sprintf(fragment, "test%d", 1027 - i);
         credid = DIDURL_NewFromDid(&did, fragment);
         CU_ASSERT_PTR_NOT_NULL(credid);
-        CU_ASSERT_TRUE(DIDURL_Equals(credid, vcid));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(credid, vcid));
 
         vc = Credential_Resolve(credid, &status, true);
         CU_ASSERT_PTR_NOT_NULL(vc);
@@ -2046,7 +2045,7 @@ static void test_idchain_listvc_pagination(void)
         sprintf(fragment, "test%d", 1027 - i);
         credid = DIDURL_NewFromDid(&did, fragment);
         CU_ASSERT_PTR_NOT_NULL(credid);
-        CU_ASSERT_TRUE(DIDURL_Equals(credid, vcid));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(credid, vcid));
 
         vc = Credential_Resolve(credid, &status, true);
         CU_ASSERT_PTR_NOT_NULL(vc);
@@ -2076,7 +2075,7 @@ static void test_idchain_listvc_pagination(void)
             sprintf(fragment, "test%d", --index);
             credid = DIDURL_NewFromDid(&did, fragment);
             CU_ASSERT_PTR_NOT_NULL(credid);
-            CU_ASSERT_TRUE(DIDURL_Equals(credid, vcid));
+            CU_ASSERT_EQUAL(1,DIDURL_Equals(credid, vcid));
 
             vc = Credential_Resolve(credid, &status, true);
             CU_ASSERT_PTR_NOT_NULL(vc);
@@ -2107,7 +2106,7 @@ static void test_idchain_listvc_pagination(void)
             sprintf(fragment, "test%d", --index);
             credid = DIDURL_NewFromDid(&did, fragment);
             CU_ASSERT_PTR_NOT_NULL(credid);
-            CU_ASSERT_TRUE(DIDURL_Equals(credid, vcid));
+            CU_ASSERT_EQUAL(1,DIDURL_Equals(credid, vcid));
 
             vc = Credential_Resolve(credid, &status, true);
             CU_ASSERT_PTR_NOT_NULL(vc);

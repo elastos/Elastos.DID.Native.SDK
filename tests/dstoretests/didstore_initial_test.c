@@ -47,11 +47,11 @@ static void test_didstore_newdid(void)
 
     id = RootIdentity_GetId(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(id);
-    CU_ASSERT_TRUE(DIDStore_ContainsRootIdentity(store, id));
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsRootIdentity(store, id));
 
     doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
-    CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
+    CU_ASSERT_EQUAL_FATAL(1, DIDDocument_IsValid(doc));
 
     DID *did = DIDDocument_GetSubject(doc);
     const char *idstring = DID_GetMethodSpecificId(did);
@@ -73,10 +73,10 @@ static void test_didstore_newdid(void)
     loaddoc = DIDStore_LoadDID(store, did);
     CU_ASSERT_PTR_NOT_NULL_FATAL(loaddoc);
 
-    CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(doc), DIDDocument_GetSubject(loaddoc)));
+    CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(doc), DIDDocument_GetSubject(loaddoc)));
     CU_ASSERT_EQUAL_FATAL(0, strcmp(doc->proofs.proofs[0].signatureValue, loaddoc->proofs.proofs[0].signatureValue));
 
-    CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(loaddoc));
+    CU_ASSERT_EQUAL_FATAL(1, DIDDocument_IsValid(loaddoc));
 
     RootIdentity_Destroy(rootidentity);
     DIDDocument_Destroy(doc);
@@ -110,7 +110,7 @@ static void test_didstore_newdid_byindex(void)
     ndid = RootIdentity_GetDIDByIndex(rootidentity, 0);
     CU_ASSERT_PTR_NOT_NULL(ndid);
 
-    CU_ASSERT_TRUE(DID_Equals(&did, ndid));
+    CU_ASSERT_EQUAL(1, DID_Equals(&did, ndid));
     DIDDocument_Destroy(doc);
 
     doc = DIDStore_LoadDID(store, ndid);
@@ -126,7 +126,7 @@ static void test_didstore_newdid_byindex(void)
     doc = RootIdentity_NewDID(rootidentity, storepass, "did0", false);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
-    CU_ASSERT_TRUE(DID_Equals(&did, DIDDocument_GetSubject(doc)));
+    CU_ASSERT_EQUAL(1, DID_Equals(&did, DIDDocument_GetSubject(doc)));
     DIDDocument_Destroy(doc);
 
     RootIdentity_Destroy(rootidentity);
@@ -156,7 +156,7 @@ static void test_didstore_newdid_withouAlias(void)
     id = RootIdentity_GetId(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(id);
 
-    CU_ASSERT_TRUE_FATAL(DIDStore_ContainsRootIdentity(store, id));
+    CU_ASSERT_EQUAL_FATAL(1, DIDStore_ContainsRootIdentity(store, id));
 
     path = get_file_path(_path, PATH_MAX, 9, store->root, PATH_STEP, DATA_DIR,
             PATH_STEP, ROOTS_DIR, PATH_STEP, id, PATH_STEP, INDEX_FILE);
@@ -168,7 +168,7 @@ static void test_didstore_newdid_withouAlias(void)
 
     doc = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
-    CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
+    CU_ASSERT_EQUAL_FATAL(1, DIDDocument_IsValid(doc));
 
     DID *did = DIDDocument_GetSubject(doc);
     const char *idstring = DID_GetMethodSpecificId(did);
@@ -285,7 +285,7 @@ static void test_didstore_privateidentity_compatibility(void)
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
-    CU_ASSERT_TRUE(DID_Equals(&did, &doc->did));
+    CU_ASSERT_EQUAL(1, DID_Equals(&did, &doc->did));
     DIDDocument_Destroy(doc);
 
     TestData_Free();

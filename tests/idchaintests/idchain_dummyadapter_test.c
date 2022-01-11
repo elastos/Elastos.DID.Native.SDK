@@ -66,7 +66,7 @@ static void test_idchain_publishdid(void)
 
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, signkey, false, storepass);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n-- resolve begin(create)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -135,7 +135,7 @@ static void test_idchain_publishdid(void)
 
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n-- resolve begin(update)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -185,7 +185,7 @@ static void test_idchain_publishdid(void)
 
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n-- resolve begin(update) again", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -212,7 +212,7 @@ static void test_idchain_publishdid(void)
 
     DID *owner = DIDBiography_GetOwner(biography);
     CU_ASSERT_PTR_NOT_NULL_FATAL(owner);
-    CU_ASSERT_TRUE_FATAL(DID_Equals(&did, owner));
+    CU_ASSERT_EQUAL_FATAL(1, DID_Equals(&did, owner));
 
     for (i = 0; i < 3; i++) {
         doc = DIDBiography_GetDocumentByIndex(biography, i);
@@ -252,7 +252,7 @@ static void test_idchain_publishdid_without_txid(void)
 
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, signkey, false, storepass);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     DIDDocument_Destroy(doc);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
@@ -310,7 +310,7 @@ static void test_idchain_publishdid_without_txid(void)
 
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -365,7 +365,7 @@ static void test_idchain_publishdid_without_txid(void)
 
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update) again", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -414,7 +414,7 @@ static void test_idchain_publishdid_without_signature(void)
 
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, signkey, false, storepass);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     DIDDocument_Destroy(doc);
 
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
@@ -467,7 +467,7 @@ static void test_idchain_publishdid_without_signature(void)
 
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -522,7 +522,7 @@ static void test_idchain_publishdid_without_signature(void)
 
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update) again", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -573,7 +573,7 @@ static void test_idchain_publishdid_without_prevsignature(void)
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, signkey, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
 
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
@@ -625,7 +625,7 @@ static void test_idchain_publishdid_without_prevsignature(void)
 
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -681,7 +681,7 @@ static void test_idchain_publishdid_without_prevsignature(void)
 
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update) again", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -728,7 +728,7 @@ static void test_idchain_publishdid_without_prevsignature_and_signature(void)
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -802,7 +802,7 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -852,7 +852,7 @@ static void test_force_updatedid_without_prevsignature_and_signature(void)
 
     success = DIDDocument_PublishDID(doc, NULL, true, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -898,7 +898,7 @@ static void test_updatedid_with_diffprevsignature_only(void)
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -945,7 +945,7 @@ static void test_updatedid_with_diffprevsignature_only(void)
 
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n-- resolve begin(update)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -989,7 +989,7 @@ static void test_updatedid_with_diffsignature_only(void)
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -1034,7 +1034,7 @@ static void test_updatedid_with_diffsignature_only(void)
 
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -1089,7 +1089,7 @@ static void test_updatedid_with_diffsignature_only(void)
 
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update) again", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -1136,7 +1136,7 @@ static void test_updatedid_with_diff_prevsignature_and_signature(void)
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -1214,7 +1214,7 @@ static void test_force_updatedid_with_wrongsignature(void)
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -1263,7 +1263,7 @@ static void test_force_updatedid_with_wrongsignature(void)
 
     success = DIDDocument_PublishDID(doc, NULL, true, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -1308,7 +1308,7 @@ static void test_idchain_publishdid_with_credential(void)
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -1354,7 +1354,7 @@ static void test_idchain_publishdid_with_credential(void)
 
     success = DIDDocument_PublishDID(doc, NULL, true, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -1393,7 +1393,7 @@ static void test_idchain_deactivedid_after_create(void)
 
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -1413,7 +1413,7 @@ static void test_idchain_deactivedid_after_create(void)
 
     success = DIDDocument_DeactivateDID(doc, NULL, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE(success);
+    CU_ASSERT_EQUAL(1, success);
 
     resolvedoc = DID_Resolve(&did, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvedoc);
@@ -1454,7 +1454,7 @@ static void test_idchain_deactivedid_after_update(void)
 
     printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
     success = DIDDocument_PublishDID(doc, signkey, false, storepass);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -1512,7 +1512,7 @@ static void test_idchain_deactivedid_after_update(void)
 
     success = DIDDocument_PublishDID(doc, NULL, false, storepass);
     DIDDocument_Destroy(doc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(update)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -1530,7 +1530,7 @@ static void test_idchain_deactivedid_after_update(void)
     printf("\n-- resolve result: successfully!\n-- deactive did begin, waiting...\n");
 
     success = DIDDocument_DeactivateDID(resolvedoc, NULL, storepass);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     DIDDocument_Destroy(resolvedoc);
     printf("-- deactive did result:\n   did = %s\n -- resolve begin(deactive)", did.idstring);
 
@@ -1567,7 +1567,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     printf("\n------------------------------------------------------------\n-- publish authorization did begin(create), waiting....\n");
     success = DIDDocument_PublishDID(authorizordoc, NULL, false, storepass);
     DIDDocument_Destroy(authorizordoc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", controller.idstring);
 
     authorizordoc = DID_Resolve(&controller, &status, true);
@@ -1603,14 +1603,14 @@ static void test_idchain_deactivedid_with_authorization1(void)
     CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(targetdoc));
 
     CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationKeys(targetdoc, pks, sizeof(pks)));
-    CU_ASSERT_TRUE(DID_Equals(&did, &pks[0]->id.did));
+    CU_ASSERT_EQUAL(1, DID_Equals(&did, &pks[0]->id.did));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, targetdoc));
 
     printf("-- publish target did begin(create), waiting....\n");
     success = DIDDocument_PublishDID(targetdoc, NULL, false, storepass);
     DIDDocument_Destroy(targetdoc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -1627,7 +1627,7 @@ static void test_idchain_deactivedid_with_authorization1(void)
     printf("\n-- resolve authorization result: successfully!\n");
 
     success = DIDDocument_DeactivateDIDByAuthorizor(authorizordoc, &did, NULL, storepass);
-    CU_ASSERT_TRUE(success);
+    CU_ASSERT_EQUAL(1, success);
     DIDDocument_Destroy(authorizordoc);
     printf("-- deactive did result:\n   did = %s\n -- resolve begin(deactive)", did.idstring);
 
@@ -1692,7 +1692,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     printf("\n------------------------------------------------------------\n-- publish authorization did begin(create), waiting....\n");
     success = DIDDocument_PublishDID(authorizordoc, NULL, false, storepass);
     DIDDocument_Destroy(authorizordoc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", controller.idstring);
 
     authorizordoc = DID_Resolve(&controller, &status, true);
@@ -1727,15 +1727,14 @@ static void test_idchain_deactivedid_with_authorization2(void)
 
     size_t size = DIDDocument_GetAuthorizationKeys(targetdoc, pks, sizeof(pks));
     CU_ASSERT_EQUAL(1, size);
-    equal = DID_Equals(&did, &pks[0]->id.did);
-    CU_ASSERT_TRUE(equal);
+    CU_ASSERT_EQUAL(1, DID_Equals(&did, &pks[0]->id.did));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, targetdoc));
 
     printf("-- publish target did begin(create), waiting....\n");
     success = DIDDocument_PublishDID(targetdoc, NULL, false, storepass);
     DIDDocument_Destroy(targetdoc);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- publish result:\n   did = %s\n -- resolve begin(create)", did.idstring);
 
     targetdoc = DID_Resolve(&did, &status, true);
@@ -1750,7 +1749,7 @@ static void test_idchain_deactivedid_with_authorization2(void)
     DIDDocument_Destroy(targetdoc);
 
     success = DIDDocument_DeactivateDIDByAuthorizor(authorizordoc, &did, signkey, storepass);
-    CU_ASSERT_TRUE_FATAL(success);
+    CU_ASSERT_EQUAL_FATAL(1, success);
     printf("-- deactive did result:\n   did = %s\n -- resolve begin(deactive)", did.idstring);
 
     resolvedoc = DID_Resolve(&did, &status, true);

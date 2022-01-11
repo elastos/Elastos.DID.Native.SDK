@@ -62,7 +62,7 @@ static void test_didstore_change_password(void)
                 PATH_STEP, IDS_DIR, PATH_STEP, did->idstring, PATH_STEP, META_FILE);
         CU_ASSERT_TRUE(file_exist(path));
 
-        CU_ASSERT_TRUE_FATAL(DIDDocument_PublishDID(doc, NULL, false, storepass));
+        CU_ASSERT_EQUAL_FATAL(1, DIDDocument_PublishDID(doc, NULL, false, storepass));
         DIDDocument *loaddoc = DID_Resolve(did, &status, true);
         CU_ASSERT_PTR_NOT_NULL(loaddoc);
         CU_ASSERT_NOT_EQUAL_FATAL(-1, DIDStore_StoreDID(store, loaddoc));
@@ -70,7 +70,7 @@ static void test_didstore_change_password(void)
 
         loaddoc = DIDStore_LoadDID(store, did);
         CU_ASSERT_PTR_NOT_NULL(loaddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(loaddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(loaddoc));
 
         DIDMetadata *metadata = DIDDocument_GetMetadata(loaddoc);
         CU_ASSERT_PTR_NOT_NULL(metadata);
@@ -81,7 +81,7 @@ static void test_didstore_change_password(void)
         CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(doc, 0),
                 DIDDocument_GetProofSignature(loaddoc, 0));
 
-        CU_ASSERT_TRUE(DID_Equals(did, DIDDocument_GetSubject(loaddoc)));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, DIDDocument_GetSubject(loaddoc)));
 
         DIDDocument_Destroy(doc);
         DIDDocument_Destroy(loaddoc);
@@ -142,7 +142,7 @@ static void test_didstore_change_with_wrongpassword(void)
         DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
         if (!doc)
             continue;
-        CU_ASSERT_TRUE(DIDDocument_IsValid(doc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(doc));
 
         DID *did = DIDDocument_GetSubject(doc);
         CU_ASSERT_PTR_NOT_NULL(did);
@@ -157,7 +157,7 @@ static void test_didstore_change_with_wrongpassword(void)
 
         DIDDocument *loaddoc = DIDStore_LoadDID(store, did);
         CU_ASSERT_PTR_NOT_NULL(loaddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(loaddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(loaddoc));
 
         DIDMetadata *metadata = DIDDocument_GetMetadata(loaddoc);
         CU_ASSERT_PTR_NOT_NULL(metadata);
@@ -168,7 +168,7 @@ static void test_didstore_change_with_wrongpassword(void)
         CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(doc, 0),
                 DIDDocument_GetProofSignature(loaddoc, 0));
 
-        CU_ASSERT_TRUE(DID_Equals(did, DIDDocument_GetSubject(loaddoc)));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, DIDDocument_GetSubject(loaddoc)));
 
         DIDDocument_Destroy(doc);
         DIDDocument_Destroy(loaddoc);

@@ -44,14 +44,14 @@ static void test_diddoc_get_publickey(void)
             pk = pks[i];
             id = PublicKey_GetId(pk);
 
-            CU_ASSERT_TRUE(DID_Equals(did, &(id->did)));
+            CU_ASSERT_EQUAL(1, DID_Equals(did, &(id->did)));
             CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
 
             equal = DID_Equals(did, PublicKey_GetController(pk));
             if (!strcmp(id->fragment, "recovery")) {
-                CU_ASSERT_FALSE(equal);
+                CU_ASSERT_EQUAL(0, equal);
             } else {
-                CU_ASSERT_TRUE(equal);
+                CU_ASSERT_EQUAL(1, equal);
             }
 
             CU_ASSERT_TRUE(!strcmp(id->fragment, "primary") ||
@@ -67,14 +67,14 @@ static void test_diddoc_get_publickey(void)
         CU_ASSERT_PTR_NOT_NULL(primaryid);
         pk = DIDDocument_GetPublicKey(doc, primaryid);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(primaryid, PublicKey_GetId(pk)));
-        CU_ASSERT_TRUE(DIDURL_Equals(primaryid, defaultkey));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(primaryid, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(primaryid, defaultkey));
 
         id = DIDURL_NewFromDid(did, "key2");
         CU_ASSERT_PTR_NOT_NULL(id);
         pk = DIDDocument_GetPublicKey(doc, id);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(id, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(id, PublicKey_GetId(pk)));
         DIDURL_Destroy(id);
 
         //Key not exist, should fail.
@@ -86,10 +86,10 @@ static void test_diddoc_get_publickey(void)
 
         // Selector
         CU_ASSERT_EQUAL(1, DIDDocument_SelectPublicKeys(doc, default_type, defaultkey, pks, 4));
-        CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), primaryid));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), primaryid));
 
         CU_ASSERT_EQUAL(1, DIDDocument_SelectPublicKeys(doc, NULL, defaultkey, pks, 4));
-        CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), primaryid));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), primaryid));
         DIDURL_Destroy(primaryid);
 
         CU_ASSERT_EQUAL(4, DIDDocument_SelectPublicKeys(doc, default_type, NULL, pks, 4));
@@ -97,13 +97,13 @@ static void test_diddoc_get_publickey(void)
         id = DIDURL_NewFromDid(did, "key2");
         CU_ASSERT_PTR_NOT_NULL(id);
         CU_ASSERT_EQUAL(1, DIDDocument_SelectPublicKeys(doc, default_type, id, pks, 4));
-        CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), id));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), id));
         DIDURL_Destroy(id);
 
         id = DIDURL_NewFromDid(did, "key3");
         CU_ASSERT_PTR_NOT_NULL(id);
         CU_ASSERT_EQUAL(1, DIDDocument_SelectPublicKeys(doc, NULL, id, pks, 4));
-        CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), id));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), id));
         DIDURL_Destroy(id);
     }
 }
@@ -142,18 +142,18 @@ static void test_diddoc_add_publickey(void)
 
         sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
         CU_ASSERT_PTR_NOT_NULL(sealeddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(sealeddoc));
         DIDDocumentBuilder_Destroy(builder);
 
         // Check existence
         PublicKey *pk = DIDDocument_GetPublicKey(sealeddoc, id1);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(id1, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(id1, PublicKey_GetId(pk)));
         DIDURL_Destroy(id1);
 
         pk = DIDDocument_GetPublicKey(sealeddoc, id2);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(id2, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(id2, PublicKey_GetId(pk)));
         DIDURL_Destroy(id2);
 
         // Check the final count.
@@ -205,7 +205,7 @@ static void test_diddoc_remove_publickey(void)
         DIDDocumentBuilder_Destroy(builder);
         CU_ASSERT_PTR_NOT_NULL_FATAL(sealeddoc);
 
-        CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(sealeddoc));
         // Check existence
         PublicKey *pk = DIDDocument_GetPublicKey(sealeddoc, recoveryid);
         CU_ASSERT_PTR_NULL(pk);
@@ -249,10 +249,10 @@ static void test_diddoc_get_authentication_key(void)
             pk = pks[i];
             id = PublicKey_GetId(pk);
 
-            CU_ASSERT_TRUE(DID_Equals(did, &id->did));
+            CU_ASSERT_EQUAL(1, DID_Equals(did, &id->did));
             CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
 
-            CU_ASSERT_TRUE(DID_Equals(did, PublicKey_GetController(pk)));
+            CU_ASSERT_EQUAL(1, DID_Equals(did, PublicKey_GetController(pk)));
 
             CU_ASSERT_TRUE(!strcmp(id->fragment, "primary") ||
                     !strcmp(id->fragment, "key2") || !strcmp(id->fragment, "key3"));
@@ -263,14 +263,14 @@ static void test_diddoc_get_authentication_key(void)
         CU_ASSERT_PTR_NOT_NULL(id);
         pk = DIDDocument_GetAuthenticationKey(doc, id);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(id, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(id, PublicKey_GetId(pk)));
         DIDURL_Destroy(id);
 
         keyid = DIDURL_NewFromDid(did, "key3");
         CU_ASSERT_PTR_NOT_NULL(keyid);
         pk = DIDDocument_GetAuthenticationKey(doc, keyid);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(keyid, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(keyid, PublicKey_GetId(pk)));
 
         //Key not exist, should fail.
         id = DIDURL_NewFromDid(did, "notExist");
@@ -281,10 +281,10 @@ static void test_diddoc_get_authentication_key(void)
 
         // Selector
         CU_ASSERT_EQUAL(1, DIDDocument_SelectAuthenticationKeys(doc, default_type, keyid, pks, 3));
-        CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), keyid));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), keyid));
 
         CU_ASSERT_EQUAL(1, DIDDocument_SelectAuthenticationKeys(doc, NULL, keyid, pks, 3));
-        CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), keyid));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), keyid));
         DIDURL_Destroy(keyid);
 
         CU_ASSERT_EQUAL(3, DIDDocument_SelectAuthenticationKeys(doc, default_type, NULL, pks, 3));
@@ -292,10 +292,10 @@ static void test_diddoc_get_authentication_key(void)
         id = DIDURL_NewFromDid(did, "key2");
         CU_ASSERT_PTR_NOT_NULL(id);
         CU_ASSERT_EQUAL(1, DIDDocument_SelectAuthenticationKeys(doc, default_type, id, pks, 3));
-        CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), id));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), id));
 
         CU_ASSERT_EQUAL(1, DIDDocument_SelectAuthenticationKeys(doc, NULL, id, pks, 3));
-        CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), id));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), id));
         DIDURL_Destroy(id);
     }
 }
@@ -361,28 +361,28 @@ static void test_diddoc_add_authentication_key(void)
 
         sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
         CU_ASSERT_PTR_NOT_NULL(sealeddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(sealeddoc));
         DIDDocumentBuilder_Destroy(builder);
 
         // Check existence
         PublicKey *pk = DIDDocument_GetPublicKey(sealeddoc, id1);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(id1, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(id1, PublicKey_GetId(pk)));
         DIDURL_Destroy(id1);
 
         pk = DIDDocument_GetPublicKey(sealeddoc, id2);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(id2, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(id2, PublicKey_GetId(pk)));
         DIDURL_Destroy(id2);
 
         pk = DIDDocument_GetPublicKey(sealeddoc, id3);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(id3, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(id3, PublicKey_GetId(pk)));
         DIDURL_Destroy(id3);
 
         pk = DIDDocument_GetPublicKey(sealeddoc, id4);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(id4, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(id4, PublicKey_GetId(pk)));
         DIDURL_Destroy(id4);
 
         // Check the final count.
@@ -446,7 +446,7 @@ static void test_diddoc_remove_authentication_key(void)
 
         sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
         CU_ASSERT_PTR_NOT_NULL(sealeddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(sealeddoc));
         DIDDocumentBuilder_Destroy(builder);
 
         PublicKey *pk = DIDDocument_GetAuthenticationKey(sealeddoc, id1);
@@ -496,10 +496,10 @@ static void test_diddoc_get_authorization_key(void)
             pk = pks[i];
             id = PublicKey_GetId(pk);
 
-            CU_ASSERT_TRUE(DID_Equals(did, &id->did));
+            CU_ASSERT_EQUAL(1, DID_Equals(did, &id->did));
             CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
 
-            CU_ASSERT_FALSE(DID_Equals(did, PublicKey_GetController(pk)));
+            CU_ASSERT_EQUAL(0, DID_Equals(did, PublicKey_GetController(pk)));
 
             CU_ASSERT_TRUE(!strcmp(id->fragment, "recovery"));
         }
@@ -509,7 +509,7 @@ static void test_diddoc_get_authorization_key(void)
         CU_ASSERT_PTR_NOT_NULL(keyid);
         pk = DIDDocument_GetAuthorizationKey(doc, keyid);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(keyid, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(keyid, PublicKey_GetId(pk)));
 
         //Key not exist, should fail.
         id = DIDURL_NewFromDid(did, "notExist");
@@ -520,10 +520,10 @@ static void test_diddoc_get_authorization_key(void)
 
         // Selector
         CU_ASSERT_EQUAL(1, DIDDocument_SelectAuthorizationKeys(doc, default_type, keyid, pks, 1));
-        CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), keyid));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), keyid));
 
         CU_ASSERT_EQUAL(1, DIDDocument_SelectAuthorizationKeys(doc, NULL, keyid, pks, 1));
-        CU_ASSERT_TRUE(DIDURL_Equals(PublicKey_GetId(pks[0]), keyid));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), keyid));
         DIDURL_Destroy(keyid);
 
         CU_ASSERT_EQUAL(1, DIDDocument_SelectAuthorizationKeys(doc, default_type, NULL, pks, 1));
@@ -610,28 +610,28 @@ static void test_diddoc_add_authorization_key(void)
 
         sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
         CU_ASSERT_PTR_NOT_NULL(sealeddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(sealeddoc));
         DIDDocumentBuilder_Destroy(builder);
 
         // Check existence
         PublicKey *pk = DIDDocument_GetPublicKey(sealeddoc, id1);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(id1, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(id1, PublicKey_GetId(pk)));
         DIDURL_Destroy(id1);
 
         pk = DIDDocument_GetPublicKey(sealeddoc, id2);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(id2, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(id2, PublicKey_GetId(pk)));
         DIDURL_Destroy(id2);
 
         pk = DIDDocument_GetPublicKey(sealeddoc, id3);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(id3, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(id3, PublicKey_GetId(pk)));
         DIDURL_Destroy(id3);
 
         pk = DIDDocument_GetPublicKey(sealeddoc, id4);
         CU_ASSERT_PTR_NOT_NULL(pk);
-        CU_ASSERT_TRUE(DIDURL_Equals(id4, PublicKey_GetId(pk)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(id4, PublicKey_GetId(pk)));
         DIDURL_Destroy(id4);
 
         // Check the final count.
@@ -702,7 +702,7 @@ static void test_diddoc_remove_authorization_key(void)
 
         sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
         CU_ASSERT_PTR_NOT_NULL(sealeddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(sealeddoc));
         DIDDocumentBuilder_Destroy(builder);
 
         // Check existence
@@ -752,8 +752,8 @@ static void test_diddoc_get_credential(void)
             vc = vcs[i];
 
             id = Credential_GetId(vc);
-            CU_ASSERT_TRUE(DID_Equals(did, &id->did));
-            CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(vc)));
+            CU_ASSERT_EQUAL(1, DID_Equals(did, &id->did));
+            CU_ASSERT_EQUAL(1, DID_Equals(did, Credential_GetOwner(vc)));
             CU_ASSERT_TRUE(!strcmp(id->fragment, "profile") || !strcmp(id->fragment, "email"));
         }
 
@@ -762,13 +762,13 @@ static void test_diddoc_get_credential(void)
         CU_ASSERT_PTR_NOT_NULL(profileid);
         vc = DIDDocument_GetCredential(doc, profileid);
         CU_ASSERT_PTR_NOT_NULL(vc);
-        CU_ASSERT_TRUE(DIDURL_Equals(profileid, Credential_GetId(vc)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(profileid, Credential_GetId(vc)));
 
         id = DIDURL_NewFromDid(did, "email");
         CU_ASSERT_PTR_NOT_NULL(id);
         vc = DIDDocument_GetCredential(doc, id);
         CU_ASSERT_PTR_NOT_NULL(vc);
-        CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(vc)));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(id, Credential_GetId(vc)));
         DIDURL_Destroy(id);
 
         // Credential not exist.
@@ -781,14 +781,14 @@ static void test_diddoc_get_credential(void)
         // Credential selector.
         CU_ASSERT_EQUAL(1, DIDDocument_SelectCredentials(doc, "SelfProclaimedCredential",
                 profileid, vcs, sizeof(vcs)/sizeof(Credential*)));
-        CU_ASSERT_TRUE(DIDURL_Equals(Credential_GetId(vcs[0]), profileid));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(Credential_GetId(vcs[0]), profileid));
 
         CU_ASSERT_EQUAL(1, DIDDocument_SelectCredentials(doc, NULL, profileid, vcs, 2));
-        CU_ASSERT_TRUE(DIDURL_Equals(Credential_GetId(vcs[0]), profileid));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(Credential_GetId(vcs[0]), profileid));
 
         CU_ASSERT_EQUAL(1, DIDDocument_SelectCredentials(doc, "SelfProclaimedCredential",
                 NULL, vcs, sizeof(vcs)/sizeof(Credential*)));
-        CU_ASSERT_TRUE(DIDURL_Equals(Credential_GetId(vcs[0]), profileid));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(Credential_GetId(vcs[0]), profileid));
         DIDURL_Destroy(profileid);
 
         CU_ASSERT_EQUAL(0, DIDDocument_SelectCredentials(doc, "TestingCredential", NULL, vcs, 2));
@@ -825,7 +825,7 @@ static void test_diddoc_add_credential(void)
 
         sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
         CU_ASSERT_PTR_NOT_NULL(sealeddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(sealeddoc));
         DIDDocumentBuilder_Destroy(builder);
 
         // Check new added credential.
@@ -833,14 +833,14 @@ static void test_diddoc_add_credential(void)
         CU_ASSERT_PTR_NOT_NULL(id);
         vc = DIDDocument_GetCredential(sealeddoc, id);
         CU_ASSERT_PTR_NOT_NULL(vc);
-        CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(vc)));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Credential_GetId(vc)));
         DIDURL_Destroy(id);
 
         id = DIDURL_NewFromDid(did, "twitter");
         CU_ASSERT_PTR_NOT_NULL(id);
         vc = DIDDocument_GetCredential(sealeddoc, id);
         CU_ASSERT_PTR_NOT_NULL(vc);
-        CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(vc)));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Credential_GetId(vc)));
         DIDURL_Destroy(id);
 
         // Check the final count.
@@ -885,13 +885,13 @@ static void test_diddoc_add_selfclaimed_credential(void)
 
         sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
         CU_ASSERT_PTR_NOT_NULL(sealeddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(sealeddoc));
         DIDDocumentBuilder_Destroy(builder);
 
         // check credential
         vc = DIDDocument_GetCredential(sealeddoc, credid);
         CU_ASSERT_PTR_NOT_NULL(vc);
-        CU_ASSERT_TRUE(Credential_IsSelfProclaimed(vc));
+        CU_ASSERT_EQUAL(1, Credential_IsSelfProclaimed(vc));
         CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
         CU_ASSERT_EQUAL(Credential_GetPropertyCount(vc), 2);
         provalue = Credential_GetProperty(vc, "passport");
@@ -953,7 +953,7 @@ static void test_diddoc_remove_credential(void)
 
         sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
         CU_ASSERT_PTR_NOT_NULL(sealeddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(sealeddoc));
         DIDDocumentBuilder_Destroy(builder);
 
         // Check existence
@@ -996,7 +996,7 @@ static void test_diddoc_get_service(void)
             service = services[i];
 
             DIDURL *id = Service_GetId(service);
-            CU_ASSERT_TRUE(DID_Equals(did, &id->did));
+            CU_ASSERT_EQUAL(1, DID_Equals(did, &id->did));
 
             CU_ASSERT_TRUE(!strcmp(id->fragment, "openid") ||
                     !strcmp(id->fragment, "vcr") || !strcmp(id->fragment, "carrier"));
@@ -1007,7 +1007,7 @@ static void test_diddoc_get_service(void)
         CU_ASSERT_PTR_NOT_NULL(openid);
         service = DIDDocument_GetService(doc, openid);
         CU_ASSERT_PTR_NOT_NULL(service);
-        CU_ASSERT_TRUE(DIDURL_Equals(openid, Service_GetId(service)));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(openid, Service_GetId(service)));
         CU_ASSERT_STRING_EQUAL("OpenIdConnectVersion1.0Service", Service_GetType(service));
         CU_ASSERT_STRING_EQUAL("https://openid.example.com/", Service_GetEndpoint(service));
 
@@ -1015,7 +1015,7 @@ static void test_diddoc_get_service(void)
         CU_ASSERT_PTR_NOT_NULL(vcrid);
         service = DIDDocument_GetService(doc, vcrid);
         CU_ASSERT_PTR_NOT_NULL(service);
-        CU_ASSERT_TRUE(DIDURL_Equals(vcrid, Service_GetId(service)));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(vcrid, Service_GetId(service)));
 
         // Service not exist, should fail.
         DIDURL *notexistid = DIDURL_NewFromDid(did, "notExistService");
@@ -1026,17 +1026,17 @@ static void test_diddoc_get_service(void)
         // Service selector.
         CU_ASSERT_EQUAL(1, DIDDocument_SelectServices(doc, "CredentialRepositoryService", vcrid,
                 services, sizeof(services)/sizeof(Service*)));
-        CU_ASSERT_TRUE(DIDURL_Equals(Service_GetId(services[0]), vcrid));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(Service_GetId(services[0]), vcrid));
         DIDURL_Destroy(vcrid);
 
         CU_ASSERT_EQUAL(1, DIDDocument_SelectServices(doc, NULL, openid, services, sizeof(services)/sizeof(Service*)));
-        CU_ASSERT_TRUE(DIDURL_Equals(Service_GetId(services[0]), openid));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(Service_GetId(services[0]), openid));
         DIDURL_Destroy(openid);
 
         DIDURL *id = DIDURL_NewFromDid(did, "carrier");
         CU_ASSERT_PTR_NOT_NULL(id);
         CU_ASSERT_EQUAL(1, DIDDocument_SelectServices(doc, "CarrierAddress", NULL, services, sizeof(services)/sizeof(Service*)));
-        CU_ASSERT_TRUE(DIDURL_Equals(Service_GetId(services[0]), id));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(Service_GetId(services[0]), id));
         DIDURL_Destroy(id);
 
         // Service not exist, should return a empty list.
@@ -1106,7 +1106,7 @@ static void test_diddoc_add_service(void)
 
         sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
         CU_ASSERT_PTR_NOT_NULL(sealeddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(sealeddoc));
         DIDDocumentBuilder_Destroy(builder);
 
         //  Check the final count
@@ -1204,7 +1204,7 @@ static void test_diddoc_remove_service(void)
 
         sealeddoc = DIDDocumentBuilder_Seal(builder, storepass);
         CU_ASSERT_PTR_NOT_NULL(sealeddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(sealeddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(sealeddoc));
         DIDDocumentBuilder_Destroy(builder);
 
         // Check existence
@@ -1277,8 +1277,8 @@ static void test_diddoc_remove_proof(void)
         document = DIDDocumentBuilder_Seal(builder, storepass);
         DIDDocumentBuilder_Destroy(builder);
         CU_ASSERT_PTR_NOT_NULL(document);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(document));
-        CU_ASSERT_TRUE(DIDURL_Equals(creater, DIDDocument_GetProofCreater(document, 0)));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(document));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(creater, DIDDocument_GetProofCreater(document, 0)));
         DIDDocument_Destroy(document);
     }
 }
@@ -1316,7 +1316,7 @@ static void test_diddoc_add_context(void)
         document = DIDDocumentBuilder_Seal(builder, storepass);
         DIDDocumentBuilder_Destroy(builder);
         CU_ASSERT_PTR_NOT_NULL(document);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(document));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(document));
 
         DIDDocument_Destroy(document);
         Features_EnableJsonLdContext(false);

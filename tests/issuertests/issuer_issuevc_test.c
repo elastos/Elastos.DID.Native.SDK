@@ -71,14 +71,14 @@ static void test_issuer_issuevc(void)
     vc = Issuer_CreateCredential(issuer, did, credid, types, 4, props, 5,
             expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
-    CU_ASSERT_FALSE(Credential_IsExpired(vc));
-    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL(0, Credential_IsExpired(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsGenuine(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
 
     vcdid = DIDURL_GetDid(Credential_GetId(vc));
-    CU_ASSERT_TRUE(DID_Equals(vcdid, did));
-    CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), did));
-    CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
+    CU_ASSERT_EQUAL(1, DID_Equals(vcdid, did));
+    CU_ASSERT_EQUAL(1, DID_Equals(Credential_GetOwner(vc), did));
+    CU_ASSERT_EQUAL(1, DID_Equals(Credential_GetIssuer(vc), issuerid));
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 5);
     const char *tmptypes[5];
@@ -149,14 +149,14 @@ static void test_issuer_issueselfvc(void)
     vc = Issuer_CreateCredential(issuer, issuerid, credid, types, 4,
             props, 5, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
-    CU_ASSERT_FALSE(Credential_IsExpired(vc));
-    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL(0, Credential_IsExpired(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsGenuine(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
 
     vcdid = DIDURL_GetDid(Credential_GetId(vc));
-    CU_ASSERT_TRUE(DID_Equals(vcdid, issuerid));
-    CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), issuerid));
-    CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
+    CU_ASSERT_EQUAL(1, DID_Equals(vcdid, issuerid));
+    CU_ASSERT_EQUAL(1, DID_Equals(Credential_GetOwner(vc), issuerid));
+    CU_ASSERT_EQUAL(1, DID_Equals(Credential_GetIssuer(vc), issuerid));
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 5);
     const char *tmptypes[5];
@@ -218,14 +218,14 @@ static void test_issuer_issuerbystring(void)
             propdata, expires, storepass);
     DIDURL_Destroy(credid);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
-    CU_ASSERT_FALSE(Credential_IsExpired(vc));
-    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL(0, Credential_IsExpired(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsGenuine(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
 
     vcdid = DIDURL_GetDid(Credential_GetId(vc));
-    CU_ASSERT_TRUE(DID_Equals(vcdid, issuerid));
-    CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), issuerid));
-    CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
+    CU_ASSERT_EQUAL(1, DID_Equals(vcdid, issuerid));
+    CU_ASSERT_EQUAL(1, DID_Equals(Credential_GetOwner(vc), issuerid));
+    CU_ASSERT_EQUAL(1, DID_Equals(Credential_GetIssuer(vc), issuerid));
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
     const char *tmptypes[3];
@@ -280,14 +280,14 @@ static void test_issuer_issuerbystring_with_ctrl_chars(void)
             propdata, expires, storepass);
     DIDURL_Destroy(credid);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
-    CU_ASSERT_FALSE(Credential_IsExpired(vc));
-    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL(0, Credential_IsExpired(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsGenuine(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
 
     vcdid = DIDURL_GetDid(Credential_GetId(vc));
-    CU_ASSERT_TRUE(DID_Equals(vcdid, issuerid));
-    CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(vc), issuerid));
-    CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(vc), issuerid));
+    CU_ASSERT_EQUAL(1, DID_Equals(vcdid, issuerid));
+    CU_ASSERT_EQUAL(1, DID_Equals(Credential_GetOwner(vc), issuerid));
+    CU_ASSERT_EQUAL(1, DID_Equals(Credential_GetIssuer(vc), issuerid));
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
     const char *tmptypes[3];
@@ -364,10 +364,10 @@ static void test_cidissuer_issue_kycvc(void)
     vc = Issuer_CreateCredential(issuer, did, credid, types, 2,
             props, 5, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
-    CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
-    CU_ASSERT_FALSE(Credential_IsExpired(vc));
-    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL_FATAL(1, DIDURL_Equals(credid, Credential_GetId(vc)));
+    CU_ASSERT_EQUAL(0, Credential_IsExpired(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsGenuine(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
@@ -379,7 +379,7 @@ static void test_cidissuer_issue_kycvc(void)
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
-    CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
+    CU_ASSERT_EQUAL(1, DID_Equals(subject, Credential_GetIssuer(vc)));
 
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "John");
@@ -447,10 +447,10 @@ static void test_issuer_issue_cidvc(void)
     vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
             props, 5, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
-    CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
-    CU_ASSERT_FALSE(Credential_IsExpired(vc));
-    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL_FATAL(1, DIDURL_Equals(credid, Credential_GetId(vc)));
+    CU_ASSERT_EQUAL(0, Credential_IsExpired(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsGenuine(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
@@ -463,7 +463,7 @@ static void test_issuer_issue_cidvc(void)
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
-    CU_ASSERT_TRUE(DID_Equals(issuerid, Credential_GetIssuer(vc)));
+    CU_ASSERT_EQUAL(1, DID_Equals(issuerid, Credential_GetIssuer(vc)));
 
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "John");
@@ -526,10 +526,10 @@ static void test_cidissuer_issue_selfvc(void)
     vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
             props, 3, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
-    CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
-    CU_ASSERT_FALSE(Credential_IsExpired(vc));
-    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL_FATAL(1, DIDURL_Equals(credid, Credential_GetId(vc)));
+    CU_ASSERT_EQUAL(0, Credential_IsExpired(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsGenuine(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
@@ -542,7 +542,7 @@ static void test_cidissuer_issue_selfvc(void)
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "InternetAccountCredential"));
 
-    CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
+    CU_ASSERT_EQUAL(1, DID_Equals(subject, Credential_GetIssuer(vc)));
 
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "Testing Issuer");
@@ -606,10 +606,10 @@ static void test_issuer_issue_multicidvc(void)
     vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
             props, 5, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
-    CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
-    CU_ASSERT_FALSE(Credential_IsExpired(vc));
-    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL_FATAL(1, DIDURL_Equals(credid, Credential_GetId(vc)));
+    CU_ASSERT_EQUAL(0, Credential_IsExpired(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsGenuine(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
@@ -621,7 +621,7 @@ static void test_issuer_issue_multicidvc(void)
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
-    CU_ASSERT_TRUE(DID_Equals(issuerid, Credential_GetIssuer(vc)));
+    CU_ASSERT_EQUAL(1, DID_Equals(issuerid, Credential_GetIssuer(vc)));
 
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "John");
@@ -694,10 +694,10 @@ static void test_multicidissuer_issue_kycvc(void)
     vc = Issuer_CreateCredential(issuer, did, credid, types, 2,
             props, 5, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
-    CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
-    CU_ASSERT_FALSE(Credential_IsExpired(vc));
-    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL_FATAL(1, DIDURL_Equals(credid, Credential_GetId(vc)));
+    CU_ASSERT_EQUAL(0, Credential_IsExpired(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsGenuine(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
@@ -709,7 +709,7 @@ static void test_multicidissuer_issue_kycvc(void)
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
-    CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
+    CU_ASSERT_EQUAL(1, DID_Equals(subject, Credential_GetIssuer(vc)));
 
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "John");
@@ -782,10 +782,10 @@ static void test_multicidissuer_issue_kycvc2(void)
     vc = Issuer_CreateCredential(issuer, issuerid, credid, types, 2,
             props, 5, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL(vc);
-    CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
-    CU_ASSERT_FALSE(Credential_IsExpired(vc));
-    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL_FATAL(1, DIDURL_Equals(credid, Credential_GetId(vc)));
+    CU_ASSERT_EQUAL(0, Credential_IsExpired(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsGenuine(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
@@ -797,7 +797,7 @@ static void test_multicidissuer_issue_kycvc2(void)
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
-    CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
+    CU_ASSERT_EQUAL(1, DID_Equals(subject, Credential_GetIssuer(vc)));
 
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "John");
@@ -865,10 +865,10 @@ static void test_multicidissuer_issue_selfvc(void)
     vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
             props, 3, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vc);
-    CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
-    CU_ASSERT_FALSE(Credential_IsExpired(vc));
-    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL_FATAL(1, DIDURL_Equals(credid, Credential_GetId(vc)));
+    CU_ASSERT_EQUAL(0, Credential_IsExpired(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsGenuine(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
@@ -880,7 +880,7 @@ static void test_multicidissuer_issue_selfvc(void)
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
-    CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
+    CU_ASSERT_EQUAL(1, DID_Equals(subject, Credential_GetIssuer(vc)));
 
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "Testing Issuer");
@@ -942,10 +942,10 @@ static void test_multicidissuer_issue_selfvc2(void)
     vc = Issuer_CreateCredential(issuer, subject, credid, types, 2,
             props, 3, expires, storepass);
     CU_ASSERT_PTR_NOT_NULL(vc);
-    CU_ASSERT_TRUE_FATAL(DIDURL_Equals(credid, Credential_GetId(vc)));
-    CU_ASSERT_FALSE(Credential_IsExpired(vc));
-    CU_ASSERT_TRUE(Credential_IsGenuine(vc));
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL_FATAL(1, DIDURL_Equals(credid, Credential_GetId(vc)));
+    CU_ASSERT_EQUAL(0, Credential_IsExpired(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsGenuine(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
     DIDURL_Destroy(credid);
 
     CU_ASSERT_EQUAL(Credential_GetTypeCount(vc), 3);
@@ -957,7 +957,7 @@ static void test_multicidissuer_issue_selfvc2(void)
     CU_ASSERT_TRUE(has_type(tmptypes, 3, "VerifiableCredential"));
     CU_ASSERT_FALSE(has_type(tmptypes, 3, "SelfProclaimedCredential"));
 
-    CU_ASSERT_TRUE(DID_Equals(subject, Credential_GetIssuer(vc)));
+    CU_ASSERT_EQUAL(1, DID_Equals(subject, Credential_GetIssuer(vc)));
 
     provalue = Credential_GetProperty(vc, "name");
     CU_ASSERT_STRING_EQUAL(provalue, "Testing Issuer");
