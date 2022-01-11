@@ -107,7 +107,7 @@ const char *CredentialRequest_ToJson(CredentialRequest *request)
         return NULL;
     }
 
-    return DIDJG_Finish(gen);
+    return unicode_normalize(DIDJG_Finish(gen));
 }
 
 const char *CredentialRequest_Sign(CredentialRequest_Type type, DIDURL *credid,

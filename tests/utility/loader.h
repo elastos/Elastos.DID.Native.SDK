@@ -45,6 +45,8 @@ bool file_exist(const char *path);
 
 bool dir_exist(const char *path);
 
+const char *get_i18n_content(const char *name);
+
 const char *Generater_Publickey(char *publickeybase58, size_t size);
 
 HDKey *Generater_KeyPair(HDKey *hdkey);

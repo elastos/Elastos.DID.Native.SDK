@@ -138,7 +138,7 @@ static const char *ticket_tojson_forsign(TransferTicket *ticket, bool forsign)
         return NULL;
     }
 
-    return DIDJG_Finish(gen);
+    return unicode_normalize(DIDJG_Finish(gen));
 }
 
 TransferTicket *TransferTicket_Construct(DID *owner, DID *to)

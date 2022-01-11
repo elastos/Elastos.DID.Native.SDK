@@ -70,7 +70,7 @@ const char *Metadata_ToJson(Metadata *metadata)
             return NULL;
         }
 
-        return DIDJG_Finish(gen);
+        return unicode_normalize(DIDJG_Finish(gen));
     }
 
     return NULL;

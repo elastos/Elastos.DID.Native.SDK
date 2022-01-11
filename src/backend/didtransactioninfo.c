@@ -124,7 +124,7 @@ const char *DIDTransaction_ToJson(DIDTransaction *txinfo)
         return NULL;
     }
 
-    return DIDJG_Finish(gen);
+    return unicode_normalize(DIDJG_Finish(gen));
 }
 
 DIDRequest *DIDTransaction_GetRequest(DIDTransaction *txinfo)

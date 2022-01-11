@@ -3649,7 +3649,7 @@ int DIDStore_ExportDID(DIDStore *store, const char *storepass, DID *did,
         return -1;
     }
 
-    data = DIDJG_Finish(gen);
+    data = unicode_normalize(DIDJG_Finish(gen));
     rc = store_file(file, data);
     free((void*)data);
     if (rc < 0) {
@@ -4399,7 +4399,7 @@ int DIDStore_ExportRootIdentity(DIDStore *store, const char *storepass,
     if (export_final(gen, &digest) < 0)
         goto errorExit;
 
-    data = DIDJG_Finish(gen);
+    data = unicode_normalize(DIDJG_Finish(gen));
     rc = store_file(file, data);
     free((void*)data);
     if (rc < 0) {

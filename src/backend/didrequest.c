@@ -110,7 +110,7 @@ static const char *DIDRequest_ToJson(DIDRequest *req)
         return NULL;
     }
 
-    return DIDJG_Finish(gen);
+    return unicode_normalize(DIDJG_Finish(gen));
 }
 
 //document is for signkey. If DID is deactivated by authorizor, document is authorizor's document.
