@@ -34,6 +34,8 @@ static DID controller5;
 static DID customized_did;
 static DID multicustomized_did;
 
+extern const char *I18N[];
+
 static int get_customizedid(char *customized_did, size_t len)
 {
     static char *chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -324,6 +326,8 @@ static void test_idchain_controller3(void)
     CU_ASSERT_PTR_NOT_NULL(controller3_doc);
 
     DID_Copy(&controller3, &controller3_doc->did);
+
+    printf("\n------------------------------------------------------------\n-- publish begin(create), waiting....\n");
 
     builder = DIDDocument_Edit(controller3_doc, NULL);
     DIDDocument_Destroy(controller3_doc);
@@ -1087,7 +1091,8 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     DIDURL *keyid1, *keyid2, *credid, *signkey1, *signkey2;
     DIDDocumentBuilder *builder;
     TransferTicket *ticket;
-    const char *data;
+    const char *data, *sub;
+    int count = 0, i, status;
 
     Features_EnableJsonLdContext(true);
 
@@ -1123,20 +1128,22 @@ static void test_transfer_ctmdid_with_onecontroller(void)
             "https://elastos.org/credentials/email/v1#EmailCredential",
             "https://elastos.org/credentials/social/v1#SocialCredential" };
 
-    Property props1[5];
-    props1[0].key = "name";
-    props1[0].value = "John";
-    props1[1].key = "gender";
-    props1[1].value = "Male";
-    props1[2].key = "nationality";
-    props1[2].value = "Singapore";
-    props1[3].key = "email";
-    props1[3].value = "john@example.com";
-    props1[4].key = "twitter";
-    props1[4].value = "@john";
+    Property props[8];
+    for (i = 0; i < 8; i++) {
+        sub = get_i18n_content(I18N[i]);
+        if (!sub)
+            continue;
+
+        props[i].key = (char*)I18N[i];
+        props[i].value = (char*)sub;
+        count++;
+    }
 
     CU_ASSERT_NOT_EQUAL(-1, DIDDocumentBuilder_AddSelfProclaimedCredential(builder, credid, types1, 4,
-            props1, 5, 0, NULL, storepass));
+            props, count, 0, NULL, storepass));
+
+    for (i = 0; i < count; i++)
+        free((void*)props[i].value);
 
     customizedoc = DIDDocumentBuilder_Seal(builder, storepass);
     DIDDocumentBuilder_Destroy(builder);
@@ -1289,11 +1296,30 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     CU_ASSERT_EQUAL(1, DIDDocument_GetProofCount(customizedoc));
     CU_ASSERT_PTR_NULL(DIDDocument_GetAuthenticationKey(customizedoc, keyid1));
     CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetAuthenticationKey(customizedoc, keyid2));
-    CU_ASSERT_PTR_NOT_NULL(DIDDocument_GetCredential(customizedoc, credid));
+
+    //declare vc
+    Credential *cred = DIDStore_LoadCredential(store, &credid->did, credid);
+    CU_ASSERT_PTR_NOT_NULL(cred);
+
+    CU_ASSERT_EQUAL(1, Credential_Declare(cred, signkey2, storepass));
+
+    data = Credential_ToJson(cred, true);
+    CU_ASSERT_PTR_NOT_NULL(data);
+
+    Credential *vc = Credential_Resolve(credid, &status, true);
+    CU_ASSERT_PTR_NOT_NULL(vc);
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
+
+    const char *data1 = Credential_ToJson(vc, true);
+    CU_ASSERT_PTR_NOT_NULL(data1);
+    CU_ASSERT_STRING_EQUAL(data, data1);
+    free((void*)data);
+    free((void*)data1);
 
     DIDURL_Destroy(keyid1);
     DIDURL_Destroy(keyid2);
     DIDURL_Destroy(credid);
+    Credential_Destroy(vc);
     DIDDocument_Destroy(customizedoc);
 
     Features_EnableJsonLdContext(false);

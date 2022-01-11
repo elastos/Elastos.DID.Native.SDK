@@ -545,3 +545,29 @@ bool contains_content(char **contents, size_t size, const char *content, size_t 
     return false;
 }
 
+#ifdef ENABLE_UNICODE_NORMALIZATION
+const char *normalize_string(const char *str)
+{
+    return (const char *)utf8proc_NFC((unsigned char *)str);
+}
+
+void normalize_free(const char *normalized)
+{
+    if (normalized)
+        free((char *)normalized);
+}
+#endif
+
+const char *unicode_normalize(const char *data)
+{
+    if (data) {
+#ifdef ENABLE_UNICODE_NORMALIZATION
+        const char *buff = data;
+        data = normalize_string(buff);
+        free((void*)buff);
+#endif
+    }
+
+    return data;
+}
+

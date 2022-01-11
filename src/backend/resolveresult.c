@@ -194,7 +194,7 @@ const char *ResolveResult_ToJson(ResolveResult *result)
         return NULL;
     }
 
-    return DIDJG_Finish(gen);
+    return unicode_normalize(DIDJG_Finish(gen));
 }
 
 DID *ResolveResult_GetDID(ResolveResult *result)
