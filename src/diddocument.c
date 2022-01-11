@@ -1299,7 +1299,7 @@ static const char *diddocument_tojson_forsign(DIDDocument *document, bool compac
         return NULL;
     }
 
-    return DIDJG_Finish(gen);
+    return unicode_normalize(DIDJG_Finish(gen));
 }
 
 const char *DIDDocument_ToJson(DIDDocument *document, bool normalized)

@@ -103,6 +103,8 @@ const char *json_astext(json_t *item);
 
 bool contains_content(char **contents, size_t size, const char *content, size_t len);
 
+const char *unicode_normalize(const char *data);
+
 #ifdef __cplusplus
 }
 #endif

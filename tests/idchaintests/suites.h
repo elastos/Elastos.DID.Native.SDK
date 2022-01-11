@@ -28,13 +28,15 @@ DECL_TESTSUITE(idchain_dummyadapter_test);
 DECL_TESTSUITE(idchain_dummyadapter_forctmdid_test);
 DECL_TESTSUITE(idchain_operation_test);
 DECL_TESTSUITE(idchain_dummyadapter_forvc_test);
+DECL_TESTSUITE(idchain_operation_new_test);
 
 #define DEFINE_IDCHAIN_TESTSUITES \
     DEFINE_TESTSUITE(idchain_dummyadapter_test), \
     DEFINE_TESTSUITE(idchain_dummyadapter_forctmdid_test), \
     DEFINE_TESTSUITE(idchain_dummyadapter_forvc_test), \
     DEFINE_TESTSUITE(idchain_restore_test), \
-    DEFINE_TESTSUITE(idchain_operation_test)
+    DEFINE_TESTSUITE(idchain_operation_test),\
+    DEFINE_TESTSUITE(idchain_operation_new_test)
 
 #endif /* __IDCHAIN_TEST_SUITES_H__ */
 

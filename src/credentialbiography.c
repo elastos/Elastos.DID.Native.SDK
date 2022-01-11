@@ -204,7 +204,7 @@ const char *Credentialbiography_ToJson(CredentialBiography *biography)
         return NULL;
     }
 
-    return DIDJG_Finish(gen);
+    return unicode_normalize(DIDJG_Finish(gen));
 }
 
 DIDURL *CredentialBiography_GetId(CredentialBiography *biography)
