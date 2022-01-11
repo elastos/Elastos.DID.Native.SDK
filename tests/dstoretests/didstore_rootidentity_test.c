@@ -142,7 +142,7 @@ static void test_didstore_rootidentity(void)
 
     rootidentity1 = RootIdentity_Create(mnemonic1, "1234", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity1);
-    CU_ASSERT_TRUE(DIDStore_ContainsRootIdentities(store));
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsRootIdentities(store));
 
     rootidentity2 = RootIdentity_Create(mnemonic2, "1234", true, store, storepass);
     CU_ASSERT_PTR_NOT_NULL(rootidentity2);
@@ -159,12 +159,12 @@ static void test_didstore_rootidentity(void)
     CU_ASSERT_STRING_EQUAL(rootidentity1->id, defaultid);
     free((void*)defaultid);
 
-    CU_ASSERT_TRUE(DIDStore_ContainsRootIdentity(store, rootidentity1->id));
-    CU_ASSERT_TRUE(DIDStore_ContainsRootIdentity(store, rootidentity2->id));
-    CU_ASSERT_TRUE(DIDStore_ContainsRootIdentity(store, rootidentity3->id));
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsRootIdentity(store, rootidentity1->id));
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsRootIdentity(store, rootidentity2->id));
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsRootIdentity(store, rootidentity3->id));
 
-    CU_ASSERT_TRUE(DIDStore_ContainsRootIdentityMnemonic(store, rootidentity1->id));
-    CU_ASSERT_TRUE(DIDStore_ContainsRootIdentityMnemonic(store, rootidentity2->id));
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsRootIdentityMnemonic(store, rootidentity1->id));
+    CU_ASSERT_EQUAL(1, DIDStore_ContainsRootIdentityMnemonic(store, rootidentity2->id));
     CU_ASSERT_NOT_EQUAL(1, DIDStore_ContainsRootIdentityMnemonic(store, rootidentity3->id));
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_ExportRootIdentityMnemonic(store, storepass,

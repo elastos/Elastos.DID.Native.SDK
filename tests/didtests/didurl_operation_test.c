@@ -17,7 +17,7 @@ static void test_didurl_get_did(void)
 {
     DID *tempdid = DIDURL_GetDid(id);
     CU_ASSERT_PTR_NOT_NULL(tempdid);
-    CU_ASSERT_TRUE(DID_Equals(tempdid, did));
+    CU_ASSERT_EQUAL(1, DID_Equals(tempdid, did));
 }
 
 static void test_didurl_get_fragment(void)
@@ -51,11 +51,11 @@ static void test_didurl_compare(void)
 static void test_didurl_equals(void)
 {
     DIDURL *equalid = DIDURL_New(method_specific_string, fragment);
-    CU_ASSERT_TRUE(DIDURL_Equals(equalid, id));
+    CU_ASSERT_EQUAL(1, DIDURL_Equals(equalid, id));
     DIDURL_Destroy(equalid);
 
     equalid = DIDURL_New("abc", "def");
-    CU_ASSERT_FALSE(DIDURL_Equals(equalid, id));
+    CU_ASSERT_EQUAL(0, DIDURL_Equals(equalid, id));
     DIDURL_Destroy(equalid);
 }
 

@@ -91,8 +91,8 @@ static void test_idchain_declarevc(void)
             CU_ASSERT_PTR_NULL(Credential_Resolve(&vc->id, &status, true));
             CU_ASSERT_EQUAL(status, CredentialStatus_NotFound);
 
-            CU_ASSERT_TRUE(Credential_Declare(vc, signkey1, storepass));
-            CU_ASSERT_TRUE(Credential_WasDeclared(&vc->id));
+            CU_ASSERT_EQUAL(1, Credential_Declare(vc, signkey1, storepass));
+            CU_ASSERT_EQUAL(1, Credential_WasDeclared(&vc->id));
             CU_ASSERT_NOT_EQUAL(1, Credential_IsRevoked(vc));
 
             resolve_vc1 = Credential_Resolve(&vc->id, &status, true);
@@ -111,7 +111,7 @@ static void test_idchain_declarevc(void)
             CU_ASSERT_NOT_EQUAL(0, CredentialMetadata_GetPublished(&resolve_vc1->metadata));
             CU_ASSERT_PTR_NOT_NULL(CredentialMetadata_GetTxid(&resolve_vc1->metadata));
             CU_ASSERT_NOT_EQUAL(1, Credential_IsRevoked(resolve_vc1));
-            CU_ASSERT_TRUE(Credential_WasDeclared(&resolve_vc1->id));
+            CU_ASSERT_EQUAL(1, Credential_WasDeclared(&resolve_vc1->id));
 
             //declare again, fail.
             CU_ASSERT_NOT_EQUAL(1, Credential_Declare(vc, signkey1, storepass));
@@ -121,8 +121,8 @@ static void test_idchain_declarevc(void)
             CU_ASSERT_NOT_EQUAL(1, Credential_RevokeById(&vc->id, repealerdoc, signkey3, storepass));
             CU_ASSERT_NOT_EQUAL(1, Credential_IsRevoked(vc));
             //revoke by owner again, success.
-            CU_ASSERT_TRUE(Credential_RevokeById(&vc->id, doc, signkey1, storepass));
-            CU_ASSERT_TRUE(Credential_IsRevoked(vc));
+            CU_ASSERT_EQUAL(1, Credential_RevokeById(&vc->id, doc, signkey1, storepass));
+            CU_ASSERT_EQUAL(1, Credential_IsRevoked(vc));
             //revoke by issuer again, fail.
             CU_ASSERT_NOT_EQUAL(1, Credential_RevokeById(&vc->id, issuerdoc, signkey2, storepass));
             CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
@@ -155,8 +155,8 @@ static void test_idchain_declarevc(void)
                 signkey1 = DIDDocument_GetDefaultPublicKey(doc);
                 CU_ASSERT_PTR_NOT_NULL(signkey1);
             }
-            CU_ASSERT_TRUE(DIDURL_Equals(signkey1, CredentialBiography_GetTransactionSignkeyByIndex(biography, 0)));
-            CU_ASSERT_TRUE(DIDURL_Equals(signkey1, CredentialBiography_GetTransactionSignkeyByIndex(biography, 1)));
+            CU_ASSERT_EQUAL(1, DIDURL_Equals(signkey1, CredentialBiography_GetTransactionSignkeyByIndex(biography, 0)));
+            CU_ASSERT_EQUAL(1, DIDURL_Equals(signkey1, CredentialBiography_GetTransactionSignkeyByIndex(biography, 1)));
 
             CredentialBiography_Destroy(biography);
         }
@@ -241,20 +241,25 @@ static void test_idchain_revokevc(void)
             CU_ASSERT_NOT_EQUAL(1, Credential_Revoke(vc, signkey3, storepass));
             CU_ASSERT_NOT_EQUAL(1, Credential_IsRevoked(vc));
 
-            CU_ASSERT_TRUE(Credential_Revoke(vc, signkey2, storepass));
-            CU_ASSERT_TRUE(Credential_IsRevoked(vc));
+            //revoke issuer("services" and "passport" credential is selfclaimed.)
+            CU_ASSERT_EQUAL(1, Credential_Revoke(vc, signkey2, storepass));
+            CU_ASSERT_EQUAL(1, Credential_IsRevoked(vc));
 
             resolvevc = Credential_Resolve(&vc->id, &status, true);
             CU_ASSERT_PTR_NULL(resolvevc);
-            CU_ASSERT_EQUAL(status, CredentialStatus_Revoked);
-            CU_ASSERT_TRUE(Credential_ResolveRevocation(&vc->id, &issuerdoc->did));
+            if (!strcmp("services", param->param) || !strcmp("passport", param->param)) {
+                CU_ASSERT_EQUAL(status, CredentialStatus_Revoked);
+            } else {
+                CU_ASSERT_EQUAL(status, CredentialStatus_NotFound);
+            }
+
+            CU_ASSERT_EQUAL(1, Credential_ResolveRevocation(&vc->id, &issuerdoc->did));
 
             CU_ASSERT_NOT_EQUAL(1, Credential_Declare(vc, signkey1, storepass));
             CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
 
-            CU_ASSERT_EQUAL(status, CredentialStatus_Revoked);
-            CU_ASSERT_TRUE(Credential_ResolveRevocation(&vc->id, &issuerdoc->did));
-            CU_ASSERT_TRUE(Credential_IsRevoked(vc));
+            CU_ASSERT_EQUAL(1, Credential_ResolveRevocation(&vc->id, &issuerdoc->did));
+            CU_ASSERT_EQUAL(1, Credential_IsRevoked(vc));
             CU_ASSERT_NOT_EQUAL(1, Credential_WasDeclared(&vc->id));
         }
     }
@@ -289,7 +294,7 @@ static void test_idchain_listvc(void)
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL(issuerdoc);
     DID_Copy(&issuerid, &issuerdoc->did);
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(issuerdoc, NULL, true, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(issuerdoc, NULL, true, storepass));
     DIDDocument_Destroy(issuerdoc);
 
     issuer = Issuer_Create(&issuerid, NULL, store);
@@ -345,21 +350,21 @@ static void test_idchain_listvc(void)
     CU_ASSERT_PTR_NOT_NULL_FATAL(document);
 
     CU_ASSERT_NOT_EQUAL(-1, DIDStore_StoreDID(store, document));
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(document, NULL, true, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(document, NULL, true, storepass));
 
     vc = DIDStore_LoadCredential(store, &did, credid2);
     CU_ASSERT_PTR_NOT_NULL(vc);
 
     //declare credid2
-    CU_ASSERT_TRUE(Credential_Declare(vc, NULL, storepass));
+    CU_ASSERT_EQUAL(1, Credential_Declare(vc, NULL, storepass));
     Credential_Destroy(vc);
-    CU_ASSERT_TRUE(Credential_WasDeclared(credid2));
+    CU_ASSERT_EQUAL(1, Credential_WasDeclared(credid2));
     CU_ASSERT_NOT_EQUAL(1, Credential_ResolveRevocation(credid2, &issuerid));
 
     //revoke credid1
-    CU_ASSERT_TRUE(Credential_RevokeById(credid1, document, NULL, storepass));
+    CU_ASSERT_EQUAL(1, Credential_RevokeById(credid1, document, NULL, storepass));
     CU_ASSERT_NOT_EQUAL(1, Credential_WasDeclared(credid1));
-    CU_ASSERT_TRUE(Credential_ResolveRevocation(credid1, &issuerid));
+    CU_ASSERT_EQUAL(1, Credential_ResolveRevocation(credid1, &issuerid));
 
     //resolve did
     resolvedoc = DID_Resolve(&did, &status, true);
@@ -386,13 +391,13 @@ static void test_idchain_listvc(void)
     free((void*)provalue);
 
     CU_ASSERT_NOT_EQUAL(1, Credential_WasDeclared(credid1));
-    CU_ASSERT_TRUE(Credential_IsRevoked(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsRevoked(vc));
 
     //resolve credid1(revoked)
     resolvevc = Credential_Resolve(credid1, &status, true);
     CU_ASSERT_PTR_NULL(resolvevc);
     CU_ASSERT_EQUAL(status, CredentialStatus_Revoked);
-    CU_ASSERT_TRUE(Credential_ResolveRevocation(credid1, &issuerid));
+    CU_ASSERT_EQUAL(1, Credential_ResolveRevocation(credid1, &issuerid));
 
     //check credid2
     vc = DIDDocument_GetCredential(resolvedoc, credid2);
@@ -400,18 +405,18 @@ static void test_idchain_listvc(void)
 
     resolvevc = Credential_Resolve(credid2, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolvevc);
-    CU_ASSERT_TRUE(Credential_WasDeclared(credid2));
+    CU_ASSERT_EQUAL(1, Credential_WasDeclared(credid2));
     CU_ASSERT_NOT_EQUAL(1, Credential_IsRevoked(vc));
 
-    CU_ASSERT_TRUE(DIDURL_Equals(Credential_GetId(resolvevc), credid2));
-    CU_ASSERT_TRUE(DID_Equals(Credential_GetOwner(resolvevc), &did));
-    CU_ASSERT_TRUE(DID_Equals(Credential_GetIssuer(resolvevc), &did));
+    CU_ASSERT_EQUAL(1, DIDURL_Equals(Credential_GetId(resolvevc), credid2));
+    CU_ASSERT_EQUAL(1, DID_Equals(Credential_GetOwner(resolvevc), &did));
+    CU_ASSERT_EQUAL(1, DID_Equals(Credential_GetIssuer(resolvevc), &did));
 
     Credential_Destroy(resolvevc);
     DIDDocument_Destroy(resolvedoc);
 
     CU_ASSERT_EQUAL(1, Credential_List(&did, buffer, sizeof(buffer), 0, 2));
-    CU_ASSERT_TRUE(DIDURL_Equals(buffer[0], credid1) || DIDURL_Equals(buffer[0], credid2));
+    CU_ASSERT_EQUAL(1, DIDURL_Equals(buffer[0], credid1) || DIDURL_Equals(buffer[0], credid2));
 
     for (i = 0; i < 1; i++)
         DIDURL_Destroy(buffer[i]);
@@ -428,26 +433,33 @@ static void test_idchain_listvc2(void)
     DIDURL *signkey1, *signkey2, *signkey;
     DIDURL *buffer[3];
     DID *did;
-    DataParam *param;
+    DataParam *param, *paramlist;
     int i, j, status = 0;
     ssize_t size;
 
-    DataParam params[] = {
-        { 2, "user1", "twitter", NULL   },   { 2, "user1", "passport", NULL  },
-        { 2, "user1", "json", NULL      },   { 2, "foobar", "license", NULL  },
-        { 2, "foobar", "services", NULL },   { 2, "foo", "email", NULL       },
-        { 3, "user1", "twitter", NULL   },   { 3, "user1", "passport", NULL  },
-        { 3, "user1", "json", NULL      },   { 3, "foobar", "license", NULL  },
-        { 3, "foobar", "services", NULL },   { 3, "foo", "email", NULL       }
+    DataParam params1[] = {
+        { 2, "user1", "twitter", NULL   }, { 2, "user1", "passport", NULL },
+        { 2, "user1", "json", NULL      }, { 2, "foobar", "license", NULL },
+        { 2, "foobar", "services", NULL }, { 2, "foo", "email", NULL      },
     };
 
-    for (j = 0; j <= 1; j++) {
+    DataParam params2[] = {
+        { 3, "user1", "twitter", NULL   }, { 3, "user1", "passport", NULL },
+        { 3, "user1", "json", NULL      }, { 3, "foobar", "license", NULL },
+        { 3, "foobar", "services", NULL }, { 3, "foo", "email", NULL}
+    };
+
+    DataParam *params[] = { params1, params2 };
+
+    for (j = 0; j < 2; j++) {
+        TestData_Reset(2);
         printf("\n------------------------------------------------------------\n%s Json-LD Context, please wait...\n", j == 0 ? "diable" : "enable");
         Features_EnableJsonLdContext((bool)j);
 
-        TestData_Reset(2);
-        for (i = 0; i < 12; i++) {
-            param = &params[i];
+        paramlist = params[j];
+        for (i = 0; i < 3; i++) {
+            param = &paramlist[i];
+
             signkey1 = NULL;
 
             issuerdoc = TestData_GetDocument("issuer", NULL, param->version);
@@ -481,7 +493,7 @@ static void test_idchain_listvc2(void)
             vc = TestData_GetCredential(param->did, param->param, param->type, param->version);
             CU_ASSERT_PTR_NOT_NULL(vc);
 
-            CU_ASSERT_TRUE(Credential_Declare(vc, signkey, storepass));
+            CU_ASSERT_EQUAL(1, Credential_Declare(vc, signkey, storepass));
 
             resolvevc = Credential_Resolve(&vc->id, &status, true);
             CU_ASSERT_PTR_NOT_NULL(resolvevc);
@@ -516,9 +528,9 @@ static void test_idchain_listvc2(void)
             CU_ASSERT_TRUE(!strcmp("email", buffer[i]->fragment));
         DID_Destroy(did);
         printf("---- list credentials, end.\n");
-    }
 
-    Features_EnableJsonLdContext(false);
+        Features_EnableJsonLdContext(false);
+    }
 }
 
 static void test_idchain_listvc_pagination(void)
@@ -544,7 +556,7 @@ static void test_idchain_listvc_pagination(void)
     document = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL(document);
     DID_Copy(&did, &document->did);
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(document, NULL, true, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(document, NULL, true, storepass));
 
     expires = DIDDocument_GetExpires(document);
     DIDDocument_Destroy(document);
@@ -553,7 +565,7 @@ static void test_idchain_listvc_pagination(void)
     issuerdoc = RootIdentity_NewDID(rootidentity, storepass, NULL, false);
     CU_ASSERT_PTR_NOT_NULL(issuerdoc);
     DID_Copy(&issuerid, &issuerdoc->did);
-    CU_ASSERT_TRUE(DIDDocument_PublishDID(issuerdoc, NULL, true, storepass));
+    CU_ASSERT_EQUAL(1, DIDDocument_PublishDID(issuerdoc, NULL, true, storepass));
     DIDDocument_Destroy(issuerdoc);
 
     issuer = Issuer_Create(&issuerid, NULL, store);
@@ -576,8 +588,8 @@ static void test_idchain_listvc_pagination(void)
                 expires, storepass);
         CU_ASSERT_PTR_NOT_NULL(vc);
         CredentialMetadata_SetStore(&vc->metadata, store);
-        CU_ASSERT_TRUE(Credential_Declare(vc, NULL, storepass));
-        CU_ASSERT_TRUE(Credential_WasDeclared(credid));
+        CU_ASSERT_EQUAL(1, Credential_Declare(vc, NULL, storepass));
+        CU_ASSERT_EQUAL(1, Credential_WasDeclared(credid));
 
         Credential_Destroy(vc);
         DIDURL_Destroy(credid);
@@ -591,7 +603,7 @@ static void test_idchain_listvc_pagination(void)
         sprintf(fragment, "test%d", 1027 - i);
         credid = DIDURL_NewFromDid(&did, fragment);
         CU_ASSERT_PTR_NOT_NULL(credid);
-        CU_ASSERT_TRUE(DIDURL_Equals(credid, vcid));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(credid, vcid));
 
         vc = Credential_Resolve(credid, &status, true);
         CU_ASSERT_PTR_NOT_NULL(vc);
@@ -611,7 +623,7 @@ static void test_idchain_listvc_pagination(void)
         sprintf(fragment, "test%d", 1027 - i);
         credid = DIDURL_NewFromDid(&did, fragment);
         CU_ASSERT_PTR_NOT_NULL(credid);
-        CU_ASSERT_TRUE(DIDURL_Equals(credid, vcid));
+        CU_ASSERT_EQUAL(1, DIDURL_Equals(credid, vcid));
 
         vc = Credential_Resolve(credid, &status, true);
         CU_ASSERT_PTR_NOT_NULL(vc);
@@ -641,7 +653,7 @@ static void test_idchain_listvc_pagination(void)
             sprintf(fragment, "test%d", --index);
             credid = DIDURL_NewFromDid(&did, fragment);
             CU_ASSERT_PTR_NOT_NULL(credid);
-            CU_ASSERT_TRUE(DIDURL_Equals(credid, vcid));
+            CU_ASSERT_EQUAL(1,DIDURL_Equals(credid, vcid));
 
             vc = Credential_Resolve(credid, &status, true);
             CU_ASSERT_PTR_NOT_NULL(vc);
@@ -672,7 +684,7 @@ static void test_idchain_listvc_pagination(void)
             sprintf(fragment, "test%d", --index);
             credid = DIDURL_NewFromDid(&did, fragment);
             CU_ASSERT_PTR_NOT_NULL(credid);
-            CU_ASSERT_TRUE(DIDURL_Equals(credid, vcid));
+            CU_ASSERT_EQUAL(1, DIDURL_Equals(credid, vcid));
 
             vc = Credential_Resolve(credid, &status, true);
             CU_ASSERT_PTR_NOT_NULL(vc);

@@ -37,7 +37,7 @@ static void test_vc_kycvc(void)
 
         id = DIDURL_NewFromDid(did, "twitter");
         CU_ASSERT_PTR_NOT_NULL_FATAL(id);
-        CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Credential_GetId(cred)));
         DIDURL_Destroy(id);
 
         size = Credential_GetTypes(cred, types, sizeof(types));
@@ -54,8 +54,8 @@ static void test_vc_kycvc(void)
             }
         }
 
-        CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
-        CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
+        CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, Credential_GetOwner(cred)));
 
         data = Credential_GetProperty(cred, "twitter");
         CU_ASSERT_STRING_EQUAL("@john", data);
@@ -64,10 +64,10 @@ static void test_vc_kycvc(void)
         CU_ASSERT_NOT_EQUAL(0, Credential_GetIssuanceDate(cred));
         CU_ASSERT_NOT_EQUAL(0, Credential_GetExpirationDate(cred));
 
-        CU_ASSERT_FALSE(Credential_IsSelfProclaimed(cred));
-        CU_ASSERT_FALSE(Credential_IsExpired(cred));
-        CU_ASSERT_TRUE(Credential_IsGenuine(cred));
-        CU_ASSERT_TRUE(Credential_IsValid(cred));
+        CU_ASSERT_EQUAL(0, Credential_IsSelfProclaimed(cred));
+        CU_ASSERT_EQUAL(0, Credential_IsExpired(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsGenuine(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsValid(cred));
     }
 }
 
@@ -93,7 +93,7 @@ static void test_vc_selfclaimvc(void)
 
         id = DIDURL_NewFromDid(did, "passport");
         CU_ASSERT_PTR_NOT_NULL_FATAL(id);
-        CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Credential_GetId(cred)));
         DIDURL_Destroy(id);
 
         size = Credential_GetTypes(cred, types, sizeof(types));
@@ -110,8 +110,8 @@ static void test_vc_selfclaimvc(void)
             }
         }
 
-        CU_ASSERT_TRUE(DID_Equals(did, Credential_GetIssuer(cred)));
-        CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, Credential_GetIssuer(cred)));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, Credential_GetOwner(cred)));
 
         if (version == 1) {
             prop = Credential_GetProperty(cred, "nation");
@@ -128,10 +128,10 @@ static void test_vc_selfclaimvc(void)
         CU_ASSERT_NOT_EQUAL(0, Credential_GetIssuanceDate(cred));
         CU_ASSERT_NOT_EQUAL(0, Credential_GetExpirationDate(cred));
 
-        CU_ASSERT_TRUE(Credential_IsSelfProclaimed(cred));
-        CU_ASSERT_FALSE(Credential_IsExpired(cred));
-        CU_ASSERT_TRUE(Credential_IsGenuine(cred));
-        CU_ASSERT_TRUE(Credential_IsValid(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsSelfProclaimed(cred));
+        CU_ASSERT_EQUAL(0, Credential_IsExpired(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsGenuine(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsValid(cred));
     }
 }
 
@@ -276,7 +276,7 @@ static void test_vc_keycvc_tocid(void)
 
         id = DIDURL_NewFromDid(did, "email");
         CU_ASSERT_PTR_NOT_NULL(id);
-        CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Credential_GetId(cred)));
         DIDURL_Destroy(id);
 
         size = Credential_GetTypes(cred, types, sizeof(types));
@@ -286,8 +286,8 @@ static void test_vc_keycvc_tocid(void)
             CU_ASSERT_TRUE(!strcmp(types[i], "EmailCredential") ||
                         !strcmp(types[i], "VerifiableCredential"));
 
-        CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
-        CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
+        CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, Credential_GetOwner(cred)));
 
         data = Credential_GetProperty(cred, "email");
         CU_ASSERT_STRING_EQUAL("foo@example.com", data);
@@ -296,10 +296,10 @@ static void test_vc_keycvc_tocid(void)
         CU_ASSERT_NOT_EQUAL(0, Credential_GetIssuanceDate(cred));
         CU_ASSERT_NOT_EQUAL(0, Credential_GetExpirationDate(cred));
 
-        CU_ASSERT_FALSE(Credential_IsSelfProclaimed(cred));
-        CU_ASSERT_FALSE(Credential_IsExpired(cred));
-        CU_ASSERT_TRUE(Credential_IsGenuine(cred));
-        CU_ASSERT_TRUE(Credential_IsValid(cred));
+        CU_ASSERT_EQUAL(0, Credential_IsSelfProclaimed(cred));
+        CU_ASSERT_EQUAL(0, Credential_IsExpired(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsGenuine(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsValid(cred));
     }
 }
 
@@ -332,7 +332,7 @@ static void test_vc_kycvc_fromcid(void)
 
         id = DIDURL_NewFromDid(did, "license");
         CU_ASSERT_PTR_NOT_NULL(id);
-        CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Credential_GetId(cred)));
         DIDURL_Destroy(id);
 
         size = Credential_GetTypes(cred, types, sizeof(types));
@@ -342,8 +342,8 @@ static void test_vc_kycvc_fromcid(void)
             CU_ASSERT_TRUE(!strcmp(types[i], "LicenseCredential") ||
                     !strcmp(types[i], "VerifiableCredential"));
 
-        CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
-        CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
+        CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(issuerdoc), Credential_GetIssuer(cred)));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, Credential_GetOwner(cred)));
 
         data = Credential_GetProperty(cred, "license-id");
         CU_ASSERT_STRING_EQUAL("20201021C889", data);
@@ -355,10 +355,10 @@ static void test_vc_kycvc_fromcid(void)
         CU_ASSERT_NOT_EQUAL(0, Credential_GetIssuanceDate(cred));
         CU_ASSERT_NOT_EQUAL(0, Credential_GetExpirationDate(cred));
 
-        CU_ASSERT_FALSE(Credential_IsSelfProclaimed(cred));
-        CU_ASSERT_FALSE(Credential_IsExpired(cred));
-        CU_ASSERT_TRUE(Credential_IsGenuine(cred));
-        CU_ASSERT_TRUE(Credential_IsValid(cred));
+        CU_ASSERT_EQUAL(0, Credential_IsSelfProclaimed(cred));
+        CU_ASSERT_EQUAL(0, Credential_IsExpired(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsGenuine(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsValid(cred));
     }
 }
 
@@ -388,7 +388,7 @@ static void test_vc_selfclaimvc_fromcid(void)
 
         id = DIDURL_NewFromDid(did, "services");
         CU_ASSERT_PTR_NOT_NULL(id);
-        CU_ASSERT_TRUE(DIDURL_Equals(id, Credential_GetId(cred)));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Credential_GetId(cred)));
         DIDURL_Destroy(id);
 
         size = Credential_GetTypes(cred, types, sizeof(types));
@@ -400,8 +400,8 @@ static void test_vc_selfclaimvc_fromcid(void)
                     !strcmp(type, "VerifiableCredential"));
         }
 
-        CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(foobardoc), Credential_GetIssuer(cred)));
-        CU_ASSERT_TRUE(DID_Equals(did, Credential_GetOwner(cred)));
+        CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(foobardoc), Credential_GetIssuer(cred)));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, Credential_GetOwner(cred)));
 
         data = Credential_GetProperty(cred, "Outsourceing");
         CU_ASSERT_STRING_EQUAL("https://foobar.com/outsourcing", data);
@@ -413,10 +413,10 @@ static void test_vc_selfclaimvc_fromcid(void)
         CU_ASSERT_NOT_EQUAL(0, Credential_GetIssuanceDate(cred));
         CU_ASSERT_NOT_EQUAL(0, Credential_GetExpirationDate(cred));
 
-        CU_ASSERT_TRUE(Credential_IsSelfProclaimed(cred));
-        CU_ASSERT_FALSE(Credential_IsExpired(cred));
-        CU_ASSERT_TRUE(Credential_IsGenuine(cred));
-        CU_ASSERT_TRUE(Credential_IsValid(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsSelfProclaimed(cred));
+        CU_ASSERT_EQUAL(0, Credential_IsExpired(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsGenuine(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsValid(cred));
     }
 }
 
@@ -452,9 +452,9 @@ static void test_vc_parse_vcs(void)
         cred = TestData_GetCredential(param->did, param->param, NULL, param->version);
         CU_ASSERT_PTR_NOT_NULL(cred);
 
-        CU_ASSERT_FALSE(Credential_IsExpired(cred));
-        CU_ASSERT_TRUE(Credential_IsGenuine(cred));
-        CU_ASSERT_TRUE(Credential_IsValid(cred));
+        CU_ASSERT_EQUAL(0, Credential_IsExpired(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsGenuine(cred));
+        CU_ASSERT_EQUAL(1, Credential_IsValid(cred));
 
         data = Credential_ToJson(normvc, true);
         CU_ASSERT_PTR_NOT_NULL(data);

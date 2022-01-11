@@ -2389,7 +2389,7 @@ int DIDDocumentBuilder_RemoveAuthenticationKey(DIDDocumentBuilder *builder, DIDU
         return -1;
     }
 
-    pk = DIDDocument_GetPublicKey(document, keyid);
+    pk = DIDDocument_GetAuthenticationKey(document, keyid);
     if (!pk) {
         DIDError_Set(DIDERR_NOT_EXISTS, "No this authentication key.");
         return -1;
@@ -3479,7 +3479,7 @@ ssize_t DIDDocument_GetPublicKeys(DIDDocument *document, PublicKey **pks,
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             if (doc) {
-                pk_size = DIDDocument_GetPublicKeys(doc, pks + actual_size, (size - actual_size));
+                pk_size = DIDDocument_GetAuthenticationKeys(doc, pks + actual_size, (size - actual_size));
                 if (pk_size > 0)
                     actual_size += pk_size;
             }

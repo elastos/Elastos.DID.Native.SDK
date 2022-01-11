@@ -38,7 +38,7 @@ static void test_vc_local_verify(void)
 
     doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     CU_ASSERT_PTR_NOT_NULL(doc);
-    CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
+    CU_ASSERT_EQUAL_FATAL(1, DIDDocument_IsValid(doc));
 
     DID_Copy(&owner, DIDDocument_GetSubject(doc));
     DIDDocument_Destroy(doc);
@@ -46,7 +46,7 @@ static void test_vc_local_verify(void)
     doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
     RootIdentity_Destroy(rootidentity);
     CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
-    CU_ASSERT_TRUE_FATAL(DIDDocument_IsValid(doc));
+    CU_ASSERT_EQUAL_FATAL(1, DIDDocument_IsValid(doc));
 
     DID_Copy(&kyc, DIDDocument_GetSubject(doc));
     expires = DIDDocument_GetExpires(doc);
@@ -81,7 +81,7 @@ static void test_vc_local_verify(void)
     CU_ASSERT_NOT_EQUAL(1, Credential_IsValid(vc));
 
     DIDBackend_SetLocalResolveHandle(local_doc);
-    CU_ASSERT_TRUE(Credential_IsValid(vc));
+    CU_ASSERT_EQUAL(1, Credential_IsValid(vc));
 
     DIDBackend_SetLocalResolveHandle(NULL);
     CU_ASSERT_NOT_EQUAL(1, Credential_IsValid(vc));

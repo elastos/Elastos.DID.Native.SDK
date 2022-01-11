@@ -47,7 +47,7 @@ static void test_vp_getelem(void)
         CU_ASSERT_NOT_EQUAL(-1, Presentation_GetTypes(vp, types, 1));
         CU_ASSERT_STRING_EQUAL(PresentationType, types[0]);
 
-        CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(doc), Presentation_GetHolder(vp)));
+        CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(doc), Presentation_GetHolder(vp)));
         CU_ASSERT_EQUAL(4, Presentation_GetCredentialCount(vp));
 
         size = Presentation_GetCredentials(vp, creds, sizeof(creds));
@@ -55,7 +55,7 @@ static void test_vp_getelem(void)
 
         cred = creds;
         for (i = 0; i < size; i++, cred++) {
-            CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(doc), Credential_GetOwner(*cred)));
+            CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(doc), Credential_GetOwner(*cred)));
 
             const char *fragment = DIDURL_GetFragment(Credential_GetId(*cred));
             CU_ASSERT_PTR_NOT_NULL(fragment);
@@ -92,7 +92,7 @@ static void test_vp_getelem(void)
         CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
         DIDURL_Destroy(id);
 
-        CU_ASSERT_TRUE(Presentation_IsValid(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(vp));
     }
 }
 
@@ -129,7 +129,7 @@ static void test_vp_getelem_ctmid(void)
 
         cred = creds;
         for (i = 0; i < size; i++, cred++) {
-            CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(doc), Credential_GetOwner(*cred)));
+            CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(doc), Credential_GetOwner(*cred)));
 
             const char *fragment = DIDURL_GetFragment(Credential_GetId(*cred));
             CU_ASSERT_PTR_NOT_NULL(fragment);
@@ -137,11 +137,11 @@ static void test_vp_getelem_ctmid(void)
             CU_ASSERT_TRUE(!strcmp(fragment, "profile") || !strcmp(fragment, "license") ||
                      !strcmp(fragment, "services") || !strcmp(fragment, "email"));
 
-            CU_ASSERT_TRUE(Credential_IsValid(*cred));
+            CU_ASSERT_EQUAL(1, Credential_IsValid(*cred));
         }
 
-        CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
-        CU_ASSERT_TRUE(Presentation_IsValid(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(vp));
     }
 }
 
@@ -173,7 +173,7 @@ static void test_vp_getelem_withemptyvp(void)
         CU_ASSERT_NOT_EQUAL(-1, Presentation_GetTypes(vp, types, 1));
         CU_ASSERT_STRING_EQUAL(PresentationType, types[0]);
 
-        CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(doc), Presentation_GetHolder(vp)));
+        CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(doc), Presentation_GetHolder(vp)));
 
         CU_ASSERT_EQUAL(0, Presentation_GetCredentialCount(vp));
 
@@ -185,8 +185,8 @@ static void test_vp_getelem_withemptyvp(void)
         CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
         DIDURL_Destroy(id);
 
-        CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
-        CU_ASSERT_TRUE(Presentation_IsValid(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(vp));
     }
 }
 
@@ -224,8 +224,8 @@ static void test_vp_getelem_withemptyvp_ctmid(void)
         CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
         DIDURL_Destroy(id);
 
-        CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
-        CU_ASSERT_TRUE(Presentation_IsValid(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(vp));
     }
 }
 
@@ -241,15 +241,15 @@ static void test_vp_parse(void)
 
         vp = TestData_GetPresentation("user1", "nonempty", NULL, version);
         CU_ASSERT_PTR_NOT_NULL(vp);
-        CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
-        CU_ASSERT_TRUE(Presentation_IsValid(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(vp));
 
         normJson = TestData_GetPresentationJson("user1", "nonempty", "normalized", version);
         CU_ASSERT_PTR_NOT_NULL(normJson);
         normvp = Presentation_FromJson(normJson);
         CU_ASSERT_PTR_NOT_NULL(normvp);
-        CU_ASSERT_TRUE(Presentation_IsGenuine(normvp));
-        CU_ASSERT_TRUE(Presentation_IsValid(normvp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(normvp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(normvp));
 
         data = Presentation_ToJson(normvp, true);
         CU_ASSERT_PTR_NOT_NULL(data);
@@ -281,15 +281,15 @@ static void test_vp_parse_ctmid(void)
 
         vp = TestData_GetPresentation("foobar", "nonempty", NULL, version);
         CU_ASSERT_PTR_NOT_NULL(vp);
-        CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
-        CU_ASSERT_TRUE(Presentation_IsValid(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(vp));
 
         normJson = TestData_GetPresentationJson("foobar", "nonempty", "normalized", version);
         CU_ASSERT_PTR_NOT_NULL(normJson);
         normvp = Presentation_FromJson(normJson);
         CU_ASSERT_PTR_NOT_NULL(normvp);
-        CU_ASSERT_TRUE(Presentation_IsGenuine(normvp));
-        CU_ASSERT_TRUE(Presentation_IsValid(normvp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(normvp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(normvp));
 
         data = Presentation_ToJson(normvp, true);
         CU_ASSERT_PTR_NOT_NULL(data);
@@ -316,15 +316,15 @@ static void test_vp_parse_withemptyvp(void)
 
         vp = TestData_GetPresentation("user1", "empty", NULL, version);
         CU_ASSERT_PTR_NOT_NULL(vp);
-        CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
-        CU_ASSERT_TRUE(Presentation_IsValid(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(vp));
 
         normJson = TestData_GetPresentationJson("user1", "empty", "normalized", 2);
         CU_ASSERT_PTR_NOT_NULL(normJson);
         normvp = Presentation_FromJson(normJson);
         CU_ASSERT_PTR_NOT_NULL(normvp);
-        CU_ASSERT_TRUE(Presentation_IsGenuine(normvp));
-        CU_ASSERT_TRUE(Presentation_IsValid(normvp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(normvp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(normvp));
 
         data = Presentation_ToJson(normvp, true);
         CU_ASSERT_PTR_NOT_NULL(data);
@@ -353,15 +353,15 @@ static void test_vp_parse_withemptyvp_ctmid(void)
 
         vp = TestData_GetPresentation("foobar", "empty", NULL, version);
         CU_ASSERT_PTR_NOT_NULL(vp);
-        CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
-        CU_ASSERT_TRUE(Presentation_IsValid(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(vp));
 
         normJson = TestData_GetPresentationJson("foobar", "empty", "normalized", 2);
         CU_ASSERT_PTR_NOT_NULL(normJson);
         normvp = Presentation_FromJson(normJson);
         CU_ASSERT_PTR_NOT_NULL(normvp);
-        CU_ASSERT_TRUE(Presentation_IsGenuine(normvp));
-        CU_ASSERT_TRUE(Presentation_IsValid(normvp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(normvp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(normvp));
 
         data = Presentation_ToJson(normvp, true);
         CU_ASSERT_PTR_NOT_NULL(data);
@@ -405,7 +405,7 @@ static void test_vp_create(void)
             TestData_GetCredential(NULL, "vc-twitter", NULL, 0));
     CU_ASSERT_PTR_NOT_NULL_FATAL(vp);
 
-    CU_ASSERT_TRUE(DIDURL_Equals(id, Presentation_GetId(vp)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Presentation_GetId(vp)));
     DIDURL_Destroy(id);
 
     CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
@@ -415,7 +415,7 @@ static void test_vp_create(void)
                 !strcmp("SessionPresentation", _types[i]) ||
                 !strcmp("VerifiablePresentation", _types[i]));
 
-    CU_ASSERT_TRUE(DID_Equals(&doc->did, Presentation_GetHolder(vp)));
+    CU_ASSERT_EQUAL(1, DID_Equals(&doc->did, Presentation_GetHolder(vp)));
     CU_ASSERT_EQUAL(4, Presentation_GetCredentialCount(vp));
 
     size = Presentation_GetCredentials(vp, creds, sizeof(creds));
@@ -423,7 +423,7 @@ static void test_vp_create(void)
 
     cred = creds;
     for (i = 0; i < size; i++, cred++) {
-        CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(doc), Credential_GetOwner(*cred)));
+        CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(doc), Credential_GetOwner(*cred)));
 
         const char *fragment = DIDURL_GetFragment(Credential_GetId(*cred));
         CU_ASSERT_PTR_NOT_NULL(fragment);
@@ -460,8 +460,8 @@ static void test_vp_create(void)
     CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
-    CU_ASSERT_TRUE(Presentation_IsValid(vp));
+    CU_ASSERT_EQUAL(1, Presentation_IsGenuine(vp));
+    CU_ASSERT_EQUAL(1, Presentation_IsValid(vp));
 
     Presentation_Destroy(vp);
 }
@@ -519,7 +519,7 @@ static void test_vp_create_ctmid(void)
         DIDURL_Destroy(signkey);
         CU_ASSERT_PTR_NOT_NULL_FATAL(vp);
 
-        CU_ASSERT_TRUE(DIDURL_Equals(id, Presentation_GetId(vp)));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Presentation_GetId(vp)));
         DIDURL_Destroy(id);
 
         CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
@@ -529,7 +529,7 @@ static void test_vp_create_ctmid(void)
                     !strcmp("TestPresentation", _types[i]) ||
                     !strcmp("VerifiablePresentation", _types[i]));
 
-        CU_ASSERT_TRUE(DID_Equals(did, Presentation_GetHolder(vp)));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, Presentation_GetHolder(vp)));
         CU_ASSERT_EQUAL(4, Presentation_GetCredentialCount(vp));
 
         size = Presentation_GetCredentials(vp, creds, sizeof(creds));
@@ -537,7 +537,7 @@ static void test_vp_create_ctmid(void)
 
         cred = creds;
         for (i = 0; i < size; i++, cred++) {
-            CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(doc), Credential_GetOwner(*cred)));
+            CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(doc), Credential_GetOwner(*cred)));
 
             const char *fragment = DIDURL_GetFragment(Credential_GetId(*cred));
             CU_ASSERT_PTR_NOT_NULL(fragment);
@@ -567,8 +567,8 @@ static void test_vp_create_ctmid(void)
         CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
         DIDURL_Destroy(id);
 
-        CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
-        CU_ASSERT_TRUE(Presentation_IsValid(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(vp));
 
         Presentation_Destroy(vp);
     }
@@ -607,7 +607,7 @@ static void test_vp_create_by_credarray(void)
             "873172f58701a9ee686f0630204fee59", "https://example.com/", vcs, 4, NULL, store, storepass);
     CU_ASSERT_PTR_NOT_NULL_FATAL(vp);
 
-    CU_ASSERT_TRUE(DIDURL_Equals(id, Presentation_GetId(vp)));
+    CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Presentation_GetId(vp)));
     DIDURL_Destroy(id);
 
     CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
@@ -617,7 +617,7 @@ static void test_vp_create_by_credarray(void)
                 !strcmp("TestPresentation", _types[i]) ||
                 !strcmp("VerifiablePresentation", _types[i]));
 
-    CU_ASSERT_TRUE(DID_Equals(did, Presentation_GetHolder(vp)));
+    CU_ASSERT_EQUAL(1, DID_Equals(did, Presentation_GetHolder(vp)));
     CU_ASSERT_EQUAL(4, Presentation_GetCredentialCount(vp));
 
     size = Presentation_GetCredentials(vp, creds, sizeof(creds));
@@ -625,7 +625,7 @@ static void test_vp_create_by_credarray(void)
 
     cred = creds;
     for (i = 0; i < size; i++, cred++) {
-        CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(doc), Credential_GetOwner(*cred)));
+        CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(doc), Credential_GetOwner(*cred)));
 
         const char *fragment = DIDURL_GetFragment(Credential_GetId(*cred));
         CU_ASSERT_PTR_NOT_NULL(fragment);
@@ -662,8 +662,8 @@ static void test_vp_create_by_credarray(void)
     CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
     DIDURL_Destroy(id);
 
-    CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
-    CU_ASSERT_TRUE(Presentation_IsValid(vp));
+    CU_ASSERT_EQUAL(1, Presentation_IsGenuine(vp));
+    CU_ASSERT_EQUAL(1, Presentation_IsValid(vp));
 
     Presentation_Destroy(vp);
 }
@@ -725,8 +725,8 @@ static void test_vp_create_by_credarray_ctmid(void)
         DIDURL_Destroy(signkey);
         CU_ASSERT_PTR_NOT_NULL(vp);
 
-        CU_ASSERT_TRUE(DID_Equals(did, Presentation_GetHolder(vp)));
-        CU_ASSERT_TRUE(DIDURL_Equals(id, Presentation_GetId(vp)));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, Presentation_GetHolder(vp)));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Presentation_GetId(vp)));
         DIDURL_Destroy(id);
 
         CU_ASSERT_EQUAL(3, Presentation_GetTypeCount(vp));
@@ -743,7 +743,7 @@ static void test_vp_create_by_credarray_ctmid(void)
 
         cred = creds;
         for (i = 0; i < size; i++, cred++) {
-            CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(doc), Credential_GetOwner(*cred)));
+            CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(doc), Credential_GetOwner(*cred)));
 
             const char *fragment = DIDURL_GetFragment(Credential_GetId(*cred));
             CU_ASSERT_PTR_NOT_NULL(fragment);
@@ -773,8 +773,8 @@ static void test_vp_create_by_credarray_ctmid(void)
         CU_ASSERT_PTR_NULL(Presentation_GetCredential(vp, id));
         DIDURL_Destroy(id);
 
-        CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
-        CU_ASSERT_TRUE(Presentation_IsValid(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(vp));
 
         Presentation_Destroy(vp);
     }
@@ -808,8 +808,8 @@ static void test_vp_create_without_creds(void)
                 "https://example.com/", NULL, store, storepass, 0);
         CU_ASSERT_PTR_NOT_NULL(vp);
 
-        CU_ASSERT_TRUE(DID_Equals(did, Presentation_GetHolder(vp)));
-        CU_ASSERT_TRUE(DIDURL_Equals(id, Presentation_GetId(vp)));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, Presentation_GetHolder(vp)));
+        CU_ASSERT_EQUAL(1,DIDURL_Equals(id, Presentation_GetId(vp)));
         DIDURL_Destroy(id);
 
         CU_ASSERT_EQUAL(1, Presentation_GetTypeCount(vp));
@@ -819,8 +819,8 @@ static void test_vp_create_without_creds(void)
         CU_ASSERT_EQUAL(0, Presentation_GetCredentialCount(vp));
         CU_ASSERT_EQUAL(0, Presentation_GetCredentials(vp, creds, sizeof(creds)));
 
-        CU_ASSERT_TRUE(Presentation_IsGenuine(vp));
-        CU_ASSERT_TRUE(Presentation_IsValid(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsGenuine(vp));
+        CU_ASSERT_EQUAL(1, Presentation_IsValid(vp));
 
         Presentation_Destroy(vp);
     }
