@@ -113,7 +113,7 @@ static void test_idchain_restore(void)
 
         DIDDocument *doc = DIDStore_LoadDID(cleanstore, did);
         CU_ASSERT_PTR_NOT_NULL(doc);
-        CU_ASSERT_TRUE_FATAL(DID_Equals(did, DIDDocument_GetSubject(doc)));
+        CU_ASSERT_EQUAL_FATAL(1, DID_Equals(did, DIDDocument_GetSubject(doc)));
 
         time_t expires = DIDDocument_GetExpires(doc);
 
@@ -201,7 +201,7 @@ static void test_sync_with_localmodification1(void)
 
         DIDDocument *doc = DIDStore_LoadDID(cleanstore, did);
         CU_ASSERT_PTR_NOT_NULL_FATAL(doc);
-        CU_ASSERT_TRUE_FATAL(DID_Equals(did, DIDDocument_GetSubject(doc)));
+        CU_ASSERT_EQUAL_FATAL(1, DID_Equals(did, DIDDocument_GetSubject(doc)));
 
         DIDDocument_Destroy(doc);
     }
@@ -276,7 +276,7 @@ static void test_sync_with_localmodification2(void)
 
         DIDDocument *doc = DIDStore_LoadDID(cleanstore, did);
         CU_ASSERT_PTR_NOT_NULL(doc);
-        CU_ASSERT_TRUE(DID_Equals(did, DIDDocument_GetSubject(doc)));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, DIDDocument_GetSubject(doc)));
 
         DIDDocument_Destroy(doc);
     }

@@ -47,7 +47,7 @@ static void test_didstore_bulk_newdid(void)
         DIDDocument *doc = RootIdentity_NewDID(rootidentity, storepass, alias, false);
         if (!doc)
             continue;
-        CU_ASSERT_TRUE(DIDDocument_IsValid(doc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(doc));
 
         DID *did = DIDDocument_GetSubject(doc);
         CU_ASSERT_PTR_NOT_NULL(did);
@@ -62,7 +62,7 @@ static void test_didstore_bulk_newdid(void)
 
         DIDDocument *loaddoc = DIDStore_LoadDID(store, did);
         CU_ASSERT_PTR_NOT_NULL(loaddoc);
-        CU_ASSERT_TRUE(DIDDocument_IsValid(loaddoc));
+        CU_ASSERT_EQUAL(1, DIDDocument_IsValid(loaddoc));
 
         DIDMetadata *metadata = DIDDocument_GetMetadata(loaddoc);
         CU_ASSERT_PTR_NOT_NULL(loaddoc);
@@ -72,7 +72,7 @@ static void test_didstore_bulk_newdid(void)
         CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(doc, 0),
                 DIDDocument_GetProofSignature(loaddoc, 0));
 
-        CU_ASSERT_TRUE(DID_Equals(did, DIDDocument_GetSubject(loaddoc)));
+        CU_ASSERT_EQUAL(1, DID_Equals(did, DIDDocument_GetSubject(loaddoc)));
 
         DIDDocument_Destroy(doc);
         DIDDocument_Destroy(loaddoc);
@@ -170,15 +170,15 @@ static void test_didstore_op_store_load_did(void)
     doc = TestData_GetDocument("document", NULL, 0);
 
     loaddoc = DIDStore_LoadDID(store, DIDDocument_GetSubject(issuerdoc));
-    CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(issuerdoc), DIDDocument_GetSubject(loaddoc)));
+    CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(issuerdoc), DIDDocument_GetSubject(loaddoc)));
     CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(issuerdoc, 0), DIDDocument_GetProofSignature(loaddoc, 0));
-    CU_ASSERT_TRUE(DIDDocument_IsValid(loaddoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(loaddoc));
     DIDDocument_Destroy(loaddoc);
 
     loaddoc = DIDStore_LoadDID(store, DIDDocument_GetSubject(doc));
-    CU_ASSERT_TRUE(DID_Equals(DIDDocument_GetSubject(doc), DIDDocument_GetSubject(loaddoc)));
+    CU_ASSERT_EQUAL(1, DID_Equals(DIDDocument_GetSubject(doc), DIDDocument_GetSubject(loaddoc)));
     CU_ASSERT_STRING_EQUAL(DIDDocument_GetProofSignature(doc, 0), DIDDocument_GetProofSignature(loaddoc, 0));
-    CU_ASSERT_TRUE(DIDDocument_IsValid(loaddoc));
+    CU_ASSERT_EQUAL(1, DIDDocument_IsValid(loaddoc));
     DIDDocument_Destroy(loaddoc);
 
     rc = DIDStore_ListDIDs(store, 0, get_did, (void*)&count);
