@@ -1019,6 +1019,7 @@ static void test_idchain_ctmdid_with_multicontroller(void)
     CU_ASSERT_EQUAL(1, Credential_ResolveRevocation(&vc->id, &vc->issuer));
     CU_ASSERT_EQUAL(1, Credential_IsRevoked(vc));
     CU_ASSERT_NOT_EQUAL(1, Credential_WasDeclared(&vc->id));
+    Credential_Destroy(vc);
 
     //resolve credid1 biography
     CredentialBiography *vc_biography = Credential_ResolveBiography(credid1, NULL);
@@ -1075,6 +1076,7 @@ static void test_idchain_ctmdid_with_multicontroller(void)
     CU_ASSERT_EQUAL(1,DIDURL_Equals(keyid1, CredentialBiography_GetTransactionSignkeyByIndex(vc_biography, 0)));
     DIDURL_Destroy(signkey);
 
+    Credential_Destroy(vc);
     CredentialBiography_Destroy(vc_biography);
 
     DIDURL_Destroy(keyid1);
@@ -1319,6 +1321,7 @@ static void test_transfer_ctmdid_with_onecontroller(void)
     DIDURL_Destroy(keyid1);
     DIDURL_Destroy(keyid2);
     DIDURL_Destroy(credid);
+    Credential_Destroy(cred);
     Credential_Destroy(vc);
     DIDDocument_Destroy(customizedoc);
 
