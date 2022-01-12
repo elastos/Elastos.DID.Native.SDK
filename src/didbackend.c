@@ -148,7 +148,7 @@ int DIDBackend_CreateDID(DIDDocument *document, DIDURL *signkey, const char *sto
     if (!success)
         DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Create Id transaction(create) failed.");
 
-    return success;
+    return (int)success;
 }
 
 int DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *storepass)
@@ -180,7 +180,7 @@ int DIDBackend_UpdateDID(DIDDocument *document, DIDURL *signkey, const char *sto
     if (!success)
         DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Create Id transaction(update) failed.");
 
-    return success;
+    return (int)success;
 }
 
 int DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
@@ -214,7 +214,7 @@ int DIDBackend_TransferDID(DIDDocument *document, TransferTicket *ticket,
     if (!success)
         DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Create Id transaction(transfer) failed.");
 
-    return success;
+    return (int)success;
 }
 
 //signkey provides sk, creater is real key in proof. If did is deactivated by ownerself, signkey and
@@ -249,7 +249,7 @@ int DIDBackend_DeactivateDID(DIDDocument *signerdoc, DIDURL *signkey,
     if (!success)
         DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "Create Id transaction(deactivated) failed.");
 
-    return success;
+    return (int)success;
 }
 
 static json_t *get_resolve_result(json_t *json)
@@ -727,7 +727,7 @@ int DIDBackend_RevokeCredential(DIDURL *credid, DIDURL *signkey, DIDDocument *do
     if (!success)
         DIDError_Set(DIDERR_DID_TRANSACTION_ERROR, "create Id transaction(revoke) failed.");
 
-    return success;
+    return (int)success;
 }
 
 Credential *DIDBackend_ResolveCredential(DIDURL *id, int *status, bool force)
