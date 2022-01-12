@@ -504,12 +504,15 @@ static void test_idchain_listvc2(void)
         }
 
         printf("---- list credentials, begin......\n");
-        size = Credential_List(&user1doc->did, buffer, 3, 0, 4);
+        did = DID_New("user1");
+        CU_ASSERT_PTR_NOT_NULL(did);
+        size = Credential_List(did, buffer, 3, 0, 4);
         CU_ASSERT_NOT_EQUAL(3, size);
         for (i = 0; i < size; i++)
             CU_ASSERT_TRUE(!strcmp("twitter", buffer[i]->fragment) ||
                     !strcmp("passport", buffer[i]->fragment) ||
                     !strcmp("json", buffer[i]->fragment));
+        DID_Destroy(did);
 
         did = DID_New("foobar");
         CU_ASSERT_PTR_NOT_NULL(did);
