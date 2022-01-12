@@ -115,7 +115,7 @@ static void test_emptyctmdoc_get_publickey(void)
     CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), primaryid));
     DIDURL_Destroy(primaryid);
 
-    CU_ASSERT_EQUAL(4, DIDDocument_SelectPublicKeys(doc, default_type, NULL, pks, 4));
+    CU_ASSERT_EQUAL(3, DIDDocument_SelectPublicKeys(doc, default_type, NULL, pks, 4));
 
     id = DIDURL_NewFromDid(controller, "key2");
     CU_ASSERT_PTR_NOT_NULL(id);
@@ -229,7 +229,7 @@ static void test_ctmdoc_get_publickey(void)
     CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), primaryid));
     DIDURL_Destroy(primaryid);
 
-    CU_ASSERT_EQUAL(6, DIDDocument_SelectPublicKeys(doc, default_type, NULL, pks, 6));
+    CU_ASSERT_EQUAL(5, DIDDocument_SelectPublicKeys(doc, default_type, NULL, pks, 6));
 
     id = DIDURL_NewFromDid(did, "k2");
     CU_ASSERT_PTR_NOT_NULL(id);
@@ -304,7 +304,7 @@ static void test_ctmdoc_add_publickey(void)
     // Check the final count.
     CU_ASSERT_EQUAL(7, DIDDocument_GetPublicKeyCount(sealeddoc));
     CU_ASSERT_EQUAL(5, DIDDocument_GetAuthenticationCount(sealeddoc));
-    CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(sealeddoc));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationCount(sealeddoc));
 
     DIDDocument_Destroy(sealeddoc);
 
@@ -376,7 +376,7 @@ static void test_ctmdoc_remove_publickey(void)
     // Check the final count.
     CU_ASSERT_EQUAL(3, DIDDocument_GetPublicKeyCount(sealeddoc));
     CU_ASSERT_EQUAL(3, DIDDocument_GetAuthenticationCount(sealeddoc));
-    CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(sealeddoc));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationCount(sealeddoc));
 
     DIDDocument_Destroy(sealeddoc);
 
@@ -593,7 +593,7 @@ static void test_ctmdoc_add_authentication_key(void)
     // Check the final count.
     CU_ASSERT_EQUAL(7, DIDDocument_GetPublicKeyCount(sealeddoc));
     CU_ASSERT_EQUAL(7, DIDDocument_GetAuthenticationCount(sealeddoc));
-    CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(sealeddoc));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationCount(sealeddoc));
 
     DIDDocument_Destroy(sealeddoc);
 
@@ -625,7 +625,7 @@ static void test_ctmdoc_remove_authentication_key(void)
 
     CU_ASSERT_EQUAL(5, DIDDocument_GetPublicKeyCount(doc));
     CU_ASSERT_EQUAL(5, DIDDocument_GetAuthenticationCount(doc));
-    CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(doc));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationCount(doc));
 
     builder = DIDDocument_Edit(doc, NULL);
     CU_ASSERT_PTR_NOT_NULL(builder);
@@ -666,7 +666,7 @@ static void test_ctmdoc_remove_authentication_key(void)
     // Check the final count.
     CU_ASSERT_EQUAL(5, DIDDocument_GetPublicKeyCount(sealeddoc));
     CU_ASSERT_EQUAL(3, DIDDocument_GetAuthenticationCount(sealeddoc));
-    CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(sealeddoc));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationCount(sealeddoc));
 
     DIDDocument_Destroy(sealeddoc);
 
@@ -699,27 +699,16 @@ static void test_ctmdoc_get_authorization_key(void)
     controller = &(doc->controllers.docs[0]->did);
     CU_ASSERT_PTR_NOT_NULL(controller);
 
-    CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(doc));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationCount(doc));
 
     size = DIDDocument_GetAuthorizationKeys(doc, pks, 1);
-    CU_ASSERT_EQUAL(1, size);
-
-    for (i = 0; i < size; i++) {
-        pk = pks[i];
-        id = PublicKey_GetId(pk);
-
-        CU_ASSERT_EQUAL(1, DID_Equals(controller, &id->did));
-        CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
-        CU_ASSERT_NOT_EQUAL(1, DID_Equals(controller, PublicKey_GetController(pk)));
-        CU_ASSERT_TRUE(!strcmp(id->fragment, "recovery"));
-    }
+    CU_ASSERT_EQUAL(0, size);
 
     // AuthorizationKey getter
     keyid = DIDURL_NewFromDid(controller, "recovery");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     pk = DIDDocument_GetAuthorizationKey(doc, keyid);
-    CU_ASSERT_PTR_NOT_NULL(pk);
-    CU_ASSERT_EQUAL(1, DIDURL_Equals(keyid, PublicKey_GetId(pk)));
+    CU_ASSERT_PTR_NULL(pk);
 
     //Key not exist, should fail.
     id = DIDURL_NewFromDid(did, "notExist");
@@ -733,14 +722,10 @@ static void test_ctmdoc_get_authorization_key(void)
     DIDURL_Destroy(id);
 
     // Selector
-    CU_ASSERT_EQUAL(1, DIDDocument_SelectAuthorizationKeys(doc, default_type, keyid, pks, 1));
-    CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), keyid));
-
-    CU_ASSERT_EQUAL(1, DIDDocument_SelectAuthorizationKeys(doc, NULL, keyid, pks, 1));
-    CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), keyid));
+    CU_ASSERT_EQUAL(0, DIDDocument_SelectAuthorizationKeys(doc, default_type, keyid, pks, 1));
+    CU_ASSERT_EQUAL(0, DIDDocument_SelectAuthorizationKeys(doc, NULL, keyid, pks, 1));
+    CU_ASSERT_EQUAL(0, DIDDocument_SelectAuthorizationKeys(doc, default_type, NULL, pks, 1));
     DIDURL_Destroy(keyid);
-
-    CU_ASSERT_EQUAL(1, DIDDocument_SelectAuthorizationKeys(doc, default_type, NULL, pks, 1));
 
     TestData_Free();
 }
@@ -794,7 +779,7 @@ static void test_ctmdoc_add_authorization_key(void)
     // Check the final count.
     CU_ASSERT_EQUAL(6, DIDDocument_GetPublicKeyCount(sealeddoc));
     CU_ASSERT_EQUAL(5, DIDDocument_GetAuthenticationCount(sealeddoc));
-    CU_ASSERT_EQUAL(1, DIDDocument_GetAuthorizationCount(sealeddoc));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationCount(sealeddoc));
 
     DIDURL_Destroy(id);
     DIDDocument_Destroy(sealeddoc);
@@ -848,15 +833,10 @@ static void test_empty_multictmdoc_get_publickey(void)
         CU_ASSERT_PTR_NOT_NULL(controller);
         CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
 
-        if (!strcmp(keyid->fragment, "recovery") || !strcmp(keyid->fragment, "recovery2")) {
-            CU_ASSERT_NOT_EQUAL(1, DID_Equals(controller, PublicKey_GetController(pk)));
-        } else {
-            CU_ASSERT_EQUAL(1, DID_Equals(controller, PublicKey_GetController(pk)));
-        }
+        CU_ASSERT_EQUAL(1, DID_Equals(controller, PublicKey_GetController(pk)));
 
         CU_ASSERT_TRUE(!strcmp(keyid->fragment, "primary") ||
                 !strcmp(keyid->fragment, "key2") || !strcmp(keyid->fragment, "key3") ||
-                !strcmp(keyid->fragment, "recovery") || !strcmp(keyid->fragment, "recovery2") ||
                 !strcmp(keyid->fragment, "pk1"));
     }
 
@@ -903,7 +883,7 @@ static void test_empty_multictmdoc_get_publickey(void)
 
     // Selector
     size = DIDDocument_SelectPublicKeys(customized_doc, default_type, NULL, pks, 8);
-    CU_ASSERT_EQUAL(8, size);
+    CU_ASSERT_EQUAL(6, size);
 
     size = DIDDocument_SelectPublicKeys(customized_doc, NULL, primaryid1, pks, 8);
     CU_ASSERT_EQUAL(1, size);
@@ -976,16 +956,12 @@ static void test_multictmdoc_get_publickey(void)
 
         CU_ASSERT_STRING_EQUAL(default_type, PublicKey_GetType(pk));
 
-        if (!strcmp(keyid->fragment, "recovery") || !strcmp(keyid->fragment, "recovery2")) {
-            CU_ASSERT_NOT_EQUAL(1, DID_Equals(controller, PublicKey_GetController(pk)));
-        } else {
-            CU_ASSERT_TRUE(contains_DID(controllers, 3, &keyid->did) ||
-                   DID_Equals(controller, PublicKey_GetController(pk)));
-            CU_ASSERT_TRUE(!strcmp(keyid->fragment, "k1") ||
-                    !strcmp(keyid->fragment, "k2") || !strcmp(keyid->fragment, "primary") ||
-                    !strcmp(keyid->fragment, "key2") || !strcmp(keyid->fragment, "key3") ||
-                    !strcmp(keyid->fragment, "pk1"));
-        }
+        CU_ASSERT_TRUE(contains_DID(controllers, 3, &keyid->did) ||
+               DID_Equals(controller, PublicKey_GetController(pk)));
+        CU_ASSERT_TRUE(!strcmp(keyid->fragment, "k1") ||
+                !strcmp(keyid->fragment, "k2") || !strcmp(keyid->fragment, "primary") ||
+                !strcmp(keyid->fragment, "key2") || !strcmp(keyid->fragment, "key3") ||
+                !strcmp(keyid->fragment, "pk1"));
     }
 
     //PublicKey getter.
@@ -1033,11 +1009,11 @@ static void test_multictmdoc_get_publickey(void)
     keyid = DIDURL_NewFromDid(&controller1, "recovery");
     CU_ASSERT_PTR_NOT_NULL(keyid);
     pk = DIDDocument_GetPublicKey(customized_doc, keyid);
-    CU_ASSERT_PTR_NOT_NULL(pk);
+    CU_ASSERT_PTR_NULL(pk);
     DIDURL_Destroy(keyid);
 
     // Selector
-    CU_ASSERT_EQUAL(10, DIDDocument_SelectPublicKeys(customized_doc, default_type, NULL, pks, 10));
+    CU_ASSERT_EQUAL(8, DIDDocument_SelectPublicKeys(customized_doc, default_type, NULL, pks, 10));
 
     CU_ASSERT_EQUAL(1, DIDDocument_SelectPublicKeys(customized_doc, NULL, primaryid1, pks, 10));
     CU_ASSERT_EQUAL(1, DIDURL_Equals(PublicKey_GetId(pks[0]), primaryid1));
@@ -1141,7 +1117,7 @@ static void test_multictmdoc_add_publickey(void)
     // Check the final count.
     CU_ASSERT_EQUAL(10, DIDDocument_GetPublicKeyCount(sealeddoc));
     CU_ASSERT_EQUAL(8, DIDDocument_GetAuthenticationCount(sealeddoc));
-    CU_ASSERT_EQUAL(2, DIDDocument_GetAuthorizationCount(sealeddoc));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationCount(sealeddoc));
 
     DIDDocument_Destroy(sealeddoc);
 
@@ -1214,7 +1190,7 @@ static void test_multictmdoc_remove_publickey(void)
     recoveryid = DIDURL_NewFromDid(&controller1, "recovery");
     CU_ASSERT_PTR_NOT_NULL(recoveryid);
     pk = DIDDocument_GetPublicKey(sealeddoc, recoveryid);
-    CU_ASSERT_PTR_NOT_NULL(pk);
+    CU_ASSERT_PTR_NULL(pk);
     DIDURL_Destroy(recoveryid);
 
     CU_ASSERT_PTR_NULL(DIDDocument_GetPublicKey(sealeddoc, keyid));
@@ -1229,7 +1205,7 @@ static void test_multictmdoc_remove_publickey(void)
     // Check the final count.
     CU_ASSERT_EQUAL(6, DIDDocument_GetPublicKeyCount(sealeddoc));
     CU_ASSERT_EQUAL(6, DIDDocument_GetAuthenticationCount(sealeddoc));
-    CU_ASSERT_EQUAL(2, DIDDocument_GetAuthorizationCount(sealeddoc));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationCount(sealeddoc));
 
     DIDDocument_Destroy(sealeddoc);
 
@@ -1459,7 +1435,7 @@ static void test_multictmdoc_add_authentication_key(void)
     // Check the final count.
     CU_ASSERT_EQUAL(8, DIDDocument_GetPublicKeyCount(sealeddoc));
     CU_ASSERT_EQUAL(8, DIDDocument_GetAuthenticationCount(sealeddoc));
-    CU_ASSERT_EQUAL(2, DIDDocument_GetAuthorizationCount(sealeddoc));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationCount(sealeddoc));
 
     DIDDocument_Destroy(sealeddoc);
 
@@ -1501,7 +1477,7 @@ static void test_multictmdoc_remove_authentication_key(void)
 
     CU_ASSERT_EQUAL(8, DIDDocument_GetPublicKeyCount(customized_doc));
     CU_ASSERT_EQUAL(7, DIDDocument_GetAuthenticationCount(customized_doc));
-    CU_ASSERT_EQUAL(2, DIDDocument_GetAuthorizationCount(customized_doc));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationCount(customized_doc));
 
     builder = DIDDocument_Edit(customized_doc, controller2_doc);
     CU_ASSERT_PTR_NOT_NULL(builder);
@@ -1551,7 +1527,7 @@ static void test_multictmdoc_remove_authentication_key(void)
     // Check the final count.
     CU_ASSERT_EQUAL(8, DIDDocument_GetPublicKeyCount(sealeddoc));
     CU_ASSERT_EQUAL(6, DIDDocument_GetAuthenticationCount(sealeddoc));
-    CU_ASSERT_EQUAL(2, DIDDocument_GetAuthorizationCount(sealeddoc));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationCount(sealeddoc));
 
     DIDDocument_Destroy(sealeddoc);
 
@@ -1587,13 +1563,8 @@ static void test_multictmdoc_add_authorization_key(void)
     customized_did = DIDDocument_GetSubject(customized_doc);
     CU_ASSERT_PTR_NOT_NULL(customized_did);
 
-    CU_ASSERT_EQUAL(2, DIDDocument_GetAuthorizationCount(customized_doc));
-
-    size = DIDDocument_GetAuthorizationKeys(customized_doc, pks, 3);
-    CU_ASSERT_EQUAL(2, size);
-
-    for (i = 0; i < size; i++)
-        CU_ASSERT_EQUAL(0, DID_Equals(&pks[i]->id.did, customized_did));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationCount(customized_doc));
+    CU_ASSERT_EQUAL(0, DIDDocument_GetAuthorizationKeys(customized_doc, pks, 3));
 
     builder = DIDDocument_Edit(customized_doc, controller2_doc);
     CU_ASSERT_PTR_NOT_NULL(builder);

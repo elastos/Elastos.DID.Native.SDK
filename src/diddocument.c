@@ -3430,21 +3430,25 @@ PublicKey *DIDDocument_GetPublicKey(DIDDocument *document, DIDURL *keyid)
         return NULL;
     }
 
-    if (DID_Equals(&document->did, &keyid->did)) {
-        doc = document;
-    } else {
+    for (i = 0; i < document->publickeys.size && document->publickeys.pks; i++) {
+        pk = document->publickeys.pks[i];
+        assert(pk);
+        if (DIDURL_Equals(keyid, &pk->id) == 1)
+            return pk;
+    }
+
+    if (document->controllers.size > 0) {
         doc = DIDDocument_GetControllerDocument(document, &keyid->did);
         if (!doc) {
             DIDError_Set(DIDERR_NOT_EXISTS, "The owner of this key is not the controller of document.");
             return NULL;
         }
-    }
 
-    for (i = 0; i < doc->publickeys.size && doc->publickeys.pks; i++) {
-        pk = doc->publickeys.pks[i];
-        assert(pk);
-        if (DIDURL_Equals(keyid, &pk->id))
-            return pk;
+        pk = DIDDocument_GetAuthenticationKey(doc, keyid);
+        if (!pk)
+            DIDError_Set(DIDERR_NOT_EXISTS, "The key isn't an authentication key from controller.");
+
+        return pk;
     }
 
     DIDError_Set(DIDERR_NOT_EXISTS, "No this public key in document.");
@@ -3532,7 +3536,10 @@ ssize_t DIDDocument_SelectPublicKeys(DIDDocument *document, const char *type,
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             assert(doc);
-            total_size = DIDDocument_SelectPublicKeys(doc, type, keyid, pks + actual_size, size - actual_size);
+            if (keyid && DID_Equals(&keyid->did, &doc->did) != 1)
+                continue;
+
+            total_size = DIDDocument_SelectAuthenticationKeys(doc, type, keyid, pks + actual_size, size - actual_size);
             if (total_size > 0)
                 actual_size += total_size;
         }
@@ -3709,7 +3716,7 @@ ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
         pk = document->publickeys.pks[i];
         if (!pk->authenticationKey)
             continue;
-        if (keyid && !DIDURL_Equals(keyid, &pk->id))
+        if (keyid && DIDURL_Equals(keyid, &pk->id) != 1)
             continue;
         if (type && strcmp(type, pk->type))
             continue;
@@ -3726,6 +3733,9 @@ ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document,
         for (i = 0; i < document->controllers.size; i++) {
             doc = document->controllers.docs[i];
             assert(doc);
+            if (keyid && DID_Equals(&keyid->did, &doc->did) != 1)
+                continue;
+
             pk_size = DIDDocument_SelectAuthenticationKeys(doc, type, keyid,
                     pks + actual_size, size - actual_size);
             if (pk_size > 0)
@@ -3749,18 +3759,7 @@ ssize_t DIDDocument_GetAuthorizationCount(DIDDocument *document)
 
     CHECK_ARG(!document, "No document argument to get count of authentication keys.", -1);
 
-    size = get_self_authorization_count(document);
-    if (document->controllers.size > 0) {
-        for (i = 0; i < document->controllers.size; i++) {
-            doc = document->controllers.docs[i];
-            assert(doc);
-            pk_size = get_self_authorization_count(doc);
-            if (pk_size > 0)
-                size += pk_size;
-        }
-    }
-
-    return (ssize_t)size;
+    return (ssize_t)get_self_authorization_count(document);
 
     DIDERROR_FINALIZE();
 }
@@ -3768,8 +3767,8 @@ ssize_t DIDDocument_GetAuthorizationCount(DIDDocument *document)
 ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
         size_t size)
 {
-    size_t actual_size = 0, i, pk_size;
-    DIDDocument *doc;
+    PublicKey *pk;
+    size_t actual_size = 0, i;
 
     DIDERROR_INITIALIZE();
 
@@ -3782,23 +3781,13 @@ ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
     }
 
     for (i = 0; i < document->publickeys.size && document->publickeys.pks; i++) {
-        if (document->publickeys.pks[i]->authorizationKey) {
+        pk = document->publickeys.pks[i];
+        if (pk->authorizationKey) {
             if (actual_size >= size) {
                 DIDError_Set(DIDERR_INVALID_ARGS, "The buffer for authorization keys is too small.");
                 return -1;
             }
-            pks[actual_size++] = document->publickeys.pks[i];
-        }
-    }
-
-    if (document->controllers.size > 0) {
-        for (i = 0; i < document->controllers.size; i++) {
-            doc = document->controllers.docs[i];
-            assert(doc);
-            pk_size = DIDDocument_GetAuthorizationKeys(doc, pks + actual_size,
-                    size - actual_size);
-            if (pk_size > 0)
-                actual_size += pk_size;
+            pks[actual_size++] = pk;
         }
     }
 
@@ -3810,22 +3799,20 @@ ssize_t DIDDocument_GetAuthorizationKeys(DIDDocument *document, PublicKey **pks,
 PublicKey *DIDDocument_GetAuthorizationKey(DIDDocument *document, DIDURL *keyid)
 {
     PublicKey *pk;
+    int i;
 
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!document, "No document argument to get authorization key.", NULL);
     CHECK_ARG(!keyid, "No key id argument.", NULL);
 
-    pk = DIDDocument_GetPublicKey(document, keyid);
-    if (!pk)
-        return NULL;
-
-    if (!pk->authorizationKey) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "This isn't authorization key.");
-        return NULL;
+    for (i = 0; i < document->publickeys.size && document->publickeys.pks; i++) {
+        pk = document->publickeys.pks[i];
+        if (DIDURL_Equals(&pk->id, keyid) == 1)
+            return pk->authorizationKey ? pk : NULL;
     }
 
-    return pk;
+    return NULL;
 
     DIDERROR_FINALIZE();
 }
@@ -3844,7 +3831,7 @@ ssize_t DIDDocument_SelectAuthorizationKeys(DIDDocument *document,
     CHECK_ARG(!keyid && !type, "No feature to select key.", -1);
 
     if (keyid && !*keyid->fragment) {
-        DIDError_Set(DIDERR_MALFORMED_DIDURL, "Key id misses fragment.");
+        DIDError_Set(DIDERR_MALFORMED_DIDURL, "Invalid keyid.");
         return -1;
     }
 
@@ -3863,17 +3850,6 @@ ssize_t DIDDocument_SelectAuthorizationKeys(DIDDocument *document,
         }
 
         pks[actual_size++] = pk;
-    }
-
-    if (document->controllers.size > 0) {
-        for (i = 0; i < document->controllers.size; i++) {
-            doc = document->controllers.docs[i];
-            assert(doc);
-            pk_size = DIDDocument_SelectAuthorizationKeys(doc, type, keyid,
-                    pks + actual_size, size - actual_size);
-            if (pk_size > 0)
-                actual_size += pk_size;
-        }
     }
 
     return (ssize_t)actual_size;
