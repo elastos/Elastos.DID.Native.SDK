@@ -352,8 +352,8 @@ static void didstore_openmultistore(void)
 
     for (i = 0; i < 10; i++) {
         DIDDocument_Destroy(docs[i]);
-        DIDStore_Close(stores[i]);
         delete_file(stores[i]->root);
+        DIDStore_Close(stores[i]);
     }
 }
 
