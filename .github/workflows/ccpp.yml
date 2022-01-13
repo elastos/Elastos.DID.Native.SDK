@@ -23,6 +23,7 @@ jobs:
           cd build/linux
           cmake -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
                 -DENABLE_UNICODE_NORMALIZATION=true \
+                -DENABLE_PYTHON=true \
                 -DCMAKE_INSTALL_PREFIX=dist ../..
           make
           make install
@@ -59,6 +60,7 @@ jobs:
           cd build/macos
           cmake -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
                 -DENABLE_UNICODE_NORMALIZATION=true \
+                -DENABLE_PYTHON=true \
                 -DCMAKE_INSTALL_PREFIX=dist ../..
           make
           make install
