@@ -1070,10 +1070,10 @@ static void test_idchain_ctmdid_with_multicontroller(void)
     vc_biography = Credential_ResolveBiography(credid2, &customized_did);
     CU_ASSERT_PTR_NOT_NULL(vc_biography);
     CU_ASSERT_EQUAL(CredentialStatus_Revoked, CredentialBiography_GetStatus(vc_biography));
-    CU_ASSERT_EQUAL(2, CredentialBiography_GetTransactionCount(vc_biography));
+    CU_ASSERT_EQUAL(1, CredentialBiography_GetTransactionCount(vc_biography));
 
     CU_ASSERT_STRING_EQUAL("revoke", CredentialBiography_GetOperationByIndex(vc_biography, 0));
-    CU_ASSERT_EQUAL(1,DIDURL_Equals(keyid1, CredentialBiography_GetTransactionSignkeyByIndex(vc_biography, 0)));
+    CU_ASSERT_EQUAL(1, DIDURL_Equals(signkey, CredentialBiography_GetTransactionSignkeyByIndex(vc_biography, 0)));
     DIDURL_Destroy(signkey);
 
     Credential_Destroy(vc);
