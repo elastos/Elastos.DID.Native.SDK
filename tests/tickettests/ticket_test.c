@@ -14,6 +14,8 @@
 #include "diddocument.h"
 #include "ticket.h"
 
+static DIDStore *store;
+
 static bool proof_equals(TicketProof *proof1, TicketProof *proof2)
 {
     if (strcmp(proof1->type, proof2->type))
@@ -68,15 +70,11 @@ static bool ticket_equals(TransferTicket *ticket1, TransferTicket *ticket2)
 
 static void test_ticket(void)
 {
-    DIDStore *store;
     DIDDocument *controller1_doc, *controller2_doc, *controller3_doc, *customized_doc;
     DIDURL *signkey1, *signkey2, *signkey3, *key;
     TransferTicket *ticket, *_ticket;
     const char *data;
     int i;
-
-    store = TestData_SetupStore(true);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(store);
 
     controller1_doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(controller1_doc);
@@ -128,21 +126,20 @@ static void test_ticket(void)
 
     TransferTicket_Destroy(ticket);
     TransferTicket_Destroy(_ticket);
-    TestData_Free();
 }
 
 static void test_multi_signature_ticket(void)
 {
     TransferTicket *ticket;
     DID *owner, *receiver;
-    DIDStore *store;
     DIDDocument *doc;
     int version;
 
-    store = TestData_SetupStore(true);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(store);
-
     for (version = 2; version < 4; version++) {
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, version));
+
         doc = TestData_GetDocument("foobar", NULL, version);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -161,22 +158,20 @@ static void test_multi_signature_ticket(void)
         CU_ASSERT_EQUAL(2, TransferTicket_GetProofCount(ticket));
         CU_ASSERT_EQUAL(1, TransferTicket_IsGenuine(ticket));
     }
-
-    TestData_Free();
 }
 
 static void test_ticket2(void)
 {
     TransferTicket *ticket;
     DID *owner, *receiver;
-    DIDStore *store;
     DIDDocument *doc;
     int version;
 
-    store = TestData_SetupStore(true);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(store);
-
     for (version = 2; version < 4; version++) {
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user1", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user2", NULL, version));
+        CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("user3", NULL, version));
+
         doc = TestData_GetDocument("baz", NULL, version);
         CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -195,17 +190,17 @@ static void test_ticket2(void)
         CU_ASSERT_EQUAL(1, TransferTicket_GetProofCount(ticket));
         CU_ASSERT_EQUAL(1, TransferTicket_IsGenuine(ticket));
     }
-
-    TestData_Free();
 }
 
 static int ticket_test_suite_init(void)
 {
-    return 0;
+    store = TestData_SetupStore(true);
+    return !store ? -1 : 0;
 }
 
 static int ticket_test_suite_cleanup(void)
 {
+    TestData_Free();
     return 0;
 }
 

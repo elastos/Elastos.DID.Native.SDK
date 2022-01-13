@@ -722,6 +722,7 @@ static int vcresult_tojson(JsonGenerator *gen, DIDURL *id, DID *issuer)
 
                 infos[size++] = info;
                 status = CredentialStatus_Revoked;
+                break;
             }
         }
     }
