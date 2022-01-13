@@ -44,6 +44,7 @@ int ResolverCache_SetCacheDir(const char *root)
     if (strlen(root) >= sizeof(rootpath))
         return -1;
 
+    delete_file(root);
     rc = mkdirs(root, S_IRWXU);
     strcpy(rootpath, root);
     return rc;
