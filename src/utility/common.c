@@ -54,6 +54,10 @@
 #include <crystal.h>
 #endif
 
+#ifdef ENABLE_UNICODE_NORMALIZATION
+#include <utf8proc.h>
+#endif
+
 #include "common.h"
 #include "did.h"
 #include "HDkey.h"
