@@ -391,6 +391,7 @@ static void test_vp_create(void)
                 "https://example.com/credential/v1#TestPresentation",
                 "https://session.com/credential/v1#SessionPresentation"};
 
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0))
     doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
@@ -590,6 +591,7 @@ static void test_vp_create_by_credarray(void)
                 "https://example.com/credential/v1#TestPresentation",
                 "https://session.com/credential/v1#SessionPresentation"};
 
+    CU_ASSERT_PTR_NOT_NULL(TestData_GetDocument("issuer", NULL, 0))
     doc = TestData_GetDocument("document", NULL, 0);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
