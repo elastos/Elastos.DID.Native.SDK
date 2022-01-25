@@ -3616,8 +3616,8 @@ DID_API int Credential_IsRevoked(Credential *credential);
  *      limit                    [in] The size of credentials to listed.
  *                               If limit == 0, and the count of credentials is more than
  *                               128, return 128. You can reset 'skip' to get other credentials.
- *                               If limit > 512, and the count of credentials is more than
- *                               512, return 512. You can reset 'skip' to get other credentials.
+ *                               If limit > 256, and the count of credentials is more than
+ *                               256, return 256. You can reset 'skip' to get other credentials.
  * @return
  *      If no error occurs, return the size of credentials. Remember: destory every 'DIDURL'
  *      object in buffer. Otherwise, return -1.
