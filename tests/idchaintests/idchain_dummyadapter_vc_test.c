@@ -619,7 +619,7 @@ static void test_idchain_listvc_pagination(void)
 
     printf("successfully!\n------------------------------------------------------------\nlist credential 'skip = 0, limit = 560', wait...\n");
     size = Credential_List(&did, buffer, 560, 0, 560);
-    CU_ASSERT_EQUAL(512, size);
+    CU_ASSERT_EQUAL(256, size);
 
     for (i = 0; i < size; i++) {
         vcid = buffer[i];

@@ -574,8 +574,8 @@ static int listvcs_result_tojson(JsonGenerator *gen, DID *did, int skip, int _li
 
     if (_limit == 0)
         limit = 128;
-    if (limit > 512)
-        limit = 512;
+    if (limit > 256)
+        limit = 256;
 
     vcs = (DIDURL*)alloca(limit * sizeof(DIDURL));
     if (!vcs)
