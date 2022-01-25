@@ -323,10 +323,8 @@ DID *RootIdentity_GetDefaultDID(RootIdentity *rootidentity)
     CHECK_ARG(!rootidentity, "No rootidentity argument.", NULL);
 
     idstring = IdentityMetadata_GetDefaultDID(&rootidentity->metadata);
-    if (!idstring) {
-        DIDError_Set(DIDERR_NOT_EXISTS, "No default DID.");
-        return NULL;
-    }
+    if (!idstring)
+        return RootIdentity_GetDIDByIndex(rootidentity, 0);
 
     return DID_FromString(idstring);
 
@@ -546,9 +544,6 @@ DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepa
         DIDDocument_Destroy(document);
         return NULL;
     }
-
-    if (!IdentityMetadata_GetDefaultDID(&rootidentity->metadata))
-        IdentityMetadata_SetDefaultDID(&rootidentity->metadata, DID_ToString(&document->did, didstring, sizeof(didstring)));
 
     return document;
 
