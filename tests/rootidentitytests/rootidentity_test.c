@@ -66,7 +66,7 @@ static void test_rootidentity_newdid(void)
         _rootidentity = DIDStore_LoadRootIdentity(store, rootidentity->id);
         CU_ASSERT_PTR_NOT_NULL(_rootidentity);
         CU_ASSERT_STRING_EQUAL(RootIdentity_GetId(rootidentity), RootIdentity_GetId(_rootidentity));
-        CU_ASSERT_PTR_NULL(RootIdentity_GetDefaultDID(_rootidentity));
+        CU_ASSERT_PTR_NOT_NULL(RootIdentity_GetDefaultDID(_rootidentity));
 
         doc1 = RootIdentity_NewDID(_rootidentity, storepass, NULL, false);
         CU_ASSERT_PTR_NOT_NULL(doc1);
