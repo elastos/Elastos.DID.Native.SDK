@@ -486,7 +486,7 @@ bool DIDRequest_IsValid(DIDRequest *request, DIDDocument *document)
         }
     }
 
-    if (!DIDDocument_IsValid(signerdoc)) {
+    if (!DIDDocument_IsGenuine(signerdoc)) {
         DIDError_Set(DIDERR_INVALID_KEY, "Signer isn't valid.");
         return false;
     }
