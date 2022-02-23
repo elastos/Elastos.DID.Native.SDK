@@ -98,9 +98,14 @@ if(${CMAKE_CROSSCOMPILING})
         "CXXFLAGS=${XDK_CXX_FLAGS}"
         "LDFLAGS=${XDK_C_LINK_FLAGS}")
 else()
+    if(DARWIN)
+        set(CFLAGS "${CMAKE_C_FLAGS} -arch x86_64 -arch arm64")
+        set(CXXFLAGS "${CMAKE_CXX_FLAGS} -arch x86_64 -arch arm64")
+    endif()
+
     set(CONFIGURE_ARGS_INIT
         "CPPFLAGS=${CMAKE_CPP_FLAGS}"
-        "CFLAGS=${CMAKE_C_FLAGS}"
-        "CXXFLAGS=${CMAKE_CXX_FLAGS}"
+        "CFLAGS=${CFLAGS}"
+        "CXXFLAGS=${CXXFLAGS}"
         "LDFLAGS=${CMAKE_STATIC_LINKER_FLAGS}")
 endif()
