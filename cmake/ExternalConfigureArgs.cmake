@@ -101,6 +101,9 @@ else()
     if(DARWIN)
         set(CFLAGS "${CMAKE_C_FLAGS} -arch x86_64 -arch arm64")
         set(CXXFLAGS "${CMAKE_CXX_FLAGS} -arch x86_64 -arch arm64")
+    else()
+        set(CFLAGS "${CMAKE_C_FLAGS}")
+        set(CXXFLAGS "${CMAKE_CXX_FLAGS}")
     endif()
 
     set(CONFIGURE_ARGS_INIT
