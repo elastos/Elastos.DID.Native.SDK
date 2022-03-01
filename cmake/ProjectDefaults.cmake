@@ -25,6 +25,10 @@ else()
         set(CMAKE_SHARED_LINKER_FLAGS
             "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs,ALL")
     endif()
+
+    if(DARWIN)
+        set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
+    endif()
 endif()
 
 set(CMAKE_CXX_FLAGS
