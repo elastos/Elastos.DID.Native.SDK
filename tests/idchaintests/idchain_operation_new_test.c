@@ -528,7 +528,6 @@ static void test_idchain_controller3(void)
 
     //try to declare again, fail.
     CU_ASSERT_NOT_EQUAL(1, Credential_Declare(resolve_vc1, signkey, storepass));
-    CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
 
     Credential *resolve_vc2 = Credential_Resolve(&vc->id, &status, true);
     CU_ASSERT_PTR_NOT_NULL(resolve_vc2);
@@ -1013,7 +1012,6 @@ static void test_idchain_ctmdid_with_multicontroller(void)
     CU_ASSERT_EQUAL(1, Credential_ResolveRevocation(&vc->id, &vc->issuer));
 
     CU_ASSERT_NOT_EQUAL(1, Credential_Declare(vc, signkey, storepass));
-    CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
 
     CU_ASSERT_EQUAL(status, CredentialStatus_Revoked);
     CU_ASSERT_EQUAL(1, Credential_ResolveRevocation(&vc->id, &vc->issuer));

@@ -577,6 +577,19 @@ DID_API DIDMetadata *DID_GetMetadata(DID *did);
 
 /**
  * \~English
+ * Check that DID is deactivated or not.
+ *
+ * @param
+ *      did             [in] A handle to DID.
+ * @return
+ *      return value = -1, if error occurs;
+ *      return value = 0, did isn't deactivated;
+ *      return value = 1, did is deactivated.
+ */
+DID_API int DID_IsDeactivated(DID *did);
+
+/**
+ * \~English
  * Get alias for did.
  *
  * @param

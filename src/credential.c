@@ -233,9 +233,8 @@ int Credential_ToJson_Internal(JsonGenerator *gen, Credential *credential, DID *
 
     CHECK(DIDJG_WriteStringField(gen, ISSUANCE_DATE,
         get_time_string(buf, sizeof(buf), &credential->issuanceDate)));
-    if (credential->expirationDate != 0)
-        CHECK(DIDJG_WriteStringField(gen, EXPIRATION_DATE,
-                get_time_string(buf, sizeof(buf), &credential->expirationDate)));
+    CHECK(DIDJG_WriteStringField(gen, EXPIRATION_DATE,
+        get_time_string(buf, sizeof(buf), &credential->expirationDate)));
     CHECK(DIDJG_WriteFieldName(gen, CREDENTIAL_SUBJECT));
     CHECK(subject_toJson(gen, credential, owner, compact));
     if (!forsign) {
@@ -355,58 +354,19 @@ time_t Credential_GetIssuanceDate(Credential *credential)
     DIDERROR_FINALIZE();
 }
 
-time_t Credential_GetExpirationDate_Internal(Credential *credential, DIDDocument *document)
-{
-    DIDDocument *doc;
-    time_t _expire, expire;
-    int status;
-
-    assert(credential);
-    assert(document);
-
-    expire = DIDDocument_GetExpires(document);
-    if (!expire)
-        return 0;
-
-    if (credential->expirationDate != 0)
-        expire = MIN(expire, credential->expirationDate);
-
-    if (Credential_IsSelfProclaimed(credential))
-        return expire;
-
-    doc = DID_Resolve(&credential->issuer, &status, false);
-    if (!doc) {
-        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Issuer of credential %s %s.",
-                DIDSTR(&credential->issuer), DIDSTATUS_MSG(status));
-        return 0;
-    }
-
-    _expire = DIDDocument_GetExpires(doc);
-    DIDDocument_Destroy(doc);
-    if (!_expire)
-        return 0;
-
-    return MIN(expire, _expire);
-}
-
 time_t Credential_GetExpirationDate(Credential *credential)
 {
     DIDDocument *doc;
     int status;
     time_t t;
 
+    DIDERROR_INITIALIZE();
+
     CHECK_ARG(!credential, "No credential to get expires date.", 0);
 
-    doc = DID_Resolve(&credential->id.did, &status, false);
-    if (!doc) {
-        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, "Owner of credential %s %s.",
-                DIDSTR(&credential->id.did), DIDSTATUS_MSG(status));
-        return 0;
-    }
+    return credential->expirationDate;
 
-    t = Credential_GetExpirationDate_Internal(credential, doc);
-    DIDDocument_Destroy(doc);
-    return t;
+    DIDERROR_FINALIZE();
 }
 
 ssize_t Credential_GetPropertyCount(Credential *credential)
@@ -641,13 +601,15 @@ Credential *Credential_From_Internal(json_t *json, DID *did)
 
     //expirationdate
     item = json_object_get(json, EXPIRATION_DATE);
-    if (item && parse_time(&credential->expirationDate, json_string_value(item)) == -1) {
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid expiration date.");
+    if (!item) {
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Missing expiration date.");
         goto errorExit;
     }
 
-    if (!item)
-        credential->expirationDate = 0;
+    if (parse_time(&credential->expirationDate, json_string_value(item)) == -1) {
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Invalid expiration date.");
+        goto errorExit;
+    }
 
     //proof
     item = json_object_get(json, PROOF);
@@ -903,23 +865,6 @@ errorExit:
     return rc;
 }
 
-int Credential_IsExpired_Internal(Credential *credential, DIDDocument *document)
-{
-    time_t expires;
-    time_t now;
-
-    assert(credential);
-    assert(document);
-
-    expires = Credential_GetExpirationDate_Internal(credential, document);
-    now = time(NULL);
-
-    if (now > expires)
-        return true;
-
-    return false;
-}
-
 int Credential_IsExpired(Credential *credential)
 {
     time_t expires, now;
@@ -928,10 +873,8 @@ int Credential_IsExpired(Credential *credential)
 
     CHECK_ARG(!credential, "No credential to check expired.", -1);
 
-    expires = Credential_GetExpirationDate(credential);
     now = time(NULL);
-
-    return now > expires ? 1 : 0;
+    return now > credential->expirationDate ? 1 : 0;
 
     DIDERROR_FINALIZE();
 }
@@ -944,14 +887,28 @@ int Credential_IsGenuine_Internal(Credential *credential, DIDDocument *document)
 
     assert(credential);
 
-    issuerdoc = document;
-    if (!issuerdoc) {
+    if (!DID_Equals(&credential->id.did, &credential->subject.id)) {
+        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL,
+                " * VC %s : id mismatch with Credential subject's owner.",
+                DIDURLSTR(&credential->id));
+        return 0;
+    }
+
+    if (!Credential_IsSelfProclaimed(credential) || !document) {
         issuerdoc = DID_Resolve(&credential->issuer, &status, false);
         if (!issuerdoc) {
             DIDError_Set(DIDERR_DID_RESOLVE_ERROR, " * VC %s : issuer %s %s.",
-                    DIDSTR(&credential->issuer), DIDSTATUS_MSG(status));
+                    DIDURLSTR(&credential->id), DIDSTR(&credential->issuer), DIDSTATUS_MSG(status));
             return -1;
         }
+
+        if (DIDDocument_IsGenuine(issuerdoc) != 1) {
+            DIDError_Set(DIDERR_NOT_VALID, " * VC %s : issuer %s is genuine.",
+                    DIDURLSTR(&credential->id), DIDSTR(&credential->issuer));
+            goto errorExit;
+        }
+    } else {
+        issuerdoc = document;
     }
 
     if (DIDDocument_IsAuthenticationKey(issuerdoc, &credential->proof.verificationMethod) != 1) {
@@ -1001,42 +958,36 @@ int Credential_IsGenuine(Credential *credential)
     DIDERROR_FINALIZE();
 }
 
-int Credential_IsValid_Internal(Credential *credential, DIDDocument *document)
+int Credential_IsValid(Credential *credential)
 {
-    DIDDocument *issuerdoc;
-    int valid = 0, status;
+    DIDDocument *issuerdoc = NULL;
+    int valid, status;
 
-    assert(credential);
-    assert(document);
+    DIDERROR_INITIALIZE();
 
-    if (!DID_Equals(&credential->id.did, &credential->subject.id)) {
-        DIDError_Set(DIDERR_MALFORMED_CREDENTIAL,
-                " * VC %s : id mismatch with Credential subject's owner.",
+    CHECK_ARG(!credential, "No credential to check validity.", -1);
+
+    if (Credential_IsRevoked(credential)) {
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, " * VC %s is revoked.",
                 DIDURLSTR(&credential->id));
-        return 0;
+        return -1;
     }
 
-    if (!Credential_IsSelfProclaimed(credential)) {
-        issuerdoc = DID_Resolve(&credential->issuer, &status, false);
-        if (!issuerdoc) {
-            DIDError_Set(DIDERR_DID_RESOLVE_ERROR, " * VC %s : issuer %s %s.",
-                    DIDURLSTR(&credential->id), DIDSTR(&credential->issuer), DIDSTATUS_MSG(status));
-            return -1;
-        }
-
-        if (DIDDocument_IsValid(issuerdoc) != 1) {
-            DIDDocument_Destroy(issuerdoc);
-            DIDError_Set(DIDERR_NOT_VALID, " * VC %s : issuer %s is not valid",
-                    DIDURLSTR(&credential->id), DIDSTR(&credential->issuer));
-            return 0;
-        }
-    } else {
-        issuerdoc = document;
-    }
-
-    if (Credential_IsExpired_Internal(credential, document)) {
+    if (Credential_IsExpired(credential)) {
         DIDError_Set(DIDERR_EXPIRED, " * VC %s : is expired.", DIDURLSTR(&credential->id));
         goto errorExit;
+    }
+
+    issuerdoc = DID_Resolve(&credential->issuer, &status, false);
+    if (!issuerdoc) {
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, " * VC %s : issuer %s %s.",
+                DIDURLSTR(&credential->id), DIDSTR(&credential->issuer), DIDSTATUS_MSG(status));
+        return -1;
+    }
+
+    if (DIDDocument_IsDeactivated(issuerdoc)) {
+        DIDError_Set(DIDERR_DID_RESOLVE_ERROR, " * VC %s : issuer %s is deactivated.",
+                DIDURLSTR(&credential->id), DIDSTR(&credential->issuer));
     }
 
     valid = Credential_IsGenuine_Internal(credential, issuerdoc);
@@ -1044,39 +995,8 @@ int Credential_IsValid_Internal(Credential *credential, DIDDocument *document)
         DIDError_Set(DIDERR_NOT_GENUINE, " * VC %s : is not genuine.", DIDURLSTR(&credential->id));
 
 errorExit:
-    if (issuerdoc != document)
+    if (issuerdoc)
         DIDDocument_Destroy(issuerdoc);
-    return valid;
-}
-
-int Credential_IsValid(Credential *credential)
-{
-    DIDDocument *doc;
-    int valid, status;
-
-    DIDERROR_INITIALIZE();
-
-    CHECK_ARG(!credential, "No credential to check validity.", -1);
-
-    doc = DID_Resolve(&credential->subject.id, &status, false);
-    if (!doc) {
-        DIDError_Set(DIDERR_NOT_VALID, " * VC %s : is invalid, error: owner of credential %s %s.",
-                DIDURLSTR(&credential->id), DIDSTR(&credential->subject.id), DIDSTATUS_MSG(status));
-        return -1;
-    }
-
-    if (DIDDocument_IsValid(doc) != 1) {
-        DIDDocument_Destroy(doc);
-        DIDError_Set(DIDERR_NOT_VALID, " * VC %s : is invalid.",
-                DIDURLSTR(&credential->id));
-        return 0;
-    }
-
-    valid = Credential_IsValid_Internal(credential, doc);
-    DIDDocument_Destroy(doc);
-    if (valid != 1)
-        DIDError_Set(DIDERR_NOT_VALID, " * VC %s : is invalid.",
-                DIDURLSTR(&credential->id));
 
     return valid;
 
@@ -1156,11 +1076,6 @@ int Credential_Declare(Credential *credential, DIDURL *signkey, const char *stor
     check = Credential_IsValid(credential);
     if (check != 1)
         return -1;
-
-    if (Credential_IsRevoked(credential)) {
-        DIDError_Set(DIDERR_CREDENTIAL_REVOKED, "Credential is revoked.");
-        return -1;
-    }
 
     if (Credential_WasDeclared(&credential->id)) {
         DIDError_Set(DIDERR_ALREADY_EXISTS, "Credential was already declared.");
