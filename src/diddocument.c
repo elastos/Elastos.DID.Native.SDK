@@ -1452,10 +1452,25 @@ const char *DIDDocument_GetProofSignature(DIDDocument *document, int index)
 
 int DIDDocument_IsDeactivated(DIDDocument *document)
 {
+    int rc, status;
+    DIDDocument *doc;
+
     DIDERROR_INITIALIZE();
 
     CHECK_ARG(!document, "No document to check be deactivated or not.", -1);
-    return DIDMetadata_GetDeactivated(&document->metadata);
+    rc = DIDMetadata_GetDeactivated(&document->metadata);
+    if (rc != 0)
+        return rc;
+
+    doc = DID_Resolve(&document->did, &status, false);
+    if (!doc && status == -1)
+        return -1;
+
+    if (status != DIDStatus_Deactivated)
+        return 0;
+
+    DIDMetadata_SetDeactivated(&document->metadata, true);
+    return 1;
 
     DIDERROR_FINALIZE();
 }
@@ -2049,7 +2064,11 @@ DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *st
     //check credential
     for (i = 0; i < doc->credentials.size; i++) {
         cred = doc->credentials.credentials[i];
-        if (Credential_IsValid_Internal(cred, doc) != 1) {
+        if (DID_Equals(&cred->id.did, &doc->did) != 1) {
+            DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Credential %s doesn't owned by this did.", DIDURLSTR(&cred->id));
+            return NULL;
+        }
+        if (Credential_IsGenuine_Internal(cred, doc) != 1) {
             DIDError_Set(DIDERR_MALFORMED_CREDENTIAL, "Credential %s is invalid.", DIDURLSTR(&cred->id));
             return NULL;
         }

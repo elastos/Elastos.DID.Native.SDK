@@ -125,11 +125,9 @@ static void test_idchain_declarevc(void)
             CU_ASSERT_EQUAL(1, Credential_IsRevoked(vc));
             //revoke by issuer again, fail.
             CU_ASSERT_NOT_EQUAL(1, Credential_RevokeById(&vc->id, issuerdoc, signkey2, storepass));
-            CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
 
             //try to declare again, fail.
             CU_ASSERT_NOT_EQUAL(1, Credential_Declare(resolve_vc1, signkey1, storepass));
-            CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
 
             resolve_vc2 = Credential_Resolve(&vc->id, &status, true);
             CU_ASSERT_PTR_NOT_NULL(resolve_vc2);
@@ -256,7 +254,6 @@ static void test_idchain_revokevc(void)
             CU_ASSERT_EQUAL(1, Credential_ResolveRevocation(&vc->id, &issuerdoc->did));
 
             CU_ASSERT_NOT_EQUAL(1, Credential_Declare(vc, signkey1, storepass));
-            CU_ASSERT_STRING_EQUAL("Credential is revoked.", DIDError_GetLastErrorMessage());
 
             CU_ASSERT_EQUAL(1, Credential_ResolveRevocation(&vc->id, &issuerdoc->did));
             CU_ASSERT_EQUAL(1, Credential_IsRevoked(vc));

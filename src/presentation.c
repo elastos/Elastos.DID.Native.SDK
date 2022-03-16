@@ -1093,19 +1093,21 @@ static int check_presentation(Presentation *presentation, bool validtype)
     }
 
     if (validtype) {
-        rc = DIDDocument_IsValid(doc);
-        if (rc != 1) {
-            DIDError_Set(DIDERR_NOT_VALID, " * VP %s : holder's document is invalid.",
+        rc = DIDDocument_IsDeactivated(doc);
+        if (rc == -1)
+            goto errorExit;
+        if (rc == 1) {
+            DIDError_Set(DIDERR_NOT_VALID, " * VP %s : holder's document is deactivated.",
                     DIDURLSTR(Presentation_GetId(presentation)));
             goto errorExit;
         }
-    } else {
-        rc = DIDDocument_IsGenuine(doc);
-        if (rc != 1) {
-            DIDError_Set(DIDERR_NOT_GENUINE, " * VP %s : signer's document is not genuine.",
-                    DIDURLSTR(Presentation_GetId(presentation)));
-            goto errorExit;
-        }
+    }
+
+    rc = DIDDocument_IsGenuine(doc);
+    if (rc != 1) {
+        DIDError_Set(DIDERR_NOT_GENUINE, " * VP %s : holder's document is not genuine.",
+                DIDURLSTR(Presentation_GetId(presentation)));
+        goto errorExit;
     }
 
     if (!DIDDocument_IsAuthenticationKey(doc, &presentation->proof.verificationMethod)) {
