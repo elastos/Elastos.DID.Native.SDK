@@ -91,12 +91,6 @@ Credential *Issuer_Generate_Credential(Issuer *issuer, DID *owner,
 
 int Credential_IsGenuine_Internal(Credential *cred, DIDDocument *document);
 
-int Credential_IsExpired_Internal(Credential *cred, DIDDocument *document);
-
-time_t Credential_GetExpirationDate_Internal(Credential *cred, DIDDocument *document);
-
-int Credential_IsValid_Internal(Credential *cred, DIDDocument *document);
-
 #ifdef __cplusplus
 }
 #endif

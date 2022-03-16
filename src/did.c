@@ -390,6 +390,31 @@ DIDDocument *DID_Resolve(DID *did, int *status, bool force)
     DIDERROR_FINALIZE();
 }
 
+int DID_IsDeactivated(DID *did)
+{
+    int rc, status;
+    DIDDocument *doc;
+
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!did, "No did to check be deactivated or not.", -1);
+    rc = DIDMetadata_GetDeactivated(&did->metadata);
+    if (rc != 0)
+        return rc;
+
+    doc = DID_Resolve(did, &status, false);
+    if (!doc && status == -1)
+        return -1;
+
+    if (status != DIDStatus_Deactivated)
+        return 0;
+
+    DIDMetadata_SetDeactivated(&did->metadata, true);
+    return 1;
+
+    DIDERROR_FINALIZE();
+}
+
 DIDMetadata *DID_GetMetadata(DID *did)
 {
     DIDERROR_INITIALIZE();
