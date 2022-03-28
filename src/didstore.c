@@ -1497,6 +1497,9 @@ static int list_did_helper(const char *path, void *context)
     }
 
     DID_Init(&did, path);
+    if (get_file(didpath, 0, 5, dh->store->root, DATA_DIR, IDS_DIR, did.idstring, DOCUMENT_FILE) == -1)
+        return 0;
+
     DIDStore_LoadDIDMetadata(dh->store, &did.metadata, &did);
 
     if (dh->filter == 0 || (dh->filter == 1 && DIDStore_ContainsPrivateKeys(dh->store, &did)) ||
@@ -1645,6 +1648,11 @@ static int list_credential_helper(const char *path, void *context)
 
     path2id(path, strlen(path) + 1, filename, 128);
     DIDURL_InitFromString(&id, ch->did.idstring, filename);
+
+    if (get_file(credpath, 0, 7, ch->store->root, DATA_DIR, IDS_DIR, ch->did.idstring,
+            CREDENTIALS_DIR, path, CREDENTIAL_FILE) == -1)
+        return 0;
+
     DIDStore_LoadCredMetadata(ch->store, &id.metadata, &id);
     rc = ch->cb(&id, ch->context);
     CredentialMetadata_Free(&id.metadata);
