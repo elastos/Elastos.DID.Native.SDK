@@ -961,7 +961,7 @@ int Credential_IsGenuine(Credential *credential)
 int Credential_IsValid(Credential *credential)
 {
     DIDDocument *issuerdoc = NULL;
-    int valid, status;
+    int valid = -1, status;
 
     DIDERROR_INITIALIZE();
 
@@ -982,12 +982,13 @@ int Credential_IsValid(Credential *credential)
     if (!issuerdoc) {
         DIDError_Set(DIDERR_DID_RESOLVE_ERROR, " * VC %s : issuer %s %s.",
                 DIDURLSTR(&credential->id), DIDSTR(&credential->issuer), DIDSTATUS_MSG(status));
-        return -1;
+        goto errorExit;
     }
 
-    if (DIDDocument_IsDeactivated(issuerdoc)) {
+    if (DIDDocument_IsDeactivated(issuerdoc) != 0) {
         DIDError_Set(DIDERR_DID_RESOLVE_ERROR, " * VC %s : issuer %s is deactivated.",
                 DIDURLSTR(&credential->id), DIDSTR(&credential->issuer));
+        goto errorExit;
     }
 
     valid = Credential_IsGenuine_Internal(credential, issuerdoc);

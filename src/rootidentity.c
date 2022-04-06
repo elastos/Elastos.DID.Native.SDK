@@ -331,14 +331,39 @@ DID *RootIdentity_GetDefaultDID(RootIdentity *rootidentity)
     DIDERROR_FINALIZE();
 }
 
-static HDKey *get_derivedkey(uint8_t *extendedkey, size_t size, int index,
-        HDKey *derivedkey)
+inline static uint32_t UInt32GetBE(const void *b4)
+{
+    return (((uint32_t)((const uint8_t *)b4)[0] << 24) | ((uint32_t)((const uint8_t *)b4)[1] << 16) |
+            ((uint32_t)((const uint8_t *)b4)[2] << 8)  | ((uint32_t)((const uint8_t *)b4)[3]));
+}
+
+static int map_to_derivepath(int *paths, size_t size, const char *identifier)
+{
+    uint8_t digest[SHA256_BYTES];
+
+    assert(paths);
+    assert(size == 8);
+    assert(identifier);
+
+    if (sha256_digest(digest, 1, identifier, strlen(identifier)) < 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get digest failed.");
+        return -1;
+    }
+
+    for (int i = 0; i < size; i++)
+        paths[i] = UInt32GetBE(digest + i*4) & 0x7FFFFFFF;
+
+    return 0;
+}
+
+static HDKey *get_derivedkey(uint8_t *extendedkey, size_t size,
+        const char *identifier, int index, HDKey *derivedkey)
 {
     HDKey _identity, *identity, *dkey;
+    int paths[8];
 
     assert(extendedkey);
     assert(size >= EXTENDEDKEY_BYTES);
-    assert(index >= 0);
     assert(derivedkey);
 
     identity = HDKey_FromExtendedKey(extendedkey, size, &_identity);
@@ -347,8 +372,20 @@ static HDKey *get_derivedkey(uint8_t *extendedkey, size_t size, int index,
         return NULL;
     }
 
-    dkey = HDKey_GetDerivedKey(identity, derivedkey, 5, 44 | HARDENED, 0 | HARDENED,
-            0 | HARDENED, 0, index);
+    if (!identifier) {
+        assert(index >= 0);
+        dkey = HDKey_GetDerivedKey(identity, derivedkey, 5, 44 | HARDENED, 0 | HARDENED,
+                0 | HARDENED, 0, index);
+    } else {
+        if (map_to_derivepath(paths, 8, identifier) == 0) {
+            dkey = HDKey_GetDerivedKey(identity, derivedkey, 12, 44 | HARDENED, 0 | HARDENED,
+                0 | HARDENED, paths[0], paths[1], paths[2], paths[3],
+                paths[4], paths[5], paths[6], paths[7], index & 0x7FFFFFFF);
+        } else {
+            dkey = NULL;
+        }
+    }
+
     HDKey_Wipe(identity);
     if (!dkey)
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Initial derived private identity failed.");
@@ -356,14 +393,13 @@ static HDKey *get_derivedkey(uint8_t *extendedkey, size_t size, int index,
     return dkey;
 }
 
-static HDKey *get_derive(RootIdentity *rootidentity, int index, DIDStore *store,
-        const char *storepass, HDKey *derivedkey)
+static HDKey *get_derive(RootIdentity *rootidentity, const char *identifier, int index,
+        DIDStore *store, const char *storepass, HDKey *derivedkey)
 {
     ssize_t size;
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
 
     assert(rootidentity);
-    assert(index >= 0);
     assert(derivedkey);
     assert(store);
 
@@ -378,7 +414,7 @@ static HDKey *get_derive(RootIdentity *rootidentity, int index, DIDStore *store,
         memcpy(extendedkey, rootidentity->preDerivedPublicKey, sizeof(extendedkey));
     }
 
-    return get_derivedkey(extendedkey, sizeof(extendedkey), index, derivedkey);
+    return get_derivedkey(extendedkey, sizeof(extendedkey), identifier, index, derivedkey);
 }
 
 static DIDDocument *create_document(DID *did, const char *key, const char *alias,
@@ -423,27 +459,19 @@ static DIDDocument *create_document(DID *did, const char *key, const char *alias
     return document;
 }
 
-static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index, const char *alias,
+static DIDDocument *createdid_by_hdkey(HDKey *hdkey, const char *alias,
         DIDStore *store, const char *storepass, bool overwrite)
 {
     char publickeybase58[PUBLICKEY_BASE58_BYTES];
     uint8_t extendedkey[EXTENDEDKEY_BYTES];
-    HDKey _derivedkey, *derivedkey;
     DIDDocument *document;
     DID did;
     int status, deactivated;
 
-    assert(rootidentity);
-    assert(index >= 0);
+    assert(hdkey);
     assert(store);
 
-    derivedkey = get_derive(rootidentity, index, store, storepass, &_derivedkey);
-    if (!derivedkey) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Derive private key failed.");
-        return NULL;
-    }
-
-    DID_Init(&did, HDKey_GetAddress(derivedkey));
+    DID_Init(&did, HDKey_GetAddress(hdkey));
 
     //check did is exist or not
     document = DIDStore_LoadDID(store, &did);
@@ -456,7 +484,6 @@ static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index
             else
                 DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already exists in the store.");
 
-            HDKey_Wipe(derivedkey);
             return NULL;
         }
     }
@@ -471,35 +498,62 @@ static DIDDocument *rootidentity_createdid(RootIdentity *rootidentity, int index
             else
                 DIDError_Set(DIDERR_ALREADY_EXISTS, "DID already published.");
 
-            HDKey_Wipe(derivedkey);
             return NULL;
         }
     }
 
-    if (HDKey_SerializePrv(derivedkey, extendedkey, sizeof(extendedkey)) < 0) {
-        HDKey_Wipe(derivedkey);
+    if (HDKey_SerializePrv(hdkey, extendedkey, sizeof(extendedkey)) < 0)
         return NULL;
-    }
 
     if (DIDStore_StoreDefaultPrivateKey(store, storepass, did.idstring,
-            extendedkey, sizeof(extendedkey)) < 0) {
-        HDKey_Wipe(derivedkey);
+            extendedkey, sizeof(extendedkey)) < 0)
         return NULL;
-    }
 
     document = create_document(&did,
-            HDKey_GetPublicKeyBase58(derivedkey, publickeybase58, sizeof(publickeybase58)),
+            HDKey_GetPublicKeyBase58(hdkey, publickeybase58, sizeof(publickeybase58)),
             alias, store, storepass);
-    HDKey_Wipe(derivedkey);
     if (!document) {
         DIDStore_DeleteDID(store, &did);
         return NULL;
     }
 
-    DIDMetadata_SetRootIdentity(&document->metadata, rootidentity->id);
-    DIDMetadata_SetIndex(&document->metadata, index);
     DIDMetadata_SetAlias(&document->metadata, alias);
     DIDMetadata_SetDeactivated(&document->metadata, false);
+    return document;
+}
+
+static DIDDocument *createdid_from_rootidentiy(RootIdentity *rootidentity, const char *identifier,
+        int index, const char *alias, DIDStore *store, const char *storepass, bool overwrite)
+{
+    char publickeybase58[PUBLICKEY_BASE58_BYTES];
+    uint8_t extendedkey[EXTENDEDKEY_BYTES];
+    HDKey _derivedkey, *derivedkey;
+    DIDDocument *document;
+    DID did;
+    int status, deactivated;
+
+    assert(rootidentity);
+    assert(store);
+
+    derivedkey = get_derive(rootidentity, identifier, index, store, storepass, &_derivedkey);
+    if (!derivedkey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Derive private key failed.");
+        return NULL;
+    }
+
+    document = createdid_by_hdkey(derivedkey, alias, store, storepass, overwrite);
+    HDKey_Wipe(derivedkey);
+    if (!document)
+        return NULL;
+
+    if (!identifier) {
+        DIDMetadata_SetIndex(&document->metadata, index);
+    } else {
+        DIDMetadata_SetExtra(&document->metadata, "application", identifier);
+        DIDMetadata_SetExtraWithInteger(&document->metadata, "securityCode", index);
+    }
+
+    DIDMetadata_SetRootIdentity(&document->metadata, rootidentity->id);
     memcpy(&document->did.metadata, &document->metadata, sizeof(DIDMetadata));
 
     if (DIDStore_StoreDID(store, document) == -1) {
@@ -536,7 +590,7 @@ DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity, const char *storepa
     if (index < 0)
         return NULL;
 
-    document = rootidentity_createdid(rootidentity, index++, alias, store, storepass, overwrite);
+    document = createdid_from_rootidentiy(rootidentity, NULL, index++, alias, store, storepass, overwrite);
     if (!document)
         return NULL;
 
@@ -569,12 +623,39 @@ DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
         return NULL;
     }
 
-    document = rootidentity_createdid(rootidentity, index, alias, store, storepass, overwrite);
+    document = createdid_from_rootidentiy(rootidentity, NULL, index, alias, store, storepass, overwrite);
     if (!document)
         return NULL;
 
     if (!IdentityMetadata_GetDefaultDID(&rootidentity->metadata))
         IdentityMetadata_SetDefaultDID(&rootidentity->metadata, DID_ToString(&document->did, didstring, sizeof(didstring)));
+
+    return document;
+
+    DIDERROR_FINALIZE();
+}
+
+DIDDocument *RootIdentity_NewDIDByIdentifier(RootIdentity *rootidentity, const char *identifier,
+        int securityCode, const char *storepass, const char *alias, bool overwrite)
+{
+    DIDStore *store;
+    DIDDocument *document;
+
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!rootidentity, "No rootidentity to new did.", NULL);
+    CHECK_ARG(!identifier || !*identifier, "Invalid identifier.", NULL);
+    CHECK_PASSWORD(storepass, NULL);
+
+    store = rootidentity->metadata.base.store;
+    if (!store) {
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with rootidentity.");
+        return NULL;
+    }
+
+    document = createdid_from_rootidentiy(rootidentity, identifier, securityCode, alias, store, storepass, overwrite);
+    if (!document)
+        return NULL;
 
     return document;
 
@@ -598,7 +679,7 @@ DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index)
         return NULL;
     }
 
-    derivedkey = get_derive(rootidentity, index, store, NULL, &_derivedkey);
+    derivedkey = get_derive(rootidentity, NULL, index, store, NULL, &_derivedkey);
     if (!derivedkey) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Derive private key failed.");
         return NULL;
@@ -606,11 +687,46 @@ DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index)
 
     did = DID_New(HDKey_GetAddress(derivedkey));
     HDKey_Wipe(derivedkey);
-    return did;
 
     DIDMetadata_SetRootIdentity(&did->metadata, rootidentity->id);
     DIDMetadata_SetIndex(&did->metadata, index);
     did->metadata.base.store = store;
+    return did;
+
+    DIDERROR_FINALIZE();
+}
+
+DID *RootIdentity_GetDIDByIdentifier(RootIdentity *rootidentity, const char *identifier, int securityCode)
+{
+    DID *did;
+    DIDStore *store;
+    HDKey _derivedkey, *derivedkey;
+
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!rootidentity, "No rootidentity to get did.", NULL);
+    CHECK_ARG(!identifier || !*identifier, "Invalid identifier.", NULL);
+    CHECK_ARG(index < 0, "Invalid index.", NULL);
+
+    store = rootidentity->metadata.base.store;
+    if (!store) {
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with rootidentity.");
+        return NULL;
+    }
+
+    derivedkey = get_derive(rootidentity, identifier, securityCode, store, NULL, &_derivedkey);
+    if (!derivedkey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Derive private key failed.");
+        return NULL;
+    }
+
+    did = DID_New(HDKey_GetAddress(derivedkey));
+    HDKey_Wipe(derivedkey);
+
+    DIDMetadata_SetExtra(&did->metadata, "application", identifier);
+    DIDMetadata_SetExtraWithInteger(&did->metadata, "securityCode", securityCode);
+    did->metadata.base.store = store;
+    return did;
 
     DIDERROR_FINALIZE();
 }
@@ -729,7 +845,7 @@ ssize_t RootIdentity_LazyCreatePrivateKey(DIDURL *key, DIDStore *store, const ch
     if (len != EXTENDEDKEY_BYTES)
         goto errorExit;
 
-    derivedkey = get_derivedkey(rootPrvkey, len, index, &_derivedkey);
+    derivedkey = get_derivedkey(rootPrvkey, len, NULL, index, &_derivedkey);
     memset(rootPrvkey, 0, sizeof(rootPrvkey));
     if (!derivedkey) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Get hdkey for owner's document failed.");
