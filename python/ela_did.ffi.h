@@ -1522,6 +1522,32 @@ extern "Python" const char* MyResolve(const char *request);
 
 /**
  * \~English
+ * Create new DID Document by identifier and security code.
+ *
+ * @param
+ *      rootidentity              [in] The handle to RootIdentity.
+ * @param
+ *      identifier                [in] Application secified identifier.
+ * @param
+ *      securityCode              [in] User specified security code.
+ * @param
+ *      storepass                 [in] Password for DIDStore.
+ * @param
+ *      alias                     [in] The nickname of DID.
+ *                                     ‘alias' supports NULL.
+  * @param
+ *      overwrite                 [in] The document is overwrite or not.
+ *                                true for overwriting the existing one, fail otherwise.
+ * @return
+ *      If no error occurs, return the handle to DID Document.
+ *      Otherwise, return NULL.
+ *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ */
+/* DID_API */ DIDDocument *RootIdentity_NewDIDByIdentifier(RootIdentity *rootidentity,
+        const char *identifier, int securityCode, const char *storepass, const char *alias, bool overwrite);
+
+/**
+ * \~English
  * Only get DID object by index, not create document and so on.
  *
  * @param
@@ -1533,6 +1559,23 @@ extern "Python" const char* MyResolve(const char *request);
  *      Otherwise, return NULL.
  */
 /* DID_API */ DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index);
+
+/**
+ * \~English
+ * Only get DID object by identifier and security code, not create document and so on.
+ *
+ * @param
+ *      rootidentity              [in] The handle to RootIdentity.
+ * @param
+ *      identifier                [in] Application secified identifier.
+ * @param
+ *      securityCode              [in] User specified security code.
+ * @return
+ *      If no error occurs, return DID object. Free DID after use it.
+ *      Otherwise, return NULL.
+ */
+/* DID_API */ DID *RootIdentity_GetDIDByIdentifier(RootIdentity *rootidentity,
+        const char *identifier, int securityCode);
 
 /**
  * \~English

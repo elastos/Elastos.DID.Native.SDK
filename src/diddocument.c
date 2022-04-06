@@ -1466,6 +1466,7 @@ int DIDDocument_IsDeactivated(DIDDocument *document)
     if (!doc && status == -1)
         return -1;
 
+    DIDDocument_Destroy(doc);
     if (status != DIDStatus_Deactivated)
         return 0;
 
