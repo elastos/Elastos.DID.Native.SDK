@@ -1,4 +1,10 @@
-﻿12/06/2021 Chen Yu chenyu_kaola@126.com Version 2.1.5, new version of DID SDK has main change as follow:
+﻿04/06/2022 Chen Yu chenyu_kaola@126.com Version 2.2.0, new version of DID SDK has main change as follow:
+- Support JSON-LD context.
+- Improve the DID objects validity check.
+- Normalize the serialized output to NFC form.
+- Fix some bugs.
+
+12/06/2021 Chen Yu chenyu_kaola@126.com Version 2.1.5, new version of DID SDK has main change as follow:
 - Normalize the wordlist files.
 - Add optional unicode normalization support.
 
