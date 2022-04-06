@@ -66,7 +66,9 @@ static void test_rootidentity_newdid(void)
         _rootidentity = DIDStore_LoadRootIdentity(store, rootidentity->id);
         CU_ASSERT_PTR_NOT_NULL(_rootidentity);
         CU_ASSERT_STRING_EQUAL(RootIdentity_GetId(rootidentity), RootIdentity_GetId(_rootidentity));
-        CU_ASSERT_PTR_NOT_NULL(RootIdentity_GetDefaultDID(_rootidentity));
+        did = RootIdentity_GetDefaultDID(_rootidentity);
+        CU_ASSERT_PTR_NOT_NULL(did);
+        DID_Destroy(did);
 
         doc1 = RootIdentity_NewDID(_rootidentity, storepass, NULL, false);
         CU_ASSERT_PTR_NOT_NULL(doc1);
@@ -148,6 +150,56 @@ static void test_rootidentitybyrootkey_newdid(void)
     TestData_Free();
 }
 
+static void test_rootidentity_newdidbyidentifier(void)
+{
+    DIDStore *store;
+    RootIdentity *rootidentity;
+    DIDDocument *doc;
+    DID *did;
+    int i;
+
+    const char *identifier = "io.trinity-tech.did.testcase";
+    int securityCode = 619;
+
+    store = TestData_SetupStore(true);
+    CU_ASSERT_PTR_NOT_NULL(store);
+    CU_ASSERT_EQUAL(0, DIDStore_ContainsRootIdentities(store));
+
+    rootidentity = RootIdentity_CreateFromRootKey(ExtendedkeyBase, true, store, storepass);
+    CU_ASSERT_PTR_NOT_NULL(rootidentity);
+
+    doc = RootIdentity_NewDIDByIdentifier(rootidentity,
+        identifier, securityCode, storepass, "", false);
+    CU_ASSERT_PTR_NOT_NULL(doc);
+    CU_ASSERT_EQUAL_FATAL(1, DIDDocument_IsValid(doc));
+
+    did = RootIdentity_GetDIDByIdentifier(rootidentity,
+        identifier, securityCode);
+    CU_ASSERT_PTR_NOT_NULL(did);
+
+    CU_ASSERT_EQUAL(1, DID_Equals(did, &doc->did));
+    DIDDocument_Destroy(doc);
+
+    doc = RootIdentity_NewDIDByIdentifier(rootidentity,
+        identifier, securityCode, storepass, "", false);
+    CU_ASSERT_PTR_NULL(doc);
+    CU_ASSERT_STRING_EQUAL("DID already exists in the store.", DIDError_GetLastErrorMessage());
+
+    CU_ASSERT_EQUAL(1, DIDStore_DeleteDID(store, did));
+
+    doc = RootIdentity_NewDIDByIdentifier(rootidentity,
+        identifier, securityCode, storepass, "", false);
+    CU_ASSERT_PTR_NOT_NULL(doc);
+    CU_ASSERT_EQUAL_FATAL(1, DIDDocument_IsValid(doc));
+    CU_ASSERT_STRING_EQUAL(doc->did.idstring, did->idstring);
+
+    DIDDocument_Destroy(doc);
+    DID_Destroy(did);
+    RootIdentity_Destroy(rootidentity);
+
+    TestData_Free();
+}
+
 static int rootidentity_test_suite_init(void)
 {
     return 0;
@@ -162,6 +214,7 @@ static CU_TestInfo cases[] = {
     { "test_rootidentity_createid",           test_rootidentity_createid          },
     { "test_rootidentity_newdid",             test_rootidentity_newdid            },
     { "test_rootidentitybyrootkey_newdid",    test_rootidentitybyrootkey_newdid   },
+    { "test_rootidentity_newdidbyidentifier", test_rootidentity_newdidbyidentifier},
     { NULL,                                    NULL                               }
 };
 

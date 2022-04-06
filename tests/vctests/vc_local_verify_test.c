@@ -77,6 +77,7 @@ static void test_vc_local_verify(void)
             expires, storepass);
     Issuer_Destroy(issuer);
     DIDURL_Destroy(credid);
+    CU_ASSERT_PTR_NOT_NULL(vc);
 
     CU_ASSERT_NOT_EQUAL(1, Credential_IsValid(vc));
 

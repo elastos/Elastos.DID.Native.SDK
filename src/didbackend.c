@@ -533,8 +533,10 @@ DIDDocument *DIDBackend_ResolveDID(DID *did, int *status, bool force)
     //If user give document to verify, sdk use it first.
     if (gLocalResolveHandle) {
         doc = gLocalResolveHandle(did);
-        if (doc)
+        if (doc) {
+            *status = DIDStatus_Valid;
             return doc;
+        }
     }
 
     if (!gResolve) {
