@@ -706,7 +706,7 @@ DID *RootIdentity_GetDIDByIdentifier(RootIdentity *rootidentity, const char *ide
 
     CHECK_ARG(!rootidentity, "No rootidentity to get did.", NULL);
     CHECK_ARG(!identifier || !*identifier, "Invalid identifier.", NULL);
-    CHECK_ARG(index < 0, "Invalid index.", NULL);
+    CHECK_ARG(securityCode < 0, "Invalid securityCode.", NULL);
 
     store = rootidentity->metadata.base.store;
     if (!store) {
