@@ -82,15 +82,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022]
+        os: [windows-2019]
         arch: [x86, amd64]
     steps:
       - uses: actions/checkout@v2
       - name: build and test
         shell: cmd
         run: |
-          if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" (
-            call   "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=${{matrix.arch}}
+          if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" (
+            call   "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=${{matrix.arch}}
           )
           mkdir build\windows
           cd build\windows
