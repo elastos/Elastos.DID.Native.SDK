@@ -5,6 +5,9 @@ from cffi import FFI
 # Work around on MacOS
 if (platform.system() == "Darwin"):
     os.environ['ARCHFLAGS'] = '-arch x86_64'
+    link_args = ['-framework', 'Security']
+else:
+    link_args = []
 
 ffibuilder = FFI()
 
@@ -24,6 +27,7 @@ ffibuilder.set_source("eladid",
     #include "ela_jwt.h"
 """,
     libraries=['eladid', 'hdkey', 'curl', 'ssl', 'crypto', 'jansson', 'cjose', 'zip', 'z'],
+    extra_link_args=link_args,
     include_dirs=['include'],
     library_dirs=['lib'])
 
