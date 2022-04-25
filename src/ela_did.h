@@ -1085,7 +1085,7 @@ DID_API int CredentialMetadata_GetRevoke(CredentialMetadata *metadata);
  * @param
  *      metadata                     [in] The handle of CredentialMetadata.
  * @return
- *      If credential is revoked, return true. Otherwise, return false.
+ *      If there is transaction in the metadata, return transaction string. Otherwise, return NULL.
  */
 DID_API const char *CredentialMetadata_GetTxid(CredentialMetadata *metadata);
 
