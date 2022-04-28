@@ -365,6 +365,18 @@ typedef const char* Resolve_Callback(const char *request);
 extern "Python" const char* MyResolve(const char *request);
 
 /******************************************************************************
+ * DIDString
+ *****************************************************************************/
+/**
+ * \~English
+ * Get DID from string.
+ *
+ * @param
+ *      b            [in] A pointer to the memory.
+ */
+/* DID_API */ void DID_FreeMemory(const char *b);
+
+/******************************************************************************
  * DID
  *****************************************************************************/
 /**

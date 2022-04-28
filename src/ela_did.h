@@ -402,6 +402,18 @@ typedef bool CreateIdTransaction_Callback(const char *payload, const char *memo)
 typedef const char* Resolve_Callback(const char *request);
 
 /******************************************************************************
+ * DIDString
+ *****************************************************************************/
+/**
+ * \~English
+ * Get DID from string.
+ *
+ * @param
+ *      b            [in] A pointer to the memory.
+ */
+DID_API void DID_FreeMemory(const char *b);
+
+/******************************************************************************
  * DID
  *****************************************************************************/
 /**
@@ -414,7 +426,7 @@ typedef const char* Resolve_Callback(const char *request);
  * @return
  *      If no error occurs, return the pointer of DID.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+*      Notice that user must use 'DID_Destroy' to destroy the returned object.
  */
 DID_API DID *DID_FromString(const char *idstring);
 
@@ -429,7 +441,7 @@ DID_API DID *DID_FromString(const char *idstring);
  * @return
  *      If no error occurs, return the pointer of DID.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DID_Destroy' to destroy the returned object.
  */
 DID_API DID *DID_New(const char *method_specific_string);
 
@@ -446,7 +458,7 @@ DID_API DID *DID_New(const char *method_specific_string);
  * @return
  *      If no error occurs, return the pointer of DID.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DID_Destroy' to destroy the returned object.
  */
 DID_API DID *DID_NewWithMethod(const char *method, const char *method_specific_string);
 
@@ -546,7 +558,7 @@ DID_API void DID_Destroy(DID *did);
  * @return
  *      If no error occurs, return the handle to DID Document.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DIDDocument_Destroy' to destroy the returned object.
  */
 DID_API DIDDocument *DID_Resolve(DID *did, DIDStatus *status, bool force);
 
@@ -559,7 +571,7 @@ DID_API DIDDocument *DID_Resolve(DID *did, DIDStatus *status, bool force);
  * @return
  *      when no error occurs, it returns the handle to DIDBiography instance.
  *      otherwise, it returns NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DIDBiography_Destroy' to destroy the returned object.
  */
 DID_API DIDBiography *DID_ResolveBiography(DID *did);
 
@@ -773,7 +785,7 @@ DID_API long long DIDMetadata_GetExtraAsInteger(DIDMetadata *metadata, const cha
  * @return
  *      If no error occurs, return the handle to DID URL.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DIDURL_Destroy' to destroy the returned object.
  */
 DID_API DIDURL *DIDURL_FromString(const char *idstring, DID *context);
 
@@ -805,7 +817,7 @@ DID_API DIDURL *DIDURL_New(const char *method_specific_string, const char *fragm
  * @return
  *      If no error occurs, return the handle to DID URL.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DIDURL_Destroy' to destroy the returned object.
  */
 DID_API DIDURL *DIDURL_NewFromDid(DID *did, const char *fragment);
 
@@ -1200,7 +1212,7 @@ DID_API ssize_t DIDBiography_GetTransactionCount(DIDBiography *biography);
  * @return
  *      If no error occurs, return the handle to DID Document.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DIDDocument_Destroy' to destroy the returned object.
  */
 DID_API DIDDocument *DIDBiography_GetDocumentByIndex(DIDBiography *biography, int index);
 
@@ -1264,8 +1276,8 @@ DID_API void DIDBiography_Destroy(DIDBiography *biography);
  * @param
  *      biography                   [in] The handle to CredentialBiography.
  * @return
- *      If no error occurs, return the handle to DIDURL. Destroy the returned value
- *      after finishing use. Otherwise, return NULL.
+ *      If no error occurs, return the handle to DIDURL.
+ *      Notice that user must use 'DIDURL_Destroy' to destroy the returned object.
  */
 DID_API DIDURL *CredentialBiography_GetId(CredentialBiography *biography);
 
@@ -1276,8 +1288,8 @@ DID_API DIDURL *CredentialBiography_GetId(CredentialBiography *biography);
  * @param
  *      biography                   [in] The handle to CredentialBiography.
  * @return
- *      If no error occurs, return the handle to DID. Destroy the returned value
- *      after finishing use. Otherwise, return NULL.
+ *      If no error occurs, return the handle to DID.
+ *      Notice that user must use 'DID_Destroy' to destroy the returned object.
  */
 DID_API DID *CredentialBiography_GetOwner(CredentialBiography *biography);
 
@@ -1313,7 +1325,7 @@ DID_API ssize_t CredentialBiography_GetTransactionCount(CredentialBiography *bio
  *      index                         [in] The index of transaction.
  * @return
  *      If no error occurs, return the handle to Credential. Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'Credential_Destroy' to destroy the returned object.
  */
 DID_API Credential *CredentialBiography_GetCredentialByIndex(CredentialBiography *biography, int index);
 
@@ -1403,6 +1415,7 @@ DID_API void CredentialBiography_Destroy(CredentialBiography *biography);
  *      storepass         [in] The password for DIDStore.
  * @return
  *      the handle to RootIdentity, otherwise, return NULL.
+ *      Notice that user must use 'RootIdentity_Destroy' to destroy the returned object.
  */
 DID_API RootIdentity *RootIdentity_Create(const char *mnemonic, const char *passphrase,
         bool overwrite, DIDStore *store, const char *storepass);
@@ -1426,6 +1439,7 @@ DID_API RootIdentity *RootIdentity_Create(const char *mnemonic, const char *pass
  *      storepass         [in] The password for DIDStore.
  * @return
  *      the handle to RootIdentity, otherwise, return NULL.
+ *      Notice that user must use 'RootIdentity_Destroy' to destroy the returned object.
  */
 DID_API RootIdentity *RootIdentity_CreateFromRootKey(const char *extendedprvkey,
         bool overwrite, DIDStore *store, const char *storepass);
@@ -1440,7 +1454,7 @@ DID_API RootIdentity *RootIdentity_CreateFromRootKey(const char *extendedprvkey,
  *      passphrase        [in] The password to generate private identity.
  * @return
  *      the RootIdentity id string, otherwise, return NULL.
- *      Notice that user need to free the returned value that it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *RootIdentity_CreateId(const char *mnemonic, const char *passphrase);
 
@@ -1452,7 +1466,7 @@ DID_API const char *RootIdentity_CreateId(const char *mnemonic, const char *pass
  *      extendedprvkey     [in] Extendedkey string.
  * @return
  *      the RootIdentity id string, otherwise, return NULL.
- *      Notice that user need to free the returned value that it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *RootIdentity_CreateIdFromRootKey(const char *extendedprvkey);
 
@@ -1532,7 +1546,7 @@ DID_API int RootIdentity_SetDefaultDID(RootIdentity *rootidentity, DID *did);
  *      rootidentity        [in] A handle to RootIdentity.
  * @return
  *      the handle to DID on success, NULL if an error occurred.
- *      Notice that user need to free the returned value that it's memory.
+ *      Notice that user must use 'DID_Free' to free the returned object.
  */
 DID_API DID *RootIdentity_GetDefaultDID(RootIdentity *rootidentity);
 
@@ -1553,7 +1567,7 @@ DID_API DID *RootIdentity_GetDefaultDID(RootIdentity *rootidentity);
  * @return
  *      If no error occurs, return the handle to DID Document.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DIDDocument_Destroy' to destroy the returned object.
  */
 DID_API DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity,
         const char *storepass, const char *alias, bool overwrite);
@@ -1577,7 +1591,7 @@ DID_API DIDDocument *RootIdentity_NewDID(RootIdentity *rootidentity,
  * @return
  *      If no error occurs, return the handle to DID Document.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DIDDocument_Destroy' to destroy the returned object.
  */
 DID_API DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int index,
         const char *storepass, const char *alias, bool overwrite);
@@ -1603,7 +1617,7 @@ DID_API DIDDocument *RootIdentity_NewDIDByIndex(RootIdentity *rootidentity, int 
  * @return
  *      If no error occurs, return the handle to DID Document.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DIDDocument_Destroy' to destroy the returned object.
  */
 DID_API DIDDocument *RootIdentity_NewDIDByIdentifier(RootIdentity *rootidentity,
         const char *identifier, int securityCode, const char *storepass, const char *alias, bool overwrite);
@@ -1616,8 +1630,8 @@ DID_API DIDDocument *RootIdentity_NewDIDByIdentifier(RootIdentity *rootidentity,
  * @param
  *      index                     [int] The index of DerivedKey from HDKey.
  * @return
- *      If no error occurs, return DID object. Free DID after use it.
- *      Otherwise, return NULL.
+ *      If no error occurs, return DID object.
+ *      Notice that user must use 'DID_Destroy' to destroy the returned object.
  */
 DID_API DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index);
 
@@ -1632,8 +1646,8 @@ DID_API DID *RootIdentity_GetDIDByIndex(RootIdentity *rootidentity, int index);
  * @param
  *      securityCode              [in] User specified security code.
  * @return
- *      If no error occurs, return DID object. Free DID after use it.
- *      Otherwise, return NULL.
+ *      If no error occurs, return DID object.
+ *      Notice that user must use 'DID_Destroy' to destroy the returned object.
  */
 DID_API DID *RootIdentity_GetDIDByIdentifier(RootIdentity *rootidentity,
         const char *identifier, int securityCode);
@@ -1681,7 +1695,7 @@ DID_API bool RootIdentity_SynchronizeByIndex(RootIdentity *rootidentity, int ind
  * @return
  *      If no error occurs, return the handle to DID Document.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DIDDocument_Destroy' to destroy the returned object.
  */
 DID_API DIDDocument *DIDDocument_FromJson(const char* json);
 
@@ -1696,7 +1710,7 @@ DID_API DIDDocument *DIDDocument_FromJson(const char* json);
  *                           true represents normalized, false represents not compact.
  * @return
  *      If no error occurs, return json context. Otherwise, return NULL.
- *      Notice that user need to free the returned value that it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *DIDDocument_ToJson(DIDDocument *document, bool normalized);
 
@@ -1711,7 +1725,7 @@ DID_API const char *DIDDocument_ToJson(DIDDocument *document, bool normalized);
  *                           true represents normalized, false represents not compact.
  * @return
  *      If no error occurs, return json context. Otherwise, return NULL.
- *      Notice that user need to free the returned value that it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *DIDDocument_ToString(DIDDocument *document, bool normalized);
 /**
@@ -1826,7 +1840,7 @@ DID_API DID* DIDDocument_GetSubject(DIDDocument *document);
  * @return
  *      If no error occurs, return a handle to DIDDocumentBuilder.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DIDDocumentBuilder_Destroy' to destroy the returned object.
  */
 DID_API DIDDocumentBuilder* DIDDocument_Edit(DIDDocument *document, DIDDocument *controllerdoc);
 
@@ -1850,7 +1864,7 @@ DID_API void DIDDocumentBuilder_Destroy(DIDDocumentBuilder *builder);
  * @return
  *      If no error occurs, return a handle to DIDDocument.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DIDDocument_Destroy' to destroy the returned object.
  */
 DID_API DIDDocument *DIDDocumentBuilder_Seal(DIDDocumentBuilder *builder, const char *storepass);
 
@@ -2450,7 +2464,6 @@ DID_API ssize_t DIDDocument_SelectAuthenticationKeys(DIDDocument *document, cons
  *      return value = -1, if error occurs;
  *      return value = 0, signkey isn't authentication key;
  *      return value = 1, signkey is authentication key.
-
  */
 DID_API int DIDDocument_IsAuthenticationKey(DIDDocument *document, DIDURL *keyid);
 
@@ -2691,7 +2704,7 @@ DID_API time_t DIDDocument_GetExpires(DIDDocument *document);
  * @return
  *      If no error occurs, return the handle to customized DID Document.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DIDDocument_Destroy' to destroy the returned object.
  */
 DID_API DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *document,
         const char *customizeddid, DID **controllers, size_t size, int multisig,
@@ -2893,7 +2906,7 @@ DID_API const char *DIDDocument_GetProofSignature(DIDDocument *document, int ind
  * @return
  *      If no error occurs, return the handle to JWTBuilder.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'JWTBuilder_Destroy' to destroy the returned object.
  */
 DID_API JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document);
 /**
@@ -2906,7 +2919,7 @@ DID_API JWTBuilder *DIDDocument_GetJwtBuilder(DIDDocument *document);
  * @return
  *      If no error occurs, return the handle to JWSParser.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'JWSParser_Destroy' to destroy the returned object.
  */
 DID_API JWSParser *DIDDocument_GetJwsParser(DIDDocument *document);
 #endif
@@ -2926,7 +2939,7 @@ DID_API JWSParser *DIDDocument_GetJwsParser(DIDDocument *document);
  *      storepass                 [in] The password for DIDStore.
  * @return
  *      If no error occurs, return serialize HDKey string. Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *DIDDocument_DeriveByIdentifier(DIDDocument *document, const char *identifier,
         int securityCode, const char *storepass);
@@ -2944,7 +2957,7 @@ DID_API const char *DIDDocument_DeriveByIdentifier(DIDDocument *document, const 
  *      storepass                 [in] The password for DIDStore.
  * @return
  *      If no error occurs, return serialize HDKey string. Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *DIDDocument_DeriveByIndex(DIDDocument *document, int index,
         const char *storepass);
@@ -2960,7 +2973,8 @@ DID_API const char *DIDDocument_DeriveByIndex(DIDDocument *document, int index,
  * @param
  *      storepass                [in] The password for DIDStore.
  * @return
- *      the handle to new document if no error occurred and user should be destory the returned value.
+ *      If no error occurs, return the handle of DIDDocument. Otherwise, return NULL.
+ *      Notice that user must use 'DIDDocument_FreeMemory' to free the returned memory.
  */
 DID_API DIDDocument *DIDDocument_SignDIDDocument(DIDDocument* controllerdoc,
         const char *document, const char *storepass);
@@ -2972,7 +2986,8 @@ DID_API DIDDocument *DIDDocument_SignDIDDocument(DIDDocument* controllerdoc,
  * @param
  *      count                    [in] The count of idrequest string.
  * @return
- *      document string if no error occurred and user should be free the returned value.
+ *      If no error occurs, return DIDDocument string. Otherwise, return NULL.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *DIDDocument_MergeDIDDocuments(int count, ...);
 
@@ -2989,7 +3004,8 @@ DID_API const char *DIDDocument_MergeDIDDocuments(int count, ...);
  * @param
  *      storepass               [in] The password for DIDStore.
  * @return
- *      the handle to ticket if no error occurred and user should be destroy the returned value.
+ *      If no error occurs, return the handle of TransferTicket. Otherwise, return NULL.
+ *      Notice that user must use 'TransferTicket_Destroy' to free the returned memory.
  */
 DID_API TransferTicket *DIDDocument_CreateTransferTicket(DIDDocument *controllerdoc,
         DID *owner, DID *to, const char *storepass);
@@ -3217,7 +3233,7 @@ DID_API ssize_t Service_GetPropertyCount(Service *service);
  *      service                 [in] A handle to Service.
  * @return
  *      size of extra porperties on success, -1 if an error occurred.
- *      Notice that user need to free the returned value it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *Service_GetProperties(Service *service);
 
@@ -3231,7 +3247,7 @@ DID_API const char *Service_GetProperties(Service *service);
  *      name                 [in] The key of property.
  * @return
  *      If no error occurs, return property value string, otherwise return NULL.
- *      Notice that user need to free the returned value it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *Service_GetProperty(Service *service, const char *name);
 
@@ -3249,7 +3265,7 @@ DID_API const char *Service_GetProperty(Service *service, const char *name);
  *                           true represents normalized, false represents not.
  * @return
  *      If no error occurs, return json context. Otherwise, return NULL.
- *      Notice that user need to free the returned value that it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *Credential_ToJson(Credential *credential , bool normalized);
 
@@ -3264,7 +3280,7 @@ DID_API const char *Credential_ToJson(Credential *credential , bool normalized);
  *                           true represents normalized, false represents not.
  * @return
  *      If no error occurs, return json context. Otherwise, return NULL.
- *      Notice that user need to free the returned value that it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *Credential_ToString(Credential *credential , bool normalized);
 
@@ -3279,7 +3295,7 @@ DID_API const char *Credential_ToString(Credential *credential , bool normalized
  * @return
  *      If no error occurs, return the handle to Credential.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'Credential_Destroy' to free the returned memory.
  */
 DID_API Credential *Credential_FromJson(const char *json, DID *owner);
 
@@ -3414,7 +3430,7 @@ DID_API ssize_t Credential_GetPropertyCount(Credential *credential);
  *      credential              [in] A handle to Credential.
  * @return
  *      size of subject porperties on success, -1 if an error occurred.
- *      Notice that user need to free the returned value it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *Credential_GetProperties(Credential *credential);
 
@@ -3428,7 +3444,7 @@ DID_API const char *Credential_GetProperties(Credential *credential);
  *      name                 [in] The key of property.
  * @return
  *      If no error occurs, return property value string, otherwise return NULL.
- *      Notice that user need to free the returned value it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *Credential_GetProperty(Credential *credential, const char *name);
 
@@ -3595,7 +3611,7 @@ DID_API int Credential_RevokeById(DIDURL *id, DIDDocument *signer, DIDURL *signk
  * @return
  *      If no error occurs, return the handle to Credential.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'Credential_Destroy' to destroy the returned object.
  */
 DID_API Credential *Credential_Resolve(DIDURL *id, int *status, bool force);
 
@@ -3625,6 +3641,7 @@ DID_API int Credential_ResolveRevocation(DIDURL *id, DID *issuer);
  * @return
  *      If the credential has valid transactions, return the handle to CredentialBiography.
  *      Otherwise, return NULL.
+ *      Notice that user must use 'CredentialBiography_Destroy' to destroy the returned object.
  */
 DID_API CredentialBiography *Credential_ResolveBiography(DIDURL *id, DID *issuer);
 
@@ -3706,7 +3723,7 @@ DID_API CredentialMetadata *Credential_GetMetadata(Credential *credential );
  *      store                    [in] The handle to DIDStore.
  * @return
  *      If no error occurs, return the handle to Issuer. Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'Issuer_Destroy' to destroy the returned object.
  */
 DID_API Issuer *Issuer_Create(DID *did, DIDURL *signkey, DIDStore *store);
 
@@ -3749,7 +3766,7 @@ DID_API void Issuer_Destroy(Issuer *issuer);
  * @return
  *      If no error occurs, return the handle to Credential issued.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'Credential_Destroy' to destroy the returned object.
  */
 DID_API Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *credid,
         const char **types, size_t typesize, Property *subject, int size,
@@ -3783,7 +3800,7 @@ DID_API Credential *Issuer_CreateCredential(Issuer *issuer, DID *owner, DIDURL *
  * @return
  *      If no error occurs, return the handle to Credential issued.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'Credential_Destroy' to destroy the returned object.
  */
 DID_API Credential *Issuer_CreateCredentialByString(Issuer *issuer, DID *holder,
         DIDURL *credid, const char **types, size_t typesize, const char *subject,
@@ -3824,6 +3841,7 @@ DID_API DIDURL *Issuer_GetSignKey(Issuer *issuer);
  *      root                 [in] The path of DIDStore's root.
  * @return
  *      If no error occurs, return the handle to DID Store. Otherwise, return NULL.
+ *      Notice that user must use 'DIDStore_Close' to destroy the returned object.
  */
 DID_API DIDStore* DIDStore_Open(const char *root);
 
@@ -3874,6 +3892,7 @@ DID_API int DIDStore_ContainsRootIdentities(DIDStore *store);
  *      id                    [in] The id string.
  * @return
  *      the handle to RootIdentity if success, NULL if failed.
+ *      Notice that user must use 'RootIdentity_Destroy' to destroy the returned object.
  */
 DID_API RootIdentity *DIDStore_LoadRootIdentity(DIDStore *store, const char *id);
 
@@ -3929,7 +3948,7 @@ DID_API ssize_t DIDStore_ListRootIdentities(DIDStore *store,
  *      store                [in] The handle to DIDStore.
  * @return
  *      root identity's id string on success, NULL if an error occurred.
- *      Notice that user need to free the returned value.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *DIDStore_GetDefaultRootIdentity(DIDStore *store);
 
@@ -3979,7 +3998,7 @@ DID_API int DIDStore_StoreDID(DIDStore *store, DIDDocument *document);
  * @return
  *      If no error occurs, return the handle to DID Document.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'DIDDocument_Destroy' to destroy the returned object.
  */
 DID_API DIDDocument *DIDStore_LoadDID(DIDStore *store, DID *did);
 
@@ -4069,7 +4088,7 @@ DID_API int DIDStore_StoreCredential(DIDStore *store, Credential *credential);
  * @return
  *      If no error occurs, return the handle to Credential.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'Credential_Destroy' to destroy the returned object.
  */
 DID_API Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *credid);
 
@@ -4459,7 +4478,7 @@ DID_API const char *Mnemonic_GetLanguage(const char *mnemonic);
  * @return
  *      If no error occurs, return the handle to Presentataion.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'Presentation_Destroy' to destroy the returned object.
  */
 DID_API Presentation *Presentation_Create(DIDURL *id, DID *holder,
         const char **types, size_t size, const char *nonce, const char *realm,
@@ -4500,7 +4519,7 @@ DID_API Presentation *Presentation_Create(DIDURL *id, DID *holder,
  * @return
  *      If no error occurs, return the handle to Presentataion.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'Presentation_Destroy' to destroy the returned object.
  */
 DID_API Presentation *Presentation_CreateByCredentials(DIDURL *id, DID *holder,
         const char **types, size_t size, const char *nonce, const char *realm,
@@ -4527,7 +4546,7 @@ DID_API void Presentation_Destroy(Presentation *presentation);
  *                           true represents normalized, false represents not normalized.
  * @return
  *      If no error occurs, return json context. Otherwise, return NULL.
- *      Notice that user need to free the returned value that it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char* Presentation_ToJson(Presentation *presentation, bool normalized);
 
@@ -4540,7 +4559,7 @@ DID_API const char* Presentation_ToJson(Presentation *presentation, bool normali
  * @return
  *      If no error occurs, return the handle to Presentation.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'Presentation_Destroy' to destroy the returned object.
  */
 DID_API Presentation *Presentation_FromJson(const char *json);
 
@@ -4730,7 +4749,7 @@ DID_API void TransferTicket_Destroy(TransferTicket *ticket);
  *      ticket               [in] A handle to Transfer Ticket.
  * @return
  *      If no error occurs, return json context. Otherwise, return NULL.
- *      Notice that user need to free the returned value that it's memory.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
 DID_API const char *TransferTicket_ToJson(TransferTicket *ticket);
 
@@ -4743,7 +4762,7 @@ DID_API const char *TransferTicket_ToJson(TransferTicket *ticket);
  * @return
  *      If no error occurs, return the handle to Transfer Ticket.
  *      Otherwise, return NULL.
- *      Notice that user need to release the handle of returned instance to destroy it's memory.
+ *      Notice that user must use 'TransferTicket_Destroy' to destroy the returned object.
  */
 DID_API TransferTicket *TransferTicket_FromJson(const char *json);
 
