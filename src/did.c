@@ -439,3 +439,9 @@ bool Contains_DID(DID **dids, size_t size, DID *did)
 
     return false;
 }
+
+void DID_FreeMemory(const char *b)
+{
+    if (b)
+        free((void*)b);
+}
