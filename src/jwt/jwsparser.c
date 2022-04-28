@@ -37,6 +37,8 @@
 #include "common.h"
 #include "diddocument.h"
 
+static long skew_seconds = 0;
+
 static cjose_jwk_t *get_jwk(JWSParser *parser, JWT *jwt)
 {
     cjose_err err;
@@ -121,6 +123,7 @@ static JWT *parse_jwt(const char *token)
     const char *pos;
     size_t len;
     int dot;
+    time_t current, exp, nbf;
 
     assert(token && *token);
 
@@ -169,6 +172,19 @@ static JWT *parse_jwt(const char *token)
     jwt->header = json_loadb(header, len, 0, NULL);
     if (!jwt->header) {
         DIDError_Set(DIDERR_OUT_OF_MEMORY, "Load jwt header failed.");
+        goto errorExit;
+    }
+
+    time(&current);
+    exp = JWT_GetExpiration(jwt);
+    if (exp > 0 && exp < current - skew_seconds) {
+        DIDError_Set(DIDERR_JWT, "Token is expired.");
+        goto errorExit;
+    }
+
+    nbf = JWT_GetNotBefore(jwt);
+    if (nbf > 0 && nbf > current + skew_seconds) {
+        DIDError_Set(DIDERR_JWT, "Token is not in the validity period.");
         goto errorExit;
     }
 
@@ -251,14 +267,14 @@ static JWT *parse_jws(JWSParser *parser, const char *token)
 
     time(&current);
     exp = JWT_GetExpiration(jwt);
-    if (exp > 0 && exp < current) {
+    if (exp > 0 && exp < current - skew_seconds) {
         DIDError_Set(DIDERR_JWT, "Token is expired.");
         JWT_Destroy(jwt);
         return NULL;
     }
 
     nbf = JWT_GetNotBefore(jwt);
-    if (nbf > 0 && nbf > current) {
+    if (nbf > 0 && nbf > current + skew_seconds) {
         DIDError_Set(DIDERR_JWT, "Token is not in the validity period.");
         JWT_Destroy(jwt);
         return NULL;
@@ -422,4 +438,9 @@ void JWSParser_Destroy(JWSParser *parser)
     }
 
     DIDERROR_FINALIZE();
+}
+
+void JWTParser_SetAllowedClockSkewSeconds(long seconds)
+{
+    skew_seconds = seconds;
 }
