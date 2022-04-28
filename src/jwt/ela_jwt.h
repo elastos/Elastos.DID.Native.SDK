@@ -291,6 +291,15 @@ DID_API JWT *JWSParser_Parse(JWSParser *parser, const char *token);
  *      parser             [in] The handle to JWTParser.
  */
 DID_API void JWSParser_Destroy(JWSParser *parser);
+/**
+ * \~English
+ * Set the amount of clock skew in seconds to tolerate when verifying the
+ * local time against the 'exp' and 'nbf' claims.
+ *
+ * @param
+ *      seconds            [in] The sencode amount.
+ */
+DID_API void JWTParser_SetAllowedClockSkewSeconds(long seconds);
 
 /******************************************************************************
  * JWT.
