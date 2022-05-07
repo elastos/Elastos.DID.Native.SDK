@@ -59,6 +59,29 @@ static void test_didurl_equals(void)
     DIDURL_Destroy(equalid);
 }
 
+static void test_didurl_qualified(void)
+{
+    DIDURL *id = DIDURL_FromString("did:elastos:foobar#test", NULL);
+    CU_ASSERT_PTR_NOT_NULL(id);
+    CU_ASSERT_EQUAL(1, DIDURL_IsQualified(id));
+    DIDURL_Destroy(id);
+
+    id = DIDURL_FromString("did:elastos:foobar", NULL);
+    CU_ASSERT_PTR_NOT_NULL(id);
+    CU_ASSERT_EQUAL(0, DIDURL_IsQualified(id));
+    DIDURL_Destroy(id);
+
+    id = DIDURL_FromString("did:elastos:foobar/path/to/res", NULL);
+    CU_ASSERT_PTR_NOT_NULL(id);
+    CU_ASSERT_EQUAL(0, DIDURL_IsQualified(id));
+    DIDURL_Destroy(id);
+
+    id = DIDURL_FromString("#test", NULL);
+    CU_ASSERT_PTR_NOT_NULL(id);
+    CU_ASSERT_EQUAL(0, DIDURL_IsQualified(id));
+    DIDURL_Destroy(id);
+}
+
 static int didurl_test_operation_suite_init(void)
 {
     did = DID_FromString(testdid_string);
@@ -86,6 +109,7 @@ static CU_TestInfo cases[] = {
     {   "test_didurl_get_fragment",               test_didurl_get_fragment    },
     {   "test_didurl_compare",                    test_didurl_compare         },
     {   "test_didurl_equals",                     test_didurl_equals          },
+    {   "test_didurl_qualified",                  test_didurl_qualified       },
     {   NULL,                                     NULL                        }
 };
 

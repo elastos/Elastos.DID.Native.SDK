@@ -781,7 +781,7 @@ DID_API long long DIDMetadata_GetExtraAsInteger(DIDMetadata *metadata, const cha
  *                   idstring support: 1. "did:elastos:xxxxxxx#xxxxx"
  *                                     2. "#xxxxxxx"
  * @param
- *      context       [in] A pointer to DID.
+ *      context       [in] A pointer to DID. It support context == null.
  * @return
  *      If no error occurs, return the handle to DID URL.
  *      Otherwise, return NULL.
@@ -820,6 +820,19 @@ DID_API DIDURL *DIDURL_New(const char *method_specific_string, const char *fragm
  *      Notice that user must use 'DIDURL_Destroy' to destroy the returned object.
  */
 DID_API DIDURL *DIDURL_NewFromDid(DID *did, const char *fragment);
+
+/**
+ * \~English
+ * Check the DIDURL is qualified or not.
+ *
+ * @param
+ *      id                       [in] A pointer to DIDURL.
+ * @return
+ *      return value == -1, there is errror occurs;
+ *      return value == 0, id isn't qualified;
+ *      return value == 1, id is qualified.
+ */
+DID_API int DIDURL_IsQualified(DIDURL *id);
 
 /**
  * \~English

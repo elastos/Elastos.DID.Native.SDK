@@ -773,6 +773,19 @@ extern "Python" const char* MyResolve(const char *request);
 
 /**
  * \~English
+ * Check the DIDURL is qualified or not.
+ *
+ * @param
+ *      id                       [in] A pointer to DIDURL.
+ * @return
+ *      return value == -1, there is errror occurs;
+ *      return value == 0, id isn't qualified;
+ *      return value == 1, id is qualified.
+ */
+/* DID_API */ int DIDURL_IsQualified(DIDURL *id);
+
+/**
+ * \~English
  * Get DID from DID URL.
  *
  * @param
