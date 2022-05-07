@@ -2092,6 +2092,7 @@ Credential *DIDStore_LoadCredential(DIDStore *store, DID *did, DIDURL *id)
     CHECK_ARG(!store, "No didstore to load credential.", NULL);
     CHECK_ARG(!did, "No owner of credential.", NULL);
     CHECK_ARG(!id, "No credential to be loaded.", NULL);
+    CHECK_ARG(!DIDURL_IsQualified(id), "Invalid credential id.", NULL);
 
     id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 0, 7, store->root, DATA_DIR, IDS_DIR, did->idstring,
@@ -2172,6 +2173,7 @@ int DIDStore_ContainsCredential(DIDStore *store, DID *did, DIDURL *id)
     CHECK_ARG(!store, "No didstore to check credential's existence.", -1);
     CHECK_ARG(!did, "No owner of credential.", -1);
     CHECK_ARG(!id, "No id of credential to be checked existence.", -1);
+    CHECK_ARG(!DIDURL_IsQualified(id), "Invalid credential id.", -1);
 
     id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_dir(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
@@ -2202,6 +2204,7 @@ bool DIDStore_DeleteCredential(DIDStore *store, DID *did, DIDURL *id)
     CHECK_ARG(!store, "No didstore to delete credential.", false);
     CHECK_ARG(!did, "No owner of credential.", false);
     CHECK_ARG(!id, "No id of credential to be deleted.", false);
+    CHECK_ARG(!DIDURL_IsQualified(id), "Invalid credential id.", false);
 
     id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_dir(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
@@ -2370,6 +2373,7 @@ int DIDStore_ContainsPrivateKey(DIDStore *store, DID *did, DIDURL *id)
     CHECK_ARG(!store, "No didstore to check privatekey's existence.", -1);
     CHECK_ARG(!did, "No owner of privatekey.", -1);
     CHECK_ARG(!id, "No privatekey id.", -1);
+    CHECK_ARG(!DIDURL_IsQualified(id), "Invalid privatekey id.", -1);
 
     id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);
     if (get_file(path, 0, 6, store->root, DATA_DIR, IDS_DIR, did->idstring,
@@ -2429,6 +2433,7 @@ int DIDStore_StorePrivateKey(DIDStore *store, const char *storepass, DIDURL *id,
     CHECK_ARG(!store, "No didstore to store privatekey.", -1);
     CHECK_PASSWORD(storepass, -1);
     CHECK_ARG(!id, "No privatekey id.", -1);
+    CHECK_ARG(!DIDURL_IsQualified(id), "Invalid privatekey id.", -1);
     CHECK_ARG(!privatekey || size == 0, "Invalid privatekey.", -1);
 
     if (didstore_encrypt_to_base64(store, storepass, base64, privatekey, size) == -1) {
@@ -2447,7 +2452,7 @@ void DIDStore_DeletePrivateKey(DIDStore *store, DIDURL *id)
 
     DIDERROR_INITIALIZE();
 
-    if (!store || !id)
+    if (!store || !id || !DIDURL_IsQualified(id))
         return;
 
     id2path(id->fragment, strlen(id->fragment) + 1, filename, 128);

@@ -558,6 +558,13 @@ DIDURL *DIDURL_Copy(DIDURL *dest, DIDURL *src)
     return dest;
 }
 
+int DIDURL_IsQualified(DIDURL *id)
+{
+    CHECK_ARG(!id, "No didurl argument.", -1);
+
+    return (!DID_IsEmpty(&id->did) && *id->fragment) ? 1 : 0;
+}
+
 void DIDURL_Destroy(DIDURL *id)
 {
     DIDERROR_INITIALIZE();
