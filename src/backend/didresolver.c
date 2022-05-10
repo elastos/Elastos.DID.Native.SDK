@@ -147,6 +147,7 @@ static const char *perform_request(const char *url, const char *request_content)
     curl_easy_setopt(curl, CURLOPT_READFUNCTION, HttpRequestBodyReadCallback);
     curl_easy_setopt(curl, CURLOPT_READDATA, &request);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)request.sz);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, HttpResponseBodyWriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
