@@ -1,4 +1,10 @@
-﻿04/06/2022 Chen Yu chenyu_kaola@126.com Version 2.2.0, new version of DID SDK has main change as follow:
+﻿06/15/2022 Chen Yu chenyu_kaola@126.com Version 2.2.1, new version of DID SDK has main change as follow:
+- Support to set skew seconds for jwt parser.
+- Support http redirect.
+- Add the interface to free the memory.
+- Fix some bugs.
+
+04/06/2022 Chen Yu chenyu_kaola@126.com Version 2.2.0, new version of DID SDK has main change as follow:
 - Support JSON-LD context.
 - Improve the DID objects validity check.
 - Normalize the serialized output to NFC form.
