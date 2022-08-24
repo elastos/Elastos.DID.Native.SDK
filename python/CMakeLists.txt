@@ -31,7 +31,7 @@ add_custom_command(
     COMMAND ${CP} ${CMAKE_CURRENT_SOURCE_DIR}/../src/jwt/ela_jwt.h ${CMAKE_CURRENT_BINARY_DIR}/include
     COMMAND ${CP} ${CMAKE_CURRENT_SOURCE_DIR}/ela_did.ffi.h ${CMAKE_CURRENT_BINARY_DIR}
     COMMAND ${CP} ${CMAKE_CURRENT_SOURCE_DIR}/ela_jwt.ffi.h ${CMAKE_CURRENT_BINARY_DIR}
-    COMMAND ${CP} ${CMAKE_CURRENT_SOURCE_DIR}/eladid_wrapper.h ${CMAKE_CURRENT_BINARY_DIR}
+    COMMAND ${CP} ${CMAKE_CURRENT_SOURCE_DIR}/eladid_wrapper.py ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../src/ela_did.h ${CMAKE_CURRENT_SOURCE_DIR}/../src/jwt/ela_jwt.h ${CMAKE_CURRENT_SOURCE_DIR}/ela_did.ffi.h ${CMAKE_CURRENT_SOURCE_DIR}/ela_jwt.ffi.h
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include
     VERBATIM
@@ -67,4 +67,6 @@ add_custom_target(eladid_cffi_shared
 )
 
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${CFFI_MODULE_NAME}
+    DESTINATION "lib")
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/eladid_wrapper.py
     DESTINATION "lib")
