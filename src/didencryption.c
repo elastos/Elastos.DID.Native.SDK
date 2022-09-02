@@ -1,11 +1,41 @@
+/*
+ * Copyright (c) 2019 - 2021 Elastos Foundation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <errno.h>
+
 #include "didencryption.h"
+#include "diderror.h"
 
 Cipher *Cipher_Create(uint8_t *key) {
     Cipher *cipher;
 
-    assert(key, "Invalid key");
+    assert(key);
 
-    cipher = (Cipher *)malloc(sizeof Cipher);
+    cipher = (Cipher *)malloc(sizeof(Cipher));
     if (!cipher) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Create cipher memory error.");
         return NULL;
@@ -21,27 +51,33 @@ Curve25519KeyPair *Cipher_CreateCurve25519KeyPair(uint8_t *key) {
     unsigned char privateKey[crypto_sign_SECRETKEYBYTES], publicKey[crypto_sign_PUBLICKEYBYTES];
     unsigned char *curvePrivateKey, *curvePublicKey;
 
-    assert(key, "Invalid key");
+    assert(key);
+
+    if (sodium_init() < 0) {
+        /* panic! the library couldn't be initialized; it is not safe to use */
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Init cipher failed.");
+        return NULL;
+    }
 
     ret = crypto_sign_seed_keypair(publicKey, privateKey, (unsigned char *)key);
-    if (!ret) {
+    if (ret != 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to create sign key pair.");
         return NULL;
     }
 
-    Curve25519KeyPair *pair = (Curve25519KeyPair *)malloc(sizeof Curve25519KeyPair);
+    Curve25519KeyPair *pair = (Curve25519KeyPair *)malloc(sizeof(Curve25519KeyPair));
     if (!pair) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Create curve25519 key pair memory error.");
         return NULL;
     }
 
-    ret = crypto_sign_ed25519_pk_to_curve25519(publicKey, pair->publicKey);
-    if (!ret) {
+    ret = crypto_sign_ed25519_pk_to_curve25519(pair->publicKey, publicKey);
+    if (ret != 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Convert curve25519 public key error.");
         goto ERROR_EXIT;
     }
-    ret = crypto_sign_ed25519_sk_to_curve25519(privateKey, pair->privateKey);
-    if (!ret) {
+    ret = crypto_sign_ed25519_sk_to_curve25519(pair->privateKey, privateKey);
+    if (ret != 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Convert curve25519 private key error.");
         goto ERROR_EXIT;
     }
@@ -59,22 +95,28 @@ Cipher *Cipher_CreateCurve25519(Curve25519KeyPair *keyPair, bool isServer, uint8
     Cipher *cipher;
     int ret;
 
-    assert(keyPair, "Invalid keyPair");
-    assert(otherSidePublicKey, "Invalid otherSidePublicKey");
+    assert(keyPair);
+    assert(otherSidePublicKey);
 
-    cipher = (Cipher *)malloc(sizeof Cipher);
+    if (sodium_init() < 0) {
+        /* panic! the library couldn't be initialized; it is not safe to use */
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Init cipher failed.");
+        return NULL;
+    }
+
+    cipher = (Cipher *)malloc(sizeof(Cipher));
     if (!cipher) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Create cipher memory error.");
         return NULL;
     }
 
     cipher->isCurve25519 = true;
-    memcpy(&cipher->keyPair, keyPair, sizeof Curve25519KeyPair);
+    memcpy(&cipher->keyPair, keyPair, sizeof(Curve25519KeyPair));
     cipher->isServer = isServer;
     memcpy(cipher->otherSidePublicKey, otherSidePublicKey, crypto_scalarmult_curve25519_BYTES);
 
     ret = crypto_box_beforenm(cipher->encryptKey, otherSidePublicKey, keyPair->privateKey);
-    if (!ret) {
+    if (ret != 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Create encrypt key error.");
         free(cipher);
         return NULL;
@@ -85,7 +127,7 @@ Cipher *Cipher_CreateCurve25519(Curve25519KeyPair *keyPair, bool isServer, uint8
     } else {
         ret = crypto_kx_client_session_keys(cipher->sharedKeyRx, cipher->sharedKeyTx, keyPair->privateKey, keyPair->publicKey, otherSidePublicKey);
     }
-    if (!ret) {
+    if (ret != 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Create shared keys error.");
         free(cipher);
         return NULL;
@@ -94,8 +136,10 @@ Cipher *Cipher_CreateCurve25519(Curve25519KeyPair *keyPair, bool isServer, uint8
     return cipher;
 }
 
-uint8_t *Cipher_Encrypt(Cipher *cipher, uint8_t *data, unsigned int dataLen, uint8_t *nonce, int *cipherTextLen) {
+unsigned char *Cipher_Encrypt(Cipher *cipher, const unsigned char *data,
+                              unsigned int dataLen, const unsigned char *nonce, unsigned int *cipherTextLen) {
     unsigned char *cipherText;
+    unsigned long long clen;
     int ret;
 
     CHECK_ARG(!cipher, "Invalid cipher.", NULL);
@@ -111,8 +155,8 @@ uint8_t *Cipher_Encrypt(Cipher *cipher, uint8_t *data, unsigned int dataLen, uin
             return NULL;
         }
 
-        ret = crypto_box_easy_afternm(cipherText, data, dataLen, nonce, cipherText->encryptKey);
-        if (!ret) {
+        ret = crypto_box_easy_afternm(cipherText, (uint8_t *)data, dataLen, nonce, cipher->encryptKey);
+        if (ret != 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to encrypt with curve25519.");
             free(cipherText);
             return NULL;
@@ -125,9 +169,9 @@ uint8_t *Cipher_Encrypt(Cipher *cipher, uint8_t *data, unsigned int dataLen, uin
             return NULL;
         }
 
-        ret = crypto_aead_xchacha20poly1305_ietf_encrypt(cipherText, *cipherTextLen,
-                                                         data, dataLen, NULL, 0, NULL, nonce, cipher->privateKey);
-        if (!ret) {
+        ret = crypto_aead_xchacha20poly1305_ietf_encrypt(cipherText, &clen,
+                                                         (uint8_t *)data, dataLen, NULL, 0, NULL, nonce, cipher->privateKey);
+        if (ret != 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to encrypt with xchacha20.");
             free(cipherText);
             return NULL;
@@ -137,14 +181,22 @@ uint8_t *Cipher_Encrypt(Cipher *cipher, uint8_t *data, unsigned int dataLen, uin
     return cipherText;
 }
 
-uint8_t *Cipher_Decrypt(Cipher *cipher, uint8_t *data, unsigned int dataLen, uint8_t *nonce, int *clearTextLen) {
+unsigned char *Cipher_Decrypt(Cipher *cipher, const unsigned char *data,
+                              unsigned int dataLen, const unsigned char *nonce, unsigned int *clearTextLen) {
     unsigned char *cipherText;
+    unsigned long long clen;
     int ret;
 
     CHECK_ARG(!cipher, "Invalid cipher.", NULL);
     CHECK_ARG(!data, "Invalid data.", NULL);
     CHECK_ARG(!nonce, "Invalid nonce.", NULL);
-    CHECK_ARG(!cipherTextLen, "Invalid cipherTextLen.", NULL);
+    CHECK_ARG(!clearTextLen, "Invalid cipherTextLen.", NULL);
+
+    if (sodium_init() < 0) {
+        /* panic! the library couldn't be initialized; it is not safe to use */
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Init cipher failed.");
+        return NULL;
+    }
 
     if (cipher->isCurve25519) {
         CHECK_ARG(dataLen <= crypto_box_MACBYTES, "Invalid dataLen.", NULL);
@@ -156,8 +208,8 @@ uint8_t *Cipher_Decrypt(Cipher *cipher, uint8_t *data, unsigned int dataLen, uin
             return NULL;
         }
 
-        ret = crypto_box_open_easy_afternm(cipherText, data, dataLen, nonce, cipherText->encryptKey);
-        if (!ret) {
+        ret = crypto_box_open_easy_afternm(cipherText, data, dataLen, nonce, cipher->encryptKey);
+        if (ret != 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to decrypt with curve25519.");
             free(cipherText);
             return NULL;
@@ -172,9 +224,9 @@ uint8_t *Cipher_Decrypt(Cipher *cipher, uint8_t *data, unsigned int dataLen, uin
             return NULL;
         }
 
-        ret = crypto_aead_xchacha20poly1305_ietf_decrypt(cipherText, *clearTextLen,
+        ret = crypto_aead_xchacha20poly1305_ietf_decrypt(cipherText, &clen,
                                                          NULL, data, dataLen, NULL, 0, nonce, cipher->privateKey);
-        if (!ret) {
+        if (ret != 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to decrypt with xchacha20.");
             free(cipherText);
             return NULL;
@@ -185,12 +237,10 @@ uint8_t *Cipher_Decrypt(Cipher *cipher, uint8_t *data, unsigned int dataLen, uin
 }
 
 Cipher_EncryptionStream *Cipher_EncryptionStream_Create(Cipher *cipher) {
-    Cipher_EncryptStream *stream;
+    Cipher_EncryptionStream *stream;
     int ret;
 
-    CHECK_ARG(!header, "Invalid header.", NULL);
-
-    stream = (Cipher_EncryptStream *)malloc(sizeof Cipher_EncryptStream);
+    stream = (Cipher_EncryptionStream *)malloc(sizeof(Cipher_EncryptionStream));
     if (!stream) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to create stream memory.");
         return NULL;
@@ -198,7 +248,7 @@ Cipher_EncryptionStream *Cipher_EncryptionStream_Create(Cipher *cipher) {
 
     uint8_t *key = cipher->isCurve25519 ? cipher->encryptKey : cipher->privateKey;
     ret = crypto_secretstream_xchacha20poly1305_init_push(&stream->state, stream->header, key);
-    if (!ret) {
+    if (ret != 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to initialize stream.");
         free(stream);
         return NULL;
@@ -207,7 +257,7 @@ Cipher_EncryptionStream *Cipher_EncryptionStream_Create(Cipher *cipher) {
     return stream;
 }
 
-uint8_t *Cipher_EncryptionStream_Header(Cipher_EncryptStream *stream, unsigned int *headerLen) {
+unsigned char *Cipher_EncryptionStream_Header(Cipher_EncryptionStream *stream, unsigned int *headerLen) {
     CHECK_ARG(!stream, "Invalid stream.", false);
 
     if (headerLen) {
@@ -216,24 +266,27 @@ uint8_t *Cipher_EncryptionStream_Header(Cipher_EncryptStream *stream, unsigned i
     return stream->header;
 }
 
-uint8_t *Cipher_EncryptionStream_Push(Cipher_DecryptStream *stream, uint8_t *data, unsigned int dataLen, bool isFinal) {
+unsigned char *Cipher_EncryptionStream_Push(Cipher_EncryptionStream *stream, const unsigned char *data,
+                                            unsigned int dataLen, bool isFinal, unsigned int *cipherTextLen) {
     unsigned char tag, *cipherText;
     int ret;
 
     CHECK_ARG(!stream, "Invalid stream.", NULL);
     CHECK_ARG(!data, "Invalid data.", NULL);
+    CHECK_ARG(!cipherTextLen, "Invalid cipherTextLen.", NULL);
 
     tag = isFinal ? crypto_secretstream_xchacha20poly1305_TAG_FINAL
                   : crypto_secretstream_xchacha20poly1305_TAG_MESSAGE;
 
-    cipherText = (unsigned char *)malloc(dataLen + crypto_secretstream_xchacha20poly1305_ABYTES);
+    *cipherTextLen = dataLen + crypto_secretstream_xchacha20poly1305_ABYTES;
+    cipherText = (unsigned char *)malloc(*cipherTextLen);
     if (!cipherText) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to create cipher data memory.");
         return NULL;
     }
 
     ret = crypto_secretstream_xchacha20poly1305_push(&stream->state, cipherText, NULL, data, dataLen, NULL, 0, tag);
-    if (!ret) {
+    if (ret != 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to encrypt data.");
         free(cipherText);
         return NULL;
@@ -242,14 +295,14 @@ uint8_t *Cipher_EncryptionStream_Push(Cipher_DecryptStream *stream, uint8_t *dat
     return cipherText;
 }
 
-Cipher_DecryptStream *Cipher_DecryptionStream_Create(Cipher *cipher, uint8_t *header) {
-    Cipher_DecryptStream *stream;
+Cipher_DecryptionStream *Cipher_DecryptionStream_Create(Cipher *cipher, const unsigned char *header) {
+    Cipher_DecryptionStream *stream;
     int ret;
 
     CHECK_ARG(!cipher, "Invalid cipher.", NULL);
     CHECK_ARG(!header, "Invalid header.", NULL);
 
-    stream = (Cipher_DecryptStream *)malloc(sizeof Cipher_DecryptStream);
+    stream = (Cipher_DecryptionStream *)malloc(sizeof(Cipher_DecryptionStream));
     if (!stream) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to create stream memory.");
         return NULL;
@@ -258,7 +311,7 @@ Cipher_DecryptStream *Cipher_DecryptionStream_Create(Cipher *cipher, uint8_t *he
 
     uint8_t *key = cipher->isCurve25519 ? cipher->encryptKey : cipher->privateKey;
     ret = crypto_secretstream_xchacha20poly1305_init_pull(&stream->state, header, key);
-    if (!ret) {
+    if (ret != 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to initialize stream.");
         free(stream);
         return NULL;
@@ -275,22 +328,25 @@ unsigned int Cipher_DecryptionStream_GetExtraEncryptSize() {
     return crypto_secretstream_xchacha20poly1305_ABYTES;
 }
 
-uint8_t *Cipher_DecryptionStream_Pull(Cipher_DecryptStream *stream, uint8_t *data, unsigned int dataLen) {
+unsigned char *Cipher_DecryptionStream_Pull(Cipher_DecryptionStream *stream, const unsigned char *data,
+                                            unsigned int dataLen, unsigned int *clearTextLen) {
     unsigned char tag, *clearText;
     int ret;
 
     CHECK_ARG(!stream, "Invalid stream.", NULL);
     CHECK_ARG(!data, "Invalid data.", NULL);
-    CHECK_ARG(dataLen > crypto_secretstream_xchacha20poly1305_ABYTES, "Invalid dataLen.", NULL);
+    CHECK_ARG(dataLen <= crypto_secretstream_xchacha20poly1305_ABYTES, "Invalid dataLen.", NULL);
+    CHECK_ARG(!clearTextLen, "Invalid clearTextLen.", NULL);
 
-    clearText = (unsigned char *)malloc(dataLen - crypto_secretstream_xchacha20poly1305_ABYTES);
+    clearTextLen = dataLen - crypto_secretstream_xchacha20poly1305_ABYTES;
+    clearText = (unsigned char *)malloc(clearTextLen);
     if (!clearText) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to create clear data memory.");
         return NULL;
     }
 
     ret = crypto_secretstream_xchacha20poly1305_pull(&stream->state, clearText, NULL, &tag, data, dataLen, NULL, 0);
-    if (!ret) {
+    if (ret != 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to decrypt data.");
         free(clearText);
         return NULL;
@@ -300,10 +356,10 @@ uint8_t *Cipher_DecryptionStream_Pull(Cipher_DecryptStream *stream, uint8_t *dat
         stream->isComplete = true;
     }
 
-    return cipherText;
+    return clearText;
 }
 
-bool Cipher_DecryptionStream_IsComplete(Cipher_DecryptStream *stream) {
+bool Cipher_DecryptionStream_IsComplete(Cipher_DecryptionStream *stream) {
     CHECK_ARG(!stream, "Invalid stream.", false);
 
     return stream->isComplete;

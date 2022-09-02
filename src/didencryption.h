@@ -23,7 +23,9 @@
 #ifndef __DIDENCRYPTION_H__
 #define __DIDENCRYPTION_H__
 
+#include <stdbool.h>
 #include <time.h>
+#include <sodium.h>
 
 #include "ela_did.h"
 #include "did.h"
@@ -41,7 +43,7 @@ typedef struct Curve25519KeyPair {
     unsigned char publicKey[crypto_scalarmult_curve25519_BYTES];
 } Curve25519KeyPair;
 
-typedef struct Cipher {
+struct Cipher {
     bool isCurve25519;
 
     // xchacha20poly1305
@@ -54,17 +56,17 @@ typedef struct Cipher {
     uint8_t otherSidePublicKey[crypto_scalarmult_curve25519_BYTES];
     uint8_t sharedKeyTx[crypto_kx_SESSIONKEYBYTES]; // keys for asymmetric encryption
     uint8_t sharedKeyRx[crypto_kx_SESSIONKEYBYTES];
-} Cipher;
+};
 
-typedef struct Cipher_EncryptionStream {
-    unsigned char header[];
+struct Cipher_EncryptionStream {
+    unsigned char header[crypto_secretstream_xchacha20poly1305_HEADERBYTES];
     crypto_secretstream_xchacha20poly1305_state state;
-} Cipher_EncryptStream;
+};
 
-typedef struct Cipher_DecryptionStream {
+struct Cipher_DecryptionStream {
     crypto_secretstream_xchacha20poly1305_state state;
     bool isComplete;
-} Cipher_DecryptStream;
+};
 
 Cipher *Cipher_Create(uint8_t *key);
 

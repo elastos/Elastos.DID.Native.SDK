@@ -109,6 +109,7 @@ set(STATIC_LIBS
     curl
     ssl
     crypto
+    sodium
     zip
     z)
 

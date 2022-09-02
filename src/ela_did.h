@@ -269,6 +269,21 @@ typedef struct DIDDocument              DIDDocument;
 typedef struct DIDDocumentBuilder       DIDDocumentBuilder;
 /**
  * \~English
+ * A Cipher to encrypt & decrypt the message or stream.
+ */
+typedef struct Cipher                   Cipher;
+/**
+ * \~English
+ * A Cipher Encryption Stream to encrypt the stream.
+ */
+typedef struct Cipher_EncryptionStream  Cipher_EncryptionStream;
+/**
+ * \~English
+ * A Cipher Decryption Stream to decrypt the stream.
+ */
+typedef struct Cipher_DecryptionStream  Cipher_DecryptionStream;
+/**
+ * \~English
  DIDMetadata is store for other information about DID except DIDDocument information.
  */
 typedef struct DIDMetadata              DIDMetadata;
@@ -3046,7 +3061,8 @@ DID_API void DIDDocument_Cipher_Destroy(Cipher *cipher);
  *      If no error occurs, return a encrypted data. Otherwise, return NULL.
  *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
-DID_API uint8_t *Cipher_Encrypt(Cipher *cipher, uint8_t *data, unsigned int dataLen, uint8_t *nonce, int *cipherTextLen);
+DID_API unsigned char *Cipher_Encrypt(Cipher *cipher, const unsigned char *data,
+        unsigned int dataLen, const unsigned char *nonce, unsigned int *cipherTextLen);
 
 /**
  * \~English
@@ -3066,7 +3082,8 @@ DID_API uint8_t *Cipher_Encrypt(Cipher *cipher, uint8_t *data, unsigned int data
  *      If no error occurs, return a decrypted data. Otherwise, return NULL.
  *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
-DID_API uint8_t *Cipher_Decrypt(Cipher *cipher, uint8_t *data, unsigned int dataLen, uint8_t *nonce, int *clearTextLen);
+DID_API unsigned char *Cipher_Decrypt(Cipher *cipher, const unsigned char *data,
+        unsigned int dataLen, const unsigned char *nonce, unsigned int *clearTextLen);
 
 /**
  * \~English
@@ -3091,7 +3108,7 @@ DID_API Cipher_EncryptionStream *Cipher_EncryptionStream_Create(Cipher *cipher);
  * @return
  *      If no error occurs, return a encryption stream. Otherwise, return NULL.
  */
-DID_API uint8_t *Cipher_EncryptionStream_Header(Cipher_EncryptionStream *stream, unsigned int *headerLen);
+DID_API unsigned char *Cipher_EncryptionStream_Header(Cipher_EncryptionStream *stream, unsigned int *headerLen);
 
 /**
  * \~English
@@ -3109,7 +3126,8 @@ DID_API uint8_t *Cipher_EncryptionStream_Header(Cipher_EncryptionStream *stream,
  *      If no error occurs, return a encrypted data. Otherwise, return NULL.
  *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
-DID_API uint8_t *Cipher_EncryptionStream_Push(Cipher_EncryptionStream *stream, uint8_t *data, unsigned int dataLen, bool isFinal);
+DID_API unsigned char *Cipher_EncryptionStream_Push(Cipher_EncryptionStream *stream,
+        const unsigned char *data, unsigned int dataLen, bool isFinal, unsigned int *cipherTextLen);
 
 /**
  * \~English
@@ -3121,7 +3139,7 @@ DID_API uint8_t *Cipher_EncryptionStream_Push(Cipher_EncryptionStream *stream, u
  *      If no error occurs, return a decryption stream. Otherwise, return NULL.
  *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
-DID_API Cipher_DecryptStream *Cipher_DecryptionStream_Create(Cipher *cipher, uint8_t *header);
+DID_API Cipher_DecryptionStream *Cipher_DecryptionStream_Create(Cipher *cipher, const unsigned char *header);
 
 /**
  * \~English
@@ -3155,7 +3173,8 @@ DID_API unsigned int Cipher_DecryptionStream_GetExtraEncryptSize();
  *      If no error occurs, return a decrypted data. Otherwise, return NULL.
  *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
  */
-DID_API uint8_t *Cipher_DecryptionStream_Pull(Cipher_DecryptStream *stream, uint8_t *data, unsigned int dataLen);
+DID_API unsigned char *Cipher_DecryptionStream_Pull(Cipher_DecryptionStream *stream,
+        const unsigned char *data, unsigned int dataLen, unsigned int *clearTextLen);
 
 /**
  * \~English
@@ -3166,7 +3185,7 @@ DID_API uint8_t *Cipher_DecryptionStream_Pull(Cipher_DecryptStream *stream, uint
  * @return
  *      Whether the data is the last part of decryption stream.
  */
-DID_API bool Cipher_DecryptionStream_IsComplete(Cipher_DecryptStream *stream);
+DID_API bool Cipher_DecryptionStream_IsComplete(Cipher_DecryptionStream *stream);
 
 /**
  * \~English

@@ -24,6 +24,7 @@
 #define __DIDDOCUMENT_H__
 
 #include <time.h>
+#include <stdbool.h>
 
 #include "ela_did.h"
 #include "did.h"

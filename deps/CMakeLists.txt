@@ -5,6 +5,8 @@ add_submodule(libressl
     DEPENDS platform-specific)
 add_submodule(libcrystal
     DEPENDS platform-specific)
+add_submodule(libsodium
+    DEPENDS platform-specific)
 
 if (ENABLE_TESTS)
     add_submodule(CUnit
