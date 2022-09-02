@@ -59,6 +59,7 @@ endif()
 set(LIBS
     ${LIBS}
     crypto
+    sodium
     zip
     z)
 

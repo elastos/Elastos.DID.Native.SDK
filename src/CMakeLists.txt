@@ -65,6 +65,7 @@ set(SRC
     did.c
     didurl.c
     diddocument.c
+    didencryption.c
     credential.c
     didstore.c
     didbackend.c
@@ -119,6 +120,7 @@ set(LIBS
     curl
     ssl
     crypto
+    sodium
     ${JWT_LIBS}
     jansson
     zip
@@ -148,6 +150,7 @@ if(WIN32)
     set(LIBS
         ${LIBS}
         crystal
+        sodium
         pthread
         Ws2_32
         Crypt32)
