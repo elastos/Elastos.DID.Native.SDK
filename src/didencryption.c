@@ -141,6 +141,7 @@ unsigned char *Cipher_Encrypt(Cipher *cipher, const unsigned char *data,
     unsigned char *cipherText;
     unsigned long long clen;
     int ret;
+    unsigned int ctlen;
 
     CHECK_ARG(!cipher, "Invalid cipher.", NULL);
     CHECK_ARG(!data, "Invalid data.", NULL);
@@ -148,8 +149,8 @@ unsigned char *Cipher_Encrypt(Cipher *cipher, const unsigned char *data,
     CHECK_ARG(!cipherTextLen, "Invalid cipherTextLen.", NULL);
 
     if (cipher->isCurve25519) {
-        *cipherTextLen = dataLen + crypto_box_MACBYTES;
-        cipherText = (unsigned char *)malloc(*cipherTextLen);
+        ctlen = dataLen + crypto_box_MACBYTES;
+        cipherText = (unsigned char *)malloc(ctlen);
         if (!cipherText) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to create cipher text memory.");
             return NULL;
@@ -162,8 +163,8 @@ unsigned char *Cipher_Encrypt(Cipher *cipher, const unsigned char *data,
             return NULL;
         }
     } else {
-        *cipherTextLen = dataLen + crypto_aead_xchacha20poly1305_ietf_ABYTES;
-        cipherText = (unsigned char *)malloc(*cipherTextLen);
+        ctlen = dataLen + crypto_aead_xchacha20poly1305_ietf_ABYTES;
+        cipherText = (unsigned char *)malloc(ctlen);
         if (!cipherText) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to create cipher text memory..");
             return NULL;
@@ -178,14 +179,18 @@ unsigned char *Cipher_Encrypt(Cipher *cipher, const unsigned char *data,
         }
     }
 
+    if (cipherTextLen) {
+        *cipherTextLen = ctlen;
+    }
     return cipherText;
 }
 
 unsigned char *Cipher_Decrypt(Cipher *cipher, const unsigned char *data,
                               unsigned int dataLen, const unsigned char *nonce, unsigned int *clearTextLen) {
-    unsigned char *cipherText;
+    unsigned char *clearText;
     unsigned long long clen;
     int ret;
+    unsigned int ctlen;
 
     CHECK_ARG(!cipher, "Invalid cipher.", NULL);
     CHECK_ARG(!data, "Invalid data.", NULL);
@@ -201,39 +206,42 @@ unsigned char *Cipher_Decrypt(Cipher *cipher, const unsigned char *data,
     if (cipher->isCurve25519) {
         CHECK_ARG(dataLen <= crypto_box_MACBYTES, "Invalid dataLen.", NULL);
 
-        *clearTextLen = dataLen - crypto_box_MACBYTES;
-        cipherText = (unsigned char *)malloc(*clearTextLen);
-        if (!cipherText) {
+        ctlen = dataLen - crypto_box_MACBYTES;
+        clearText = (unsigned char *)malloc(ctlen);
+        if (!clearText) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to create clear text memory.");
             return NULL;
         }
 
-        ret = crypto_box_open_easy_afternm(cipherText, data, dataLen, nonce, cipher->encryptKey);
+        ret = crypto_box_open_easy_afternm(clearText, data, dataLen, nonce, cipher->encryptKey);
         if (ret != 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to decrypt with curve25519.");
-            free(cipherText);
+            free(clearText);
             return NULL;
         }
     } else {
         CHECK_ARG(dataLen <= crypto_aead_xchacha20poly1305_ietf_ABYTES, "Invalid dataLen.", NULL);
 
-        *clearTextLen = dataLen - crypto_aead_xchacha20poly1305_ietf_ABYTES;
-        cipherText = (unsigned char *)malloc(*clearTextLen);
-        if (!cipherText) {
+        ctlen = dataLen - crypto_aead_xchacha20poly1305_ietf_ABYTES;
+        clearText = (unsigned char *)malloc(ctlen);
+        if (!clearText) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to create clear text memory..");
             return NULL;
         }
 
-        ret = crypto_aead_xchacha20poly1305_ietf_decrypt(cipherText, &clen,
+        ret = crypto_aead_xchacha20poly1305_ietf_decrypt(clearText, &clen,
                                                          NULL, data, dataLen, NULL, 0, nonce, cipher->privateKey);
         if (ret != 0) {
             DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to decrypt with xchacha20.");
-            free(cipherText);
+            free(clearText);
             return NULL;
         }
     }
 
-    return cipherText;
+    if (clearTextLen) {
+        *clearTextLen = ctlen;
+    }
+    return clearText;
 }
 
 Cipher_EncryptionStream *Cipher_EncryptionStream_Create(Cipher *cipher) {
@@ -270,6 +278,7 @@ unsigned char *Cipher_EncryptionStream_Push(Cipher_EncryptionStream *stream, con
                                             unsigned int dataLen, bool isFinal, unsigned int *cipherTextLen) {
     unsigned char tag, *cipherText;
     int ret;
+    unsigned int ctlen;
 
     CHECK_ARG(!stream, "Invalid stream.", NULL);
     CHECK_ARG(!data, "Invalid data.", NULL);
@@ -278,8 +287,8 @@ unsigned char *Cipher_EncryptionStream_Push(Cipher_EncryptionStream *stream, con
     tag = isFinal ? crypto_secretstream_xchacha20poly1305_TAG_FINAL
                   : crypto_secretstream_xchacha20poly1305_TAG_MESSAGE;
 
-    *cipherTextLen = dataLen + crypto_secretstream_xchacha20poly1305_ABYTES;
-    cipherText = (unsigned char *)malloc(*cipherTextLen);
+    ctlen = dataLen + crypto_secretstream_xchacha20poly1305_ABYTES;
+    cipherText = (unsigned char *)malloc(ctlen);
     if (!cipherText) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to create cipher data memory.");
         return NULL;
@@ -292,6 +301,9 @@ unsigned char *Cipher_EncryptionStream_Push(Cipher_EncryptionStream *stream, con
         return NULL;
     }
 
+    if (cipherTextLen) {
+        *cipherTextLen = ctlen;
+    }
     return cipherText;
 }
 
@@ -332,14 +344,15 @@ unsigned char *Cipher_DecryptionStream_Pull(Cipher_DecryptionStream *stream, con
                                             unsigned int dataLen, unsigned int *clearTextLen) {
     unsigned char tag, *clearText;
     int ret;
+    unsigned int ctlen;
 
     CHECK_ARG(!stream, "Invalid stream.", NULL);
     CHECK_ARG(!data, "Invalid data.", NULL);
     CHECK_ARG(dataLen <= crypto_secretstream_xchacha20poly1305_ABYTES, "Invalid dataLen.", NULL);
     CHECK_ARG(!clearTextLen, "Invalid clearTextLen.", NULL);
 
-    clearTextLen = dataLen - crypto_secretstream_xchacha20poly1305_ABYTES;
-    clearText = (unsigned char *)malloc(clearTextLen);
+    ctlen = dataLen - crypto_secretstream_xchacha20poly1305_ABYTES;
+    clearText = (unsigned char *)malloc(ctlen);
     if (!clearText) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to create clear data memory.");
         return NULL;
@@ -356,6 +369,9 @@ unsigned char *Cipher_DecryptionStream_Pull(Cipher_DecryptionStream *stream, con
         stream->isComplete = true;
     }
 
+    if (clearTextLen) {
+        *clearTextLen = ctlen;
+    }
     return clearText;
 }
 
