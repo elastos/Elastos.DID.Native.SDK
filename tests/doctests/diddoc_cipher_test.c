@@ -39,7 +39,9 @@ void check_with_ciphers(Cipher *cipher, Cipher *cipher2) {
     clearText1 = Cipher_Decrypt(cipher2, (const unsigned char *)cipherText1, cipherTextLen1, nonce, &clearTextLen1);
     CU_ASSERT_PTR_NOT_NULL(clearText1);
 
-    printf("a3\n");
+    printf("a3, cipherText1=%p, error=%s\n", cipherText1, DIDError_GetLastErrorMessage());
+    printf("a3, clearText1=%p, error=%s\n", clearText1, DIDError_GetLastErrorMessage());
+    printf("a3, clearText1=%s, error=%s\n", clearText1, DIDError_GetLastErrorMessage());
 
     CU_ASSERT_STRING_EQUAL(clearText1, sourceStr1);
     free((void*)cipherText1);
