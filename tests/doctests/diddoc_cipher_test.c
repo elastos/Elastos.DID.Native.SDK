@@ -113,6 +113,8 @@ static void test_diddoc_cipher(void)
     CU_ASSERT_PTR_NOT_NULL(doc);
 
     printf("2, %p, %p\n", doc, doc2);
+    printf("2, %s\n", DIDDocument_ToJson(doc, true));
+    printf("2, %s\n", DIDDocument_ToJson(doc2, true));
 
     cipher = DIDDocument_CreateCipher(doc, identifier, 15, storepass);
     CU_ASSERT_PTR_NOT_NULL(cipher);
