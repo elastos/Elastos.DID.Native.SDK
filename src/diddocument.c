@@ -4540,6 +4540,13 @@ uint8_t *DIDDocument_GetDerivedPrivateKey(DIDDocument *document, const char *ide
         return NULL;
     }
 
+    // output public key.
+    printf("extendedkey: ");
+    for (int i = 0; i < EXTENDEDKEY_BYTES; i++) {
+        printf("%02x", extendedkey[i]);
+    }
+    putchar('\n');
+
     hdkey = HDKey_Deserialize(&_hdkey, extendedkey, sizeof(extendedkey));
     memset(extendedkey, 0, sizeof(extendedkey));
     if (!hdkey) {
@@ -4550,6 +4557,11 @@ uint8_t *DIDDocument_GetDerivedPrivateKey(DIDDocument *document, const char *ide
     if (map_to_derivepath(paths, 8, identifier) < 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Get derived path failed.");
         return NULL;
+    }
+
+    // output paths
+    for (int i = 0; i < 8; i++) {
+        printf("paths %d: %d\n", i, paths[i]);
     }
 
     derivedkey = HDKey_GetDerivedKey(hdkey, &_dkey, 9, paths[0], paths[1], paths[2], paths[3],
