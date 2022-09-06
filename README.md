@@ -1,4 +1,4 @@
-# Elastos DID Native SDK
+﻿# Elastos DID Native SDK
 
 |Linux && Mac|Windows|
 |:-:|:-:|
@@ -371,7 +371,7 @@ Third, rebuild the DID project as above operation. (make && make install)
 Finally, Then, change directory to the 'bin' folder.
 
 ```shell
-cd YOUR-DISTRIBUTION-PACKAGE-PATH/bin
+cd YOUR-DISTRIBUTION-PACKAGE-PATH/intermediates/bin
 ./didtest
 ```
 
@@ -510,6 +510,21 @@ In Visual Studio, open Visual Studio Command Prompt from the menu "Tools >> Visu
 Note: To build for a 32-bit target , select `x86 Native Tools Command Console` to run building commands, otherwise, select `x64 Native Tools Command Console` for a 64-bit target.
 ***
 
+Get Visual Studio SDK and ToolSet version on the target platform.
+
+```shell
+cd tools\win
+cmake .
+```
+Show information as follow:
+
+```shell
+================================
+CMake command line for Windows:
+cmake -G "NMake Makefiles" -DCMAKE_VS_PLATFORM_TOOLSET=YOUR-TOOLSET-VERSION -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION=YOUR-VSSDK-VERSION ...
+================================
+```
+
 Navigate to the previously downloaded folder that contains the source code of the DID project.
 
 ```shell
@@ -532,7 +547,7 @@ cd win
 Generate the Makefile in the current directory:
 
 ```shell
-cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=outputs ..\..
+cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=outputs -DCMAKE_VS_PLATFORM_TOOLSET=YOUR-TOOLSET-VERSION -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION=YOUR-VSSDK-VERSION ..\..
 ```
 
 Build the program:
@@ -569,7 +584,7 @@ OpenSSL does not support using the Windows "CA certificate store", so the cURL w
 To run DIDTest, first extract the distribution package created previously and enter the extracted folder. Then, change directory to the 'bin' folder.
 
 ```shell
-cd YOUR-DISTRIBUTION-PACKAGE-PATH/bin
+cd YOUR-DISTRIBUTION-PACKAGE-PATH/intermediates/bin
 ```
 
 #### 4.1 Normal Test (Dummy Test)
@@ -578,11 +593,11 @@ In Windows, the Normal test does not support IDChain Transaction, so the normal 
 
 
 ```shell
-./didtest
+didtest.exe
 ```
 or
 ```shell
-./didtest --dummy
+didtest.exe --dummy
 ```
 
 #### 4.2 Stress Test
@@ -592,7 +607,7 @@ At the same time, DIDTest supports stress tests. Use Available commands in the s
 For example:
 
 ```shell
-./didtest -s 100 -m memcheck
+didtest.exe -s 100 -m memcheck
 ```
 
 ## Contribution

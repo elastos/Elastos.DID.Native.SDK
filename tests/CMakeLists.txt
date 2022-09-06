@@ -109,7 +109,6 @@ set(STATIC_LIBS
     curl
     ssl
     crypto
-    sodium
     zip
     z)
 
@@ -128,6 +127,7 @@ set(LIBS
 set(DEPS
     ela-did
     CUnit
+    libsodium
     libcurl
     hdkey)
 
@@ -160,6 +160,7 @@ if(WIN32)
     set(LIBS
         ${LIBS}
         crystal_s
+        libsodium.lib
         pthread
         Ws2_32
         crypt32
@@ -172,6 +173,7 @@ if(WIN32)
 else()
     set(LIBS
         ${LIBS}
+        sodium
         pthread
         m)
 endif()
