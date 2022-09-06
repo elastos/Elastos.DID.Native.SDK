@@ -120,7 +120,6 @@ set(LIBS
     curl
     ssl
     crypto
-    sodium
     ${JWT_LIBS}
     jansson
     zip
@@ -136,7 +135,7 @@ if(ENABLE_UNICODE_NORMALIZATION)
         utf8proc)
 endif()
 
-set(ELADID_DEPENDS libressl libcurl hdkey libjansson ${JWT_DEPENDS} libzip)
+set(ELADID_DEPENDS libressl libsodium libcurl hdkey libjansson ${JWT_DEPENDS} libzip)
 
 if(WIN32)
     add_definitions(
@@ -150,14 +149,18 @@ if(WIN32)
     set(LIBS
         ${LIBS}
         crystal
-        sodium
         pthread
+        libsodium.lib
         Ws2_32
         Crypt32)
 
     set(ELADID_DEPENDS
         libcrystal
         ${ELADID_DEPENDS})
+else()
+    set(LIBS
+        ${LIBS}
+        sodium)
 endif()
 
 set(EXPORT_FILES ela_did.h)
@@ -218,7 +221,7 @@ if(ENABLE_STATIC)
     add_dependencies(eladid-static ${ELADID_DEPENDS})
 
     #target_compile_definitions(eladid-static PRIVATE DID_STATIC CRYSTAL_STATIC)
-    target_compile_definitions(eladid-static PRIVATE DID_STATIC CURL_STATICLIB)
+    target_compile_definitions(eladid-static PRIVATE DID_STATIC CURL_STATICLIB SODIUM_STATIC)
     set_target_properties(eladid-static PROPERTIES OUTPUT_NAME eladid${STATIC_LIB_DECORATOR})
     if(WIN32)
         set_target_properties(eladid-static PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
@@ -237,7 +240,7 @@ if(ENABLE_SHARED)
     add_dependencies(eladid-shared ${ELADID_DEPENDS})
 
     #target_compile_definitions(eladid-shared PRIVATE DID_DYNAMIC CRYSTAL_DYNAMIC)
-    target_compile_definitions(eladid-shared PRIVATE DID_DYNAMIC CURL_STATICLIB)
+    target_compile_definitions(eladid-shared PRIVATE DID_DYNAMIC CURL_STATICLIB SODIUM_STATIC)
     set_target_properties(eladid-shared PROPERTIES
         OUTPUT_NAME eladid${SHARED_LIB_DECORATOR}
         VERSION ${PROJECT_VERSION}
