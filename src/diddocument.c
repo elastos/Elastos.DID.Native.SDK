@@ -4595,7 +4595,7 @@ uint8_t *DIDDocument_GetDerivedPrivateKey(DIDDocument *document, const char *ide
     }
 
     derivedkey = HDKey_GetDerivedKey(hdkey, &_dkey, 9, paths[0], paths[1], paths[2], paths[3],
-            paths[4], paths[5], paths[6], paths[7], index);
+            paths[4], paths[5], paths[6], paths[7], securityCode);
     if (!derivedkey) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Get derived key failed.");
         return NULL;
