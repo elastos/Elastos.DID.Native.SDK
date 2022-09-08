@@ -59,13 +59,6 @@ Curve25519KeyPair *Cipher_CreateCurve25519KeyPair(uint8_t *key) {
         return NULL;
     }
 
-    // output public key.
-    printf("derived private key: ");
-    for (int i = 0; i < PRIVATEKEY_BYTES; i++) {
-        printf("%02x", key[i]);
-    }
-    putchar('\n');
-
     ret = crypto_sign_seed_keypair(publicKey, privateKey, (unsigned char *)key);
     if (ret != 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Failed to create sign key pair.");
@@ -88,13 +81,6 @@ Curve25519KeyPair *Cipher_CreateCurve25519KeyPair(uint8_t *key) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Convert curve25519 private key error.");
         goto ERROR_EXIT;
     }
-
-    // output public key.
-    printf("public key: ");
-    for (int i = 0; i < crypto_scalarmult_curve25519_BYTES; i++) {
-        printf("%02x", pair->publicKey[i]);
-    }
-    putchar('\n');
 
     return pair;
 
