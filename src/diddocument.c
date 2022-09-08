@@ -4540,13 +4540,6 @@ uint8_t *DIDDocument_GetDerivedPrivateKey(DIDDocument *document, const char *ide
         return NULL;
     }
 
-    // output public key.
-    printf("extendedkey: ");
-    for (int i = 0; i < EXTENDEDKEY_BYTES; i++) {
-        printf("%02x", extendedkey[i]);
-    }
-    putchar('\n');
-
     hdkey = HDKey_Deserialize(&_hdkey, extendedkey, sizeof(extendedkey));
     memset(extendedkey, 0, sizeof(extendedkey));
     if (!hdkey) {
@@ -4559,106 +4552,11 @@ uint8_t *DIDDocument_GetDerivedPrivateKey(DIDDocument *document, const char *ide
         return NULL;
     }
 
-    // output paths
-    for (int i = 0; i < 8; i++) {
-        printf("paths %d: %d\n", i, paths[i]);
-    }
-
-    { // hdkey
-        printf("hdkey start ================\n");
-        printf("hdkey depth: %d\n", hdkey->depth);
-        printf("hdkey fingerPrint: %d\n", hdkey->fingerPrint);
-        printf("hdkey childnumber: %d\n", hdkey->childnumber);
-
-        printf("hdkey prvChainCode: ");
-        for (int i = 0; i < CHAINCODE_BYTES; i++) {
-            printf("%02x", hdkey->prvChainCode[i]);
-        }
-        printf("\n");
-        printf("hdkey privatekey: ");
-        for (int i = 0; i < PRIVATEKEY_BYTES; i++) {
-            printf("%02x", hdkey->privatekey[i]);
-        }
-        printf("\n");
-        printf("hdkey pubChainCode: ");
-        for (int i = 0; i < CHAINCODE_BYTES; i++) {
-            printf("%02x", hdkey->pubChainCode[i]);
-        }
-        printf("\n");
-        printf("hdkey publickey: ");
-        for (int i = 0; i < PUBLICKEY_BYTES; i++) {
-            printf("%02x", hdkey->publickey[i]);
-        }
-        printf("\n");
-
-        printf("hdkey end ================\n");
-    }
-
     derivedkey = HDKey_GetDerivedKey(hdkey, &_dkey, 9, paths[0], paths[1], paths[2], paths[3],
             paths[4], paths[5], paths[6], paths[7], securityCode);
     if (!derivedkey) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Get derived key failed.");
         return NULL;
-    }
-
-    { // derivedkey
-        printf("derivedkey start ================\n");
-        printf("derivedkey depth: %d\n", derivedkey->depth);
-        printf("derivedkey fingerPrint: %d\n", derivedkey->fingerPrint);
-        printf("derivedkey childnumber: %d\n", derivedkey->childnumber);
-
-        printf("derivedkey prvChainCode: ");
-        for (int i = 0; i < CHAINCODE_BYTES; i++) {
-            printf("%02x", derivedkey->prvChainCode[i]);
-        }
-        printf("\n");
-        printf("derivedkey privatekey: ");
-        for (int i = 0; i < PRIVATEKEY_BYTES; i++) {
-            printf("%02x", derivedkey->privatekey[i]);
-        }
-        printf("\n");
-        printf("derivedkey pubChainCode: ");
-        for (int i = 0; i < CHAINCODE_BYTES; i++) {
-            printf("%02x", derivedkey->pubChainCode[i]);
-        }
-        printf("\n");
-        printf("derivedkey publickey: ");
-        for (int i = 0; i < PUBLICKEY_BYTES; i++) {
-            printf("%02x", derivedkey->publickey[i]);
-        }
-        printf("\n");
-
-        printf("derivedkey end ================\n");
-    }
-
-    { // _dkey
-        printf("_dkey start ================\n");
-        printf("_dkey depth: %d\n", _dkey.depth);
-        printf("_dkey fingerPrint: %d\n", _dkey.fingerPrint);
-        printf("_dkey childnumber: %d\n", _dkey.childnumber);
-
-        printf("_dkey prvChainCode: ");
-        for (int i = 0; i < CHAINCODE_BYTES; i++) {
-            printf("%02x", _dkey.prvChainCode[i]);
-        }
-        printf("\n");
-        printf("_dkey privatekey: ");
-        for (int i = 0; i < PRIVATEKEY_BYTES; i++) {
-            printf("%02x", _dkey.privatekey[i]);
-        }
-        printf("\n");
-        printf("_dkey pubChainCode: ");
-        for (int i = 0; i < CHAINCODE_BYTES; i++) {
-            printf("%02x", _dkey.pubChainCode[i]);
-        }
-        printf("\n");
-        printf("_dkey publickey: ");
-        for (int i = 0; i < PUBLICKEY_BYTES; i++) {
-            printf("%02x", _dkey.publickey[i]);
-        }
-        printf("\n");
-
-        printf("_dkey end ================\n");
     }
 
     privateKey = HDKey_GetPrivateKey(derivedkey);
