@@ -99,7 +99,6 @@ Cipher *Cipher_CreateCurve25519(Curve25519KeyPair *keyPair, bool isServer) {
     int ret;
 
     assert(keyPair);
-    assert(otherSidePublicKey);
 
     if (sodium_init() < 0) {
         /* panic! the library couldn't be initialized; it is not safe to use */
