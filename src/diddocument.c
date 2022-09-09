@@ -4596,7 +4596,7 @@ Cipher *DIDDocument_CreateCipher(DIDDocument *document, const char *identifier,
 }
 
 Cipher *DIDDocument_CreateCurve25519Cipher(DIDDocument *document, const char *identifier,
-        int securityCode, const char *storepass, bool isServer, const char *otherSidePublicKey)
+        int securityCode, const char *storepass, bool isServer)
 {
     uint8_t *derivedPrivateKey;
     Cipher *cipher;
@@ -4608,7 +4608,6 @@ Cipher *DIDDocument_CreateCurve25519Cipher(DIDDocument *document, const char *id
     CHECK_ARG(!identifier, "No identifier argument provided.", NULL);
     CHECK_ARG(securityCode < 0, "Invalid securityCode", NULL);
     CHECK_PASSWORD(storepass, NULL);
-    CHECK_ARG(!otherSidePublicKey, "Invalid otherSidePublicKey", NULL);
 
     derivedPrivateKey = DIDDocument_GetDerivedPrivateKey(document, identifier, securityCode, storepass);
     if (!derivedPrivateKey) {
@@ -4621,7 +4620,9 @@ Cipher *DIDDocument_CreateCurve25519Cipher(DIDDocument *document, const char *id
         return NULL;
     }
 
-    return Cipher_CreateCurve25519(keyPair, isServer, (uint8_t *)otherSidePublicKey);
+    cipher = Cipher_CreateCurve25519(keyPair, isServer);
+    free(keyPair);
+    return cipher;
 
     DIDERROR_FINALIZE();
 }

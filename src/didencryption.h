@@ -39,6 +39,8 @@ extern "C" {
 #endif
 
 typedef struct Curve25519KeyPair {
+    unsigned char ed25519Sk[crypto_sign_ed25519_SECRETKEYBYTES];
+    unsigned char ed25519Pk[crypto_sign_ed25519_PUBLICKEYBYTES];
     unsigned char privateKey[crypto_scalarmult_curve25519_BYTES];
     unsigned char publicKey[crypto_scalarmult_curve25519_BYTES];
 } Curve25519KeyPair;
@@ -50,10 +52,11 @@ struct Cipher {
     uint8_t privateKey[PRIVATEKEY_BYTES]; // key for symmetric encryption
 
     // curve25519
-    Curve25519KeyPair keyPair;
+    Curve25519KeyPair keyPair; // ed25519 and curve25519 key pairs.
     bool isServer; // here is server side or client side.
-    uint8_t encryptKey[crypto_box_BEFORENMBYTES]; // key for symmetric encryption
+    bool isSetOtherSidePublicKey;
     uint8_t otherSidePublicKey[crypto_scalarmult_curve25519_BYTES];
+    uint8_t encryptKey[crypto_box_BEFORENMBYTES]; // key for symmetric encryption
     uint8_t sharedKeyTx[crypto_kx_SESSIONKEYBYTES]; // keys for asymmetric encryption
     uint8_t sharedKeyRx[crypto_kx_SESSIONKEYBYTES];
 };
@@ -72,7 +75,9 @@ Cipher *Cipher_Create(uint8_t *key);
 
 Curve25519KeyPair *Cipher_CreateCurve25519KeyPair(uint8_t *key);
 
-Cipher *Cipher_CreateCurve25519(Curve25519KeyPair *keyPair, bool isServer, uint8_t *otherSidePublicKey);
+Cipher *Cipher_CreateCurve25519(Curve25519KeyPair *keyPair, bool isServer);
+
+bool Cipher_CheckOtherSidePublicKey(Cipher *cipher);
 
 #ifdef __cplusplus
 }

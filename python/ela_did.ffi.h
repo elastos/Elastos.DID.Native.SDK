@@ -2955,7 +2955,7 @@ extern "Python" const char* MyResolve(const char *request);
  *      Notice that user must use 'DIDDocument_Cipher_Destroy' to free the returned memory.
  */
 /*DID_API*/ Cipher *DIDDocument_CreateCurve25519Cipher(DIDDocument *document, const char *identifier,
-        int securityCode, const char *storepass, bool isServer, const char *otherSidePublicKey);
+        int securityCode, const char *storepass, bool isServer);
 
 /**
  * \~English
@@ -2965,6 +2965,16 @@ extern "Python" const char* MyResolve(const char *request);
  *      cipher                    [in] The cipher object.
  */
 /*DID_API*/ void DIDDocument_Cipher_Destroy(Cipher *cipher);
+
+/**
+ * Set an other side public key of curve25519.
+ *
+ * @param cipher                    [in] The cipher object.
+ * @param otherSidePublicKey        [in] The other side public key of curve25519.
+ * @return
+ *      true means success, else fail.
+ */
+/*DID_API*/ bool Cipher_SetOtherSidePublicKey(Cipher *cipher, const char *otherSidePublicKey);
 
 /**
  * \~English
@@ -3007,6 +3017,26 @@ extern "Python" const char* MyResolve(const char *request);
  */
 /*DID_API*/ unsigned char *Cipher_Decrypt(Cipher *cipher, const unsigned char *data,
         unsigned int dataLen, const unsigned char *nonce, unsigned int *clearTextLen);
+
+/**
+ * Get the public key of ed25519 from the cipher.
+ *
+ * @param cipher                  [in] The cipher object.
+ * @param length                  [out] The length of the public key.
+ * @return
+ *      The public key of ed25519 from the cipher.
+ */
+/*DID_API*/ unsigned char *Cipher_GetEd25519PublicKey(Cipher *cipher, unsigned int *length);
+
+/**
+ * Get the public key of curve25519 from the cipher.
+ *
+ * @param cipher                  [in] The cipher object.
+ * @param length                  [out] The length of the public key.
+ * @return
+ *      The public key of curve25519 from the cipher.
+ */
+/*DID_API*/ unsigned char *Cipher_GetCurve25519PublicKey(Cipher *cipher, unsigned int *length);
 
 /**
  * \~English
