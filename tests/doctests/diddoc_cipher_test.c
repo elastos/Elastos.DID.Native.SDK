@@ -24,14 +24,10 @@ void check_with_ciphers(Cipher *cipher, Cipher *cipher2) {
     const char sourceStr3[] = "This is the string 3 for encrypting.";
     const unsigned char nonce[] = "\x40\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57";
 
-    printf("a1\n");
-
     unsigned char *cipherText1, *cipherText2, *cipherText3, *clearText1, *clearText2, *clearText3, *header;
     unsigned int cipherTextLen1, cipherTextLen2, cipherTextLen3, clearTextLen1, clearTextLen2, clearTextLen3, headerLen;
     Cipher_EncryptionStream *encryptionStream;
     Cipher_DecryptionStream *decryptionStream;
-
-    printf("a2\n");
 
     // message
     cipherText1 = Cipher_Encrypt(cipher, (const unsigned char *)sourceStr1, strlen(sourceStr1), nonce, &cipherTextLen1);
@@ -39,22 +35,14 @@ void check_with_ciphers(Cipher *cipher, Cipher *cipher2) {
     clearText1 = Cipher_Decrypt(cipher2, (const unsigned char *)cipherText1, cipherTextLen1, nonce, &clearTextLen1);
     CU_ASSERT_PTR_NOT_NULL(clearText1);
 
-    printf("a3, cipherText1=%p, error=%s\n", cipherText1, DIDError_GetLastErrorMessage());
-    printf("a3, clearText1=%p, error=%s\n", clearText1, DIDError_GetLastErrorMessage());
-    printf("a3, clearText1=%s, error=%s\n", clearText1, DIDError_GetLastErrorMessage());
-
     CU_ASSERT_STRING_EQUAL(clearText1, sourceStr1);
     free((void*)cipherText1);
     free((void*)clearText1);
-
-    printf("a4\n");
 
     // stream
     encryptionStream = Cipher_EncryptionStream_Create(cipher);
     CU_ASSERT_PTR_NOT_NULL(encryptionStream);
     header = Cipher_EncryptionStream_Header(encryptionStream, &headerLen);
-
-    printf("a5\n");
 
     cipherText1 = Cipher_EncryptionStream_Push(encryptionStream, (unsigned char *)sourceStr1, strlen(sourceStr1), false, &cipherTextLen1);
     CU_ASSERT_PTR_NOT_NULL(cipherText1);
@@ -63,12 +51,8 @@ void check_with_ciphers(Cipher *cipher, Cipher *cipher2) {
     cipherText3 = Cipher_EncryptionStream_Push(encryptionStream, (unsigned char *)sourceStr3, strlen(sourceStr3), true, &cipherTextLen3);
     CU_ASSERT_PTR_NOT_NULL(cipherText3);
 
-    printf("a6\n");
-
     decryptionStream = Cipher_DecryptionStream_Create(cipher2, header);
     CU_ASSERT_PTR_NOT_NULL(decryptionStream);
-
-    printf("a7\n");
 
     clearText1 = Cipher_DecryptionStream_Pull(decryptionStream, cipherText1, cipherTextLen1, &clearTextLen1);
     CU_ASSERT_PTR_NOT_NULL(clearText1);
@@ -77,13 +61,9 @@ void check_with_ciphers(Cipher *cipher, Cipher *cipher2) {
     clearText3 = Cipher_DecryptionStream_Pull(decryptionStream, cipherText3, cipherTextLen3, &clearTextLen3);
     CU_ASSERT_PTR_NOT_NULL(clearText3);
 
-    printf("a8\n");
-
     CU_ASSERT_STRING_EQUAL(clearText1, sourceStr1);
     CU_ASSERT_STRING_EQUAL(clearText2, sourceStr2);
     CU_ASSERT_STRING_EQUAL(clearText3, sourceStr3);
-
-    printf("a9\n");
 
     CU_ASSERT_STRING_EQUAL(clearText1, sourceStr1);
     CU_ASSERT_STRING_EQUAL(clearText2, sourceStr2);
@@ -92,8 +72,6 @@ void check_with_ciphers(Cipher *cipher, Cipher *cipher2) {
     free((void*)cipherText1); free((void*)clearText1);
     free((void*)cipherText2); free((void*)clearText2);
     free((void*)cipherText3); free((void*)clearText3);
-
-    printf("a10\n");
 }
 
 static void test_diddoc_cipher(void)
@@ -101,43 +79,30 @@ static void test_diddoc_cipher(void)
     DIDDocument *doc, *doc2;
     Cipher *cipher, *cipher2;
 
-    printf("1, start.\n");
-
     const char *identifier = "org.elastos.did.test";
-    const char publicKey[] = "\x35\x05\xb4\xab\xcc\xc5\xa1\x17\x0a\x48\x9b\x76\x9f\x81\x49\x1e\x2c\xc8\x77\x9a\xa3\xf4\xe4\xe8\x22\x2f\x55\xea\xab\xf0\x4d\x03";
-    const char publicKey2[] = "\xde\x94\x27\x8a\x43\x99\x1b\x23\xc6\x0b\xa1\x04\xe5\xfa\xf7\xbf\xa4\x3b\x78\x15\x69\xdc\x59\xd4\x02\xe6\x51\x55\x66\x0d\xa8\x36";
 
     doc = TestData_GetDocument("user1", NULL, 2);
     CU_ASSERT_PTR_NOT_NULL(doc);
     doc2 = TestData_GetDocument("user2", NULL, 3);
     CU_ASSERT_PTR_NOT_NULL(doc);
 
-    printf("2, %p, %p\n", doc, doc2);
-    printf("2, %s\n", DIDDocument_ToJson(doc, true));
-    printf("2, %s\n", DIDDocument_ToJson(doc2, true));
-
     cipher = DIDDocument_CreateCipher(doc, identifier, 15, storepass);
     CU_ASSERT_PTR_NOT_NULL(cipher);
-
-    printf("3, %p\n", cipher);
 
     check_with_ciphers(cipher, cipher);
     DIDDocument_Cipher_Destroy(cipher);
 
-    printf("4\n");
-
-    cipher = DIDDocument_CreateCurve25519Cipher(doc, identifier, 15, storepass, false, publicKey2);
+    cipher = DIDDocument_CreateCurve25519Cipher(doc, identifier, 15, storepass, false);
     CU_ASSERT_PTR_NOT_NULL(cipher);
-    cipher2 = DIDDocument_CreateCurve25519Cipher(doc2, identifier, 15, storepass, true, publicKey);
+    cipher2 = DIDDocument_CreateCurve25519Cipher(doc2, identifier, 15, storepass, true);
     CU_ASSERT_PTR_NOT_NULL(cipher);
-
-    printf("5\n");
+    Cipher_SetOtherSidePublicKey(cipher, (const char *)Cipher_GetCurve25519PublicKey(cipher2, NULL));
+    Cipher_SetOtherSidePublicKey(cipher2, (const char *)Cipher_GetCurve25519PublicKey(cipher, NULL));
 
     check_with_ciphers(cipher, cipher2);
+    check_with_ciphers(cipher2, cipher);
     DIDDocument_Cipher_Destroy(cipher);
     DIDDocument_Cipher_Destroy(cipher2);
-
-    printf("6, end!!!\n");
 }
 
 static int diddoc_cipher_test_suite_init(void)

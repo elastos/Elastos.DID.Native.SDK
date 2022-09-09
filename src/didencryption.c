@@ -50,6 +50,7 @@ Curve25519KeyPair *Cipher_CreateCurve25519KeyPair(uint8_t *key) {
     int ret;
     unsigned char privateKey[crypto_sign_SECRETKEYBYTES], publicKey[crypto_sign_PUBLICKEYBYTES];
     unsigned char *curvePrivateKey, *curvePublicKey;
+    Curve25519KeyPair *pair;
 
     assert(key);
 
@@ -65,11 +66,13 @@ Curve25519KeyPair *Cipher_CreateCurve25519KeyPair(uint8_t *key) {
         return NULL;
     }
 
-    Curve25519KeyPair *pair = (Curve25519KeyPair *)malloc(sizeof(Curve25519KeyPair));
+    pair = (Curve25519KeyPair *)malloc(sizeof(Curve25519KeyPair));
     if (!pair) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Create curve25519 key pair memory error.");
         return NULL;
     }
+    memcpy(pair->ed25519Sk, privateKey, crypto_sign_SECRETKEYBYTES);
+    memcpy(pair->ed25519Pk, publicKey, crypto_sign_PUBLICKEYBYTES);
 
     ret = crypto_sign_ed25519_pk_to_curve25519(pair->publicKey, publicKey);
     if (ret != 0) {
@@ -91,7 +94,7 @@ ERROR_EXIT:
     return NULL;
 }
 
-Cipher *Cipher_CreateCurve25519(Curve25519KeyPair *keyPair, bool isServer, uint8_t *otherSidePublicKey) {
+Cipher *Cipher_CreateCurve25519(Curve25519KeyPair *keyPair, bool isServer) {
     Cipher *cipher;
     int ret;
 
@@ -109,31 +112,58 @@ Cipher *Cipher_CreateCurve25519(Curve25519KeyPair *keyPair, bool isServer, uint8
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Create cipher memory error.");
         return NULL;
     }
+    memset(cipher, 0, sizeof(Cipher));
 
     cipher->isCurve25519 = true;
     memcpy(&cipher->keyPair, keyPair, sizeof(Curve25519KeyPair));
     cipher->isServer = isServer;
-    memcpy(cipher->otherSidePublicKey, otherSidePublicKey, crypto_scalarmult_curve25519_BYTES);
+    cipher->isSetOtherSidePublicKey = false;
+    return cipher;
+}
 
-    ret = crypto_box_beforenm(cipher->encryptKey, otherSidePublicKey, keyPair->privateKey);
-    if (ret != 0) {
-        DIDError_Set(DIDERR_CRYPTO_ERROR, "Create encrypt key error.");
-        free(cipher);
-        return NULL;
+bool Cipher_SetOtherSidePublicKey(Cipher *cipher, const char *otherSidePublicKey) {
+    int ret;
+
+    CHECK_ARG(!cipher, "Invalid cipher.", false);
+    CHECK_ARG(!otherSidePublicKey, "Invalid otherSidePublicKey.", false);
+
+    if (!cipher->isCurve25519) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Not supported.");
+        return false;
     }
 
-    if (isServer) {
-        ret = crypto_kx_server_session_keys(cipher->sharedKeyRx, cipher->sharedKeyTx, keyPair->privateKey, keyPair->publicKey, otherSidePublicKey);
+    memcpy(cipher->otherSidePublicKey, otherSidePublicKey, crypto_scalarmult_curve25519_BYTES);
+
+    ret = crypto_box_beforenm(cipher->encryptKey, (uint8_t *)otherSidePublicKey, cipher->keyPair.privateKey);
+    if (ret != 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Create encrypt key error.");
+        return false;
+    }
+
+    if (cipher->isServer) {
+        ret = crypto_kx_server_session_keys(cipher->sharedKeyRx, cipher->sharedKeyTx,
+                                            cipher->keyPair.privateKey, cipher->keyPair.publicKey,
+                                            (uint8_t *)otherSidePublicKey);
     } else {
-        ret = crypto_kx_client_session_keys(cipher->sharedKeyRx, cipher->sharedKeyTx, keyPair->privateKey, keyPair->publicKey, otherSidePublicKey);
+        ret = crypto_kx_client_session_keys(cipher->sharedKeyRx, cipher->sharedKeyTx,
+                                            cipher->keyPair.privateKey, cipher->keyPair.publicKey,
+                                            (uint8_t *)otherSidePublicKey);
     }
     if (ret != 0) {
         DIDError_Set(DIDERR_CRYPTO_ERROR, "Create shared keys error.");
-        free(cipher);
-        return NULL;
+        return false;
     }
 
-    return cipher;
+    cipher->isSetOtherSidePublicKey = true;
+    return true;
+}
+
+bool Cipher_CheckOtherSidePublicKey(Cipher *cipher) {
+    if (!cipher->isSetOtherSidePublicKey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Please set other side public key first.");
+        return false;
+    }
+    return true;
 }
 
 unsigned char *Cipher_Encrypt(Cipher *cipher, const unsigned char *data,
@@ -149,6 +179,10 @@ unsigned char *Cipher_Encrypt(Cipher *cipher, const unsigned char *data,
     CHECK_ARG(!cipherTextLen, "Invalid cipherTextLen.", NULL);
 
     if (cipher->isCurve25519) {
+        if (!Cipher_CheckOtherSidePublicKey(cipher)) {
+            return NULL;
+        }
+
         ctlen = dataLen + crypto_box_MACBYTES;
         cipherText = (unsigned char *)malloc(ctlen);
         if (!cipherText) {
@@ -206,6 +240,10 @@ unsigned char *Cipher_Decrypt(Cipher *cipher, const unsigned char *data,
     if (cipher->isCurve25519) {
         CHECK_ARG(dataLen <= crypto_box_MACBYTES, "Invalid dataLen.", NULL);
 
+        if (!Cipher_CheckOtherSidePublicKey(cipher)) {
+            return NULL;
+        }
+
         ctlen = dataLen - crypto_box_MACBYTES;
         clearText = (unsigned char *)malloc(ctlen);
         if (!clearText) {
@@ -244,9 +282,43 @@ unsigned char *Cipher_Decrypt(Cipher *cipher, const unsigned char *data,
     return clearText;
 }
 
+unsigned char *Cipher_GetEd25519PublicKey(Cipher *cipher, unsigned int *length) {
+    CHECK_ARG(!cipher, "Invalid cipher.", NULL);
+
+    if (!cipher->isCurve25519) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Not supported.");
+        return NULL;
+    }
+
+    if (length) {
+        *length = crypto_sign_ed25519_PUBLICKEYBYTES;
+    }
+
+    return cipher->keyPair.ed25519Pk;
+}
+
+unsigned char *Cipher_GetCurve25519PublicKey(Cipher *cipher, unsigned int *length) {
+    CHECK_ARG(!cipher, "Invalid cipher.", NULL);
+
+    if (!cipher->isCurve25519) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Not supported.");
+        return NULL;
+    }
+
+    if (length) {
+        *length = crypto_scalarmult_curve25519_BYTES;
+    }
+
+    return cipher->keyPair.publicKey;
+}
+
 Cipher_EncryptionStream *Cipher_EncryptionStream_Create(Cipher *cipher) {
     Cipher_EncryptionStream *stream;
     int ret;
+
+    if (cipher->isCurve25519 && !Cipher_CheckOtherSidePublicKey(cipher)) {
+        return NULL;
+    }
 
     stream = (Cipher_EncryptionStream *)malloc(sizeof(Cipher_EncryptionStream));
     if (!stream) {
@@ -313,6 +385,10 @@ Cipher_DecryptionStream *Cipher_DecryptionStream_Create(Cipher *cipher, const un
 
     CHECK_ARG(!cipher, "Invalid cipher.", NULL);
     CHECK_ARG(!header, "Invalid header.", NULL);
+
+    if (cipher->isCurve25519 && !Cipher_CheckOtherSidePublicKey(cipher)) {
+        return NULL;
+    }
 
     stream = (Cipher_DecryptionStream *)malloc(sizeof(Cipher_DecryptionStream));
     if (!stream) {
