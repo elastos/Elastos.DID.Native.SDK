@@ -28,6 +28,7 @@
 
 #include "ela_did.h"
 #include "did.h"
+#include "didencryption.h"
 #include "diddocument.h"
 #include "didstore.h"
 #include "credential.h"
@@ -4508,6 +4509,128 @@ const char *DIDDocument_DeriveByIndex(DIDDocument *document, int index,
     return document_derive(document, NULL, index, storepass);
 
     DIDERROR_FINALIZE();
+}
+
+uint8_t *DIDDocument_GetDerivedPrivateKey(DIDDocument *document, const char *identifier,
+        int securityCode, const char *storepass)
+{
+    uint8_t extendedkey[EXTENDEDKEY_BYTES];
+    int paths[8];
+    HDKey *hdkey, *derivedkey, _hdkey, _dkey;
+    char extendedkeyBase58[512];
+    uint8_t *privateKey, *returnKey;
+
+    assert(document);
+    assert(identifier);
+    assert(storepass && *storepass);
+
+    if (!DIDMetadata_AttachedStore(&document->metadata)) {
+        DIDError_Set(DIDERR_NO_ATTACHEDSTORE, "No attached store with document.");
+        return NULL;
+    }
+
+    if (DIDDocument_IsCustomizedDID(document)) {
+        DIDError_Set(DIDERR_ILLEGALUSAGE, "Can't use customized did to derive.");
+        return NULL;
+    }
+
+    if (DIDStore_LoadPrivateKey_Internal(document->metadata.base.store, storepass,
+            &document->did, DIDDocument_GetDefaultPublicKey(document),
+            extendedkey, sizeof(extendedkey)) < 0) {
+        return NULL;
+    }
+
+    hdkey = HDKey_Deserialize(&_hdkey, extendedkey, sizeof(extendedkey));
+    memset(extendedkey, 0, sizeof(extendedkey));
+    if (!hdkey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Deserialize extended key failed.");
+        return NULL;
+    }
+
+    if (map_to_derivepath(paths, 8, identifier) < 0) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get derived path failed.");
+        return NULL;
+    }
+
+    derivedkey = HDKey_GetDerivedKey(hdkey, &_dkey, 9, paths[0], paths[1], paths[2], paths[3],
+            paths[4], paths[5], paths[6], paths[7], securityCode);
+    if (!derivedkey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get derived key failed.");
+        return NULL;
+    }
+
+    privateKey = HDKey_GetPrivateKey(derivedkey);
+    if (!privateKey) {
+        DIDError_Set(DIDERR_CRYPTO_ERROR, "Get derived private key failed.");
+        return NULL;
+    }
+
+    returnKey = (uint8_t *)malloc(PRIVATEKEY_BYTES);
+    memcpy(returnKey, privateKey, PRIVATEKEY_BYTES);
+    return returnKey;
+}
+
+Cipher *DIDDocument_CreateCipher(DIDDocument *document, const char *identifier,
+        int securityCode, const char *storepass)
+{
+    uint8_t *derivedPrivateKey;
+    Cipher *cipher;
+
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!document, "No document argument to derive.", NULL);
+    CHECK_ARG(!identifier, "No identifier argument provided.", NULL);
+    CHECK_ARG(securityCode < 0, "Invalid securityCode", NULL);
+    CHECK_PASSWORD(storepass, NULL);
+
+    derivedPrivateKey = DIDDocument_GetDerivedPrivateKey(document, identifier, securityCode, storepass);
+    if (!derivedPrivateKey) {
+        return NULL;
+    }
+
+    cipher = Cipher_Create(derivedPrivateKey);
+    free(derivedPrivateKey);
+    return cipher;
+
+    DIDERROR_FINALIZE();
+}
+
+Cipher *DIDDocument_CreateCurve25519Cipher(DIDDocument *document, const char *identifier,
+        int securityCode, const char *storepass, bool isServer)
+{
+    uint8_t *derivedPrivateKey;
+    Cipher *cipher;
+    Curve25519KeyPair *keyPair;
+
+    DIDERROR_INITIALIZE();
+
+    CHECK_ARG(!document, "No document argument to derive.", NULL);
+    CHECK_ARG(!identifier, "No identifier argument provided.", NULL);
+    CHECK_ARG(securityCode < 0, "Invalid securityCode", NULL);
+    CHECK_PASSWORD(storepass, NULL);
+
+    derivedPrivateKey = DIDDocument_GetDerivedPrivateKey(document, identifier, securityCode, storepass);
+    if (!derivedPrivateKey) {
+        return NULL;
+    }
+
+    keyPair = Cipher_CreateCurve25519KeyPair(derivedPrivateKey);
+    free(derivedPrivateKey);
+    if (!keyPair) {
+        return NULL;
+    }
+
+    cipher = Cipher_CreateCurve25519(keyPair, isServer);
+    free(keyPair);
+    return cipher;
+
+    DIDERROR_FINALIZE();
+}
+
+void DIDDocument_Cipher_Destroy(Cipher *cipher) {
+    if (cipher) {
+        free(cipher);
+    }
 }
 
 DIDDocument *DIDDocument_SignDIDDocument(DIDDocument* controllerdoc,

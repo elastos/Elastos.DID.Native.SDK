@@ -71,6 +71,7 @@ if(WIN32)
     set(LIBS
         ${LIBS}
         crystal_s
+        libsodium.lib
         pthread
         Ws2_32
         crypt32
@@ -82,8 +83,13 @@ if(WIN32)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(LIBS
         ${LIBS}
+        sodium
         pthread
         m)
+else()
+    set(LIBS
+        ${LIBS}
+        sodium)
 endif()
 
 set(INCLUDE

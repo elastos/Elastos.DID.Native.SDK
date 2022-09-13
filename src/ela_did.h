@@ -269,6 +269,21 @@ typedef struct DIDDocument              DIDDocument;
 typedef struct DIDDocumentBuilder       DIDDocumentBuilder;
 /**
  * \~English
+ * A Cipher to encrypt & decrypt the message or stream.
+ */
+typedef struct Cipher                   Cipher;
+/**
+ * \~English
+ * A Cipher Encryption Stream to encrypt the stream.
+ */
+typedef struct Cipher_EncryptionStream  Cipher_EncryptionStream;
+/**
+ * \~English
+ * A Cipher Decryption Stream to decrypt the stream.
+ */
+typedef struct Cipher_DecryptionStream  Cipher_DecryptionStream;
+/**
+ * \~English
  DIDMetadata is store for other information about DID except DIDDocument information.
  */
 typedef struct DIDMetadata              DIDMetadata;
@@ -2974,6 +2989,231 @@ DID_API const char *DIDDocument_DeriveByIdentifier(DIDDocument *document, const 
  */
 DID_API const char *DIDDocument_DeriveByIndex(DIDDocument *document, int index,
         const char *storepass);
+
+/**
+ * \~English
+ * Create Cipher for xchacha20.
+ *
+ * @param
+ *      document                  [in] A handle to primitive DID Document.
+ *                                ps：document must attatch DIDstore.
+ * @param
+ *      identifier                [in] Application secified identifier.
+ * @param
+ *      securityCode              [in] User specified security code.
+ * @param
+ *      storepass                 [in] The password for DIDStore.
+ * @return
+ *      If no error occurs, return a cipher object. Otherwise, return NULL.
+ *      Notice that user must use 'DIDDocument_Cipher_Destroy' to free the returned memory.
+ */
+DID_API Cipher *DIDDocument_CreateCipher(DIDDocument *document, const char *identifier,
+        int securityCode, const char *storepass);
+
+/**
+ * \~English
+ * Create Cipher for curve25519.
+ *
+ * @param
+ *      document                  [in] A handle to primitive DID Document.
+ *                                ps：document must attatch DIDstore.
+ * @param
+ *      identifier                [in] Application secified identifier.
+ * @param
+ *      securityCode              [in] User specified security code.
+ * @param
+ *      storepass                 [in] The password for DIDStore.
+ * @param
+ *      isServer                  [in] If the document is on server side or client side.
+ * @return
+ *      If no error occurs, return a cipher object. Otherwise, return NULL.
+ *      Notice that user must use 'DIDDocument_Cipher_Destroy' to free the returned memory.
+ */
+DID_API Cipher *DIDDocument_CreateCurve25519Cipher(DIDDocument *document, const char *identifier,
+        int securityCode, const char *storepass, bool isServer);
+
+/**
+ * \~English
+ * Destroy the cipher object.
+ *
+ * @param
+ *      cipher                    [in] The cipher object.
+ */
+DID_API void DIDDocument_Cipher_Destroy(Cipher *cipher);
+
+/**
+ * Set an other side public key of curve25519.
+ *
+ * @param cipher                    [in] The cipher object.
+ * @param otherSidePublicKey        [in] The other side public key of curve25519.
+ * @return
+ *      true means success, else fail.
+ */
+DID_API bool Cipher_SetOtherSidePublicKey(Cipher *cipher, const char *otherSidePublicKey);
+
+/**
+ * \~English
+ * Encrypt the data by Cipher.
+ *
+ * @param
+ *      cipher                    [in] The cipher object.
+ * @param
+ *      data                      [in] The data to be encrypted.
+ * @param
+ *      dataLen                   [in] The length of the data.
+ * @param
+ *      nonce                     [in] The nonce used to encrypt the data.
+ * @param
+ *      cipherTextLen             [in] The encrypted data length.
+ * @return
+ *      If no error occurs, return a encrypted data. Otherwise, return NULL.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
+ */
+DID_API unsigned char *Cipher_Encrypt(Cipher *cipher, const unsigned char *data,
+        unsigned int dataLen, const unsigned char *nonce, unsigned int *cipherTextLen);
+
+/**
+ * \~English
+ * Decrypt the data by Cipher.
+ *
+ * @param
+ *      cipher                    [in] The cipher object.
+ * @param
+ *      data                      [in] The data to be decrypted.
+ * @param
+ *      dataLen                   [in] The length of the data.
+ * @param
+ *      nonce                     [in] The nonce used to decrypt the data.
+ * @param
+ *      cipherTextLen             [in] The decrypted data length.
+ * @return
+ *      If no error occurs, return a decrypted data. Otherwise, return NULL.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
+ */
+DID_API unsigned char *Cipher_Decrypt(Cipher *cipher, const unsigned char *data,
+        unsigned int dataLen, const unsigned char *nonce, unsigned int *clearTextLen);
+
+/**
+ * Get the public key of ed25519 from the cipher.
+ *
+ * @param cipher                  [in] The cipher object.
+ * @param length                  [out] The length of the public key.
+ * @return
+ *      The public key of ed25519 from the cipher.
+ */
+DID_API unsigned char *Cipher_GetEd25519PublicKey(Cipher *cipher, unsigned int *length);
+
+/**
+ * Get the public key of curve25519 from the cipher.
+ *
+ * @param cipher                  [in] The cipher object.
+ * @param length                  [out] The length of the public key.
+ * @return
+ *      The public key of curve25519 from the cipher.
+ */
+DID_API unsigned char *Cipher_GetCurve25519PublicKey(Cipher *cipher, unsigned int *length);
+
+/**
+ * \~English
+ * Create a encryption stream by cipher.
+ *
+ * @param
+ *      cipher                    [in] The cipher object.
+ * @return
+ *      If no error occurs, return a encryption stream. Otherwise, return NULL.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
+ */
+DID_API Cipher_EncryptionStream *Cipher_EncryptionStream_Create(Cipher *cipher);
+
+/**
+ * \~English
+ * Get the header of the encryption stream which is used on the decryption stream.
+ *
+ * @param
+ *      stream                    [in] The stream object.
+ * @param
+ *      headerLen                 [in] The length of the header if provided.
+ * @return
+ *      If no error occurs, return a encryption stream. Otherwise, return NULL.
+ */
+DID_API unsigned char *Cipher_EncryptionStream_Header(Cipher_EncryptionStream *stream, unsigned int *headerLen);
+
+/**
+ * \~English
+ * Encrypt the stream data.
+ *
+ * @param
+ *      stream                    [in] The stream object.
+ * @param
+ *      data                      [in] The data to be encrypted.
+ * @param
+ *      dataLen                   [in] The data length.
+ * @param
+ *      isFinal                   [in] Whether the data is the last part of the stream.
+ * @return
+ *      If no error occurs, return a encrypted data. Otherwise, return NULL.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
+ */
+DID_API unsigned char *Cipher_EncryptionStream_Push(Cipher_EncryptionStream *stream,
+        const unsigned char *data, unsigned int dataLen, bool isFinal, unsigned int *cipherTextLen);
+
+/**
+ * \~English
+ * Create a decryption stream by cipher.
+ *
+ * @param
+ *      cipher                    [in] The cipher object.
+ * @return
+ *      If no error occurs, return a decryption stream. Otherwise, return NULL.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
+ */
+DID_API Cipher_DecryptionStream *Cipher_DecryptionStream_Create(Cipher *cipher, const unsigned char *header);
+
+/**
+ * \~English
+ * Get the length of the header for decryption.
+ *
+ * @return
+ *      The length of the header.
+ */
+DID_API unsigned int Cipher_DecryptionStream_GetHeaderLen();
+
+/**
+ * \~English
+ * Get the extra size for encryption pushing operation.
+ *
+ * @return
+ *      The extra size for encrypting the data.
+ */
+DID_API unsigned int Cipher_DecryptionStream_GetExtraEncryptSize();
+
+/**
+ * \~English
+ * Decrypt the stream data.
+ *
+ * @param
+ *      stream                    [in] The stream object.
+ * @param
+ *      data                      [in] The data to be encrypted.
+ * @param
+ *      dataLen                   [in] The data length.
+ * @return
+ *      If no error occurs, return a decrypted data. Otherwise, return NULL.
+ *      Notice that user must use 'DID_FreeMemory' to free the returned memory.
+ */
+DID_API unsigned char *Cipher_DecryptionStream_Pull(Cipher_DecryptionStream *stream,
+        const unsigned char *data, unsigned int dataLen, unsigned int *clearTextLen);
+
+/**
+ * \~English
+ * Decrypt the stream data.
+ *
+ * @param
+ *      stream                    [in] The stream object.
+ * @return
+ *      Whether the data is the last part of decryption stream.
+ */
+DID_API bool Cipher_DecryptionStream_IsComplete(Cipher_DecryptionStream *stream);
 
 /**
  * \~English
