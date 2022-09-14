@@ -4,22 +4,33 @@ from enum import Enum
 from .eladid import lib, ffi
 
 
-_DEFAULT_MEMORY_FREE_NAME = 'Mnemonic_Free'
+_DEFAULT_MEMORY_FREE_NAME = 'DID_FreeMemory'
 
 
 class ElaDIDException(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg, internal_code=-1):
         super().__init__(self)
         self.msg = msg
+        self.icode = internal_code
 
     def __str__(self):
-        return f'DID Exception: {self.msg}'
+        return f'DID Exception: {self.msg}, ({self.icode})'
+
+
+class ElaDIDDIDDeactivatedException(ElaDIDException):
+    def __init__(self, msg):
+        super().__init__(msg, 1002)
+
+
+class ElaDIDDIDNotFoundException(ElaDIDException):
+    def __init__(self, msg):
+        super().__init__(msg, 1003)
 
 
 class ElaError:
     @staticmethod
     def get(prompt=None):
-        """ helper method to get error message from did.so """
+        """ helper method to get error message from eladid.so """
         error_msg, c_msg = 'UNKNOWN ERROR', lib.DIDError_GetLastErrorMessage()
         if c_msg:
             error_msg = ffi.string(c_msg).decode()
@@ -85,19 +96,16 @@ class DID:
     def __init__(self, did):
         self.did = did
 
-    def create_did_url(self, fragment: str) -> 'DIDURL':
-        return DIDURL(_obj_call('DIDURL_NewFromDid', self.did, fragment.encode(), release_name='DIDURL_Destroy'))
-
     @staticmethod
     def create_from(did_str: str) -> 'DID':
         return DID(_obj_call('DID_FromString', did_str.encode(), release_name='DID_Destroy'))
 
     @staticmethod
     def create_from_method(method: t.Optional[str], method_specific_str: str) -> 'DID':
-        if method:
+        if method is not None:
             did = _obj_call('DID_NewWithMethod', method.encode(), method_specific_str.encode(), release_name='DID_Destroy')
         else:
-            did = _obj_call('DID_NewWithMethod', method.encode(), method_specific_str.encode(), release_name='DID_Destroy')
+            did = _obj_call('DID_New', method_specific_str.encode(), release_name='DID_Destroy')
         return DID(did)
 
     def get_method(self) -> str:
@@ -116,7 +124,15 @@ class DID:
         :param force: only get from chain if True, else get from cache first.
         """
         status = ffi.new("DIDStatus *")
-        return DIDDocument(_obj_call('DID_Resolve', self.did, status, force, release_name='DIDDocument_Destroy'))
+        try:
+            return DIDDocument(_obj_call('DID_Resolve', self.did, status, force, release_name='DIDDocument_Destroy'))
+        except ElaDIDException as e:
+            if status == lib.DIDStatus_Deactivated:
+                raise ElaDIDDIDDeactivatedException(e.msg)
+            elif status == lib.DIDStatus_NotFound:
+                raise ElaDIDDIDNotFoundException(e.msg)
+            else:
+                raise e
 
     def resolve_biography(self) -> 'DIDBiography':
         return DIDBiography(_obj_call('DID_ResolveBiography', self.did, release_name='DIDBiography_Destroy'))
@@ -125,8 +141,8 @@ class DID:
         return DIDMetadata(_obj_call('DID_GetMetadata', self.did))
 
     def __str__(self):
-        did_str = ffi.new('char[64]')
-        return _str_call('DID_ToString', self.did, did_str, 64)
+        did_str = ffi.new(f'char[{lib.ELA_MAX_DID_LEN}]')
+        return _str_call('DID_ToString', self.did, did_str, lib.ELA_MAX_DID_LEN)
 
     def __eq__(self, other: 'DID'):
         return _int_call('DID_Equals', self.did, other.did) == 1
@@ -197,7 +213,7 @@ class DIDURL:
 
     @staticmethod
     def create_from_did(did: 'DID', fragment: str) -> 'DIDURL':
-        return did.create_did_url(fragment)
+        return DIDURL(_obj_call('DIDURL_NewFromDid', did.did, fragment.encode(), release_name='DIDURL_Destroy'))
 
     def get_did(self) -> 'DID':
         return DID(_obj_call('DIDURL_GetDid', self.url))
@@ -347,7 +363,7 @@ class CredentialBiography:
         return DIDURL(_obj_call('CredentialBiography_GetId', self.biography, release_name='DIDURL_Destroy'))
 
     def get_owner(self) -> 'DID':
-        return DID(_obj_call('CredentialBiography_GetOwner', self.biography))
+        return DID(_obj_call('CredentialBiography_GetOwner', self.biography, release_name='DID_Destroy'))
 
     def get_status(self) -> CredentialStatus:
         return CredentialStatus.get_status(_int_call('CredentialBiography_GetStatus', self.biography))
@@ -356,7 +372,7 @@ class CredentialBiography:
         return _int_call('CredentialBiography_GetTransactionCount', self.biography)
 
     def get_credential_by_index(self, index: int) -> 'Credential':
-        return Credential(_obj_call('CredentialBiography_GetCredentialByIndex', self.biography, index))
+        return Credential(_obj_call('CredentialBiography_GetCredentialByIndex', self.biography, index, release_name='Credential_Destroy'))
 
     def get_transaction_id_by_index(self, index: int) -> str:
         return _str_call('CredentialBiography_GetTransactionIdByIndex', self.biography, index)
@@ -378,11 +394,12 @@ class RootIdentity:
 
     @staticmethod
     def create(store: 'DIDStore', mnemonic: str, passphrase: str, overwrite: bool) -> 'RootIdentity':
-        return store.create_root_identity(mnemonic, passphrase, overwrite=overwrite)
+        return RootIdentity(store, _obj_call('RootIdentity_Create', mnemonic.encode(), passphrase.encode(), overwrite, store.store, store.storepass,
+                                             release_name='RootIdentity_Destroy'))
 
     @staticmethod
     def create_from_root_key(store: 'DIDStore', extended_prv_key: str, overwrite: bool) -> 'RootIdentity':
-        return store.create_root_identity_from_root_key(extended_prv_key, overwrite=overwrite)
+        return RootIdentity(store, _obj_call(('RootIdentity_CreateFromRootKey', extended_prv_key.encode(), overwrite, store.store, store.storepass)))
 
     @staticmethod
     def create_id(mnemonic: str, passphrase: str) -> str:
@@ -408,7 +425,7 @@ class RootIdentity:
         _int_call('RootIdentity_SetDefaultDID', did.did)
 
     def get_default_did(self):
-        return DID(_obj_call('RootIdentity_CreateIdFromRootKey', self.identity, release_name=_DEFAULT_MEMORY_FREE_NAME))
+        return DID(_obj_call('RootIdentity_GetDefaultDID', self.identity, release_name='DID_Destroy'))
 
     def get_did_by_index(self, index: int) -> DID:
         return DID(_obj_call('RootIdentity_GetDIDByIndex', self.identity, index, release_name='DID_Destroy'))
@@ -426,7 +443,8 @@ class RootIdentity:
         self.sync_by_index(0)
 
     def new_did_by_index(self, index, overwrite=True) -> 'DIDDocument':
-        return DIDDocument(_obj_call('RootIdentity_NewDIDByIndex', self.identity, index, self.store.storepass, ffi.NULL, overwrite))
+        return DIDDocument(_obj_call('RootIdentity_NewDIDByIndex', self.identity, index, self.store.storepass, ffi.NULL, overwrite,
+                                     release_name='DIDDocument_Destroy'))
 
     def new_did_0(self) -> 'DIDDocument':
         return self.new_did_by_index(0)
@@ -525,7 +543,7 @@ class DIDDocument:
 
     def get_authentication_keys(self, size):
         keys = ffi.new('struct PublicKey[]', size)
-        real_size = _int_call('DIDDocument_GetPublicKeys', self.doc, keys, size)
+        real_size = _int_call('DIDDocument_GetAuthenticationKeys', self.doc, keys, size)
         return _c_array_to_list(keys, min(real_size, size))
 
     def get_authentication_key(self, keyid: DIDURL) -> 'PublicKey':
@@ -542,7 +560,7 @@ class DIDDocument:
     def is_authorization_key(self, keyid: DIDURL) -> bool:
         return _int_call('DIDDocument_IsAuthorizationKey', self.doc, keyid.url) == 1
 
-    def get_authorization_count(self) -> bool:
+    def get_authorization_count(self) -> int:
         return _int_call('DIDDocument_GetAuthorizationCount', self.doc)
 
     def get_authorization_keys(self, size):
@@ -551,7 +569,7 @@ class DIDDocument:
         return _c_array_to_list(keys, min(real_size, size))
 
     def get_authorization_key(self, keyid: DIDURL) -> 'PublicKey':
-        return PublicKey(_obj_call('DIDDocument_GetPublicKey', self.doc, keyid.url))
+        return PublicKey(_obj_call('DIDDocument_GetAuthorizationKey', self.doc, keyid.url))
 
     def select_authorization_keys(self, type_, keyid: DIDURL, size):
         keys = ffi.new('struct PublicKey[]', size)
@@ -563,7 +581,7 @@ class DIDDocument:
 
     def get_credentials(self, size):
         credentials = ffi.new('struct Credential[]', size)
-        real_size = _int_call('DIDDocument_SelectAuthorizationKeys', self.doc, credentials, size)
+        real_size = _int_call('DIDDocument_GetCredentials', self.doc, credentials, size)
         return _c_array_to_list(credentials, min(real_size, size))
 
     def get_credential(self, credid: DIDURL) -> 'Credential':
@@ -763,14 +781,14 @@ class DIDDocumentBuilder:
     def seal(self, store: 'DIDStore'):
         return DIDDocument(_obj_call('DIDDocumentBuilder_Seal', self.builder, store.storepass, release_name='DIDDocument_Destroy'))
 
-    def get_subject(self, store: 'DIDStore'):
-        return DIDDocument(_obj_call('DIDDocumentBuilder_GetSubject', self.builder, store.storepass, release_name='DIDDocument_Destroy'))
+    def get_subject(self, store: 'DIDStore') -> DID:
+        return DID(_obj_call('DIDDocumentBuilder_GetSubject', self.builder, store.storepass))
 
     def add_context(self, context: str):
         _int_call('DIDDocumentBuilder_AddContext', self.builder, context.encode())
 
-    def add_default_context(self, context: str):
-        _int_call('DIDDocumentBuilder_AddContext', self.builder, context.encode())
+    def add_default_context(self):
+        _int_call('DIDDocumentBuilder_AddDefaultContext', self.builder)
 
     def add_controller(self, controller: 'DID'):
         _int_call('DIDDocumentBuilder_AddController', self.builder, controller.did)
@@ -844,7 +862,7 @@ class Credential:
         self.vc = vc
 
     def to_json(self, normalized=True) -> str:
-        return _str_call('Credential_ToJson', self.vc, normalized)
+        return _str_call('Credential_ToJson', self.vc, normalized, release_name=_DEFAULT_MEMORY_FREE_NAME)
 
     def __str__(self):
         return _str_call('Credential_ToString', self.vc, True)
@@ -884,7 +902,7 @@ class Credential:
         return _int_call('Credential_GetExpirationDate', self.vc)
 
     def get_properties(self) -> str:
-        return _str_call('Credential_GetExpirationDate', self.vc, release_name=_DEFAULT_MEMORY_FREE_NAME)
+        return _str_call('Credential_GetProperties', self.vc, release_name=_DEFAULT_MEMORY_FREE_NAME)
 
     def get_property(self, name: str) -> str:
         return _str_call('Credential_GetProperty', self.vc, name.encode(), release_name=_DEFAULT_MEMORY_FREE_NAME)
@@ -973,20 +991,13 @@ class DIDStore:
         self.storepass = storepass.encode()
         self.store = DIDStore.__open(dir_path)
 
-    def create_root_identity(self, mnemonic: str, passphrase: str, overwrite: bool = True) -> RootIdentity:
-        return RootIdentity(self, _obj_call('RootIdentity_Create', mnemonic.encode(), passphrase.encode(), overwrite, self.store, self.storepass,
-                                            release_name='RootIdentity_Destroy'))
-
-    def create_root_identity_from_root_key(self, extended_prv_key: str, overwrite: bool = True) -> RootIdentity:
-        return RootIdentity(self, _obj_call(('RootIdentity_CreateFromRootKey', extended_prv_key.encode(), overwrite, self.store, self.storepass)))
-
     def get_root_identity(self, mnemonic: str, passphrase: str) -> RootIdentity:
-        identity = self.create_root_identity(mnemonic, passphrase)
+        identity = RootIdentity.create(self, mnemonic, passphrase, overwrite=True)
 
         if self.contains_root_identity(identity.identity):
             return self.load_root_identity(identity.identity)
 
-        return self.create_root_identity(mnemonic, passphrase)
+        return RootIdentity.create(self, mnemonic, passphrase, overwrite=True)
 
     @staticmethod
     def __open(dir_path: str):
@@ -1041,8 +1052,8 @@ class DIDStore:
         def ListDIDsCallback(did, context):
             # INFO: contains a terminating signal by a did with None.
             if did:
-                did_str = ffi.new('char[64]')
-                did_str = lib.DID_ToString(did, did_str, 64)
+                did_str = ffi.new(f'char[{lib.ELA_MAX_DID_LEN}]')
+                did_str = lib.DID_ToString(did, did_str, lib.ELA_MAX_DID_LEN)
                 d = lib.DID_FromString(did_str)
                 dids.append(DID(ffi.gc(d, lib.DID_Destroy)))
             # 0 means no error.
