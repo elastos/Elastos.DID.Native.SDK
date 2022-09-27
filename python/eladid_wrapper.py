@@ -393,13 +393,22 @@ class RootIdentity:
         self.identity = identity
 
     @staticmethod
-    def create(store: 'DIDStore', mnemonic: str, passphrase: str, overwrite: bool) -> 'RootIdentity':
-        return RootIdentity(store, _obj_call('RootIdentity_Create', mnemonic.encode(), passphrase.encode(), overwrite, store.store, store.storepass,
+    def get_root_identity(store: 'DIDStore', mnemonic: str, passphrase: str) -> 'RootIdentity':
+        id_ = RootIdentity.create_id(mnemonic, passphrase)
+
+        if store.contains_root_identity(id_):
+            return store.load_root_identity(id_)
+
+        return RootIdentity.create(store, mnemonic, passphrase, overwrite=True)
+
+    @staticmethod
+    def create(store: 'DIDStore', storepass: str, mnemonic: str, passphrase: str, overwrite: bool) -> 'RootIdentity':
+        return RootIdentity(store, _obj_call('RootIdentity_Create', mnemonic.encode(), passphrase.encode(), overwrite, store.store, storepass.encode(),
                                              release_name='RootIdentity_Destroy'))
 
     @staticmethod
-    def create_from_root_key(store: 'DIDStore', extended_prv_key: str, overwrite: bool) -> 'RootIdentity':
-        return RootIdentity(store, _obj_call(('RootIdentity_CreateFromRootKey', extended_prv_key.encode(), overwrite, store.store, store.storepass)))
+    def create_from_root_key(store: 'DIDStore', storepass: str, extended_prv_key: str, overwrite: bool) -> 'RootIdentity':
+        return RootIdentity(store, _obj_call(('RootIdentity_CreateFromRootKey', extended_prv_key.encode(), overwrite, store.store, storepass.encode())))
 
     @staticmethod
     def create_id(mnemonic: str, passphrase: str) -> str:
@@ -430,8 +439,8 @@ class RootIdentity:
     def get_did_by_index(self, index: int) -> DID:
         return DID(_obj_call('RootIdentity_GetDIDByIndex', self.identity, index, release_name='DID_Destroy'))
 
-    def new_did(self, store: 'DIDStore', alias: str, overwrite: bool):
-        return DIDDocument(_obj_call('RootIdentity_NewDID', self.identity, store.storepass, alias.encode(), overwrite, release_name='DIDDocument_Destroy'))
+    def new_did(self, storepass: str, alias: str, overwrite: bool):
+        return DIDDocument(_obj_call('RootIdentity_NewDID', self.identity, storepass.encode(), alias.encode(), overwrite, release_name='DIDDocument_Destroy'))
 
     def get_did_0(self) -> DID:
         return self.get_did_by_index(0)
@@ -442,16 +451,16 @@ class RootIdentity:
     def sync_0(self) -> None:
         self.sync_by_index(0)
 
-    def new_did_by_index(self, index, overwrite=True) -> 'DIDDocument':
-        return DIDDocument(_obj_call('RootIdentity_NewDIDByIndex', self.identity, index, self.store.storepass, ffi.NULL, overwrite,
+    def new_did_by_index(self, storepass: str, index, overwrite=True) -> 'DIDDocument':
+        return DIDDocument(_obj_call('RootIdentity_NewDIDByIndex', self.identity, index, storepass.encode(), ffi.NULL, overwrite,
                                      release_name='DIDDocument_Destroy'))
 
-    def new_did_0(self) -> 'DIDDocument':
-        return self.new_did_by_index(0)
+    def new_did_0(self, storepass: str) -> 'DIDDocument':
+        return self.new_did_by_index(storepass, 0)
 
-    def new_did_by_identifier(self, store: 'DIDStore', identifier: str, security_code: int, alias: str, overwrite: bool) -> 'DIDDocument':
+    def new_did_by_identifier(self, storepass: str, identifier: str, security_code: int, alias: str, overwrite: bool) -> 'DIDDocument':
         return DIDDocument(_obj_call('RootIdentity_NewDIDByIdentifier',
-                                     self.identity, identifier.encode(), security_code, store.storepass, alias.encode(), overwrite,
+                                     self.identity, identifier.encode(), security_code, storepass.encode(), alias.encode(), overwrite,
                                      release_name='DIDDocument_Destroy'))
 
     def get_did_by_identifier(self, identifier: str, security_code: int):
@@ -614,17 +623,17 @@ class DIDDocument:
     # /* DID_API */ DIDDocument *DIDDocument_NewCustomizedDID(DIDDocument *document,
     #         const char *customizeddid, DID **controllers, size_t size, int multisig,
 
-    def sign(self, key_id: DIDURL, store: 'DIDStore', sig: str, count: int, *args):
-        _int_call('DIDDocument_Sign', self.doc, key_id.url, store.storepass, sig.encode(), count, *args)
+    def sign(self, key_id: DIDURL, storepass: str, sig: str, count: int, *args):
+        _int_call('DIDDocument_Sign', self.doc, key_id.url, storepass.encode(), sig.encode(), count, *args)
 
-    def sign_digest(self, key_id: DIDURL, store: 'DIDStore', sig: str, digest: str, size):
-        _int_call('DIDDocument_SignDigest', self.doc, key_id.url, store.storepass, sig.encode(), digest.encode(), size)
+    def sign_digest(self, key_id: DIDURL, storepass: str, sig: str, digest: str, size):
+        _int_call('DIDDocument_SignDigest', self.doc, key_id.url, storepass.encode(), sig.encode(), digest.encode(), size)
 
     def verify(self, key_id: DIDURL, sig: str, count: int, *args):
         _int_call('DIDDocument_Verify', self.doc, key_id.url, sig.encode(), count, *args)
 
-    def verify_digest(self, key_id: DIDURL, store: 'DIDStore', sig: str, digest: str, size):
-        _int_call('DIDDocument_VerifyDigest', self.doc, key_id.url, store.storepass, sig.encode(), digest.encode(), size)
+    def verify_digest(self, key_id: DIDURL, storepass: str, sig: str, digest: str, size):
+        _int_call('DIDDocument_VerifyDigest', self.doc, key_id.url, storepass.encode(), sig.encode(), digest.encode(), size)
 
     def get_metadata(self):
         return DIDMetadata(_obj_call('DIDDocument_GetMetadata', self.doc))
@@ -648,36 +657,36 @@ class DIDDocument:
 
     # /*DID_API*/ JWSParser *DIDDocument_GetJwsParser(DIDDocument *document);
 
-    def derive_by_identifier(self, identifier: str, security_code: str, store: 'DIDStore'):
-        return _str_call('DIDDocument_DeriveByIdentifier', self.doc, identifier.encode(), security_code, store.storepass, release_name=_DEFAULT_MEMORY_FREE_NAME)
+    def derive_by_identifier(self, identifier: str, security_code: str, storepass: str):
+        return _str_call('DIDDocument_DeriveByIdentifier', self.doc, identifier.encode(), security_code, storepass.encode(), release_name=_DEFAULT_MEMORY_FREE_NAME)
 
-    def derive_by_index(self, index: int, store: 'DIDStore'):
-        return _str_call('DIDDocument_DeriveByIndex', self.doc, index, store.storepass, release_name=_DEFAULT_MEMORY_FREE_NAME)
+    def derive_by_index(self, index: int, storepass: str):
+        return _str_call('DIDDocument_DeriveByIndex', self.doc, index, storepass.encode(), release_name=_DEFAULT_MEMORY_FREE_NAME)
 
-    def sign_document(self, document: str, store: 'DIDStore'):
-        return DIDDocument(_obj_call('DIDDocument_SignDIDDocument', self.doc, document.encode(), store.storepass, release_name='DIDDocument_Destroy'))
+    def sign_document(self, document: str, storepass: str):
+        return DIDDocument(_obj_call('DIDDocument_SignDIDDocument', self.doc, document.encode(), storepass.encode(), release_name='DIDDocument_Destroy'))
 
     @staticmethod
     def merge_documents(count: int, *args):
         return _str_call('DIDDocument_MergeDIDDocuments', count, *args, release_name=_DEFAULT_MEMORY_FREE_NAME)
 
-    def create_transfer_ticket(self, owner: DID, to: DID, store: 'DIDStore'):
-        return TransferTicket(_obj_call('DIDDocument_CreateTransferTicket', self.doc, owner.did, to.did, store.storepass, release_name='TransferTicket_Destroy'))
+    def create_transfer_ticket(self, owner: DID, to: DID, storepass: str):
+        return TransferTicket(_obj_call('DIDDocument_CreateTransferTicket', self.doc, owner.did, to.did, storepass.encode(), release_name='TransferTicket_Destroy'))
 
-    def sign_transfer_ticket(self, ticket: 'TransferTicket', store: 'DIDStore'):
-        _int_call('DIDDocument_SignTransferTicket', self.doc, ticket.ticket, store.storepass)
+    def sign_transfer_ticket(self, ticket: 'TransferTicket', storepass: str):
+        _int_call('DIDDocument_SignTransferTicket', self.doc, ticket.ticket, storepass.encode())
 
-    def publish_did(self, sign_key: DIDURL, force: bool, store: 'DIDStore') -> bool:
-        return _int_call('DIDDocument_PublishDID', self.doc, sign_key.url, force, store.storepass) == 1
+    def publish_did(self, sign_key: DIDURL, force: bool, storepass: str) -> bool:
+        return _int_call('DIDDocument_PublishDID', self.doc, sign_key.url, force, storepass.encode()) == 1
 
-    def transfer_did(self, ticket: 'TransferTicket', sign_key: DIDURL, store: 'DIDStore') -> bool:
-        return _int_call('DIDDocument_TransferDID', self.doc, ticket.ticket, sign_key.url, store.storepass) == 1
+    def transfer_did(self, ticket: 'TransferTicket', sign_key: DIDURL, storepass: str,) -> bool:
+        return _int_call('DIDDocument_TransferDID', self.doc, ticket.ticket, sign_key.url, storepass.encode()) == 1
 
-    def deactivate_did(self, sign_key: DIDURL, store: 'DIDStore') -> bool:
-        return _int_call('DIDDocument_DeactivateDID', self.doc, sign_key.url, store.storepass) == 1
+    def deactivate_did(self, sign_key: DIDURL, storepass: str) -> bool:
+        return _int_call('DIDDocument_DeactivateDID', self.doc, sign_key.url, storepass.encode()) == 1
 
-    def deactivate_did_by_authorizer(self, target: DID, sign_key: DIDURL, store: 'DIDStore') -> bool:
-        return _int_call('DIDDocument_DeactivateDIDByAuthorizor', self.doc, target.did, sign_key.url, store.storepass) == 1
+    def deactivate_did_by_authorizer(self, target: DID, sign_key: DIDURL, storepass: str) -> bool:
+        return _int_call('DIDDocument_DeactivateDIDByAuthorizor', self.doc, target.did, sign_key.url, storepass.encode()) == 1
 
     def __str__(self, normalized=True):
         return _str_call('DIDDocument_ToString', self.doc, normalized, release_name=_DEFAULT_MEMORY_FREE_NAME)
@@ -778,11 +787,11 @@ class DIDDocumentBuilder:
     def __init__(self, builder):
         self.builder = builder
 
-    def seal(self, store: 'DIDStore'):
-        return DIDDocument(_obj_call('DIDDocumentBuilder_Seal', self.builder, store.storepass, release_name='DIDDocument_Destroy'))
+    def seal(self, storepass: str):
+        return DIDDocument(_obj_call('DIDDocumentBuilder_Seal', self.builder, storepass.encode(), release_name='DIDDocument_Destroy'))
 
-    def get_subject(self, store: 'DIDStore') -> DID:
-        return DID(_obj_call('DIDDocumentBuilder_GetSubject', self.builder, store.storepass))
+    def get_subject(self, storepass: str) -> DID:
+        return DID(_obj_call('DIDDocumentBuilder_GetSubject', self.builder, storepass.encode()))
 
     def add_context(self, context: str):
         _int_call('DIDDocumentBuilder_AddContext', self.builder, context.encode())
@@ -835,8 +844,8 @@ class DIDDocumentBuilder:
     #         DIDURL *credid, const char **types, size_t typesize,
     #         Property *properties, int propsize, time_t expires, DIDURL *signkey, const char *storepass);
 
-    def renew_self_proclaimed_credential(self, controller: DID, sign_key: DIDURL, store: 'DIDStore'):
-        _int_call('DIDDocumentBuilder_RenewSelfProclaimedCredential', self.builder, controller.did, sign_key.url, store.storepass)
+    def renew_self_proclaimed_credential(self, controller: DID, sign_key: DIDURL, storepass: str):
+        _int_call('DIDDocumentBuilder_RenewSelfProclaimedCredential', self.builder, controller.did, sign_key.url, storepass.encode())
 
     def remove_self_proclaimed_credential(self, controller: DID):
         _int_call('DIDDocumentBuilder_RemoveSelfProclaimedCredential', self.builder, controller.did)
@@ -928,15 +937,15 @@ class Credential:
     def is_valid(self) -> bool:
         return _int_call('Credential_IsValid', self.vc) == 1
 
-    def declare(self, sign_key: DIDURL, store: 'DIDStore'):
-        _int_call('Credential_Declare', self.vc, sign_key.url, store.storepass)
+    def declare(self, sign_key: DIDURL, storepass: str):
+        _int_call('Credential_Declare', self.vc, sign_key.url, storepass.encode())
 
-    def revoke(self, sign_key: DIDURL, store: 'DIDStore'):
-        _int_call('Credential_Revoke', self.vc, sign_key.url, store.storepass)
+    def revoke(self, sign_key: DIDURL, storepass: str):
+        _int_call('Credential_Revoke', self.vc, sign_key.url, storepass.encode())
 
     @staticmethod
-    def revoke_by_id(id_: DIDURL, document: DIDDocument, sign_key: DIDURL, store: 'DIDStore') -> bool:
-        return _int_call('Credential_RevokeById', id_.url, document.doc, sign_key.url, store.storepass) == 1
+    def revoke_by_id(id_: DIDURL, document: DIDDocument, sign_key: DIDURL, storepass: str) -> bool:
+        return _int_call('Credential_RevokeById', id_.url, document.doc, sign_key.url, storepass.encode()) == 1
 
     # @staticmethod
     # def resolve(self, ):
@@ -948,7 +957,7 @@ class Credential:
 
     @staticmethod
     def resolve_biography(id_: DIDURL, issuer: DID) -> CredentialBiography:
-        return CredentialBiography(_obj_call('Credential_ResolveBiography', id_.url, issuer.did))
+        return CredentialBiography(_obj_call('Credential_ResolveBiography', id_.url, issuer.did, release_name='CredentialBiography_Destroy'))
 
     @staticmethod
     def was_declared(id_: DIDURL) -> bool:
@@ -991,14 +1000,6 @@ class DIDStore:
         self.storepass = storepass.encode()
         self.store = DIDStore.__open(dir_path)
 
-    def get_root_identity(self, mnemonic: str, passphrase: str) -> RootIdentity:
-        identity = RootIdentity.create(self, mnemonic, passphrase, overwrite=True)
-
-        if self.contains_root_identity(identity.identity):
-            return self.load_root_identity(identity.identity)
-
-        return RootIdentity.create(self, mnemonic, passphrase, overwrite=True)
-
     @staticmethod
     def __open(dir_path: str):
         return _obj_call('DIDStore_Open', dir_path.encode(), release_name='DIDStore_Close')
@@ -1010,7 +1011,7 @@ class DIDStore:
         return _int_call('DIDStore_ContainsRootIdentities', self.store) == 1
 
     def load_root_identity(self, id_: str) -> RootIdentity:
-        return RootIdentity(self.store, _obj_call('DIDStore_LoadRootIdentity', id_.encode()))
+        return RootIdentity(self.store, _obj_call('DIDStore_LoadRootIdentity', id_.encode(), release_name='RootIdentity_Destroy'))
 
     def delete_root_identity(self, id_: str) -> bool:
         return _bool_call('DIDStore_DeleteRootIdentity', self.store, id_.encode())
@@ -1145,13 +1146,13 @@ class Presentation:
         self.vp = vp
 
     @staticmethod
-    def create_presentation(store: DIDStore, did: DID, fragment: str, nonce: str, realm: str, vc: Credential) -> 'Presentation':
+    def create_presentation(store: DIDStore, storepass: str, did: DID, fragment: str, nonce: str, realm: str, vc: Credential) -> 'Presentation':
         # INFO: It is not supported to combine to a single line.
         type0 = ffi.new("char[]", "VerifiablePresentation".encode())
         types = ffi.new("char **", type0)
         did_url, sign_key = DIDURL.create_from_did(did.did, fragment), ffi.NULL
-        return Presentation(_obj_call('Presentation_Create', did_url, did.did, types, 1, nonce.encode(), realm.encode(), sign_key, store.store, store.storepass,
-                            1, vc.vc, release_name='Presentation_Destroy'))
+        return Presentation(_obj_call('Presentation_Create', did_url, did.did, types, 1, nonce.encode(), realm.encode(), sign_key,
+                                      store.store, storepass.encode(), 1, vc.vc, release_name='Presentation_Destroy'))
 
     # /*DID_API*/ Presentation *Presentation_CreateByCredentials(DIDURL *id, DID *holder,
     #         const char **types, size_t size, const char *nonce, const char *realm,
@@ -1214,7 +1215,8 @@ class JWTBuilder:
     #     builder = ElaError.check_not_exists(lib.DIDDocument_GetJwtBuilder(doc.doc))
     #     return JWTBuilder(self, ffi.gc(builder, lib.JWTBuilder_Destroy))
 
-    # def create_token(self, subject: str, audience_did_str: str, expire: int, claim_key: str, claim_value: any, claim_json: bool = True) -> str:
+    # def create_token(self, storepass: str, subject: str, audience_did_str: str, expire: int,
+    #                  claim_key: str, claim_value: any, claim_json: bool = True) -> str:
     #     ticks, sign_key = int(datetime.now().timestamp()), ffi.NULL
     #     lib.JWTBuilder_SetHeader(self.builder, "type".encode(), "JWT".encode())
     #     lib.JWTBuilder_SetHeader(self.builder, "version".encode(), "1.0".encode())
@@ -1227,7 +1229,7 @@ class JWTBuilder:
     #         lib.JWTBuilder_SetClaimWithJson(self.builder, claim_key.encode(), claim_value.encode())
     #     else:
     #         lib.JWTBuilder_SetClaim(self.builder, claim_key.encode(), claim_value.encode())
-    #     ElaError.check_not_equals_0(lib.JWTBuilder_Sign(self.builder, sign_key, self.store.storepass), prompt='sign')
+    #     ElaError.check_not_equals_0(lib.JWTBuilder_Sign(self.builder, sign_key, storepass.encode()), prompt='sign')
     #     c_token = ElaError.check_not_exists(lib.JWTBuilder_Compact(self.builder), prompt='compact')
     #     return ffi.string(ffi.gc(c_token, _DEFAULT_MEMORY_FREE)).decode()
 
