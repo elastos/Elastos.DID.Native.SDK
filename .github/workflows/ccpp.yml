@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-18.04]
+        os: [ubuntu-20.04]
         build_type: [Debug, Release]
     steps:
       - uses: actions/checkout@v2
@@ -22,7 +22,6 @@ jobs:
           mkdir -p build/linux
           cd build/linux
           cmake -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
-                -DENABLE_UNICODE_NORMALIZATION=true \
                 -DENABLE_PYTHON=true \
                 -DCMAKE_INSTALL_PREFIX=dist ../..
           make
@@ -59,7 +58,6 @@ jobs:
           mkdir -p build/macos
           cd build/macos
           cmake -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
-                -DENABLE_UNICODE_NORMALIZATION=true \
                 -DENABLE_PYTHON=true \
                 -DCMAKE_INSTALL_PREFIX=dist ../..
           make
@@ -94,7 +92,7 @@ jobs:
           )
           mkdir build\windows
           cd build\windows
-          cmake -G "NMake Makefiles" -DENABLE_UNICODE_NORMALIZATION=true -DCMAKE_INSTALL_PREFIX=dist -DCMAKE_VS_PLATFORM_TOOLSET=v141 -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION=10.0.17763.0 ..\..
+          cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=dist -DCMAKE_VS_PLATFORM_TOOLSET=v141 -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION=10.0.17763.0 ..\..
           nmake
           nmake install
           nmake dist
